@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "title": "Kartos — a home for your family's memory",
+    "description": "Family tree, grave map and photo archive in one private place. Build it together with your relatives."
+  },
+  "nav": {
+    "how": "How it works",
+    "privacy": "Privacy",
+    "signIn": "Sign in",
+    "language": "Language",
+    "skip": "Skip to content"
+  },
+  "hero": {
+    "title": "One place to remember everyone",
+    "lead": "Gather your family's history into one private archive: who was who, where each person rests, the old photographs, and the stories worth keeping for your children.",
+    "cta": "Create your family archive",
+    "secondary": "How it works",
+    "note": "Free. Only your family can see what you add."
+  },
+  "sample": {
+    "name": "Ona Jankauskienė",
+    "maiden": "née Petrauskaitė",
+    "dates": "1921 – 1998",
+    "born": "Born in Plungė",
+    "memory": "“She baked apple cake every Sunday and never once gave away the recipe.”",
+    "memoryBy": "Remembered by her granddaughter Rūta",
+    "restsTitle": "Resting place",
+    "cemetery": "Lėbartai Cemetery, Klaipėda",
+    "plot": "Section 12 · Row 4 · Grave 17",
+    "directions": "By the birch, third row from the chapel",
+    "treeTitle": "Family",
+    "parents": "Parents",
+    "spouse": "Spouse",
+    "children": "Children",
+    "photos": "14 photos",
+    "circa": "c."
+  },
+  "keep": {
+    "title": "What you'll keep",
+    "lead": "The three things most often lost between generations.",
+    "tree": {
+      "title": "Family tree",
+      "body": "Parents, grandparents, children, spouses and second marriages. The tree grows as more relatives join."
+    },
+    "map": {
+      "title": "Grave map",
+      "body": "The exact grave, its section and row, and a note on how to find it. Every family grave on one map."
+    },
+    "archive": {
+      "title": "Photos and memories",
+      "body": "Old photographs, letters, documents and stories, linked to the people and years they belong to."
+    }
+  },
+  "steps": {
+    "title": "Your first person in a minute",
+    "lead": "No genealogy knowledge needed. Start with one person.",
+    "one": {
+      "title": "Name your archive",
+      "body": "For example, “The Jankauskas family”."
+    },
+    "two": {
+      "title": "Add someone you want to remember",
+      "body": "A name is enough. Dates, a photo and the grave can come later."
+    },
+    "three": {
+      "title": "Invite your relatives",
+      "body": "Share a link by Messenger, WhatsApp or email. Everyone adds what they know."
+    }
+  },
+  "visit": {
+    "title": "When it's time to visit, every family grave is on one map",
+    "body": "Younger relatives no longer have to ask where their great-grandparents rest. Open the map, choose the grave, and get directions to it.",
+    "list": [
+      "Lėbartai Cemetery, Klaipėda",
+      "Old Cemetery, Plungė",
+      "Rasos Cemetery, Vilnius"
+    ]
+  },
+  "privacy": {
+    "title": "Your family's history belongs to you",
+    "items": [
+      {
+        "title": "Private by default",
+        "body": "Only invited family members can see anything. Nothing is ever published automatically."
+      },
+      {
+        "title": "Living relatives protected",
+        "body": "Dates, photos and places of living people are never shown publicly."
+      },
+      {
+        "title": "Export any time",
+        "body": "Download all your data and photos, even if you stop using the service."
+      },
+      {
+        "title": "Never held hostage",
+        "body": "Paid features only add to what you have. Your archive is never locked."
+      }
+    ]
+  },
+  "final": {
+    "title": "Start with one name",
+    "body": "The rest follows: photos, dates, stories, and the relatives who know more.",
+    "cta": "Create your family archive"
+  },
+  "footer": {
+    "tagline": "A family memory archive. Made in Klaipėda.",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "contact": "Contact"
+  },
+  "login": {
+    "title": "Sign in",
+    "lead": "We'll email you a sign-in link. No password needed.",
+    "email": "Email address",
+    "emailPlaceholder": "name@example.com",
+    "submit": "Email me a sign-in link",
+    "sending": "Sending…",
+    "sent": "Link sent. Open the email and tap the link to sign in.",
+    "or": "or",
+    "google": "Continue with Google",
+    "invalidEmail": "Enter an email address, for example name@example.com.",
+    "notConfigured": "Sign-in isn't switched on yet: Supabase keys are missing (.env.local).",
+    "error": "The link couldn't be sent. Check the address and try again.",
+    "back": "Back to home",
+    "terms": "By signing in you agree to the terms of use and privacy policy."
+  }
+}

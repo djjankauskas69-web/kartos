@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "title": "Kartos — jūsų šeimos atminties namai",
+    "description": "Šeimos medis, kapų žemėlapis ir nuotraukų archyvas vienoje privačioje vietoje. Kurkite kartu su artimaisiais."
+  },
+  "nav": {
+    "how": "Kaip tai veikia",
+    "privacy": "Privatumas",
+    "signIn": "Prisijungti",
+    "language": "Kalba",
+    "skip": "Pereiti prie turinio"
+  },
+  "hero": {
+    "title": "Viena vieta prisiminti visus",
+    "lead": "Sudėkite savo šeimos istoriją į vieną privatų archyvą: kas kam kuo buvo, kur kas palaidotas, senos nuotraukos ir prisiminimai, kuriuos verta išsaugoti vaikams.",
+    "cta": "Sukurti šeimos archyvą",
+    "secondary": "Kaip tai veikia",
+    "note": "Nemokama. Jūsų duomenys matomi tik jūsų šeimai."
+  },
+  "sample": {
+    "name": "Ona Jankauskienė",
+    "maiden": "gim. Petrauskaitė",
+    "dates": "1921 – 1998",
+    "born": "Gimė Plungėje",
+    "memory": "„Kiekvieną sekmadienį kepdavo obuolių pyragą ir nė karto nepasakė recepto.“",
+    "memoryBy": "Prisiminė anūkė Rūta",
+    "restsTitle": "Ilsisi",
+    "cemetery": "Lėbartų kapinės, Klaipėda",
+    "plot": "12 kvartalas · 4 eilė · kapas 17",
+    "directions": "Prie beržo, trečia eilė nuo koplyčios",
+    "treeTitle": "Šeima",
+    "parents": "Tėvai",
+    "spouse": "Sutuoktinis",
+    "children": "Vaikai",
+    "photos": "14 nuotraukų",
+    "circa": "apie"
+  },
+  "keep": {
+    "title": "Ką išsaugosite",
+    "lead": "Trys dalykai, kurie dažniausiai pasimeta tarp kartų.",
+    "tree": {
+      "title": "Šeimos medis",
+      "body": "Tėvai, seneliai, vaikai, sutuoktiniai ir antrosios santuokos. Medis auga, kai prisijungia kiti giminaičiai."
+    },
+    "map": {
+      "title": "Kapų žemėlapis",
+      "body": "Tiksli kapo vieta, kvartalas, eilė ir užrašas, kaip jį rasti. Visi šeimos kapai viename žemėlapyje."
+    },
+    "archive": {
+      "title": "Nuotraukos ir prisiminimai",
+      "body": "Senos nuotraukos, laiškai, dokumentai ir istorijos, priskirtos konkretiems žmonėms ir laikotarpiams."
+    }
+  },
+  "steps": {
+    "title": "Pirmas žmogus — per minutę",
+    "lead": "Nereikia nieko išmanyti apie genealogiją. Pradėkite nuo vieno žmogaus.",
+    "one": {
+      "title": "Pavadinkite archyvą",
+      "body": "Pavyzdžiui, „Jankauskų šeima“."
+    },
+    "two": {
+      "title": "Pridėkite žmogų, kurį norite prisiminti",
+      "body": "Užtenka vardo. Datas, nuotrauką ir kapo vietą galima pridėti vėliau."
+    },
+    "three": {
+      "title": "Pakvieskite artimuosius",
+      "body": "Nuoroda per Messenger, Viber ar el. paštą. Kiekvienas papildys tai, ką žino."
+    }
+  },
+  "visit": {
+    "title": "Kai ateina Vėlinės, visi šeimos kapai — viename žemėlapyje",
+    "body": "Jaunesni giminaičiai nebeturi klausinėti, kur ilsisi proseneliai. Atidarote žemėlapį, pasirenkate kapą ir gaunate kelią iki jo.",
+    "list": [
+      "Lėbartų kapinės, Klaipėda",
+      "Plungės senosios kapinės",
+      "Rasų kapinės, Vilnius"
+    ]
+  },
+  "privacy": {
+    "title": "Jūsų šeimos istorija priklauso jums",
+    "items": [
+      {
+        "title": "Privatu iš anksto",
+        "body": "Viską mato tik pakviesti šeimos nariai. Niekas neskelbiama automatiškai."
+      },
+      {
+        "title": "Gyvi žmonės saugomi",
+        "body": "Gyvų giminaičių datos, nuotraukos ir vietos niekada nerodomos viešai."
+      },
+      {
+        "title": "Eksportas bet kada",
+        "body": "Visus duomenis ir nuotraukas galite atsisiųsti, net jei nustosite naudotis paslauga."
+      },
+      {
+        "title": "Jokio įkaito",
+        "body": "Mokamos funkcijos tik papildo. Jūsų archyvas niekada nebus užrakintas."
+      }
+    ]
+  },
+  "final": {
+    "title": "Pradėkite nuo vieno vardo",
+    "body": "Kiti ateis paskui — nuotraukos, datos, istorijos ir giminaičiai, kurie žino daugiau.",
+    "cta": "Sukurti šeimos archyvą"
+  },
+  "footer": {
+    "tagline": "Šeimos atminties archyvas. Sukurta Klaipėdoje.",
+    "privacy": "Privatumo politika",
+    "terms": "Naudojimo sąlygos",
+    "contact": "Kontaktai"
+  },
+  "login": {
+    "title": "Prisijunkite",
+    "lead": "Atsiųsime prisijungimo nuorodą el. paštu. Slaptažodžio nereikia.",
+    "email": "El. pašto adresas",
+    "emailPlaceholder": "vardas@pavyzdys.lt",
+    "submit": "Siųsti prisijungimo nuorodą",
+    "sending": "Siunčiama…",
+    "sent": "Nuoroda išsiųsta. Atidarykite laišką ir paspauskite nuorodą, kad prisijungtumėte.",
+    "or": "arba",
+    "google": "Tęsti su Google",
+    "invalidEmail": "Įveskite el. pašto adresą, pavyzdžiui vardas@pavyzdys.lt.",
+    "notConfigured": "Prisijungimas dar neįjungtas: trūksta Supabase raktų (.env.local).",
+    "error": "Nepavyko išsiųsti nuorodos. Patikrinkite adresą ir bandykite dar kartą.",
+    "back": "Grįžti į pradžią",
+    "terms": "Prisijungdami sutinkate su naudojimo sąlygomis ir privatumo politika."
+  }
+}

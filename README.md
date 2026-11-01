@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kartos — šeimos atminties platforma
 
-## Getting Started
+Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.tsx` ir `src/dictionaries/*.json`).
 
-First, run the development server:
+## Kas jau padaryta (1 etapas)
+
+- Next.js 16 + TypeScript + Tailwind CSS 4
+- Dvi kalbos: **lietuvių** (`/lt`, numatytoji) ir **anglų** (`/en`)
+  - `/` nukreipia pagal išsaugotą pasirinkimą arba naršyklės kalbą
+  - LT | EN jungiklis išlaiko tą patį puslapį ir įsimena pasirinkimą
+  - Visi tekstai: `src/dictionaries/lt.json` ir `en.json`
+- Pradinis puslapis (landing) abiem kalbomis
+- Prisijungimo puslapis: nuoroda el. paštu ir „Tęsti su Google“ (Supabase)
+- Duomenų bazės schema su privatumo taisyklėmis (Row Level Security): `supabase/migrations/0001_init.sql`
+
+## Paleidimas
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Atidarykite http://localhost:3000 — būsite nukreipti į `/lt`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Prisijungimo įjungimas (Supabase)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Sukurkite projektą supabase.com, regionas **EU (Frankfurt)**.
+2. SQL Editor → įklijuokite ir paleiskite `supabase/migrations/0001_init.sql`.
+3. Authentication → URL Configuration → Redirect URLs pridėkite:
+   `http://localhost:3000/lt/auth/callback`, `http://localhost:3000/en/auth/callback`
+4. (Nebūtina) Authentication → Providers → Google.
+5. Nukopijuokite `.env.example` į `.env.local` ir įrašykite URL bei anon raktą.
 
-## Learn More
+## Kalbos pridėjimas vėliau
 
-To learn more about Next.js, take a look at the following resources:
+1. `src/i18n/config.ts` → pridėkite kodą į `locales`.
+2. Sukurkite `src/dictionaries/<kodas>.json` (kopija iš `en.json`) ir įtraukite į `src/i18n/dictionaries.ts`.
+3. Atnaujinkite kalbų sąrašą `LanguageSwitch.tsx` reguliariojoje išraiškoje (`lt|en`). `proxy.ts` keisti nereikia.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Struktūra
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/[lang]/            puslapiai (layout, landing, login, auth/callback)
+  components/            antraštė, kalbos jungiklis, hero kompozicija
+  dictionaries/          lt.json, en.json
+  i18n/                  kalbų konfigūracija ir žodynų įkėlimas
+  lib/supabase/          Supabase klientai (naršyklė / serveris)
+  proxy.ts               kalbos nukreipimas
+supabase/migrations/     duomenų bazės schema
+```
