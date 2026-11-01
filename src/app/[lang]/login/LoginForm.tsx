@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 
-type Status = "idle" | "sending" | "sent" | "error" | "invalid";
+type Status = "idle" | "sending" | "sent" | "error" | "invalid" | "rateLimit";
+
+// Google sign-in shows only once the provider is switched on in Supabase.
+const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
 
 export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Locale }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const redirectTo = () => `${window.location.origin}/${locale}/auth/callback`;
+
+  // The email link came back without a valid session (expired, or opened in another browser).
+  const linkError = useSearchParams().has("error");
 
   async function sendLink(e: React.FormEvent) {
     e.preventDefault();
@@ -22,13 +29,15 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
       email: email.trim(),
       options: { emailRedirectTo: redirectTo() },
     });
-    setStatus(error ? "error" : "sent");
+    if (!error) return setStatus("sent");
+    setStatus(error.status === 429 ? "rateLimit" : "error");
   }
 
   async function google() {
     const supabase = createClient();
     if (!supabase) return setStatus("error");
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectTo() } });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectTo() } });
+    if (error) setStatus("error");
   }
 
   if (status === "sent") {
@@ -40,7 +49,17 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
   }
 
   const message =
-    status === "invalid" ? t.invalidEmail : status === "error" ? (supabaseConfigured ? t.error : t.notConfigured) : null;
+    status === "invalid"
+      ? t.invalidEmail
+      : status === "rateLimit"
+          ? t.rateLimit
+          : status === "error"
+            ? supabaseConfigured
+              ? t.error
+              : t.notConfigured
+            : linkError && status === "idle"
+              ? t.linkError
+              : null;
 
   return (
     <div>
@@ -79,6 +98,8 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
         </button>
       </form>
 
+      {googleEnabled && (
+        <>
       <div className="my-6 flex items-center gap-4 text-sm text-ink-muted" aria-hidden="true">
         <span className="h-px flex-1 bg-line" />
         {t.or}
@@ -98,6 +119,8 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
         </svg>
         {t.google}
       </button>
+        </>
+      )}
     </div>
   );
 }

@@ -4,11 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 
-/** LT | EN switch that keeps the current page and remembers the choice. */
-export function LanguageSwitch({ current, label }: { current: Locale; label: string }) {
-  const pathname = usePathname() ?? `/${current}`;
-  const rest = pathname.replace(/^\/(lt|en)(?=\/|$)/, "");
+type Props = { current: Locale; label: string };
 
+/** LT | EN switch that keeps the current page and remembers the choice. */
+export function LanguageSwitch({ current, label }: Props) {
+  const pathname = usePathname() ?? `/${current}`;
+  return <Switch current={current} label={label} rest={pathname.replace(/^\/(lt|en)(?=\/|$)/, "")} />;
+}
+
+/** Same switch for pages with dynamic URLs: always lands on a fixed path (e.g. "/app"). */
+export function FixedLanguageSwitch({ current, label, path }: Props & { path: string }) {
+  return <Switch current={current} label={label} rest={path} />;
+}
+
+function Switch({ current, label, rest }: Props & { rest: string }) {
   return (
     <nav aria-label={label} className="flex items-center rounded-full border border-line bg-surface p-0.5 text-sm">
       {locales.map((l: Locale) => {

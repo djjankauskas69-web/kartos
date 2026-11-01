@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[lang
   const supabase = await createClient();
   if (code && supabase) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}/${locale}`);
+    if (!error) return NextResponse.redirect(`${origin}/${locale}/app`);
   }
   return NextResponse.redirect(`${origin}/${locale}/login?error=1`);
 }

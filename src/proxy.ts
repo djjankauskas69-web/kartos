@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { defaultLocale, hasLocale, locales, type Locale } from "@/i18n/config";
+import { updateSession } from "@/lib/supabase/proxy";
 
 const COOKIE = "locale";
 
@@ -23,16 +24,34 @@ function pickLocale(request: NextRequest): Locale {
   return defaultLocale;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasPrefix = locales.some(
-    (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
-  );
-  if (hasPrefix) return;
+  const locale = locales.find((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
 
-  const url = request.nextUrl.clone();
-  url.pathname = `/${pickLocale(request)}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.redirect(url);
+  if (!locale) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${pickLocale(request)}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.redirect(url);
+  }
+
+  // Keep the sign-in session fresh, and guard the family archive.
+  const { response, signedIn } = await updateSession(request);
+  const inApp = pathname === `/${locale}/app` || pathname.startsWith(`/${locale}/app/`);
+  const onLogin = pathname === `/${locale}/login`;
+
+  if (inApp && !signedIn) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${locale}/login`;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  if (onLogin && signedIn) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${locale}/app`;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  return response;
 }
 
 export const config = {
