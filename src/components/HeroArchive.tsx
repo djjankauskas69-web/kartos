@@ -90,8 +90,8 @@ function PhotoThumb({ tone }: { tone: string }) {
   return <span className="block h-9 w-9 rounded-md border-2 border-surface" style={{ background: tone }} />;
 }
 
-function FamilyStrip({ s }: { s: Sample }) {
-  const Person = ({ name, years, focus }: { name: string; years: string; focus?: boolean }) => (
+function Person({ name, years, focus }: { name: string; years: string; focus?: boolean }) {
+  return (
     <div
       className={
         focus
@@ -103,6 +103,9 @@ function FamilyStrip({ s }: { s: Sample }) {
       <p className="text-xs text-ink-muted">{years}</p>
     </div>
   );
+}
+
+function FamilyStrip({ s }: { s: Sample }) {
   return (
     <div className="space-y-2.5 text-ink">
       <div className="grid grid-cols-2 gap-2">
