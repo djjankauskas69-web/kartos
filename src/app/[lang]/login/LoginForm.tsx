@@ -14,6 +14,8 @@ const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
 export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Locale }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  // Supabase's own message, shown small under ours so problems can be diagnosed.
+  const [detail, setDetail] = useState("");
   const redirectTo = () => `${window.location.origin}/${locale}/auth/callback`;
 
   // The email link came back without a valid session (expired, or opened in another browser).
@@ -30,6 +32,8 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
       options: { emailRedirectTo: redirectTo() },
     });
     if (!error) return setStatus("sent");
+    console.error("signInWithOtp", error);
+    setDetail(`${error.status ?? ""} ${error.code ?? ""} ${error.message}`.trim());
     setStatus(error.status === 429 ? "rateLimit" : "error");
   }
 
@@ -87,6 +91,9 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
         {message && (
           <p id="login-message" role="alert" className="text-[0.98rem] text-danger">
             {message}
+            {detail && status !== "invalid" && (
+              <span className="mt-1 block font-mono text-[0.8rem] text-ink-muted">{detail}</span>
+            )}
           </p>
         )}
         <button
