@@ -429,8 +429,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     return (
       <div className="space-y-4">
         {!compact && (
-          <Link href={`${base}/people`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
-            ‹ {t.app.back}
+          <Link href={`${base}/tree?p=${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+            <span aria-hidden="true">←</span>
+            {t.appNav.tree}
           </Link>
         )}
         {person.status === "pending" && <PendingBadge label={t.app.pending} />}
