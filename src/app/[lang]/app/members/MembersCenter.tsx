@@ -257,25 +257,14 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
     return result;
   }, {});
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
 
   return (
     <section id="invite" className={`scroll-mt-24 p-5 ${cls.card}`}>
       <h2 className="text-[1.35rem]">{t.inviteCardTitle}</h2>
-      <p className="mb-4 mt-1.5 text-[0.98rem] leading-snug text-ink-muted">{t.inviteCardLead}</p>
+      <p className="mb-4 mt-1 text-[0.98rem] text-ink-muted">{t.inviteCardLead}</p>
       <form action={action} className="space-y-3" onSubmit={() => setCopy("idle")}>
         <Hidden values={{ locale }} />
-        <div>
-          <label htmlFor="invite-role" className={cls.label}>
-            {t.inviteAs}
-          </label>
-          <select id="invite-role" name="role" defaultValue="contributor" className={cls.input}>
-            {(["editor", "contributor", "viewer"] as const).map((r) => (
-              <option key={r} value={r}>
-                {t.role[r]}
-              </option>
-            ))}
-          </select>
-        </div>
         {people.length > 0 && (
           <div>
             <label htmlFor="invite-person" className={cls.label}>
@@ -290,8 +279,30 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-[0.9rem] text-ink-muted">{t.inviteForHelp}</p>
           </div>
+        )}
+        {/* Rights default to "member"; changing them is one tap away. */}
+        {roleOpen ? (
+          <div>
+            <label htmlFor="invite-role" className={cls.label}>
+              {t.inviteAs}
+            </label>
+            <select id="invite-role" name="role" defaultValue="contributor" className={cls.input}>
+              {(["editor", "contributor", "viewer"] as const).map((r) => (
+                <option key={r} value={r}>
+                  {t.role[r]}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <p className="text-[0.95rem] text-ink-muted">
+            <input type="hidden" name="role" value="contributor" />
+            {t.inviteAs}: <strong className="font-semibold text-ink">{t.role.contributor}</strong> ·{" "}
+            <button type="button" onClick={() => setRoleOpen(true)} className="font-semibold text-ink underline-offset-2 hover:underline">
+              {t.change}
+            </button>
+          </p>
         )}
         <button type="submit" disabled={pending} className={`${cls.primary} w-full gap-2`}>
           {copy === "copied" ? <IconCheck size={20} /> : <IconLink size={20} />}
@@ -314,7 +325,7 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
       )}
 
       {activeInvites > 0 && (
-        <div className="mt-4 border-t border-line pt-3 text-[0.98rem]">
+        <div className="mt-4 border-t border-line pt-3">
           {confirmRevoke ? (
             <form action={revokeAllInvites} className="flex flex-wrap items-center gap-2" onSubmit={() => setConfirmRevoke(false)}>
               <Hidden values={{ locale }} />
@@ -326,9 +337,9 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
               </button>
             </form>
           ) : (
-            <p className="flex flex-wrap items-center justify-between gap-2 text-ink-muted">
+            <p className="flex flex-wrap items-center justify-between gap-2 text-[0.92rem] text-ink-muted">
               <span>
-                {t.activeCount} <strong className="text-ink">{activeInvites}</strong>
+                {t.activeCount} {activeInvites}
               </span>
               <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
                 {t.revokeAll}
