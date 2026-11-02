@@ -385,7 +385,8 @@
     "menuMore": "More actions",
     "fitShort": "Fit tree",
     "drawerClose": "Close",
-    "drawerFull": "Open full profile"
+    "drawerFull": "Open full profile",
+    "background": "Background colour"
   },
   "family": {
     "title": "Family",

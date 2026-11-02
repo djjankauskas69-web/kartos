@@ -239,6 +239,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           zoomOut: t.tree.zoomOut,
           fit: t.tree.fit,
           fitShort: t.tree.fitShort,
+          background: t.tree.background,
           centre: t.tree.centre,
           fullscreen: t.tree.fullscreen,
           exitFullscreen: t.tree.exitFullscreen,

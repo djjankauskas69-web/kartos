@@ -5,6 +5,38 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 
+/** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
+const BACKGROUNDS = [
+  { id: "paper", color: "#faf8f4" },
+  { id: "white", color: "#ffffff" },
+  { id: "sand", color: "#f4eee3" },
+  { id: "sage", color: "#eef1e6" },
+  { id: "mist", color: "#edf1f4" },
+  { id: "rose", color: "#f6eeeb" },
+];
+const BG_KEY = "kartos.treeBg";
+const bgListeners = new Set<() => void>();
+const bgStore = {
+  subscribe(l: () => void) {
+    bgListeners.add(l);
+    return () => bgListeners.delete(l);
+  },
+  get() {
+    try {
+      return localStorage.getItem(BG_KEY) ?? "paper";
+    } catch {
+      return "paper";
+    }
+  },
+  getServer: () => "paper",
+  set(id: string) {
+    try {
+      localStorage.setItem(BG_KEY, id);
+    } catch {}
+    bgListeners.forEach((l) => l());
+  },
+};
+
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add"). */
 type MenuState = { key: string; mode: "card" | "add" } | null;
 
@@ -41,6 +73,7 @@ type Labels = {
   zoomOut: string;
   fit: string;
   fitShort: string;
+  background: string;
   centre: string;
   fullscreen: string;
   exitFullscreen: string;
@@ -342,13 +375,11 @@ export function TreeView({
     const top = Math.min(Math.max(8, c.y * k + y), Math.max(8, h - 480));
     return { left, top };
   };
-  // As in Recraft (measured from the screen recording): 32 px between 2 px dots at 100 %, the
-  // grid shrinks together with the tree, and from ~45 % the dots fade until they are gone at ~12 %.
-  const gridStep = 32 * k;
-  const dotAlpha = Math.min(1, Math.max(0, (k - 0.12) / 0.33));
+  const bg = useSyncExternalStore(bgStore.subscribe, bgStore.get, bgStore.getServer);
+  const bgColor = BACKGROUNDS.find((b) => b.id === bg)?.color ?? BACKGROUNDS[0].color;
 
   return (
-    <div ref={frame} className={`relative overflow-hidden border border-line/60 bg-[#faf8f4] ${full ? "h-screen" : "rounded-[18px]"}`}>
+    <div ref={frame} style={{ backgroundColor: bgColor }} className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: which generations to show */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`}>
@@ -407,6 +438,28 @@ export function TreeView({
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button>
         <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
+        <details className="relative" data-menu>
+          <summary className={`${tool} cursor-pointer list-none [&::-webkit-details-marker]:hidden`} aria-label={labels.background} title={labels.background}>
+            <span aria-hidden="true" style={{ backgroundColor: bgColor }} className="h-5 w-5 rounded-full border border-ink/25" />
+          </summary>
+          <div className="absolute bottom-full right-0 mb-2 rounded-2xl border border-line bg-surface p-3 shadow-[var(--shadow-float)]">
+            <p className="mb-2 whitespace-nowrap text-[0.85rem] text-ink-muted">{labels.background}</p>
+            <div className="flex gap-2">
+              {BACKGROUNDS.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => bgStore.set(b.id)}
+                  aria-pressed={bg === b.id}
+                  aria-label={b.id}
+                  title={b.id}
+                  style={{ backgroundColor: b.color }}
+                  className={`h-8 w-8 rounded-full border ${bg === b.id ? "border-ink ring-2 ring-ink/15 ring-offset-2" : "border-ink/20 hover:border-ink/50"}`}
+                />
+              ))}
+            </div>
+          </div>
+        </details>
         <button type="button" onClick={fit} className={`${tool} w-auto gap-1.5 px-3 text-[0.88rem] font-semibold`} aria-label={labels.fit} title={labels.fit}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
           <span className="hidden sm:inline">{labels.fitShort}</span>
@@ -432,12 +485,6 @@ export function TreeView({
         onKeyDown={onKeyDown}
         style={{
           height: full || fitH === null ? undefined : fitH,
-          // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
-          // the same small size, and the grid steps between densities so it never gets crowded.
-          backgroundColor: "#faf8f4",
-          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(196 186 170 / ${(dotAlpha * 0.8).toFixed(2)}) 0.6px, transparent 1px)` : "none",
-          backgroundSize: `${gridStep}px ${gridStep}px`,
-          backgroundPosition: `${x}px ${y}px`,
         }}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : fitH === null ? "h-[calc(100dvh-14rem)] min-h-[26rem]" : ""} ${ready ? "" : "opacity-0"}`}
       >

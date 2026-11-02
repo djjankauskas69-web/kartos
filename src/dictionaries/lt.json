@@ -385,7 +385,8 @@
     "menuMore": "Daugiau veiksmų",
     "fitShort": "Visas medis",
     "drawerClose": "Uždaryti",
-    "drawerFull": "Atidaryti visą profilį"
+    "drawerFull": "Atidaryti visą profilį",
+    "background": "Fono spalva"
   },
   "family": {
     "title": "Šeima",
