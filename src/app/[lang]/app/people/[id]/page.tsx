@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { kinship } from "@/lib/kinship";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
@@ -41,11 +42,11 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
   const id = await idPromise;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user, current } = await requireWorkspace(locale);
-  const [links, story] = await Promise.all([myPersonLinks(locale), getLifeStory(locale, id)]);
+  const [links, story, { byId, rels }] = await Promise.all([myPersonLinks(locale), getLifeStory(locale, id), getFamilyGraph(locale, current.id)]);
   const isMe = links.links.get(current.id) === id;
-  const { byId, rels } = await getFamilyGraph(locale, current.id);
   const person = byId.get(id);
   if (!person) notFound();
+  const toMe = isMe ? undefined : kinship([...byId.values()], rels, links.links.get(current.id), locale).get(id);
 
   const role = current.role;
   const base = `/${locale}/app`;
@@ -184,6 +185,11 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
                 </div>
               )}
               <h1 className={cls.h1}>{fullName(person)}</h1>
+              {toMe && (
+                <p className="mt-2 inline-flex rounded-full bg-linen px-3 py-1 text-[0.95rem]">
+                  {t.tree.relationToYou}:&nbsp;<strong className="font-semibold">{toMe}</strong>
+                </p>
+              )}
               {person.birth_surname && person.birth_surname !== person.surname && (
                 <p className="text-ink-muted">
                   {t.person.nee} {person.birth_surname}

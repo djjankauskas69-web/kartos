@@ -42,6 +42,8 @@ export function buildTree({
   graves,
   families,
   linkHref,
+  relations,
+  highlightId,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -59,6 +61,10 @@ export function buildTree({
   families?: Map<string, Array<{ label: string; href: string }>>;
   /** Administrators: where to link a person with another family's tree. */
   linkHref?: (id: string) => string;
+  /** "Who is this to me?" in words, by person id. */
+  relations?: Map<string, string>;
+  /** Mark this person (e.g. you) instead of the start person. */
+  highlightId?: string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -108,7 +114,8 @@ export function buildTree({
       pending: p.status === "pending",
       gen: gens.get(n.id) ?? 1,
       start: n.role === "focus",
-      highlight: !whole && n.role === "focus",
+      highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
+      relation: relations?.get(n.id),
       profileHref: `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),
       grave: graves?.get(n.id),

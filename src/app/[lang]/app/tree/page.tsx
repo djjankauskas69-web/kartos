@@ -2,18 +2,19 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks } from "@/lib/data";
+import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks, myPersonLinks } from "@/lib/data";
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
+import { ancestorCouples, kinship } from "@/lib/kinship";
 import { buildTree, depthOptions, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 
-type Search = { p: string; d: string; view: string };
+type Search = { p: string; d: string; view: string; hl: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -22,7 +23,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? "") }))}
       />
     </Suspense>
   );
@@ -30,10 +31,11 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
 
 async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Locale; searchPromise: Promise<Search> }) {
   const [{ current, supabase, memberships }, search] = await Promise.all([requireWorkspace(locale), searchPromise]);
-  const [{ people, byId, rels }, { data: burials }, links] = await Promise.all([
+  const [{ people, byId, rels }, { data: burials }, links, mine] = await Promise.all([
     getFamilyGraph(locale, current.id),
     supabase.from("burials").select("person_id, lat, lng, created_at").eq("workspace_id", current.id).neq("status", "rejected").not("lat", "is", null).order("created_at"),
     familyLinks(locale, current.id),
+    myPersonLinks(locale),
   ]);
   const graves = new Map((burials ?? []).flatMap((b) => (b.lat != null && b.lng != null ? [[b.person_id, { lat: b.lat, lng: b.lng }] as const] : [])));
   const base = `/${locale}/app`;
@@ -45,6 +47,10 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     families.set(l.mine, [...(families.get(l.mine) ?? []), { label: other.name, href: `${base}/open?ws=${other.id}&p=${l.otherPerson}` }]);
   }
   const canAdd = can.add(current.role);
+  // You in this tree ("Tai aš"): relationships in words and your branches.
+  const me = mine.links.get(current.id);
+  const relations = kinship(people, rels, me, locale);
+  const couples = ancestorCouples(people, rels, me);
   const allPortraits = await portraitUrls(locale, people);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
   const host = panel ? (
@@ -151,16 +157,35 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const focusId = byId.has(search.p) ? search.p : null;
   const depthValue = /^[2-6]$/.test(search.d) ? search.d : focusId ? "4" : "all";
   const depth = depthValue === "all" ? null : Number(depthValue);
+  const hl = me && search.hl === me ? me : undefined;
+  const firstName = (id: string) => byId.get(id)?.given_names ?? "";
+  const branchOptions = couples.map((c) => ({
+    value: c.ids[0],
+    label: `${[t.tree.branchH2, t.tree.branchH3, t.tree.branchH4][c.h - 2]}${c.side === "female" ? ` (${t.tree.viaMother})` : c.side === "male" ? ` (${t.tree.viaFather})` : ""}: ${c.ids.map(firstName).join(` ${t.tree.and} `)}`,
+    href: `${base}/tree?p=${c.ids[0]}&d=all&hl=${me}`,
+  }));
+  const branchValue = hl && branchOptions.some((o) => o.value === focusId) && depthValue === "all" ? focusId! : focusId ? "other" : "all";
+  const branch = me
+    ? {
+        value: branchValue,
+        options: [
+          { value: "all", label: t.tree.branchAll, href: `${base}/tree` },
+          ...(branchValue === "other" ? [{ value: "other", label: fullName(byId.get(focusId!)!), href: `${base}/tree?p=${focusId}` }] : []),
+          ...branchOptions,
+        ],
+      }
+    : undefined;
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
   const hrefFor = (d: string) => {
     const q = new URLSearchParams();
     if (focusId) q.set("p", focusId);
     q.set("d", d);
+    if (hl) q.set("hl", hl);
     return `${base}/tree?${q.toString()}`;
   };
 
@@ -190,6 +215,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardH={tree.cardH}
         generations={tree.generationChips}
         depth={{ value: depthValue, options: depthOptions(t, locale, hrefFor) }}
+        branch={branch}
         labels={{
           zoomIn: t.tree.zoomIn,
           zoomOut: t.tree.zoomOut,
@@ -214,6 +240,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           pending: t.app.pending,
           allGenerations: t.tree.allGenerations,
           depth: t.tree.depth,
+          branch: t.tree.branch,
           legendLiving: t.tree.legendLiving,
           legendDeceased: t.tree.legendDeceased,
         }}

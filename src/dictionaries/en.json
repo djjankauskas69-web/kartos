@@ -351,7 +351,16 @@
     "menuGrave": "Grave on the map",
     "menuDirections": "Directions to the grave",
     "menuAdd": "Add a relative",
-    "menuClose": "Close"
+    "menuClose": "Close",
+    "branch": "Show relatives",
+    "branchAll": "Whole family",
+    "branchH2": "Grandparents",
+    "branchH3": "Great-grandparents",
+    "branchH4": "Great-great-grandparents",
+    "viaMother": "mother's side",
+    "viaFather": "father's side",
+    "and": "and",
+    "relationToYou": "To you"
   },
   "family": {
     "title": "Family",

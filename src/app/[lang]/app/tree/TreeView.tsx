@@ -21,6 +21,7 @@ export type TreeCard = {
   gen: number;
   start: boolean;
   highlight: boolean;
+  relation?: string;
   profileHref: string;
   showFromHref: string;
   grave?: { lat: number; lng: number };
@@ -58,6 +59,7 @@ type Labels = {
   pending: string;
   allGenerations: string;
   depth: string;
+  branch: string;
   legendLiving: string;
   legendDeceased: string;
 };
@@ -86,6 +88,7 @@ export function TreeView({
   cardH,
   generations,
   depth,
+  branch,
   labels,
 }: {
   cards: TreeCard[];
@@ -98,6 +101,7 @@ export function TreeView({
   cardH: number;
   generations: Array<{ n: number; label: string; count: number }>;
   depth: { value: string; options: Array<{ value: string; label: string; href: string }> };
+  branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
   labels: Labels;
 }) {
   const router = useRouter();
@@ -351,6 +355,25 @@ export function TreeView({
               {labels.legendDeceased}
             </span>
           </div>
+          {branch && branch.options.length > 1 && (
+            <>
+              <label className="sr-only" htmlFor="tree-branch">
+                {labels.branch}
+              </label>
+              <select
+                id="tree-branch"
+                value={branch.value}
+                onChange={(e) => router.push(branch.options.find((o) => o.value === e.target.value)!.href)}
+                className={`min-h-10 max-w-[20rem] px-3.5 text-[0.95rem] ${pill}`}
+              >
+                {branch.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <label className="sr-only" htmlFor="tree-depth">
             {labels.depth}
           </label>
@@ -622,6 +645,7 @@ function CardMenu({
             <>
               <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
               {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
+              {card.relation && <p className="mt-1.5 inline-block rounded-full bg-linen px-2.5 py-0.5 text-[0.85rem] font-semibold first-letter:uppercase">{card.relation}</p>}
             </>
           )}
         </div>
