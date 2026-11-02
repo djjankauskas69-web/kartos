@@ -257,6 +257,9 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
+  let gridStep = 22 * k;
+  while (gridStep < 15) gridStep *= 2;
+  while (gridStep > 30) gridStep /= 2;
 
   return (
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f4f4f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
@@ -350,10 +353,11 @@ export function TreeView({
         onClickCapture={onClickCapture}
         onKeyDown={onKeyDown}
         style={{
-          // Recraft-style canvas: light grey with fine dots that move with the tree but keep their size when zooming.
+          // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
+          // the same small size, and the grid steps between densities so it never gets crowded.
           backgroundColor: "#f4f4f2",
-          backgroundImage: "radial-gradient(circle, #cfcfca 1px, transparent 1.3px)",
-          backgroundSize: "20px 20px",
+          backgroundImage: "radial-gradient(circle, #cbcbc5 1px, transparent 1.3px)",
+          backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
