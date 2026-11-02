@@ -166,18 +166,21 @@ export function TreeView({
     go({ k, x: w / 2 - (c.x + cardW / 2) * k, y: TOP + 16 - c.y * k }, glide);
   };
 
+  /** Vertical position that puts the tree in the middle, below the controls; tall trees start at the top. */
+  const middleY = (h: number, k: number) => Math.max(TOP, (h - height * k) / 2 + 24);
+
   const fit = () => {
     const { w, h } = size();
     const k = clampK(Math.min(1, (w - 80) / width, (h - TOP - 70) / height));
-    go({ k, x: (w - width * k) / 2, y: TOP }, true);
+    go({ k, x: (w - width * k) / 2, y: middleY(h, k) }, true);
   };
 
-  // First view: the whole width if it fits (not smaller than 60%), the top person centred.
+  // First view: the whole width if it fits (not smaller than 60%), in the middle of the frame.
   useLayoutEffect(() => {
     const id = requestAnimationFrame(() => {
-      const { w } = size();
-      const k = Math.max(0.6, Math.min(1, (w - 80) / width));
-      if (width * k <= w - 40) go({ k, x: (w - width * k) / 2, y: TOP });
+      const { w, h } = size();
+      const k = Math.max(0.6, Math.min(1, (w - 80) / width, (h - TOP - 70) / height));
+      if (width * k <= w - 40) go({ k, x: (w - width * k) / 2, y: middleY(h, k) });
       else centreOn(start, k, false);
       requestAnimationFrame(() => setReady(true));
     });
@@ -364,6 +367,17 @@ export function TreeView({
               </select>
             </>
           )}
+          <button
+            type="button"
+            onClick={toggleFull}
+            className={`flex h-11 w-11 items-center justify-center text-ink hover:bg-linen ${pill}`}
+            aria-label={full ? labels.exitFullscreen : labels.fullscreen}
+            title={full ? labels.exitFullscreen : labels.fullscreen}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -385,11 +399,6 @@ export function TreeView({
         <button type="button" onClick={() => centreOn(start, k, true)} className={tool} aria-label={labels.centre} title={labels.centre}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
         </button>
-        <button type="button" onClick={toggleFull} className={`${tool} hidden sm:flex`} aria-label={full ? labels.exitFullscreen : labels.fullscreen} title={full ? labels.exitFullscreen : labels.fullscreen}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
-          </svg>
-        </button>
       </div>
 
       {/* The canvas */}
@@ -408,7 +417,7 @@ export function TreeView({
           // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
           // the same small size, and the grid steps between densities so it never gets crowded.
           backgroundColor: "#f2f2f2",
-          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(188 188 188 / ${dotAlpha.toFixed(2)}) 1px, transparent 1.3px)` : "none",
+          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(188 188 188 / ${dotAlpha.toFixed(2)}) 0.6px, transparent 1px)` : "none",
           backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
