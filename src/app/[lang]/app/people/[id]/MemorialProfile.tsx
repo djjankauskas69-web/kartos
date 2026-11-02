@@ -37,7 +37,6 @@ export function MemorialProfile({
   editHref,
   linkHref,
   storyText,
-  storyNode,
   canAdd,
   photos,
   photoCount,
@@ -61,7 +60,6 @@ export function MemorialProfile({
   editHref?: string;
   linkHref?: string;
   storyText: string | null;
-  storyNode: React.ReactNode;
   canAdd: boolean;
   photos: Array<{ id: string; url: string }>;
   photoCount: number;
@@ -237,7 +235,6 @@ export function MemorialProfile({
     overview,
     events: (
       <div className="max-w-3xl space-y-5">
-        {storyNode}
         <section className={card}>
           {head(icons.calendar, m.events)}
           {timeline(events, true)}

@@ -436,8 +436,10 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     if (burial?.cemetery_name) ev.push({ key: "buried", year: person.death_year, title: female ? mt.buriedF : mt.buriedM, sub: burial.cemetery_name });
     // Events without a year (a marriage) go after the birth; everything else by year.
     const firstChild = Math.min(...fam.children.map((c) => byId.get(c)?.birth_year ?? 9999));
+    // Death and burial always close the timeline.
+    const last = (e: MemorialEvent) => (e.key === "died" ? 1 : e.key === "buried" ? 2 : 0);
     const order = (e: MemorialEvent) => e.year ?? (e.key.startsWith("m-") ? (firstChild < 9999 ? firstChild - 0.5 : (person.birth_year ?? 0) + 25) : 9999);
-    ev.sort((a, b) => order(a) - order(b) || (a.key === "buried" ? 1 : b.key === "buried" ? -1 : 0));
+    ev.sort((a, b) => last(a) - last(b) || order(a) - order(b));
 
     const pl: MemorialPlace[] = [];
     const birthEv = personEvents.find((e) => e.kind === "birthplace");
@@ -470,7 +472,6 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
         editHref={can.edit(role) ? `${base}/people/${id}/edit` : undefined}
         linkHref={can.admin(role) ? `${base}/people/${id}/link` : undefined}
         storyText={storyText}
-        storyNode={storyNode}
         canAdd={can.add(role)}
         photos={photos.flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
         photoCount={photos.length}
