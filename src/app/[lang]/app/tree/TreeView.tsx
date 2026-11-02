@@ -257,12 +257,10 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
-  // Measured from Recraft at 100 %: 32 px between dots, 2 px dots, #bcbcbc on #f2f2f2.
-  let gridStep = 32 * k;
-  while (gridStep < 24) gridStep *= 2;
-  while (gridStep >= 48) gridStep /= 2;
-  // Like Recraft: the dots fade out as you zoom away, and are gone below ~35 %.
-  const dotAlpha = Math.min(1, Math.max(0, (k - 0.35) / 0.5));
+  // Measured from Recraft (screen recording): 32 px between 2 px dots at 100 %, the gap scales
+  // smoothly with the zoom, and below 50 % the dots fade until they are gone at ~11 %.
+  const gridStep = 32 * k;
+  const dotAlpha = Math.min(1, Math.max(0, (k - 0.11) / 0.3));
 
   return (
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
