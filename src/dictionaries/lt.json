@@ -462,7 +462,17 @@
     "add": "Pridėti prisiminimą",
     "empty": "Prisiminimų dar nėra.",
     "delete": "Ištrinti",
-    "errorEmpty": "Parašykite prisiminimą."
+    "errorEmpty": "Parašykite prisiminimą.",
+    "composerTitle": "Parašyti prisiminimą",
+    "composerLead": "Papasakokite, ką prisimenate – visi šeimos nariai matys jūsų istoriją ir kas ją parašė.",
+    "composerPh": "Pvz. kai buvau maža, močiutė kiekvieną sekmadienį kepdavo…",
+    "addPhoto": "Pridėti nuotrauką",
+    "removePhoto": "Pašalinti",
+    "submit": "Paskelbti",
+    "saving": "Saugoma…",
+    "photoError": "Nepavyko įkelti nuotraukos.",
+    "about": "Apie",
+    "storiesTitle": "Istorijos ir prisiminimai"
   },
   "grave": {
     "title": "Kapo vieta",

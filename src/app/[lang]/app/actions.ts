@@ -403,10 +403,40 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
   const locale = formLocale(form);
   const { supabase, user, workspace } = await actionContext(locale, can.add);
   const personId = uuid(form, "personId");
-  const body = text(form, "body", 5000);
+  const body = text(form, "body", 20000);
   if (!personId) return { error: "save" };
   if (!body) return { error: "empty" };
-  const { error } = await supabase.from("memories").insert({ workspace_id: workspace.id, person_id: personId, author_id: user.id, body });
+
+  // A photo that goes with the story (uploaded by the browser just before): into the archive, tagged with the person.
+  let mediaId: string | null = null;
+  try {
+    const photo = JSON.parse(String(form.get("photo") ?? "null")) as { path?: string; width?: number; height?: number } | null;
+    if (photo?.path && photo.path.startsWith(`${workspace.id}/`)) {
+      mediaId = crypto.randomUUID();
+      const { error } = await supabase.from("media").insert({
+        id: mediaId,
+        workspace_id: workspace.id,
+        storage_path: photo.path,
+        kind: "photo",
+        width: photo.width ?? null,
+        height: photo.height ?? null,
+        mime_type: "image/jpeg",
+      });
+      if (error) {
+        console.error("addMemory photo", error);
+        mediaId = null;
+      } else {
+        await supabase.from("media_persons").insert({ media_id: mediaId, person_id: personId, workspace_id: workspace.id });
+      }
+    }
+  } catch {
+    mediaId = null;
+  }
+
+  const row: Record<string, unknown> = { workspace_id: workspace.id, person_id: personId, author_id: user.id, body };
+  let { error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row);
+  // Before database update 0010 a memory can't point at its photo; the photo is still in the archive.
+  if (error && mediaId && /media_id/.test(error.message)) ({ error } = await supabase.from("memories").insert(row));
   if (error) {
     console.error("addMemory", error);
     return { error: "save" };

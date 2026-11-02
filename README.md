@@ -23,6 +23,7 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
   - Medžių susiejimas tarp šeimų (tas pats žmogus dviejuose archyvuose; kitos šeimos medį mato tik abiejų archyvų nariai): `supabase/migrations/0007_family_links.sql`
   - Medžių palyginimas ir sujungimas (sutampa / skiriasi / tik jų medyje): `supabase/migrations/0008_link_people.sql`
   - Prisijungimas kaip „aš“: kvietimas konkrečiam žmogui ir „Aš esu Petro dukra“: `supabase/migrations/0009_invite_for_person.sql`
+  - Nuotrauka prie prisiminimo: `supabase/migrations/0010_memory_photo.sql`
 
 ## Pradinio puslapio nuotraukos
 

@@ -462,7 +462,17 @@
     "add": "Add memory",
     "empty": "No memories yet.",
     "delete": "Delete",
-    "errorEmpty": "Write a memory first."
+    "errorEmpty": "Write a memory first.",
+    "composerTitle": "Write a memory",
+    "composerLead": "Tell what you remember – everyone in the family will see your story and who wrote it.",
+    "composerPh": "E.g. when I was little, grandma baked every Sunday…",
+    "addPhoto": "Add a photo",
+    "removePhoto": "Remove",
+    "submit": "Post",
+    "saving": "Saving…",
+    "photoError": "Couldn't upload the photo.",
+    "about": "About",
+    "storiesTitle": "Stories and memories"
   },
   "grave": {
     "title": "Resting place",

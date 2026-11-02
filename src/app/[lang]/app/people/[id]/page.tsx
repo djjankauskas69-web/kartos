@@ -23,9 +23,9 @@ import { Portrait } from "@/components/Portrait";
 import { cls, PendingBadge } from "@/components/ui";
 import { periodLabel } from "@/lib/archive";
 import { deleteMemory, deletePhoto, removeRelationship, setPortrait } from "../../actions";
-import { MemoryForm } from "../../forms";
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
+import { MemoryComposer } from "./MemoryComposer";
 import { GraveView } from "./GraveView";
 import { PendingButton, PortraitWithAdd } from "./PortraitControls";
 
@@ -64,12 +64,7 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
       .from("media_persons")
       .select("media:media(id, kind, title, file_name, taken_year, year_qualifier, year_to, storage_path, status, uploader_id, created_at)")
       .eq("person_id", id),
-    supabase
-      .from("memories")
-      .select("id, body, author_id, created_at, status")
-      .eq("person_id", id)
-      .neq("status", "rejected")
-      .order("created_at", { ascending: true }),
+    loadMemories(supabase, id),
   ]);
 
   type MediaRow = {
@@ -233,6 +228,12 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
               </div>
             </div>
           </div>
+        </article>
+      </div>
+
+      {/* Everything about them first; the story box beside it */}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="min-w-0 space-y-10">
           {/* What they were like */}
           {(() => {
             const title = storyTitle(t.story, person);
@@ -241,19 +242,19 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
             if (answered.length === 0 && !person.biography) {
               if (!can.add(role)) return null;
               return (
-                <div className="mt-8 rounded-[var(--radius-card)] border border-dashed border-line bg-paper/60 p-5 sm:p-6">
+                <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-paper/60 p-5 sm:p-6">
                   <h2 className="text-[1.25rem]">
                     {person.is_living ? t.story.emptyTitleLiving : t.story.emptyTitle.replace("{title}", title.toLowerCase())}
                   </h2>
                   <p className="mt-1 max-w-[60ch] text-ink-muted">{t.story.emptyLead}</p>
-                  <Link href={can.edit(role) ? `${base}/people/${id}/edit#story` : "#memories"} className={`${cls.secondary} mt-4`}>
+                  <Link href={can.edit(role) ? `${base}/people/${id}/edit#story` : "#memory-composer"} className={`${cls.secondary} mt-4`}>
                     {can.edit(role) ? t.story.emptyEdit : t.story.emptyMember}
                   </Link>
                 </div>
               );
             }
             return (
-              <div className="mt-8 border-t border-line pt-6">
+              <div className={`p-6 sm:p-7 ${cls.card}`}>
                 {answered.length > 0 && (
                   <>
                     <h2 className="mb-4 text-[1.35rem]">{title}</h2>
@@ -283,68 +284,60 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
               </div>
             );
           })()}
-        </article>
-      </div>
 
-      {/* Family */}
-      <section>
-        <h2 className={cls.h2}>{t.family.title}</h2>
-        <div className={`mt-4 grid gap-x-10 gap-y-8 p-6 sm:grid-cols-2 ${cls.card}`}>
-          <div>
-            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.parents}</h3>
-            {relativeList(fam.parents, (p) => relId(p, id, "parent_child"))}
-            {can.add(role) && fam.parents.length < 2 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {!hasFather && add("father", t.family.addFather)}
-                {!hasMother && add("mother", t.family.addMother)}
-              </div>
-            )}
-          </div>
-          <div>
-            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.partners}</h3>
-            {relativeList(fam.partners, (p) => relId(id, p, "partner"))}
-            {can.add(role) && <div className="mt-2">{add("partner", t.family.addPartner)}</div>}
-          </div>
-          <div>
-            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.children}</h3>
-            {relativeList(fam.children, (c) => relId(id, c, "parent_child"))}
-            {can.add(role) && <div className="mt-2">{add("child", t.family.addChild)}</div>}
-          </div>
-          {fam.siblings.length > 0 && (
-            <div>
-              <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.siblings}</h3>
-              {relativeList(fam.siblings)}
+          {can.add(role) && (
+            <div id="memory-composer" className="scroll-mt-24 lg:hidden">
+              <MemoryComposer
+                locale={locale}
+                workspaceId={current.id}
+                personId={id}
+                needsApproval={can.needsApproval(role)}
+                labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
+              />
             </div>
           )}
-        </div>
-      </section>
 
-      {/* Resting place (deceased only) */}
-      {!person.is_living && (
-        <section>
-          <h2 className={cls.h2}>{t.grave.title}</h2>
-          <div className="mt-4">
-            {burial ? (
-              <GraveView
-                t={t}
-                burial={{ ...burial, photoUrl: gravePhoto ? urls.get(gravePhoto.storage_path as string) : undefined }}
-                name={fullName(person)}
-                editHref={can.edit(role) ? `${base}/people/${id}/grave` : undefined}
-                pendingLabel={burial.status === "pending" ? t.app.pending : undefined}
-              />
-            ) : (
-              <div className={`flex flex-wrap items-center justify-between gap-4 p-6 ${cls.card}`}>
-                <p className="text-ink-muted">{t.grave.none}</p>
-                {can.add(role) && (
-                  <Link href={`${base}/people/${id}/grave`} className={cls.primary}>
-                    {t.grave.add}
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      {/* Stories and memories */}
+      <section id="memories" className="scroll-mt-24">
+        <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
+        {(memories ?? []).length === 0 ? (
+          <p className="mt-3 text-ink-muted">{t.memories.empty}</p>
+        ) : (
+          <ul className="mt-4 space-y-4">
+            {(memories ?? []).map((m) => {
+              const ph = m.media_id ? photos.find((p) => p.id === m.media_id) : undefined;
+              const phUrl = ph ? urls.get(ph.storage_path) : undefined;
+              const author = authors.get(m.author_id as string) ?? "";
+              return (
+                <li key={m.id} className={`p-5 sm:p-6 ${cls.card}`}>
+                  <div className="mb-3 flex flex-wrap items-center gap-3 text-[0.95rem]">
+                    <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{author.slice(0, 1).toUpperCase()}</span>
+                    <span className="font-semibold">{author}</span>
+                    <span className="text-ink-muted">· {dateFmt.format(new Date(m.created_at))}</span>
+                    {m.status === "pending" && <PendingBadge label={t.app.pending} />}
+                  </div>
+                  <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
+                  {phUrl && (
+                    <a href={phUrl} target="_blank" rel="noreferrer" className="mt-4 block w-fit overflow-hidden rounded-xl">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+                      <img src={phUrl} alt="" loading="lazy" className="max-h-80 w-auto object-cover" />
+                    </a>
+                  )}
+                  {(can.edit(role) || m.author_id === user.id) && (
+                    <form action={deleteMemory} className="mt-3 text-right text-[0.92rem] text-ink-muted">
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="id" value={m.id} />
+                      <button type="submit" className="hover:text-danger">
+                        {t.memories.delete}
+                      </button>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {/* Photos */}
       <section>
@@ -423,44 +416,92 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
         </section>
       )}
 
-      {/* Memories */}
-      <section id="memories" className="max-w-3xl scroll-mt-24">
-        <h2 className={cls.h2}>{t.memories.title}</h2>
-        {(memories ?? []).length === 0 ? (
-          <p className="mt-3 text-ink-muted">{t.memories.empty}</p>
-        ) : (
-          <ul className="mt-4 space-y-4">
-            {(memories ?? []).map((m) => (
-              <li key={m.id} className={`p-5 ${cls.card}`}>
-                <blockquote className="whitespace-pre-line border-l-2 border-sage/50 pl-4 font-serif text-[1.12rem] leading-relaxed">
-                  {m.body}
-                </blockquote>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[0.92rem] text-ink-muted">
-                  <span>
-                    {authors.get(m.author_id as string) ?? ""} · {dateFmt.format(new Date(m.created_at as string))}
-                  </span>
-                  {m.status === "pending" && <PendingBadge label={t.app.pending} />}
-                  {(can.edit(role) || m.author_id === user.id) && (
-                    <form action={deleteMemory} className="ml-auto">
-                      <input type="hidden" name="locale" value={locale} />
-                      <input type="hidden" name="id" value={m.id as string} />
-                      <button type="submit" className="hover:text-danger">
-                        {t.memories.delete}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+       </div>
         {can.add(role) && (
-          <div className="mt-6">
-            <MemoryForm t={t} locale={locale} personId={id} needsApproval={can.needsApproval(role)} />
-          </div>
+          <aside className="sticky top-6 hidden lg:block">
+            <MemoryComposer
+                locale={locale}
+                workspaceId={current.id}
+                personId={id}
+                needsApproval={can.needsApproval(role)}
+                labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
+              />
+          </aside>
         )}
+      </div>
+
+      {/* Family */}
+      <section>
+        <h2 className={cls.h2}>{t.family.title}</h2>
+        <div className={`mt-4 grid gap-x-10 gap-y-8 p-6 sm:grid-cols-2 ${cls.card}`}>
+          <div>
+            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.parents}</h3>
+            {relativeList(fam.parents, (p) => relId(p, id, "parent_child"))}
+            {can.add(role) && fam.parents.length < 2 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {!hasFather && add("father", t.family.addFather)}
+                {!hasMother && add("mother", t.family.addMother)}
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.partners}</h3>
+            {relativeList(fam.partners, (p) => relId(id, p, "partner"))}
+            {can.add(role) && <div className="mt-2">{add("partner", t.family.addPartner)}</div>}
+          </div>
+          <div>
+            <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.children}</h3>
+            {relativeList(fam.children, (c) => relId(id, c, "parent_child"))}
+            {can.add(role) && <div className="mt-2">{add("child", t.family.addChild)}</div>}
+          </div>
+          {fam.siblings.length > 0 && (
+            <div>
+              <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.siblings}</h3>
+              {relativeList(fam.siblings)}
+            </div>
+          )}
+        </div>
       </section>
+
+      {/* Resting place (deceased only) */}
+      {!person.is_living && (
+        <section>
+          <h2 className={cls.h2}>{t.grave.title}</h2>
+          <div className="mt-4">
+            {burial ? (
+              <GraveView
+                t={t}
+                burial={{ ...burial, photoUrl: gravePhoto ? urls.get(gravePhoto.storage_path as string) : undefined }}
+                name={fullName(person)}
+                editHref={can.edit(role) ? `${base}/people/${id}/grave` : undefined}
+                pendingLabel={burial.status === "pending" ? t.app.pending : undefined}
+              />
+            ) : (
+              <div className={`flex flex-wrap items-center justify-between gap-4 p-6 ${cls.card}`}>
+                <p className="text-ink-muted">{t.grave.none}</p>
+                {can.add(role) && (
+                  <Link href={`${base}/people/${id}/grave`} className={cls.primary}>
+                    {t.grave.add}
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+
     </div>
   );
 }
 
+type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null };
+
+/** Memories, newest first, with the photo that goes with each (media_id comes with database update 0010). */
+async function loadMemories(supabase: Awaited<ReturnType<typeof requireWorkspace>>["supabase"], id: string): Promise<{ data: MemoryRow[] | null }> {
+  const q = (cols: string) => supabase.from("memories").select(cols).eq("person_id", id).neq("status", "rejected").order("created_at", { ascending: false });
+  const first = await q("id, body, author_id, created_at, status, media_id");
+  if (!first.error) return { data: first.data as unknown as MemoryRow[] };
+  const plain = await q("id, body, author_id, created_at, status");
+  return { data: (plain.data as unknown as MemoryRow[] | null) ?? null };
+}
