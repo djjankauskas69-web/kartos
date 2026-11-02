@@ -387,7 +387,8 @@
     "fitShort": "Fit tree",
     "drawerClose": "Close",
     "drawerFull": "Open full profile",
-    "background": "Background colour"
+    "background": "Background colour",
+    "familiesShown": "Families shown"
   },
   "family": {
     "title": "Family",

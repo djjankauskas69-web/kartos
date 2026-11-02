@@ -387,7 +387,8 @@
     "fitShort": "Visas medis",
     "drawerClose": "Uždaryti",
     "drawerFull": "Atidaryti visą profilį",
-    "background": "Fono spalva"
+    "background": "Fono spalva",
+    "familiesShown": "Rodomos šeimos"
   },
   "family": {
     "title": "Šeima",

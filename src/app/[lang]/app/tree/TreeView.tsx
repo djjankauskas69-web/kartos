@@ -99,6 +99,7 @@ type Labels = {
   moreBelow: string;
   pending: string;
   allGenerations: string;
+  families: string;
   depth: string;
   branch: string;
   legendLiving: string;
@@ -130,6 +131,7 @@ export function TreeView({
   cardH,
   generations,
   branch,
+  familyToggles = [],
   labels,
 }: {
   cards: TreeCard[];
@@ -143,6 +145,8 @@ export function TreeView({
   cardH: number;
   generations: Array<{ n: number; label: string; count: number }>;
   branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
+  /** Which families are shown together: this one, and the ones joined to it. */
+  familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
   labels: Labels;
 }) {
   const router = useRouter();
@@ -384,28 +388,53 @@ export function TreeView({
 
   return (
     <div ref={frame} style={{ backgroundColor: bgColor }} className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "h-screen" : "rounded-[18px]"}`}>
-      {/* Top left: which generations to show */}
+      {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
-        <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`}>
-          <button
-            type="button"
-            onClick={() => pickGeneration(null)}
-            aria-pressed={activeGen === null}
-            className={`shrink-0 rounded-full px-3 py-1 text-[0.85rem] ${activeGen === null ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
-          >
-            {labels.allGenerations}
-          </button>
-          {generations.map((g) => (
-            <button
-              key={g.n}
-              type="button"
-              onClick={() => pickGeneration(g.n)}
-              aria-pressed={activeGen === g.n}
-              className={`shrink-0 rounded-full px-3 py-1 text-[0.85rem] ${activeGen === g.n ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+        <div className="flex flex-wrap items-center gap-2">
+          <details className="relative" data-menu>
+            <summary
+              aria-label={labels.depth}
+              title={labels.depth}
+              className={`flex h-9 cursor-pointer list-none items-center gap-2 px-3 text-[0.88rem] [&::-webkit-details-marker]:hidden ${pill} ${activeGen !== null ? "font-semibold" : ""}`}
             >
-              {g.label} <span className="opacity-60">{g.count}</span>
-            </button>
-          ))}
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+              {activeGen !== null && generations.find((g) => g.n === activeGen)?.label}
+            </summary>
+            <div className="absolute left-0 mt-2 w-52 rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+              {[{ n: null as number | null, label: labels.allGenerations, count: undefined as number | undefined }, ...generations.map((g) => ({ n: g.n as number | null, label: g.label, count: g.count as number | undefined }))].map((g) => (
+                <button
+                  key={g.n ?? "all"}
+                  type="button"
+                  onClick={(e) => {
+                    pickGeneration(g.n);
+                    (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+                  }}
+                  className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-[0.95rem] hover:bg-paper ${activeGen === g.n ? "bg-paper font-semibold" : ""}`}
+                >
+                  <span className="flex-1">{g.label}</span>
+                  {g.count !== undefined && <span className="text-[0.85rem] text-ink-muted">{g.count}</span>}
+                  {activeGen === g.n && <span aria-hidden="true" className="text-olive-deep">✓</span>}
+                </button>
+              ))}
+            </div>
+          </details>
+          {familyToggles.length > 1 && (
+            <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`} role="group" aria-label={labels.families}>
+              {familyToggles.map((f) =>
+                f.href ? (
+                  <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.85rem] ${f.on ? "bg-[#e2e9f1] font-semibold text-[#3e566e]" : "text-ink-muted hover:text-ink"}`}>
+                    <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full border ${f.on ? "border-[#3e566e] bg-[#3e566e]" : "border-ink-muted/60"}`} />
+                    {f.label}
+                  </Link>
+                ) : (
+                  <span key={f.label} className="flex shrink-0 items-center gap-1.5 rounded-full bg-night px-3 py-1 text-[0.85rem] font-semibold text-surface">
+                    <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-surface" />
+                    {f.label}
+                  </span>
+                ),
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {branch && branch.options.length > 1 && (
