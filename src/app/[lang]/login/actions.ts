@@ -7,7 +7,7 @@ import { WS_COOKIE } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
 
-export type AuthState = { error?: "invalid" | "weak" | "wrongPassword" | "confirmOn" | "notConfigured" | "error" | "invite"; detail?: string };
+export type AuthState = { error?: "invalid" | "weak" | "wrongPassword" | "confirmOn" | "notConfirmed" | "notConfigured" | "error" | "invite"; detail?: string };
 
 /**
  * Email + password. Signs in; for a new address it creates the account straight away, so a
@@ -28,6 +28,16 @@ export async function passwordSignIn(_: AuthState, form: FormData): Promise<Auth
   if (!supabase) return { error: "notConfigured" };
 
   let { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error?.code === "email_not_confirmed") {
+    // Created earlier while Supabase still wanted a confirmation email: confirm it here if we can.
+    const admin = adminClient();
+    if (!admin) return { error: "notConfirmed" };
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const u = list?.users.find((x) => x.email?.toLowerCase() === email);
+    if (!u) return { error: "notConfirmed" };
+    await admin.auth.admin.updateUserById(u.id, { email_confirm: true });
+    ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+  }
   if (error) {
     if (error.code !== "invalid_credentials") return { error: "error", detail: `${error.code ?? ""} ${error.message}`.trim() };
     const admin = adminClient();

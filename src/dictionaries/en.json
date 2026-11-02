@@ -154,7 +154,8 @@
       "confirmOn": "Wrong password, or Supabase still requires a confirmation email (for the administrator: Authentication → Sign In / Providers → Email → turn off “Confirm email”).",
       "notConfigured": "Sign-in is not set up yet: Supabase keys are missing.",
       "error": "Couldn't sign in. Please try again.",
-      "invite": "You're signed in, but the invitation couldn't be accepted – it may have expired."
+      "invite": "You're signed in, but the invitation couldn't be accepted – it may have expired.",
+      "notConfirmed": "This account exists but isn't confirmed (it was created while Supabase required a confirmation email). For the administrator: Supabase → Authentication → Users → delete this user and try again."
     }
   },
   "app": {

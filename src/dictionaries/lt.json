@@ -154,7 +154,8 @@
       "confirmOn": "Neteisingas slaptažodis, arba Supabase vis dar reikalauja patvirtinimo laiško (administratoriui: Authentication → Sign In / Providers → Email → išjunkite „Confirm email“).",
       "notConfigured": "Prisijungimas dar neįjungtas: trūksta Supabase raktų.",
       "error": "Nepavyko prisijungti. Bandykite dar kartą.",
-      "invite": "Prisijungėte, bet kvietimo priimti nepavyko – galbūt jis nebegalioja."
+      "invite": "Prisijungėte, bet kvietimo priimti nepavyko – galbūt jis nebegalioja.",
+      "notConfirmed": "Ši paskyra sukurta, bet dar nepatvirtinta (ji atsirado, kol Supabase reikalavo patvirtinimo laiško). Administratoriui: Supabase → Authentication → Users → ištrinkite šį vartotoją ir bandykite iš naujo."
     }
   },
   "app": {
