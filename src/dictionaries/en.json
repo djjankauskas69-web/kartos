@@ -1096,6 +1096,8 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "saveError": "Could not save. Please try again.",
+    "placesHint": "Mark where they were born and lived, e.g. “Plungė”, “Kaunas, Laisvės al.” or “the farm near Varniai”. All places appear on the map, so the grandchildren can see where the family comes from.",
+    "addPlaceBtn": "Add a place",
     "tabFamily": "Family",
     "tabPlaces": "Places",
     "tabMemories": "Memories",

@@ -242,7 +242,13 @@ export function MemorialProfile({
           <section className={card}>
             {head(icons.pin, m.places, undefined, "places")}
             {markers.length > 0 && <MapView markers={markers} className="mb-3 h-44 w-full rounded-xl border border-line" />}
-            {placeList(false)}
+            {places.length > 0 ? placeList(false) : <p className="text-[0.98rem] leading-relaxed text-ink-muted">{m.placesHint}</p>}
+            {canAdd && eventsReady && (
+              <button type="button" data-tab-target="places" className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line font-semibold hover:border-ink/40">
+                <span aria-hidden="true" className="text-[1.2rem] leading-none">+</span>
+                {m.addPlaceBtn}
+              </button>
+            )}
           </section>
         )}
         </div>
@@ -315,12 +321,14 @@ export function MemorialProfile({
     family: nodes.family,
     places: (
       <div className="space-y-5">
-        {(lifePlaces.length > 0 || (canAdd && eventsReady)) && (
+        {(lifePlaces.length > 0 || canAdd) && (
           <section className={card}>
             {head(icons.pin, m.places)}
+            <p className="-mt-2 mb-4 max-w-[60ch] text-[0.98rem] leading-relaxed text-ink-muted">{m.placesHint}</p>
             {markers.length > 0 && <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="mb-3 h-72 w-full rounded-xl border border-line" />}
             {lifePlaces.length > 0 && placeList(true)}
             {canAdd && eventsReady && <div className={lifePlaces.length > 0 ? "mt-4" : ""}><EventForm locale={locale} personId={personId} mode="place" labels={labels} center={center} /></div>}
+            {canAdd && !eventsReady && <p className="text-[0.92rem] text-ink-muted">{m.needsUpdate}</p>}
           </section>
         )}
         {nodes.grave}
