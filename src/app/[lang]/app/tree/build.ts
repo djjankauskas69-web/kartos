@@ -261,6 +261,7 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
   const edges = [...main.edges];
   const { cardW, gapX, pad } = SIZE;
   let right = main.width + gapX * 3;
+  let left = 0; // the left edge of what's drawn so far (sides can go to the left too)
   for (const sideRels of sides) {
     const ids = new Set(sideRels.flatMap((r) => [r.person_a, r.person_b]));
     const sidePeople = people.filter((p) => ids.has(p.id));
@@ -276,7 +277,14 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
     const own = side.nodes.filter((n) => !here.has(n.id));
     if (own.length === 0) continue;
     const minX = Math.min(...own.map((n) => n.x));
-    const dx = right - minX;
+    const maxX = Math.max(...own.map((n) => n.x));
+    // Right or left of this tree: whichever puts the shared person's partner closer to them.
+    const partnerKey = side.edges.flatMap((e) => (e.kind === "partner" && (e.a === anchor.key || e.b === anchor.key) ? [e.a === anchor.key ? e.b : e.a] : []))[0];
+    const partner = side.nodes.find((n) => n.key === partnerKey && !here.has(n.id));
+    const mine = here.get(shared.id)!;
+    const dxRight = right - minX;
+    const dxLeft = left - gapX * 3 - cardW - maxX;
+    const dx = partner && Math.abs(partner.x + dxLeft - mine.x) < Math.abs(partner.x + dxRight - mine.x) ? dxLeft : dxRight;
     // Keys of people drawn here point to the cards already on the page.
     const keyMap = new Map<string, string>();
     for (const n of side.nodes) {
@@ -300,11 +308,14 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
       }
     }
     right = Math.max(...nodes.map((n) => n.x)) + cardW + gapX * 3;
+    left = Math.min(...nodes.map((n) => n.x));
   }
-  // Rows of the other family may reach above this one: move everything down to fit.
+  // The other family may reach above or to the left of this one: move everything to fit.
   const top = Math.min(...nodes.map((n) => n.y));
-  const shift = top < pad ? pad - top : 0;
-  const placed = nodes.map((n) => ({ ...n, y: n.y + shift }));
+  const leftmost = Math.min(...nodes.map((n) => n.x));
+  const shiftY = top < pad ? pad - top : 0;
+  const shiftX = leftmost < pad ? pad - leftmost : 0;
+  const placed = nodes.map((n) => ({ ...n, x: n.x + shiftX, y: n.y + shiftY }));
   return {
     nodes: placed,
     edges,
