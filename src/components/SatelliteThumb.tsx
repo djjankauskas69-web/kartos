@@ -2,6 +2,9 @@
  * A small still satellite picture around one point (Esri World Imagery tiles, the same source
  * as the grave map). Nine tiles are laid out so the point sits in the middle of the box.
  */
+/** Rasų kapinės, Vilnius: a calm picture for places where nothing is marked yet. */
+export const QUIET_CEMETERY = { lat: 54.6681, lng: 25.3069 };
+
 const ESRI_TILE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile";
 
 export function SatelliteThumb({ lat, lng, zoom = 17, pin = true, className = "" }: { lat: number; lng: number; zoom?: number; pin?: boolean; className?: string }) {

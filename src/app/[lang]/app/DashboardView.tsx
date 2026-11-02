@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, lifeSpan, type Person, type Role } from "@/lib/data";
-import { SatelliteThumb } from "@/components/SatelliteThumb";
+import { QUIET_CEMETERY, SatelliteThumb } from "@/components/SatelliteThumb";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 
@@ -134,10 +134,10 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
             <div className="min-w-0 flex-1">
               <CardHead icon={<IconPin size={26} />} title={t.appNav.map} lead={t.dash.gravesLead} />
             </div>
-            {/* Their latest grave from above; with none marked yet, a quiet cemetery view (Rasos, Vilnius). */}
+            {/* Their latest grave from above; with none marked yet, a quiet cemetery view. */}
             <SatelliteThumb
-              lat={grave?.lat ?? 54.6736}
-              lng={grave?.lng ?? 25.3031}
+              lat={grave?.lat ?? QUIET_CEMETERY.lat}
+              lng={grave?.lng ?? QUIET_CEMETERY.lng}
               pin={Boolean(grave)}
               className={`hidden h-[7.5rem] w-44 shrink-0 rounded-xl ring-4 ring-white shadow-[0_10px_24px_-12px_rgb(28_29_26/0.6)] sm:block ${grave ? "" : "opacity-60 grayscale-[.4]"}`}
             />

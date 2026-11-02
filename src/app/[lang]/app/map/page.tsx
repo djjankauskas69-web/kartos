@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
-import { SatelliteThumb } from "@/components/SatelliteThumb";
+import { QUIET_CEMETERY, SatelliteThumb } from "@/components/SatelliteThumb";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -129,7 +129,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
         <EmptyState
           title={t.map.emptyTitle}
           lead={t.map.emptyLead}
-          picture={<SatelliteThumb lat={54.6736} lng={25.3031} zoom={17} className="absolute inset-0 h-full w-full" />}
+          picture={<SatelliteThumb {...QUIET_CEMETERY} pin={false} className="absolute inset-0 h-full w-full" />}
           action={
             can.add(current.role) ? (
               <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>
