@@ -35,12 +35,15 @@ const KINDS: Kind[] = ["father", "mother", "son", "daughter", "husband", "wife",
 function surnameFor(base: string | null, kind: Kind): string {
   if (!base) return "";
   const s = base.trim();
+  // A woman's maiden name (-aitė, -ytė, -ūtė; also typed without ė) isn't her husband's name.
+  const maiden = /(aitė|aite|ytė|yte|[uū]tė|[uū]te)$/i.test(s);
+  if (kind === "husband" && maiden) return "";
   // Back to the man's form first.
   let m = s;
-  if (/ienė$/.test(s)) m = s.replace(/ienė$/, "as");
-  else if (/aitė$/.test(s)) m = s.replace(/aitė$/, "as");
-  else if (/ytė$/.test(s)) m = s.replace(/ytė$/, "is");
-  else if (/[uū]tė$/.test(s)) m = s.replace(/[uū]tė$/, "us");
+  if (/ien[ėe]$/i.test(s)) m = s.replace(/ien[ėe]$/i, "as");
+  else if (/ait[ėe]$/i.test(s)) m = s.replace(/ait[ėe]$/i, "as");
+  else if (/yt[ėe]$/i.test(s)) m = s.replace(/yt[ėe]$/i, "is");
+  else if (/[uū]t[ėe]$/i.test(s)) m = s.replace(/[uū]t[ėe]$/i, "us");
   const female = kind === "mother" || kind === "wife" || kind === "daughter" || kind === "sister";
   if (!female) return m;
   if (/(ė|a)$/.test(m)) return m; // already a woman's form or a non-Lithuanian surname
