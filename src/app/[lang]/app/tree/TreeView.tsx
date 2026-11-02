@@ -89,7 +89,6 @@ export function TreeView({
   cardW,
   cardH,
   generations,
-  depth,
   branch,
   labels,
 }: {
@@ -102,7 +101,6 @@ export function TreeView({
   cardW: number;
   cardH: number;
   generations: Array<{ n: number; label: string; count: number }>;
-  depth: { value: string; options: Array<{ value: string; label: string; href: string }> };
   branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
   labels: Labels;
 }) {
@@ -316,10 +314,10 @@ export function TreeView({
     const top = Math.min(Math.max(8, c.y * k + y), Math.max(8, h - 480));
     return { left, top };
   };
-  // Measured from Recraft (screen recording): 32 px between 2 px dots at 100 %, the gap scales
-  // smoothly with the zoom, and below 50 % the dots fade until they are gone at ~11 %.
-  const gridStep = 32 * k;
-  const dotAlpha = Math.min(1, Math.max(0, (k - 0.11) / 0.3));
+  // Dots keep a fixed 32 px grid (they move with the tree but never spread out) and show
+  // only close to full size: zoomed out to see the whole tree, the canvas is plain.
+  const gridStep = 32;
+  const dotAlpha = Math.min(1, Math.max(0, (k - 0.85) / 0.15));
 
   return (
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
@@ -347,16 +345,6 @@ export function TreeView({
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <div className={`hidden items-center gap-4 px-4 py-2 text-[0.88rem] text-ink-muted lg:flex ${pill}`}>
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#6f8a4f]" />
-              {labels.legendLiving}
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full border border-ink-muted/60" />
-              {labels.legendDeceased}
-            </span>
-          </div>
           {branch && branch.options.length > 1 && (
             <>
               <label className="sr-only" htmlFor="tree-branch">
@@ -376,21 +364,6 @@ export function TreeView({
               </select>
             </>
           )}
-          <label className="sr-only" htmlFor="tree-depth">
-            {labels.depth}
-          </label>
-          <select
-            id="tree-depth"
-            value={depth.value}
-            onChange={(e) => router.push(depth.options.find((o) => o.value === e.target.value)!.href)}
-            className={`min-h-10 px-3.5 text-[0.95rem] ${pill}`}
-          >
-            {depth.options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -483,7 +456,7 @@ export function TreeView({
                         alt=""
                         draggable={false}
                         style={{ width: PHOTO, height: PHOTO }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "grayscale"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : ""}`}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : ""}`}
                       />
                     ) : (
                       <span

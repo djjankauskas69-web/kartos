@@ -10,7 +10,7 @@ import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { ancestorCouples, kinship } from "@/lib/kinship";
-import { buildTree, depthOptions, plural, roman } from "./build";
+import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 
@@ -184,13 +184,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
-  const hrefFor = (d: string) => {
-    const q = new URLSearchParams();
-    if (focusId) q.set("p", focusId);
-    q.set("d", d);
-    if (hl) q.set("hl", hl);
-    return `${base}/tree?${q.toString()}`;
-  };
 
   const subtitle = tree.whole ? (
     subtitleWhole
@@ -217,7 +210,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardW={tree.cardW}
         cardH={tree.cardH}
         generations={tree.generationChips}
-        depth={{ value: depthValue, options: depthOptions(t, locale, hrefFor) }}
         branch={branch}
         labels={{
           zoomIn: t.tree.zoomIn,

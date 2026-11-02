@@ -276,7 +276,7 @@ function MiniPerson({ p, src, href, born, size = "md" }: { p: Person; src?: stri
         <span className={`block overflow-hidden rounded-full bg-linen ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] transition-transform group-hover:-translate-y-0.5 ${box}`}>
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-            <img src={src} alt="" className={`h-full w-full object-cover ${p.is_living ? "" : "grayscale"}`} />
+            <img src={src} alt="" className={`h-full w-full object-cover ${p.is_living ? "" : "brightness-[.86]"}`} />
           ) : (
             <span aria-hidden="true" className="flex h-full w-full items-center justify-center text-[1.15rem] font-semibold text-ink-muted">
               {`${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase()}
