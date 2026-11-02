@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks, myPersonLinks } from "@/lib/data";
+import { linkedBranch } from "./linked-branch";
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
@@ -18,7 +19,7 @@ import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { PageLoading } from "@/components/PageLoading";
 
-type Search = { p: string; d: string; view: string; hl: string; person: string };
+type Search = { p: string; d: string; view: string; hl: string; person: string; w: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -27,7 +28,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? "") }))}
       />
     </Suspense>
   );
@@ -44,21 +45,36 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const graves = new Map((burials ?? []).flatMap((b) => (b.lat != null && b.lng != null ? [[b.person_id, { lat: b.lat, lng: b.lng }] as const] : [])));
   const base = `/${locale}/app`;
   // Linked trees open only for people who are members of the other archive too.
-  const families = new Map<string, Array<{ label: string; href: string; compareHref?: string }>>();
-  for (const l of links) {
+  const families = new Map<string, Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>>();
+  const openLinks = links.flatMap((l) => {
     const other = l.accepted && l.otherWs ? memberships.find((m) => m.id === l.otherWs) : undefined;
-    if (!other || !l.otherPerson) continue;
-    families.set(l.mine, [
-      ...(families.get(l.mine) ?? []),
-      { label: other.name, href: `${base}/open?ws=${other.id}&p=${l.otherPerson}`, compareHref: can.admin(current.role) ? `${base}/people/${l.mine}/compare?link=${l.id}` : undefined },
-    ]);
-  }
+    return other && l.otherPerson && byId.has(l.mine) ? [{ ...l, otherPerson: l.otherPerson, other }] : [];
+  });
+  // Linked families shown right in this tree (?w=link ids).
+  const shown = new Set(search.w.split(",").filter((id) => openLinks.some((l) => l.id === id)));
+  const branches = await Promise.all(
+    openLinks
+      .filter((l) => shown.has(l.id))
+      .map(async (l, i) => {
+        const g = await getFamilyGraph(locale, l.other.id);
+        if (!g.byId.has(l.otherPerson)) return null;
+        const b = linkedBranch({ prefix: `x${i}-`, people: g.people, rels: g.rels, otherPerson: l.otherPerson, mine: l.mine, local: people, localRels: rels });
+        return { ...b, link: l, original: g.people };
+      }),
+  );
+  const foreign = new Map<string, { family: string; href: string }>();
+  const foreignPeople = branches.flatMap((b) => (b ? b.people : []));
+  const foreignRels = branches.flatMap((b) => (b ? b.rels : []));
+  for (const b of branches) if (b) for (const [id, orig] of b.originalId) foreign.set(id, { family: b.link.other.name, href: `${base}/open?ws=${b.link.other.id}&p=${orig}` });
   const canAdd = can.add(current.role);
   // You in this tree ("Tai aš"): relationships in words and your branches.
   const me = mine.links.get(current.id);
   const relations = kinship(people, rels, me, locale);
   const couples = ancestorCouples(people, rels, me);
-  const allPortraits = await portraitUrls(locale, people);
+  const [allPortraits, foreignPortraits] = await Promise.all([
+    portraitUrls(locale, people),
+    Promise.all(branches.map((b) => (b ? portraitUrls(locale, b.original.filter((p) => [...b.originalId.values()].includes(p.id))) : Promise.resolve(new Map<string, string>())))),
+  ]);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
   const host = panel ? (
     <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} />
@@ -177,7 +193,11 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     if (focusId) q.set("p", focusId);
     if (search.d) q.set("d", search.d);
     if (hl) q.set("hl", hl);
-    for (const [k, v] of Object.entries(extra)) q.set(k, v);
+    if (shown.size) q.set("w", [...shown].join(","));
+    for (const [k, v] of Object.entries(extra)) {
+      if (v) q.set(k, v);
+      else q.delete(k);
+    }
     const qs = q.toString();
     return `${base}/tree${qs ? `?${qs}` : ""}`;
   };
@@ -202,7 +222,31 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  branches.forEach((b, i) => {
+    if (!b) return;
+    for (const [id, orig] of b.originalId) {
+      const url = foreignPortraits[i].get(orig);
+      if (url) portraits[id] = url;
+    }
+  });
+  for (const l of openLinks) {
+    const on = shown.has(l.id);
+    const next = on ? [...shown].filter((x) => x !== l.id) : [...shown, l.id];
+    families.set(l.mine, [
+      ...(families.get(l.mine) ?? []),
+      {
+        label: l.other.name,
+        href: `${base}/open?ws=${l.other.id}&p=${l.otherPerson}`,
+        compareHref: can.admin(current.role) ? `${base}/people/${l.mine}/compare?link=${l.id}` : undefined,
+        branchHref: viewHref({ w: next.join(",") }),
+        branchOn: on,
+      },
+    ]);
+  }
+  const treePeople = foreignPeople.length ? [...people, ...foreignPeople] : people;
+  const treeRels = foreignRels.length ? [...rels, ...foreignRels] : rels;
+  const treeRelations = foreignPeople.length ? kinship(treePeople, treeRels, me, locale) : relations;
+  const tree = buildTree({ t, people: treePeople, rels: treeRels, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 
@@ -252,6 +296,8 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           menuMore: t.tree.menuMore,
           menuLink: t.familyLink.menuLink,
           menuOpenFamily: t.familyLink.menuOpen,
+          menuShowBranch: t.familyLink.showBranch,
+          menuHideBranch: t.familyLink.hideBranch,
           menuCompare: t.merge.compare,
           navGoogle: t.grave.navGoogle,
           navWaze: t.grave.navWaze,

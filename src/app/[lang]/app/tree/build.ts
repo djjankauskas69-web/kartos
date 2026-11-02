@@ -45,6 +45,7 @@ export function buildTree({
   relations,
   highlightId,
   profileHrefFor,
+  foreign,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -59,7 +60,7 @@ export function buildTree({
   /** Marked graves by person id. */
   graves?: Map<string, { lat: number; lng: number }>;
   /** Other families' trees this person is linked to (only those the viewer can open). */
-  families?: Map<string, Array<{ label: string; href: string; compareHref?: string }>>;
+  families?: Map<string, Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>>;
   /** Administrators: where to link a person with another family's tree. */
   linkHref?: (id: string) => string;
   /** "Who is this to me?" in words, by person id. */
@@ -68,6 +69,8 @@ export function buildTree({
   highlightId?: string;
   /** Where clicking a person goes (the tree opens the profile in a side panel). */
   profileHrefFor?: (id: string) => string;
+  /** People shown from a linked family: which family, and where they open. */
+  foreign?: Map<string, { family: string; href: string }>;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -109,6 +112,33 @@ export function buildTree({
   };
   const cards: TreeCard[] = layout.nodes.map((n) => {
     const p = byId.get(n.id)!;
+    const far = foreign?.get(n.id);
+    if (far) {
+      // From the linked family: opens there; nothing to add or link from here.
+      return {
+        key: n.key,
+        id: n.id,
+        x: n.x,
+        y: n.y,
+        name: [p.given_names, p.surname].filter(Boolean).join(" "),
+        years: years(p),
+        portrait: portraits[n.id],
+        initials: `${p.given_names.trim()[0] ?? ""}${p.surname?.trim()[0] ?? ""}`.toUpperCase(),
+        living: p.is_living,
+        pending: false,
+        gen: gens.get(n.id) ?? 1,
+        start: n.role === "focus",
+        highlight: false,
+        relation: relations?.get(n.id),
+        profileHref: far.href,
+        showFromHref: far.href,
+        addOptions: [],
+        families: [],
+        foreign: far.family,
+        moreAbove: n.moreAbove,
+        moreBelow: n.moreBelow,
+      };
+    }
     return {
       key: n.key,
       id: n.id,

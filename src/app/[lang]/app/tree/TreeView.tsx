@@ -60,8 +60,10 @@ export type TreeCard = {
   grave?: { lat: number; lng: number };
   mapHref?: string;
   addOptions: Array<{ label: string; href: string }>;
-  families: Array<{ label: string; href: string; compareHref?: string }>;
+  families: Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>;
   linkHref?: string;
+  /** Shown from a linked family (its name). */
+  foreign?: string;
   moreAbove: boolean;
   moreBelow: boolean;
 };
@@ -87,6 +89,8 @@ type Labels = {
   menuLink: string;
   menuOpenFamily: string;
   menuCompare: string;
+  menuShowBranch: string;
+  menuHideBranch: string;
   navGoogle: string;
   navWaze: string;
   navApple: string;
@@ -521,7 +525,7 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)}`}>
-                <Link href={c.profileHref} draggable={false} onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
+                <Link href={c.profileHref} draggable={false} onClick={(e) => { if (!c.foreign && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
@@ -533,18 +537,23 @@ export function TreeView({
                         alt=""
                         draggable={false}
                         style={{ width: PHOTO, height: PHOTO }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : ""}`}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : c.foreign ? "outline-dashed outline-2 outline-offset-2 outline-[#8fa5bb]" : ""}`}
                       />
                     ) : (
                       <span
                         aria-hidden="true"
                         style={{ width: PHOTO, height: PHOTO }}
-                        className={`flex items-center justify-center rounded-full text-[1.45rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : ""}`}
+                        className={`flex items-center justify-center rounded-full text-[1.45rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "bg-[#e9eef4] text-[#3e566e]" : c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : c.foreign ? "outline-dashed outline-2 outline-offset-2 outline-[#8fa5bb]" : ""}`}
                       >
                         {c.initials}
                       </span>
                     )}
                     {c.living && <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[3px] border-white bg-[#6f8a4f]" aria-hidden="true" />}
+                    {c.foreign && (
+                      <span title={c.foreign} className="absolute -bottom-2 left-1/2 max-w-[9.5rem] -translate-x-1/2 truncate whitespace-nowrap rounded-full border border-white bg-[#e2e9f1] px-2 py-0.5 text-[0.72rem] font-semibold text-[#3e566e]">
+                        {c.foreign}
+                      </span>
+                    )}
                   </span>
                   <span className={`mt-3 line-clamp-2 text-[1.12rem] font-semibold leading-tight group-hover:underline ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
                   <span className="mt-0.5 flex items-center gap-1.5 text-[0.92rem] tabular-nums text-ink-muted">
@@ -715,6 +724,11 @@ function CardMenu({
                 <span className="block text-[0.85rem] text-ink-muted">{labels.menuOpenFamily} →</span>
               </span>
             </a>
+            {f.branchHref && (
+              <Link href={f.branchHref} scroll={false} role="menuitem" onClick={onLeave} className={`${item} min-h-10 pl-[2.75rem] text-[0.95rem] text-ink-muted`}>
+                {f.branchOn ? labels.menuHideBranch : labels.menuShowBranch}
+              </Link>
+            )}
             {f.compareHref && (
               <Link href={f.compareHref} role="menuitem" onClick={onLeave} className={`${item} min-h-10 pl-[2.75rem] text-[0.95rem] text-ink-muted`}>
                 {labels.menuCompare}

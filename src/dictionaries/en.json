@@ -1031,7 +1031,9 @@
     "signInFirst": "Sign in to link the trees.",
     "signIn": "Sign in",
     "error": "Couldn't link. Please try again.",
-    "needsUpdate": "Linking trees needs database update 0007."
+    "needsUpdate": "Linking trees needs database update 0007.",
+    "showBranch": "Show their side in this tree",
+    "hideBranch": "Hide their side"
   },
   "merge": {
     "title": "Compare trees",

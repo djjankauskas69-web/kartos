@@ -1031,7 +1031,9 @@
     "signInFirst": "Prisijunkite, kad galėtumėte susieti medžius.",
     "signIn": "Prisijungti",
     "error": "Nepavyko susieti. Pabandykite dar kartą.",
-    "needsUpdate": "Kad veiktų medžių susiejimas, reikia atnaujinti duomenų bazę (0007)."
+    "needsUpdate": "Kad veiktų medžių susiejimas, reikia atnaujinti duomenų bazę (0007).",
+    "showBranch": "Rodyti jų šaką šiame medyje",
+    "hideBranch": "Slėpti jų šaką"
   },
   "merge": {
     "title": "Palyginti medžius",
