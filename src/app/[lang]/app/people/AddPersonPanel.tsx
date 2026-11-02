@@ -264,6 +264,8 @@ function AddPersonPanel({
   const [more, setMore] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
+  // Opened from a card's + menu: person and relationship are already known, so steps 1–2 fold into one line.
+  const [locked, setLocked] = useState(!!initialAnchor && !!initialKind);
 
   const anchorP = people.find((p) => p.id === anchor) ?? null;
   const existingP = people.find((p) => p.id === existing) ?? null;
@@ -343,6 +345,35 @@ function AddPersonPanel({
         <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
           {first ? (
             <p className="rounded-xl bg-linen px-4 py-3">{t.firstPerson}</p>
+          ) : locked && anchorP && effectiveKind ? (
+            <section className="rounded-xl border border-line bg-paper px-4 py-3">
+              <p className="mb-2 text-[0.88rem] text-ink-muted">{t.addingFor}</p>
+              <div className="flex items-center gap-3">
+                <Portrait given={anchorP.given} surname={anchorP.surname} src={anchorP.portrait} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{anchorP.name}</span>
+                  <span className="mt-0.5 inline-flex rounded-full bg-ink px-2.5 py-0.5 text-[0.88rem] font-semibold text-white">{t[`k_${effectiveKind}`]}</span>
+                </span>
+                <button type="button" onClick={() => setLocked(false)} className={cls.quiet}>
+                  {t.change}
+                </button>
+              </div>
+              {(effectiveKind === "son" || effectiveKind === "daughter") && anchorP.partners.length > 0 && (
+                <div className="mt-3">
+                  <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
+                    {t.otherParent}
+                  </label>
+                  <select id="add-other-parent" name="otherParent" defaultValue={anchorP.partners[0].id} className={cls.input}>
+                    {anchorP.partners.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                    <option value="">{t.noOtherParent}</option>
+                  </select>
+                </div>
+              )}
+            </section>
           ) : (
             <>
               <section>
@@ -383,7 +414,7 @@ function AddPersonPanel({
           )}
 
           <section inert={!ready} className={ready ? "" : "opacity-40"}>
-            {!first && step(3, t.step3, !!(existingP || given.trim()))}
+            {!first && !locked && step(3, t.step3, !!(existingP || given.trim()))}
             {existingP ? (
               <div className="flex items-center gap-3 rounded-xl border border-ink px-3 py-2.5">
                 <Portrait given={existingP.given} surname={existingP.surname} src={existingP.portrait} size="sm" />

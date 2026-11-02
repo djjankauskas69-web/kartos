@@ -95,11 +95,16 @@ export function buildTree({
     const parentCount = rels.filter((r) => r.type === "parent_child" && r.person_b === id && byId.has(r.person_a)).length;
     const hasSex = (sex: string) => rels.some((r) => r.type === "parent_child" && r.person_b === id && byId.get(r.person_a)?.sex === sex);
     const rel = (kind: string) => (addHref ? addHref(kind, id) : `${base}/people/${id}/relative?kind=${kind}`);
+    const self = byId.get(id);
+    // Each item is one exact relationship, so the panel does not ask again.
+    const partner = self?.sex === "male" ? [{ label: t.family.addWife, href: rel("wife") }] : self?.sex === "female" ? [{ label: t.family.addHusband, href: rel("husband") }] : [{ label: t.family.addWife, href: rel("wife") }, { label: t.family.addHusband, href: rel("husband") }];
     return [
-      { label: t.family.addChild, href: rel("child") },
-      { label: t.family.addPartner, href: rel("partner") },
+      { label: t.family.addSon, href: rel("son") },
+      { label: t.family.addDaughter, href: rel("daughter") },
+      ...partner,
       ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father") }] : []),
       ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother") }] : []),
+      ...(parentCount > 0 ? [{ label: t.family.addBrother, href: rel("brother") }, { label: t.family.addSister, href: rel("sister") }] : []),
     ];
   };
   const cards: TreeCard[] = layout.nodes.map((n) => {
