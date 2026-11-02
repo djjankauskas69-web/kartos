@@ -68,7 +68,8 @@ type Labels = {
 
 const MIN = 0.1; // far enough out that the dots are gone, like Recraft
 const MAX = 2;
-const TOP = 104; // room for the generation and depth controls above the tree
+const TOP = 96; // room for the generation chips above the tree
+const BOTTOM = 84; // room for the zoom toolbar below it
 const PHOTO = 76;
 
 type View = { x: number; y: number; k: number };
@@ -167,26 +168,44 @@ export function TreeView({
   };
 
   /** Vertical position that puts the tree in the middle, below the controls; tall trees start at the top. */
-  const middleY = (h: number, k: number) => Math.max(TOP, (h - height * k) / 2 + 24);
+  const middleY = (h: number, k: number) => TOP + Math.max(0, (h - TOP - BOTTOM - height * k) / 2);
 
   const fit = () => {
     const { w, h } = size();
-    const k = clampK(Math.min(1, (w - 80) / width, (h - TOP - 70) / height));
+    const k = clampK(Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height));
     go({ k, x: (w - width * k) / 2, y: middleY(h, k) }, true);
   };
 
+  // The canvas fills the window from where it starts down to the bottom, so its middle is the
+  // middle of what you see (not somewhere below the fold).
+  const [fitH, setFitH] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = canvas.current;
+      if (!el || document.fullscreenElement) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setFitH(Math.max(420, Math.round(window.innerHeight - top - 20)));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   // First view: the whole width if it fits (not smaller than 60%), in the middle of the frame.
   useLayoutEffect(() => {
+    if (fitH === null) return;
     const id = requestAnimationFrame(() => {
       const { w, h } = size();
-      const k = Math.max(0.6, Math.min(1, (w - 80) / width, (h - TOP - 70) / height));
-      if (width * k <= w - 40) go({ k, x: (w - width * k) / 2, y: middleY(h, k) });
+      // Whole tree when it still reads (≥ 30 %); big trees start at the top person instead.
+      const whole = Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height);
+      const k = whole >= 0.3 ? whole : Math.max(0.6, Math.min(1, (w - 80) / width));
+      if (whole >= 0.3) go({ k, x: (w - width * k) / 2, y: middleY(h, k) });
       else centreOn(start, k, false);
       requestAnimationFrame(() => setReady(true));
     });
     return () => cancelAnimationFrame(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tree
-  }, [start?.key, width, height]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tree (after the canvas has its height)
+  }, [start?.key, width, height, fitH === null]);
 
   useEffect(() => {
     const onChange = () => setFull(document.fullscreenElement === frame.current);
@@ -414,6 +433,7 @@ export function TreeView({
         onClickCapture={onClickCapture}
         onKeyDown={onKeyDown}
         style={{
+          height: full || fitH === null ? undefined : fitH,
           // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
           // the same small size, and the grid steps between densities so it never gets crowded.
           backgroundColor: "#f2f2f2",
@@ -421,7 +441,7 @@ export function TreeView({
           backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
-        className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
+        className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : fitH === null ? "h-[calc(100dvh-14rem)] min-h-[26rem]" : ""} ${ready ? "" : "opacity-0"}`}
       >
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
           <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
