@@ -84,6 +84,16 @@ export function TreeView({
   const [openPlus, setOpenPlus] = useState<string | null>(null);
   const [full, setFull] = useState(false);
   const start = cards.find((c) => c.start) ?? cards[0];
+  // Width of the visible area, so a tree narrower than the screen sits in the middle.
+  const [viewW, setViewW] = useState(0);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setViewW(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const padX = Math.max(OFFSET_X, (viewW - width * scale) / 2);
 
   const fitScale = () => {
     const el = scroller.current;
@@ -95,7 +105,7 @@ export function TreeView({
     const el = scroller.current;
     if (!el || !start) return;
     el.scrollTo({
-      left: OFFSET_X + (start.x + cardW / 2) * s - el.clientWidth / 2,
+      left: Math.max(OFFSET_X, (el.clientWidth - width * s) / 2) + (start.x + cardW / 2) * s - el.clientWidth / 2,
       top: Math.max(0, OFFSET_Y + start.y * s - 120),
       behavior: smooth ? "smooth" : "auto",
     });
@@ -152,7 +162,7 @@ export function TreeView({
     if (n === null) return;
     const first = cards.filter((c) => c.gen === n).sort((a, b) => a.x - b.x)[0];
     const el = scroller.current;
-    if (first && el) el.scrollTo({ left: OFFSET_X + first.x * scale - 60, top: OFFSET_Y + first.y * scale - 90, behavior: "smooth" });
+    if (first && el) el.scrollTo({ left: padX + first.x * scale - 60, top: OFFSET_Y + first.y * scale - 90, behavior: "smooth" });
   }
 
   // Ctrl/⌘ + wheel or trackpad pinch zooms.
@@ -191,6 +201,17 @@ export function TreeView({
       e.stopPropagation();
     }
   };
+
+  // Generation bands: one per row of cards, meeting halfway between rows.
+  const rows = [...new Map(cards.map((c) => [c.y, c.gen])).entries()].sort((a, b) => a[0] - b[0]);
+  const genLabel = new Map(generations.map((g) => [g.n, g.label]));
+  const bands = rows.map(([y, gen], i) => ({
+    y,
+    gen,
+    label: genLabel.get(gen),
+    top: i === 0 ? y - 44 : (rows[i - 1][0] + cardH + y) / 2,
+    bottom: i === rows.length - 1 ? y + cardH + 64 : (y + cardH + rows[i + 1][0]) / 2,
+  }));
 
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-30" : "");
   const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
@@ -287,17 +308,25 @@ export function TreeView({
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
         onClickCapture={onClickCapture}
-        style={{
-          // Dot grid that moves and scales with the tree, like a drawing canvas.
-          backgroundImage: "radial-gradient(circle, #d6d2c8 1.15px, transparent 1.4px)",
-          backgroundSize: `${22 * scale}px ${22 * scale}px`,
-          backgroundPosition: `${OFFSET_X}px ${OFFSET_Y}px`,
-          backgroundAttachment: "local",
-        }}
         className={`cursor-grab overflow-auto active:cursor-grabbing ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
       >
-        <div style={{ width: width * scale + OFFSET_X * 2, height: height * scale + OFFSET_Y + 120 }} className="relative mx-auto">
-          <div style={{ width, height, transform: `translate(${OFFSET_X}px, ${OFFSET_Y}px) scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
+        <div style={{ width: width * scale + padX * 2, height: height * scale + OFFSET_Y + 120, minWidth: "100%" }} className="relative mx-auto">
+          {/* One soft band per generation, labelled on the left */}
+          {bands.map((b, i) => (
+            <div
+              key={b.y}
+              aria-hidden="true"
+              style={{ top: OFFSET_Y + b.top * scale, height: (b.bottom - b.top) * scale }}
+              className={`absolute inset-x-0 border-t border-line/50 transition-opacity ${i % 2 ? "bg-white" : "bg-[#f8f6f1]"} ${dim(b.gen)}`}
+            >
+              {b.label && (
+                <span className="sticky left-3 top-0 ml-3 mt-2 inline-block rounded-full bg-white/80 px-2.5 py-0.5 font-serif text-[0.95rem] text-ink-muted ring-1 ring-line/60">
+                  {b.label}
+                </span>
+              )}
+            </div>
+          ))}
+          <div style={{ width, height, transform: `translate(${padX}px, ${OFFSET_Y}px) scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
             <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
               <g fill="none" stroke="#b9b6aa" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
                 {paths.map((d, i) => (
