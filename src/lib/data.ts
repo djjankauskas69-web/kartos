@@ -45,13 +45,18 @@ export type Membership = Workspace & { role: Role };
 
 export const WS_COOKIE = "ws";
 
+export type SignedInUser = { id: string; email?: string };
+
 /** Signed-in Supabase client and user (once per request). Sends anyone signed out to sign-in. */
 export const requireUser = cache(async (locale: Locale) => {
   const supabase = await createClient();
   if (!supabase) redirect(`/${locale}/login`);
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect(`/${locale}/login`);
-  return { supabase, user: data.user };
+  // Verified locally from the signed token: no extra trip to Supabase on every page.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) redirect(`/${locale}/login`);
+  const user: SignedInUser = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : undefined };
+  return { supabase, user };
 });
 
 /** All archives the user belongs to, and the one they are working in (cookie, else the first). */

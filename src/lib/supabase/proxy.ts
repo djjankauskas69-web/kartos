@@ -22,6 +22,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const { data } = await supabase.auth.getUser();
-  return { response, signedIn: Boolean(data.user) };
+  // getClaims verifies the token locally (no round trip to Supabase) and refreshes it when it has expired.
+  const { data } = await supabase.auth.getClaims();
+  return { response, signedIn: Boolean(data?.claims?.sub) };
 }

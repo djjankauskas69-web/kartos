@@ -48,7 +48,6 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const partner = headFam?.partners.map((p) => byId.get(p)!).find(Boolean);
   const kids = headFam ? headFam.children.map((c) => byId.get(c)!).sort((a, b) => (a.birth_year ?? 9999) - (b.birth_year ?? 9999)) : [];
   const shownKids = kids.slice(0, 4);
-  const portraits = await portraitUrls(locale, [head, partner, ...shownKids].filter(Boolean) as Person[]);
 
   /* ---- Recent additions ---- */
   const initials = (p: Person) => `${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase();
@@ -78,8 +77,12 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const recentRaw = items.slice(0, 5);
 
   const latest = (recentPhotos.data ?? []).slice(0, 2);
-  const urls = await signedUrls(locale, [...latest.map((m) => m.storage_path), ...recentRaw.flatMap((i) => (i.photoPath ? [i.photoPath] : []))]);
-  const recentPortraits = await portraitUrls(locale, recentRaw.flatMap((i) => (i.personId ? [byId.get(i.personId)!] : [])));
+  // The three picture lookups don't depend on each other.
+  const [portraits, urls, recentPortraits] = await Promise.all([
+    portraitUrls(locale, [head, partner, ...shownKids].filter(Boolean) as Person[]),
+    signedUrls(locale, [...latest.map((m) => m.storage_path), ...recentRaw.flatMap((i) => (i.photoPath ? [i.photoPath] : []))]),
+    portraitUrls(locale, recentRaw.flatMap((i) => (i.personId ? [byId.get(i.personId)!] : []))),
+  ]);
   const recent: RecentItem[] = recentRaw.map(({ photoPath, personId, ...r }) => ({
     ...r,
     thumb: photoPath ? urls.get(photoPath) : personId ? recentPortraits.get(personId) : undefined,

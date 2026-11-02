@@ -91,13 +91,18 @@ const menu =
 async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
   const { user, current, memberships } = await getContext(locale);
   const base = `/${locale}/app`;
-  const pending = current && can.admin(current.role) ? await pendingCount(locale, current.id) : 0;
+  // Independent lookups run side by side; only the avatar waits for "who am I in the tree".
+  const [pending, avatar] = await Promise.all([
+    current && can.admin(current.role) ? pendingCount(locale, current.id) : Promise.resolve(0),
+    (async () => {
+      const myId = current ? (await myPersonLinks(locale)).links.get(current.id) : undefined;
+      const me = myId ? await getPerson(locale, myId) : null;
+      return me ? (await portraitUrls(locale, [me])).get(me.id) : undefined;
+    })(),
+  ]);
   const email = user.email ?? "";
   const name = email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
-  const myId = current ? (await myPersonLinks(locale)).links.get(current.id) : undefined;
-  const me = myId ? await getPerson(locale, myId) : null;
-  const avatar = me ? (await portraitUrls(locale, [me])).get(me.id) : undefined;
 
   return (
     <>

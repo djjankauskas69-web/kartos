@@ -96,19 +96,21 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
                   <MiniPerson p={head} src={portraits[head.id]} href={`${base}/people/${head.id}`} born={t.app.born.toLowerCase()} size="lg" />
                   {partner && (
                     <>
-                      <span aria-hidden="true" className="mt-11 h-px w-6 bg-sage/70" />
+                      <span aria-hidden="true" className="relative mt-[2.4rem] h-[1.6px] w-10 bg-[#b9b6aa] sm:w-14">
+                        <span className="absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-[0.95rem] text-ink-muted">∞</span>
+                      </span>
                       <MiniPerson p={partner} src={portraits[partner.id]} href={`${base}/people/${partner.id}`} born={t.app.born.toLowerCase()} size="lg" />
                     </>
                   )}
                 </div>
                 {shownKids.length > 0 && (
                   <>
-                    <span aria-hidden="true" className="h-5 w-px bg-sage/70" />
+                    <span aria-hidden="true" className="h-6 w-[1.6px] bg-[#b9b6aa]" />
                     <ul className="flex">
                       {shownKids.map((k, i) => (
                         <li
                           key={k.id}
-                          className={`relative px-1.5 pt-5 before:absolute before:top-0 before:h-px before:bg-sage/70 after:absolute after:left-1/2 after:top-0 after:h-5 after:w-px after:bg-sage/70 ${
+                          className={`relative px-1 pt-6 before:absolute before:top-0 before:h-[1.6px] before:bg-[#b9b6aa] after:absolute after:left-1/2 after:top-0 after:h-6 after:w-[1.6px] after:bg-[#b9b6aa] ${
                             shownKids.length === 1 ? "before:hidden" : i === 0 ? "before:left-1/2 before:right-0" : i === shownKids.length - 1 ? "before:left-0 before:right-1/2" : "before:left-0 before:right-0"
                           }`}
                         >
@@ -116,7 +118,11 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
                         </li>
                       ))}
                     </ul>
-                    {moreKids > 0 && <p className="mt-2 text-[0.9rem] text-ink-muted">+{moreKids}</p>}
+                    {moreKids > 0 && (
+                      <Link href={`${base}/tree`} className="mt-3 rounded-full border border-line bg-white px-3 py-1 text-[0.9rem] text-ink-muted hover:text-ink">
+                        +{moreKids}
+                      </Link>
+                    )}
                   </>
                 )}
               </div>
@@ -260,20 +266,24 @@ function Arrow({ label }: { label: string }) {
 }
 
 function MiniPerson({ p, src, href, born, size = "md" }: { p: Person; src?: string; href: string; born: string; size?: "md" | "lg" }) {
+  const box = size === "lg" ? "h-[4.8rem] w-[4.8rem]" : "h-16 w-16 sm:h-[4.2rem] sm:w-[4.2rem]";
   return (
-    <Link href={href} className="group flex w-24 flex-col items-center text-center sm:w-28">
-      <span className={`block overflow-hidden rounded-[10px] border-[3px] border-[#fbf8f1] bg-linen shadow-[0_2px_8px_-2px_rgb(60_45_30/0.35)] ring-1 ring-line ${size === "lg" ? "h-[5.5rem] w-[4.6rem]" : "h-20 w-[4.2rem]"}`}>
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-          <img src={src} alt="" className="h-full w-full object-cover sepia-[.25]" />
-        ) : (
-          <span aria-hidden="true" className="flex h-full w-full items-center justify-center font-serif text-[1.3rem] text-bronze">
-            {`${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase()}
-          </span>
-        )}
+    <Link href={href} className="group flex w-[5.2rem] flex-col items-center text-center sm:w-28">
+      <span className="relative">
+        <span className={`block overflow-hidden rounded-full bg-linen ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] transition-transform group-hover:-translate-y-0.5 ${box}`}>
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+            <img src={src} alt="" className={`h-full w-full object-cover ${p.is_living ? "" : "grayscale"}`} />
+          ) : (
+            <span aria-hidden="true" className="flex h-full w-full items-center justify-center text-[1.15rem] font-semibold text-ink-muted">
+              {`${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase()}
+            </span>
+          )}
+        </span>
+        {p.is_living && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-[2.5px] border-white bg-[#6f8a4f]" />}
       </span>
-      <span className="mt-1.5 line-clamp-1 text-[0.9rem] font-semibold group-hover:underline">{p.given_names}</span>
-      <span className="text-[0.8rem] text-ink-muted">{lifeSpan(p, born)}</span>
+      <span className="mt-2 line-clamp-1 text-[0.95rem] font-semibold leading-tight group-hover:underline">{p.given_names}</span>
+      <span className="text-[0.8rem] tabular-nums text-ink-muted">{lifeSpan(p, born)}</span>
     </Link>
   );
 }
