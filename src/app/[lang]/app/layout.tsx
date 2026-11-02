@@ -168,8 +168,8 @@ async function AccountBar({ t, locale, side = false }: { t: Dictionary; locale: 
   const icon = "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink hover:bg-linen";
 
   return (
-    <div className={`flex items-center gap-1 ${side ? "" : "ml-auto sm:gap-2"}`}>
-      <details className={`relative ${side ? "min-w-0 flex-1" : "order-last"}`} data-menu>
+    <div className={`flex items-center gap-1 ${side ? "flex-wrap" : "ml-auto sm:gap-2"}`}>
+      <details className={`relative ${side ? "order-last w-full" : "order-last"}`} data-menu>
         <summary className={`flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-xl p-1 pr-2 hover:bg-linen [&::-webkit-details-marker]:hidden ${side ? "w-full" : ""}`} aria-label={t.dash.account}>
           {avatar ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
