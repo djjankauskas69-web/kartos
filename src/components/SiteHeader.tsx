@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { LanguageSwitch } from "./LanguageSwitch";
+import { FixedLanguageSwitch, LanguageSwitch } from "./LanguageSwitch";
 import { Wordmark } from "./Wordmark";
 
 export function SiteHeader({ t, locale, minimal = false }: { t: Dictionary; locale: Locale; minimal?: boolean }) {
@@ -25,7 +26,9 @@ export function SiteHeader({ t, locale, minimal = false }: { t: Dictionary; loca
             </a>
           </nav>
         )}
-        <LanguageSwitch current={locale} label={t.nav.language} />
+        <Suspense fallback={<FixedLanguageSwitch current={locale} label={t.nav.language} path="" />}>
+          <LanguageSwitch current={locale} label={t.nav.language} />
+        </Suspense>
         {!minimal && (
           <Link
             href={`/${locale}/login`}

@@ -16,10 +16,15 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
   const [status, setStatus] = useState<Status>("idle");
   // Supabase's own message, shown small under ours so problems can be diagnosed.
   const [detail, setDetail] = useState("");
-  const redirectTo = () => `${window.location.origin}/${locale}/auth/callback`;
+  const params = useSearchParams();
+  // Where to land after sign-in (e.g. an invitation). Only paths inside this site.
+  const nextParam = params.get("next");
+  const next = nextParam && /^\/(lt|en)\/[^/]/.test(nextParam) && !nextParam.startsWith("//") ? nextParam : null;
+  const redirectTo = () =>
+    `${window.location.origin}/${locale}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
 
   // The email link came back without a valid session (expired, or opened in another browser).
-  const linkError = useSearchParams().has("error");
+  const linkError = params.has("error");
 
   async function sendLink(e: React.FormEvent) {
     e.preventDefault();

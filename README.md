@@ -2,7 +2,7 @@
 
 Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.tsx` ir `src/dictionaries/*.json`).
 
-## Kas jau padaryta (1 etapas)
+## Kas jau padaryta
 
 - Next.js 16 + TypeScript + Tailwind CSS 4
 - Dvi kalbos: **lietuvių** (`/lt`, numatytoji) ir **anglų** (`/en`)
@@ -12,6 +12,14 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
 - Pradinis puslapis (landing) abiem kalbomis
 - Prisijungimo puslapis: nuoroda el. paštu ir „Tęsti su Google“ (Supabase)
 - Duomenų bazės schema su privatumo taisyklėmis (Row Level Security): `supabase/migrations/0001_init.sql`
+- Archyvo vidus (`/lt/app`): žmonės, giminės medis, kapų žemėlapis, nariai, tvirtinimas
+  - Vaidmenys: Administratorius (tvirtina), Redaktorius (matoma iš karto), Narys (laukia patvirtinimo), Žiūrovas
+  - Kvietimai nuoroda, nuotraukos (privačios), prisiminimai, kapo vieta su GPS ir žemėlapiu
+  - Taisyklės ir tvirtinimas: `supabase/migrations/0002_roles_approval.sql`
+
+## Duomenų bazės atnaujinimai
+
+Kiekvieną `supabase/migrations/` failą paleiskite **vieną kartą, iš eilės**: Supabase → SQL Editor → New query → įklijuoti → Run.
 
 ## Paleidimas
 

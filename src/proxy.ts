@@ -46,8 +46,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
   if (onLogin && signedIn) {
+    const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
-    url.pathname = `/${locale}/app`;
+    url.pathname = next && /^\/(lt|en)\/[^/]/.test(next) && !next.startsWith("//") ? next : `/${locale}/app`;
     url.search = "";
     return NextResponse.redirect(url);
   }
