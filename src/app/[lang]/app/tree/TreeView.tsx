@@ -257,14 +257,15 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
-  let gridStep = 22 * k;
-  while (gridStep < 15) gridStep *= 2;
-  while (gridStep > 30) gridStep /= 2;
+  // Measured from Recraft at 100 %: 32 px between dots, 2 px dots, #bcbcbc on #f2f2f2.
+  let gridStep = 32 * k;
+  while (gridStep < 24) gridStep *= 2;
+  while (gridStep >= 48) gridStep /= 2;
   // Like Recraft: the dots fade out as you zoom away, and are gone below ~35 %.
   const dotAlpha = Math.min(1, Math.max(0, (k - 0.35) / 0.5));
 
   return (
-    <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f4f4f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
+    <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: which generations to show */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className={`flex max-w-full gap-0.5 overflow-x-auto p-1 [scrollbar-width:none] ${pill}`}>
@@ -357,8 +358,8 @@ export function TreeView({
         style={{
           // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
           // the same small size, and the grid steps between densities so it never gets crowded.
-          backgroundColor: "#f4f4f2",
-          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(190 190 182 / ${dotAlpha.toFixed(2)}) 1px, transparent 1.3px)` : "none",
+          backgroundColor: "#f2f2f2",
+          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(188 188 188 / ${dotAlpha.toFixed(2)}) 1px, transparent 1.3px)` : "none",
           backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
