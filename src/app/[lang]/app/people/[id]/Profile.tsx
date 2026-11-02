@@ -38,18 +38,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
   const id = await idPromise;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user, current } = await requireWorkspace(locale);
-  const [links, story, { byId, rels }] = await Promise.all([myPersonLinks(locale), getLifeStory(locale, id), getFamilyGraph(locale, current.id)]);
-  const isMe = links.links.get(current.id) === id;
-  const person = byId.get(id);
-  if (!person) notFound();
-  const toMe = isMe ? undefined : kinship([...byId.values()], rels, links.links.get(current.id), locale).get(id);
-
-  const role = current.role;
-  const base = `/${locale}/app`;
-  const fam = relativesOf(id, rels);
-  const relativeIds = [...fam.parents, ...fam.partners, ...fam.children, ...fam.siblings];
-
-  const [{ data: burials }, { data: tagged }, { data: memories }] = await Promise.all([
+  // Everything about this person in one round; only what depends on it comes after.
+  const [links, story, { byId, rels }, { data: burials }, { data: tagged }, { data: memories }, evRes] = await Promise.all([
+    myPersonLinks(locale),
+    getLifeStory(locale, id),
+    getFamilyGraph(locale, current.id),
     supabase
       .from("burials")
       .select("id, cemetery_name, section, row_label, plot, directions_note, lat, lng, accuracy_m, photo_id, status")
@@ -61,9 +54,18 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
       .select("media:media(id, kind, title, file_name, taken_year, year_qualifier, year_to, storage_path, status, uploader_id, created_at)")
       .eq("person_id", id),
     loadMemories(supabase, id),
+    // Life events and places (database update 0011); missing table → none, and the forms say so.
+    supabase.from("person_events").select("id, kind, year, year_to, title, place, lat, lng, status, created_by").eq("person_id", id).neq("status", "rejected").order("year", { ascending: true, nullsFirst: false }),
   ]);
-  // Life events and places (database update 0011); missing table → none, and the forms say so.
-  const evRes = await supabase.from("person_events").select("id, kind, year, year_to, title, place, lat, lng, status, created_by").eq("person_id", id).neq("status", "rejected").order("year", { ascending: true, nullsFirst: false });
+  const isMe = links.links.get(current.id) === id;
+  const person = byId.get(id);
+  if (!person) notFound();
+  const toMe = isMe ? undefined : kinship([...byId.values()], rels, links.links.get(current.id), locale).get(id);
+
+  const role = current.role;
+  const base = `/${locale}/app`;
+  const fam = relativesOf(id, rels);
+  const relativeIds = [...fam.parents, ...fam.partners, ...fam.children, ...fam.siblings];
   const eventsReady = !evRes.error;
   const personEvents = (evRes.data ?? []) as Array<{ id: string; kind: "event" | "birthplace" | "residence"; year: number | null; year_to: number | null; title: string | null; place: string | null; lat: number | null; lng: number | null; status: Status; created_by: string | null }>;
 
@@ -88,13 +90,12 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
   const papers = linked.filter((m) => m.kind !== "photo");
 
   const burial = burials?.[0] ?? null;
-  const { data: gravePhoto } = burial?.photo_id
-    ? await supabase.from("media").select("storage_path").eq("id", burial.photo_id).maybeSingle()
-    : { data: null };
-
-  // Photos that belong to a memory (kept with it, not among the person's photos).
+  // The grave photo and the photos that belong to memories (kept with them, not among the person's photos), together.
   const memoryMediaIds = (memories ?? []).flatMap((m) => (m.media_id ? [m.media_id] : []));
-  const { data: memoryMedia } = memoryMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memoryMediaIds) : { data: [] };
+  const extraIds = [...memoryMediaIds, ...(burial?.photo_id ? [burial.photo_id as string] : [])];
+  const { data: extraMedia } = extraIds.length ? await supabase.from("media").select("id, storage_path").in("id", extraIds) : { data: [] };
+  const gravePhoto = burial?.photo_id ? ((extraMedia ?? []).find((m) => m.id === burial.photo_id) ?? null) : null;
+  const memoryMedia = (extraMedia ?? []).filter((m) => memoryMediaIds.includes(m.id as string));
   const memoryPath = new Map((memoryMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
   const [urls, portraits, authors] = await Promise.all([
