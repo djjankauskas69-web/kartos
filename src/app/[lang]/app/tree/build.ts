@@ -36,6 +36,7 @@ export function buildTree({
   depth,
   canAdd,
   base,
+  addHref,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -45,6 +46,8 @@ export function buildTree({
   depth: number | null; // generations shown; null = all
   canAdd: boolean;
   base: string; // e.g. /lt/app
+  /** Link that opens the "Add a person" panel with the relation filled in. */
+  addHref?: (kind: string, to: string) => string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -138,7 +141,7 @@ export function buildTree({
       const parentCount = rels.filter((r) => r.type === "parent_child" && r.person_b === n.id && byId.has(r.person_a)).length;
       const hasSex = (sex: string) =>
         rels.some((r) => r.type === "parent_child" && r.person_b === n.id && byId.get(r.person_a)?.sex === sex);
-      const rel = (kind: string) => `${base}/people/${n.id}/relative?kind=${kind}`;
+      const rel = (kind: string) => (addHref ? addHref(kind, n.id) : `${base}/people/${n.id}/relative?kind=${kind}`);
       pluses.push({
         key: `+${n.key}`,
         x: box.x + box.w / 2,

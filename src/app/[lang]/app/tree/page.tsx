@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, requireWorkspace } from "@/lib/data";
+import { AddPersonHost } from "../people/AddPersonPanel";
+import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
@@ -31,6 +33,20 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const { people, byId, rels } = await getFamilyGraph(locale, current.id);
   const base = `/${locale}/app`;
   const canAdd = can.add(current.role);
+  const allPortraits = await portraitUrls(locale, people);
+  const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
+  const host = panel ? (
+    <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} />
+  ) : null;
+  // Keeps the current view (person, depth, list) when the panel opens.
+  const addHref = (extra: Record<string, string>) => {
+    const q = new URLSearchParams();
+    if (search.p) q.set("p", search.p);
+    if (search.d) q.set("d", search.d);
+    if (search.view === "list") q.set("view", "list");
+    for (const [k, v] of Object.entries(extra)) q.set(k, v);
+    return `${base}/tree?${q.toString()}`;
+  };
 
   const header = (subtitle: React.ReactNode, view: "tree" | "list") => {
     const href = (v: string) => {
@@ -61,7 +77,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
             </Link>
           </nav>
           {canAdd && (
-            <Link href={`${base}/people#add`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface hover:bg-ink">
+            <Link href={addHref({ add: "1" })} scroll={false} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface hover:bg-ink">
               <IconPlus size={20} />
               {t.app.addPerson}
             </Link>
@@ -75,6 +91,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return (
       <div>
         {header(current.name, "tree")}
+        {host}
         <div className={`px-6 py-10 text-center ${cls.card}`}>
           <p className="text-ink-muted">{t.tree.empty}</p>
         </div>
@@ -92,11 +109,12 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   /* ---- List ---- */
   if (search.view === "list") {
-    const portraits = await portraitUrls(locale, people);
+    const portraits = allPortraits;
     const genLabel = Object.fromEntries([...new Set(gens.values())].map((n) => [n, t.tree.generationN.replace("{n}", roman(n))]));
     return (
       <div>
         {header(subtitleWhole, "list")}
+        {host}
         <ListView
           people={people.map((p) => ({
             id: p.id,
@@ -123,8 +141,8 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const depth = depthValue === "all" ? null : Number(depthValue);
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
-  const portraits = Object.fromEntries(await portraitUrls(locale, people));
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base });
+  const portraits = Object.fromEntries(allPortraits);
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
   const hrefFor = (d: string) => {
@@ -148,6 +166,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   return (
     <div>
       {header(subtitle, "tree")}
+      {host}
       <TreeView
         cards={tree.cards}
         boxes={tree.boxes}

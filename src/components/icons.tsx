@@ -133,3 +133,8 @@ export const IconLink = (p: P) => (
     <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
   </svg>
 );
+export const IconFilter = (p: P) => (
+  <svg {...s(p)}>
+    <path d="M4 7h16M7 12h10M10 17h4" />
+  </svg>
+);

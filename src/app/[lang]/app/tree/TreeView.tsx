@@ -360,7 +360,16 @@ export function TreeView({
                   <ul className="absolute bottom-[2.6rem] left-1/2 z-10 w-56 -translate-x-1/2 rounded-xl border border-line bg-surface p-1.5 text-left shadow-[0_10px_30px_-12px_rgb(60_45_30/0.5)]">
                     {p.options.map((o) => (
                       <li key={o.href}>
-                        <Link href={o.href} className="flex min-h-11 items-center rounded-lg px-3 text-[1rem] hover:bg-paper">
+                        <Link
+                          href={o.href}
+                          scroll={false}
+                          onClick={() => {
+                            // The add panel opens outside the tree frame, so leave full screen first.
+                            if (document.fullscreenElement) void document.exitFullscreen();
+                            setOpenPlus(null);
+                          }}
+                          className="flex min-h-11 items-center rounded-lg px-3 text-[1rem] hover:bg-paper"
+                        >
                           + {o.label}
                         </Link>
                       </li>

@@ -105,7 +105,7 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
     role: t.roles,
     me: t.me,
   } as unknown as Record<string, string> & { role: Dictionary["roles"]; me: Dictionary["me"] };
-  const errors = { lastOwner: m.errorLastOwner, nameRequired: t.app.errorNameRequired, save: m.error, taken: t.me.errorTaken, setup: t.me.errorSetup };
+  const errors = { lastOwner: m.errorLastOwner, nameRequired: t.app.errorRequired, save: m.error, taken: t.me.errorTaken, setup: t.me.errorSetup };
 
   return (
     <div>

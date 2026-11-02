@@ -33,7 +33,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
     taken: m.errorTaken,
     setup: m.errorSetup,
     pick: errorMessage(t, "pick") ?? "",
-    nameRequired: t.app.errorNameRequired,
+    nameRequired: t.app.errorRequired,
     year: t.app.errorYear,
     save: t.app.errorSave,
   };
