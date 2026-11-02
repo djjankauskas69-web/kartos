@@ -206,7 +206,6 @@ export function PortraitUpload({
   t: T;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const [everywhere, setEverywhere] = useState(true);
   const [status, setStatus] = useState<"idle" | "busy" | "done" | "error">("idle");
 
   async function onFile(file: File | undefined) {
@@ -217,7 +216,8 @@ export function PortraitUpload({
     }
     setStatus("busy");
     try {
-      const targets = [workspaceId, ...(everywhere ? otherWorkspaces : [])];
+      // Your portrait is the same in every family you belong to.
+      const targets = [workspaceId, ...otherWorkspaces];
       for (const ws of targets) {
         const up = await uploadPortrait(ws, file);
         const r = await recordMyPortrait({ locale, workspaceId: ws, ...up });
@@ -241,12 +241,6 @@ export function PortraitUpload({
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" /><circle cx="12" cy="13" r="3.5" /></svg>
         {status === "busy" ? t.uploading : hasPhoto ? t.changePhoto : t.addPhoto}
       </button>
-      {otherWorkspaces.length > 0 && (
-        <label className="flex items-start gap-2 text-left text-[0.92rem] leading-snug">
-          <input type="checkbox" checked={everywhere} onChange={(e) => setEverywhere(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--color-olive)]" />
-          {t.allFamilies}
-        </label>
-      )}
       {status === "done" && (
         <p role="status" className="text-[0.92rem] font-semibold text-sage-deep">
           {t.photoSaved}

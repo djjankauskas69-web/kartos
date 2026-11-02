@@ -101,7 +101,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
           <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-24 w-28 shrink-0 rounded-2xl object-cover opacity-80 sepia-[.3]" />
           <div className="min-w-0 flex-1">
             <h2 className="text-[1.3rem] font-semibold">{m.inFamily.replace("{name}", current.name)}</h2>
-            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] text-olive-deep">
+            <p className="mt-2 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] text-olive-deep">
               {m.yourRole} <strong className="font-semibold">{t.roles[current.role]}</strong>
             </p>
           </div>
