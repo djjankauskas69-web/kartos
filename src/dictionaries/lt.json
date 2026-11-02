@@ -412,7 +412,13 @@
     "setPortrait": "Naudoti kaip portretą",
     "portrait": "Portretas",
     "delete": "Ištrinti",
-    "close": "Uždaryti"
+    "close": "Uždaryti",
+    "settingPortrait": "Nustatoma…",
+    "deleting": "Trinama…",
+    "addPortrait": "Pridėti portretą",
+    "changePortrait": "Pakeisti portretą",
+    "portraitUploading": "Įkeliama…",
+    "portraitError": "Nepavyko įkelti. Bandykite kitą nuotrauką."
   },
   "memories": {
     "title": "Prisiminimai",

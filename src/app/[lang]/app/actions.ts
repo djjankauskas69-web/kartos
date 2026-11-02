@@ -467,6 +467,31 @@ export async function setPortrait(form: FormData) {
   refresh();
 }
 
+/** "+" on the portrait: a photo just uploaded becomes this person's portrait (editors). */
+export async function addPortrait(input: { locale: string; personId: string; path: string; width: number; height: number }): Promise<FormState> {
+  const locale = input.locale === "en" ? "en" : "lt";
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  if (!/^[0-9a-f-]{36}$/i.test(input.personId) || !input.path.startsWith(`${workspace.id}/`)) return { error: "save" };
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("media").insert({
+    id,
+    workspace_id: workspace.id,
+    storage_path: input.path,
+    kind: "photo",
+    width: Math.round(input.width) || null,
+    height: Math.round(input.height) || null,
+    mime_type: "image/jpeg",
+  });
+  if (error) {
+    console.error("addPortrait", error);
+    return { error: "save" };
+  }
+  await supabase.from("media_persons").insert({ media_id: id, person_id: input.personId, workspace_id: workspace.id });
+  await supabase.from("persons").update({ profile_photo_id: id }).eq("id", input.personId).eq("workspace_id", workspace.id);
+  refresh();
+  return { ok: true };
+}
+
 export async function deletePhoto(form: FormData) {
   const locale = formLocale(form);
   const { supabase, workspace } = await actionContext(locale, can.edit);

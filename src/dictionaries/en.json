@@ -412,7 +412,13 @@
     "setPortrait": "Use as portrait",
     "portrait": "Portrait",
     "delete": "Delete",
-    "close": "Close"
+    "close": "Close",
+    "settingPortrait": "Setting…",
+    "deleting": "Deleting…",
+    "addPortrait": "Add a portrait",
+    "changePortrait": "Change portrait",
+    "portraitUploading": "Uploading…",
+    "portraitError": "Couldn't upload. Try another photo."
   },
   "memories": {
     "title": "Memories",

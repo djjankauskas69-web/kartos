@@ -26,6 +26,7 @@ import { MemoryForm } from "../../forms";
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { GraveView } from "./GraveView";
+import { PendingButton, PortraitWithAdd } from "./PortraitControls";
 
 export default async function PersonPage({ params }: PageProps<"/[lang]/app/people/[id]">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -166,7 +167,16 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
 
         <article className={`mt-5 p-6 sm:p-8 ${cls.card}`}>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <Portrait given={person.given_names} surname={person.surname} src={portraits.get(id)} size="lg" />
+            <PortraitWithAdd
+              locale={locale}
+              workspaceId={current.id}
+              personId={id}
+              given={person.given_names}
+              surname={person.surname}
+              src={portraits.get(id)}
+              canEdit={can.edit(role)}
+              labels={{ add: t.photos.addPortrait, change: t.photos.changePortrait, uploading: t.photos.portraitUploading, error: t.photos.portraitError }}
+            />
             <div className="min-w-0 flex-1">
               {person.status === "pending" && (
                 <div className="mb-2">
@@ -355,24 +365,20 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
                   )}
                   <div className="flex flex-wrap items-center gap-1 px-2 py-2 text-[0.88rem]">
                     {ph.status === "pending" && <PendingBadge label={t.app.pending} />}
-                    {isPortrait && <span className="rounded-full bg-linen px-2 py-0.5">{t.photos.portrait}</span>}
+                    {isPortrait && <span className="inline-flex items-center gap-1 rounded-full bg-sage-wash px-2.5 py-1 font-semibold">✓ {t.photos.portrait}</span>}
                     {can.edit(role) && !isPortrait && ph.status === "approved" && (
                       <form action={setPortrait}>
                         <input type="hidden" name="locale" value={locale} />
                         <input type="hidden" name="personId" value={id} />
                         <input type="hidden" name="mediaId" value={ph.id} />
-                        <button type="submit" className="rounded-full px-2 py-1 font-semibold text-sage-deep hover:bg-sage-wash">
-                          {t.photos.setPortrait}
-                        </button>
+                        <PendingButton label={t.photos.setPortrait} busyLabel={t.photos.settingPortrait} className="rounded-full border border-line px-2.5 py-1 font-semibold hover:bg-linen" />
                       </form>
                     )}
                     {can.edit(role) && (
                       <form action={deletePhoto} className="ml-auto">
                         <input type="hidden" name="locale" value={locale} />
                         <input type="hidden" name="mediaId" value={ph.id} />
-                        <button type="submit" className="rounded-full px-2 py-1 text-ink-muted hover:text-danger">
-                          {t.photos.delete}
-                        </button>
+                        <PendingButton label={t.photos.delete} busyLabel={t.photos.deleting} className="rounded-full px-2 py-1 text-ink-muted hover:text-danger" />
                       </form>
                     )}
                   </div>
