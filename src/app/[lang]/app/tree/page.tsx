@@ -4,6 +4,8 @@ import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks, myPersonLinks } from "@/lib/data";
 import { linkedBranch } from "./linked-branch";
+
+type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner" };
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
@@ -264,42 +266,53 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     ]);
   }
   const treePeople = foreignPeople.length ? [...people, ...foreignPeople] : people;
-  // Where two families meet at someone, their partner and children belong with them here:
-  // those links move from the other family's side into this tree, so a couple stands together
-  // and their children hang from both, whichever archive each child was added in.
-  const sides = branches.flatMap((b) => (b ? [b] : [])).map((b) => {
+  // Where two families meet at someone, the couple and their children stand together, whichever
+  // archive each was added in. The bigger family is drawn as the base and the other beside it,
+  // so both archives show the same picture (only which side is bold differs).
+  const sides: BuildRelLike[][] = [];
+  const mainRels: BuildRelLike[] = [...rels];
+  for (const b of branches) {
+    if (!b) continue;
     const join = b.link.mine;
+    const all = [...rels, ...b.rels];
     const down = new Set<string>([join]);
     for (const stack = [join]; stack.length; ) {
       const id = stack.pop()!;
-      for (const r of b.rels) {
+      for (const r of all) {
         if (r.type === "parent_child" && r.person_a === id && !down.has(r.person_b)) {
           down.add(r.person_b);
           stack.push(r.person_b);
         }
       }
     }
-    for (const r of b.rels) if (r.type === "partner" && (down.has(r.person_a) || down.has(r.person_b))) [r.person_a, r.person_b].forEach((x) => down.add(x));
-    const near = (r: (typeof b.rels)[number]) => down.has(r.person_a) && down.has(r.person_b);
-    return { here: b.rels.filter(near), side: b.rels.filter((r) => !near(r)) };
-  });
-  const mainRels = [...rels, ...sides.flatMap((x) => x.here)];
-  // A child with one parent shown, whose parent has exactly one partner: drawn as theirs too.
-  const parentsIn = (id: string) => mainRels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a);
-  const partnersIn = (id: string) => mainRels.filter((r) => r.type === "partner" && (r.person_a === id || r.person_b === id)).map((r) => (r.person_a === id ? r.person_b : r.person_a));
-  if (sides.length) {
-    for (const r of [...mainRels]) {
-      if (r.type !== "parent_child") continue;
-      const ps = parentsIn(r.person_b);
-      const partners = partnersIn(r.person_a);
-      if (ps.length === 1 && partners.length === 1 && (foreign.has(partners[0]) || foreign.has(r.person_b))) {
-        mainRels.push({ ...r, id: `v-${partners[0]}-${r.person_b}`, person_a: partners[0] });
-      }
+    for (const r of all) if (r.type === "partner" && (down.has(r.person_a) || down.has(r.person_b))) [r.person_a, r.person_b].forEach((x) => down.add(x));
+    const near = (r: BuildRelLike) => down.has(r.person_a) && down.has(r.person_b);
+    const theirs = b.rels.filter((r) => !near(r));
+    const shared = b.rels.filter(near);
+    if (b.people.length > people.length) {
+      // Their family is the base; ours goes beside it.
+      const ours = mainRels.filter((r) => !near(r));
+      const keep = mainRels.filter(near);
+      mainRels.length = 0;
+      mainRels.push(...keep, ...shared, ...theirs);
+      sides.push(ours);
+    } else {
+      mainRels.push(...shared);
+      sides.push(theirs);
     }
   }
-  const treeRels = foreignRels.length ? [...rels, ...foreignRels] : rels;
-  const treeRelations = foreignPeople.length ? kinship(treePeople, treeRels, me, locale) : relations;
-  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides: sides.map((x) => x.side), portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  // A child with one parent shown, whose parent has exactly one partner: drawn as theirs too.
+  if (sides.length) {
+    const parentsIn = (id: string) => mainRels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a);
+    const partnersIn = (id: string) => mainRels.filter((r) => r.type === "partner" && (r.person_a === id || r.person_b === id)).map((r) => (r.person_a === id ? r.person_b : r.person_a));
+    for (const r of [...mainRels]) {
+      if (r.type !== "parent_child") continue;
+      const partners = partnersIn(r.person_a);
+      if (parentsIn(r.person_b).length === 1 && partners.length === 1) mainRels.push({ ...r, id: `v-${partners[0]}-${r.person_b}`, person_a: partners[0] });
+    }
+  }
+  const treeRelations = foreignPeople.length ? kinship(treePeople, [...rels, ...foreignRels], me, locale) : relations;
+  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 

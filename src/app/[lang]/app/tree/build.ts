@@ -78,8 +78,10 @@ export function buildTree({
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, sides?.length ? [...rels, ...sides.flat()] : rels);
   const whole = !focusId || !byId.has(focusId);
-  const local = foreign?.size ? people.filter((p) => !foreign.has(p.id)) : people;
-  const start = whole ? mainRoot(local, rels) : focusId;
+  // The base drawing starts from the oldest person among those its links join.
+  const inRels = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
+  const base0 = sides?.length ? people.filter((p) => inRels.has(p.id)) : people;
+  const start = whole ? mainRoot(base0.length ? base0 : people, rels) : focusId;
   if (!start) return null;
 
   const span = depth ? depth - 1 : 99;
