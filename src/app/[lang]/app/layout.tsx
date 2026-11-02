@@ -70,8 +70,8 @@ async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Local
   const base = `/${locale}/app`;
   const items: NavItem[] = [
     { href: base, label: t.appNav.overview, icon: <IconHome />, exact: true },
-    { href: `${base}/people`, label: t.appNav.people, icon: <IconPeople /> },
-    { href: `${base}/tree`, label: t.appNav.tree, icon: <IconTree /> },
+    // People profiles open from the tree, so the tree stays highlighted there.
+    { href: `${base}/tree`, label: t.appNav.tree, icon: <IconTree />, also: [`${base}/people`] },
     { href: `${base}/map`, label: t.appNav.map, icon: <IconPin /> },
     { href: `${base}/archive`, label: t.appNav.archive, icon: <IconImage /> },
     { href: `${base}/members`, label: t.appNav.members, icon: <IconMembers /> },

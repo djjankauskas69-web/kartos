@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-export type NavItem = { href: string; label: string; icon: ReactNode; badge?: number; exact?: boolean };
+export type NavItem = { href: string; label: string; icon: ReactNode; badge?: number; exact?: boolean; also?: string[] };
 
 function useActive() {
   const pathname = usePathname() ?? "";
-  return (item: NavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  return (item: NavItem) => (item.exact ? pathname === item.href : under(item.href) || (item.also ?? []).some(under));
 }
 
 function Badge({ n }: { n?: number }) {
