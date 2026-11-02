@@ -505,8 +505,8 @@ export function TreeView({
                   <button
                     type="button"
                     data-card
-                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" ? null : { key: c.key, mode: "add" })}
-                    aria-expanded={menu?.key === c.key && menu.mode === "add"}
+                    onClick={() => setMenu(menu?.key === c.key ? null : { key: c.key, mode: "add" })}
+                    aria-expanded={menu?.key === c.key}
                     aria-haspopup="menu"
                     aria-label={`${labels.menuAdd}: ${c.name}`}
                     title={labels.menuAdd}
@@ -617,6 +617,7 @@ function CardMenu({
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
+  const [showAdd, setShowAdd] = useState(mode === "add");
   const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
@@ -637,12 +638,7 @@ function CardMenu({
     >
       <div className="flex items-center gap-3 px-3 pb-2 pt-1.5">
         <div className="min-w-0 flex-1">
-          {mode === "add" ? (
-            <>
-              <p className="text-[1.08rem] font-semibold leading-tight">{labels.menuAdd}</p>
-              <p className="truncate text-[0.88rem] text-ink-muted">{card.name}</p>
-            </>
-          ) : (
+          {(
             <>
               <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
               {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
@@ -654,16 +650,6 @@ function CardMenu({
           <svg {...ICON} width={18} height={18}><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
-      {mode === "add" ? (
-        <div className="border-t border-line pt-1.5">
-          {card.addOptions.map((o) => (
-            <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className={item}>
-              <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
-              {o.label}
-            </Link>
-          ))}
-        </div>
-      ) : (
       <div className="border-t border-line pt-1.5">
         <Link href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
@@ -720,6 +706,23 @@ function CardMenu({
           </Link>
         )}
       </div>
+      {card.addOptions.length > 0 && (
+        <div className="mt-1 border-t border-line pt-1.5">
+          <button type="button" role="menuitem" aria-expanded={showAdd} onClick={() => setShowAdd((v) => !v)} className={`${item} font-semibold`}>
+            <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
+            <span className="flex-1">{labels.menuAdd}</span>
+            <svg {...ICON} width={16} height={16} className={`text-ink-muted transition-transform ${showAdd ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          {showAdd && (
+            <div className="flex flex-wrap gap-1.5 pb-2 pl-[2.75rem] pr-3">
+              {card.addOptions.map((o) => (
+                <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className="rounded-full border border-line px-3 py-1.5 text-[0.9rem] font-semibold capitalize hover:border-ink/40 hover:bg-linen">
+                  {o.label.replace(/^(Pridėti|Add)\s+/i, "")}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
