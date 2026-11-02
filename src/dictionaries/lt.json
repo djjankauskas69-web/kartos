@@ -843,7 +843,7 @@
     "existingTitle": "Susiejate jau esantį žmogų",
     "existingLead": "Naujas žmogus nebus kuriamas – bus pridėtas tik ryšys.",
     "notThis": "Ne, kurti naują",
-    "pickExisting": "Žmogus jau yra medyje? Pasirinkti iš sąrašo",
+    "pickExisting": "Pasirinkti iš esamų žmonių",
     "existingNeedsLink": "Pasirinkite, su kuo ir kaip susieti šį žmogų.",
     "birthSurname": "Mergautinė pavardė",
     "sex": "Lytis",
@@ -899,7 +899,8 @@
     "errorNeedAnchor": "Pasirinkite, kieno giminaitis yra šis žmogus.",
     "errorNoParents": "Šiam žmogui dar nepridėti tėvai – pirma pridėkite juos.",
     "looseChip": "Nesusieti žmonės: {n}",
-    "looseHint": "Jie dar neprijungti prie medžio – atidarykite ir susiekite."
+    "looseHint": "Jie dar neprijungti prie medžio – atidarykite ir susiekite.",
+    "thisIsMe": "Tai aš"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",

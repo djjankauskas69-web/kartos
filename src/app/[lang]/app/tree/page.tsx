@@ -77,7 +77,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   ]);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
   const host = panel ? (
-    <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} />
+    <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={me} />
   ) : null;
   // Keeps the current view (person, depth, list) when the panel opens.
   const addHref = (extra: Record<string, string>) => {

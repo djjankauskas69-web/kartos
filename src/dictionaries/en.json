@@ -843,7 +843,7 @@
     "existingTitle": "Connecting someone already in the tree",
     "existingLead": "No new person is created – only the connection is added.",
     "notThis": "No, create a new person",
-    "pickExisting": "Already in the tree? Pick from the list",
+    "pickExisting": "Choose someone already here",
     "existingNeedsLink": "Choose who to connect this person to, and how.",
     "birthSurname": "Birth surname",
     "sex": "Sex",
@@ -899,7 +899,8 @@
     "errorNeedAnchor": "Choose whose relative this person is.",
     "errorNoParents": "This person has no parents yet – add them first.",
     "looseChip": "Not connected: {n}",
-    "looseHint": "They're not in the tree yet – open them and connect."
+    "looseHint": "They're not in the tree yet – open them and connect.",
+    "thisIsMe": "This is me"
   },
   "landing": {
     "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",

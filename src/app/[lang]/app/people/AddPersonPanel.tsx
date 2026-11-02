@@ -97,6 +97,7 @@ export function AddPersonHost({
   after,
   t,
   errors,
+  meId,
 }: {
   people: AddOption[];
   workspaceId: string;
@@ -105,6 +106,8 @@ export function AddPersonHost({
   after: "people" | "tree";
   t: L;
   errors: L;
+  /** You in this tree, for the quick "This is me" choice. */
+  meId?: string;
 }) {
   const params = useSearchParams();
   const pathname = usePathname();
@@ -139,6 +142,7 @@ export function AddPersonHost({
           onClose={close}
           t={t}
           errors={errors}
+          meId={meId}
         />
       )}
       {toast && !open && (
@@ -244,7 +248,9 @@ function AddPersonPanel({
   onClose,
   t,
   errors,
+  meId,
 }: {
+  meId?: string;
   people: AddOption[];
   workspaceId: string;
   needsApproval: boolean;
@@ -260,6 +266,7 @@ function AddPersonPanel({
   const [anchor, setAnchor] = useState<string | null>(initialAnchor);
   const [kind, setKind] = useState<Kind | null>(initialKind);
   const [existing, setExisting] = useState<string | null>(null);
+  const [pickExisting, setPickExisting] = useState(false);
   const [given, setGiven] = useState("");
   const [surname, setSurname] = useState("");
   const [surnameTouched, setSurnameTouched] = useState(false);
@@ -431,6 +438,33 @@ function AddPersonPanel({
               </div>
             ) : (
               <div className="space-y-5">
+                {/* Someone already in the archive (you, or a person not joined to anyone yet). */}
+                {!first && (
+                  <div className="flex flex-wrap gap-2">
+                    {meId && meId !== anchor && people.some((p) => p.id === meId) && (
+                      <button type="button" onClick={() => setExisting(meId)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-olive/40 bg-[#eef1e4] px-4 font-semibold text-olive-deep hover:border-olive">
+                        <Portrait given={people.find((p) => p.id === meId)!.given} surname={people.find((p) => p.id === meId)!.surname} src={people.find((p) => p.id === meId)!.portrait} size="sm" />
+                        {t.thisIsMe}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setPickExisting((v) => !v)} aria-expanded={pickExisting} className="inline-flex min-h-10 items-center rounded-full border border-line px-4 font-semibold hover:border-ink/40">
+                      {t.pickExisting}
+                    </button>
+                  </div>
+                )}
+                {pickExisting && (
+                  <PersonSearch
+                    id="add-existing"
+                    options={people.filter((p) => p.id !== anchor)}
+                    value={null}
+                    onChange={(pid) => {
+                      if (pid) setExisting(pid);
+                      setPickExisting(false);
+                    }}
+                    placeholder={t.step1Ph}
+                    t={t}
+                  />
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="add-given" className={cls.label}>
