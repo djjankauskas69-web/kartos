@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import { SiteHeader } from "@/components/SiteHeader";
-import { FamilyStrip, MiniMap } from "@/components/HeroArchive";
+import { MiniMap } from "@/components/HeroArchive";
+import { StoryGrave, StoryTree } from "@/components/motion/StoryVisuals";
 import { InkGrave, InkPhotos, InkTree } from "@/components/LineArt";
 import { Scribble } from "@/components/Scribble";
 import { FadeIn, Parallax, RevealWords, StickyStory } from "@/components/motion/Scroll";
@@ -138,21 +139,8 @@ export default async function Home() {
                   <figcaption className="absolute bottom-3 left-4 font-serif text-[1.05rem] italic text-ink-muted">{s.circa} 1956</figcaption>
                 </figure>
               </div>,
-              <div key="tree" className="flex h-full items-center justify-center">
-                <div className="w-[82%] rounded-[14px] border border-line/70 bg-surface p-5 shadow-[0_30px_60px_-30px_rgb(28_29_26/0.45)]">
-                  <p className="mb-3 text-sm font-semibold text-ink-muted">{s.treeTitle}</p>
-                  <FamilyStrip s={s} />
-                </div>
-              </div>,
-              <div key="grave" className="flex h-full items-center justify-center">
-                <div className="w-[78%] rounded-[14px] border border-line/70 bg-surface p-4 shadow-[0_30px_60px_-30px_rgb(28_29_26/0.45)]">
-                  <MiniMap />
-                  <p className="mt-3 text-sm font-semibold text-ink-muted">{s.restsTitle}</p>
-                  <p className="font-serif text-[1.2rem] leading-snug">{s.cemetery}</p>
-                  <p className="text-[0.95rem] text-ink-muted">{s.plot}</p>
-                  <p className="mt-1.5 text-sm text-ink-muted">{s.directions}</p>
-                </div>
-              </div>,
+              <StoryTree key="tree" title={s.treeTitle} />,
+              <StoryGrave key="grave" map={<MiniMap />} rests={s.restsTitle} cemetery={s.cemetery} plot={s.plot} directions={s.directions} />,
             ]}
           />
         </section>

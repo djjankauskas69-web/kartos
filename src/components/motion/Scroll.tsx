@@ -180,7 +180,9 @@ export function StickyStory({ steps, visuals, title }: { steps: { title: string;
         <ol className="mt-10 grid gap-10 md:grid-cols-3">
           {steps.map((s, i) => (
             <li key={s.title}>
-              <div className="relative aspect-[5/4]">{visuals[i]}</div>
+              <div className="group relative aspect-[5/4]" data-active="true">
+                {visuals[i]}
+              </div>
               <h3 className="mt-4 text-[1.5rem]">{s.title}</h3>
               <p className="mt-2 text-ink-muted">{s.body}</p>
             </li>
@@ -217,7 +219,8 @@ export function StickyStory({ steps, visuals, title }: { steps: { title: string;
               <div
                 key={i}
                 aria-hidden={i !== active}
-                className="absolute inset-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.7,.2,1)]"
+                data-active={i === active}
+                className="group absolute inset-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.7,.2,1)]"
                 style={{ opacity: i === active ? 1 : 0, transform: i === active ? "none" : i < active ? "translateY(-28px) scale(.97)" : "translateY(28px) scale(.97)" }}
               >
                 {v}
