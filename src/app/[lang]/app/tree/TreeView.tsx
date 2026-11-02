@@ -259,7 +259,7 @@ export function TreeView({
   const { x, y, k } = view;
 
   return (
-    <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-white ${full ? "h-screen" : "rounded-[18px]"}`}>
+    <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f4f4f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: which generations to show */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className={`flex max-w-full gap-0.5 overflow-x-auto p-1 [scrollbar-width:none] ${pill}`}>
@@ -349,6 +349,13 @@ export function TreeView({
         onPointerCancel={onPointerUp}
         onClickCapture={onClickCapture}
         onKeyDown={onKeyDown}
+        style={{
+          // Recraft-style canvas: light grey with fine dots that move and scale with the tree.
+          backgroundColor: "#f4f4f2",
+          backgroundImage: "radial-gradient(circle, #cfcfca 1px, transparent 1.3px)",
+          backgroundSize: `${20 * k}px ${20 * k}px`,
+          backgroundPosition: `${x}px ${y}px`,
+        }}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
       >
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
