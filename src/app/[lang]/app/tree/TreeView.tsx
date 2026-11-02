@@ -260,6 +260,8 @@ export function TreeView({
   let gridStep = 22 * k;
   while (gridStep < 15) gridStep *= 2;
   while (gridStep > 30) gridStep /= 2;
+  // Like Recraft: the dots fade out as you zoom away, and are gone below ~35 %.
+  const dotAlpha = Math.min(1, Math.max(0, (k - 0.35) / 0.5));
 
   return (
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f4f4f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
@@ -356,7 +358,7 @@ export function TreeView({
           // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
           // the same small size, and the grid steps between densities so it never gets crowded.
           backgroundColor: "#f4f4f2",
-          backgroundImage: "radial-gradient(circle, #cbcbc5 1px, transparent 1.3px)",
+          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(190 190 182 / ${dotAlpha.toFixed(2)}) 1px, transparent 1.3px)` : "none",
           backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
