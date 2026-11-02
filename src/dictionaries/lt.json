@@ -790,6 +790,24 @@
       "Pusbroliai ir pusseserės",
       "Krikšto tėvai"
     ],
-    "photoAlt": "Sena šeimos nuotrauka"
+    "photoAlt": "Sena šeimos nuotrauka",
+    "treeTitle": "Medis, kuris auga kartu su šeima",
+    "treeLead": "Pradėkite nuo savęs arba nuo seniausio žmogaus, kurį žinote. Kiekvienas pakviestas giminaitis papildo savo šaką.",
+    "treeCta": "Pradėti savo medį",
+    "treeFacts": [
+      {
+        "title": "Kelios kartos vienoje vietoje",
+        "body": "Proseneliai, seneliai, tėvai, vaikai ir anūkai — viename aiškiame medyje."
+      },
+      {
+        "title": "Tikros šeimos, ne schemos",
+        "body": "Antros santuokos, įvaikiai, pusbroliai ir pusseserės — viskas savo vietoje."
+      },
+      {
+        "title": "Kiekvienas papildo savo šaką",
+        "body": "Teta žino savo pusę, pusbrolis — savo. Administratorius patikrina, kad viskas būtų tikslu."
+      }
+    ],
+    "treeGen": "karta"
   }
 }

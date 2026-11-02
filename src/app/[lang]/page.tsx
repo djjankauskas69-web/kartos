@@ -5,6 +5,7 @@ import { FamilyStrip, MiniMap } from "@/components/HeroArchive";
 import { InkGrave, InkPhotos, InkTree } from "@/components/LineArt";
 import { Scribble } from "@/components/Scribble";
 import { FadeIn, Parallax, RevealWords, StickyStory } from "@/components/motion/Scroll";
+import { TreeShowcase } from "@/components/motion/TreeShowcase";
 import { PHOTOS } from "./landing-photos";
 
 export default async function Home() {
@@ -98,6 +99,31 @@ export default async function Home() {
               <Photo key={src} src={src} alt="" className="aspect-[4/5] w-full rounded-[4px]" />
             ))}
           </div>
+        </section>
+
+        {/* ---------- The family tree, growing as you scroll ---------- */}
+        <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h2 className="max-w-2xl text-[2.4rem] sm:text-[3.4rem]">{L.treeTitle}</h2>
+            <div className="max-w-sm">
+              <p className="text-ink-muted">{L.treeLead}</p>
+              <Link href={signup} className="mt-5 inline-flex min-h-12 items-center rounded-full bg-night px-7 text-[1.02rem] font-medium text-surface transition-colors hover:bg-olive-deep">
+                {L.treeCta}
+              </Link>
+            </div>
+          </div>
+          <div className="mt-12 overflow-hidden rounded-[22px] border border-line/70 bg-[linear-gradient(to_bottom,#fbfaf7,#fff_40%)] px-3 py-10 sm:px-8">
+            <TreeShowcase generationLabels={["I", "II", "III", "IV"].map((r) => `${r} ${L.treeGen}`)} />
+          </div>
+          <FadeIn stagger={120} className="mt-10 grid gap-8 md:grid-cols-3">
+            {L.treeFacts.map((f, i) => (
+              <div key={f.title} className="border-t border-ink/80 pt-5">
+                <span className="text-[0.95rem] text-ink-muted">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="mt-2 text-[1.45rem]">{f.title}</h3>
+                <p className="mt-2 text-ink-muted">{f.body}</p>
+              </div>
+            ))}
+          </FadeIn>
         </section>
 
         {/* ---------- Photo → person in the tree → resting place ---------- */}

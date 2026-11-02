@@ -11,7 +11,7 @@ import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNo
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Calls `onProgress(p)` with 0 → 1 as the element travels through the viewport. */
-function useScrollProgress(ref: React.RefObject<HTMLElement | null>, onProgress: (p: number) => void, range: [number, number] = [1, 0]) {
+export function useScrollProgress(ref: React.RefObject<HTMLElement | null>, onProgress: (p: number) => void, range: [number, number] = [1, 0]) {
   const cb = useRef(onProgress);
   useEffect(() => {
     cb.current = onProgress;

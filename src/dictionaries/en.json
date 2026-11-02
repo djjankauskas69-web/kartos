@@ -790,6 +790,24 @@
       "Cousins",
       "Godparents"
     ],
-    "photoAlt": "An old family photograph"
+    "photoAlt": "An old family photograph",
+    "treeTitle": "A tree that grows with your family",
+    "treeLead": "Start with yourself or with the oldest person you know. Every relative you invite adds their own branch.",
+    "treeCta": "Start your tree",
+    "treeFacts": [
+      {
+        "title": "Several generations in one place",
+        "body": "Great-grandparents, grandparents, parents, children and grandchildren — in one clear tree."
+      },
+      {
+        "title": "Real families, not diagrams",
+        "body": "Second marriages, adopted children, cousins — everyone in their place."
+      },
+      {
+        "title": "Everyone adds their branch",
+        "body": "An aunt knows her side, a cousin knows his. The administrator checks that it stays accurate."
+      }
+    ],
+    "treeGen": "generation"
   }
 }
