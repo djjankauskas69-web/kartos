@@ -47,6 +47,8 @@ export function ProfileDrawer({ closeHref, fullHref, labels, children }: { close
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("click", onClick);
       html.style.overflow = prev;
+      // Hidden pages are kept with their state; reopening the same person must show the panel again.
+      setGone(false);
     };
   }, [closeHref, router]);
 
