@@ -30,7 +30,7 @@ export default async function Home() {
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
-          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_60%_55%_at_50%_30%,rgb(255_255_255/0.55),transparent_70%)]" />
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[85%] bg-[radial-gradient(ellipse_55%_60%_at_50%_42%,rgb(255_255_255/0.8),rgb(255_255_255/0.35)_55%,transparent_78%)]" />
           {/* fog: the photo blurs and melts into the white page */}
           <div
             aria-hidden="true"
@@ -42,18 +42,18 @@ export default async function Home() {
           <SiteHeader t={t} locale={locale} />
 
           <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-5 pb-40 pt-[9vh] text-center sm:px-8 sm:pt-[12vh]">
-            <h1 className="text-[3rem] sm:text-[4.4rem] lg:text-[5.4rem]">{t.hero.title}</h1>
+            <h1 className="text-[3rem] [text-shadow:0_0_24px_rgb(255_255_255/0.7)] sm:text-[4.4rem] lg:text-[5.4rem]">{t.hero.title}</h1>
             <Scribble className="mx-auto mt-1 h-5 w-52 text-ink/80 sm:w-72" />
-            <p className="mx-auto mt-6 max-w-[34rem] text-[1.15rem] leading-relaxed text-ink/75">{t.hero.lead}</p>
+            <p className="mx-auto mt-6 max-w-[34rem] text-[1.18rem] font-medium leading-relaxed text-ink [text-shadow:0_0_14px_rgb(255_255_255/0.95),0_0_3px_rgb(255_255_255/0.9)]">{t.hero.lead}</p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link href={signup} className="inline-flex min-h-12 items-center rounded-full bg-night px-7 text-[1.02rem] font-medium text-surface shadow-[0_10px_30px_-12px_rgb(28_29_26/0.5)] transition-colors hover:bg-olive-deep">
                 {t.hero.cta}
               </Link>
-              <a href="#how" className="inline-flex min-h-12 items-center rounded-full border border-white/70 bg-white/60 px-6 text-[1.02rem] backdrop-blur hover:bg-white/85">
+              <a href="#how" className="inline-flex min-h-12 items-center rounded-full border border-white bg-white/90 px-6 text-[1.02rem] font-medium shadow-[0_10px_30px_-14px_rgb(28_29_26/0.45)] backdrop-blur hover:bg-white">
                 {t.hero.secondary}
               </a>
             </div>
-            <p className="mt-4 text-[0.95rem] text-ink/65">{t.hero.note}</p>
+            <p className="mt-4 rounded-full bg-white/70 px-4 py-1 text-[0.95rem] font-medium text-ink/85 backdrop-blur-sm">{t.hero.note}</p>
           </FadeIn>
         </section>
 
