@@ -6,7 +6,9 @@ export const PHOTOS = {
   heroBackground: "/landing/hero-hills.jpg",
   heroBackgroundSmall: "/landing/hero-hills-sm.jpg",
   hero: "/landing/photo-01.jpg",
-  floating: ["/landing/photo-03.jpg", "/landing/photo-05.jpg", "/landing/photo-06.jpg", "/landing/photo-07.jpg", "/landing/photo-09.jpg", "/landing/photo-11.jpg"],
+  // "Memories that don't fade": real old photos (two girls, a box of portraits, a man in a hat,
+  // a framed family photo, soldiers' portrait, an album page).
+  floating: ["/landing/memory-01.jpg", "/landing/memory-02.jpg", "/landing/memory-03.jpg", "/landing/memory-04.jpg", "/landing/memory-05.jpg", "/landing/memory-06.jpg"],
   story: "/landing/photo-02.jpg",
   band: "/landing/photo-08.jpg",
   cards: ["/landing/photo-04.jpg", "/landing/photo-10.jpg", "/landing/photo-07.jpg"],

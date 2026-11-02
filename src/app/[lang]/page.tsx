@@ -66,15 +66,15 @@ export default async function Home() {
         <section className="relative mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:py-20">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden md:block">
             {[
-              { src: PHOTOS.floating[0], cls: "left-[2%] top-[4%] w-28", speed: 140 },
-              { src: PHOTOS.floating[1], cls: "right-[4%] top-[0%] w-36", speed: 220 },
-              { src: PHOTOS.floating[2], cls: "left-[30%] top-[38%] w-24", speed: 90 },
-              { src: PHOTOS.floating[3], cls: "right-[14%] top-[46%] w-32", speed: 180 },
-              { src: PHOTOS.floating[4], cls: "left-[6%] bottom-[2%] w-32", speed: 260 },
-              { src: PHOTOS.floating[5], cls: "right-[2%] bottom-[6%] w-28", speed: 120 },
+              { src: PHOTOS.floating[0], cls: "left-[0%] top-[2%] w-36 -rotate-3", speed: 140 },
+              { src: PHOTOS.floating[1], cls: "right-[2%] top-[-4%] w-44 rotate-2", speed: 220 },
+              { src: PHOTOS.floating[2], cls: "left-[22%] top-[40%] w-28 rotate-2", speed: 90 },
+              { src: PHOTOS.floating[3], cls: "right-[12%] top-[44%] w-36 -rotate-2", speed: 180 },
+              { src: PHOTOS.floating[4], cls: "left-[4%] bottom-[0%] w-40 rotate-1", speed: 260 },
+              { src: PHOTOS.floating[5], cls: "right-[0%] bottom-[4%] w-36 -rotate-1", speed: 120 },
             ].map((p, i) => (
               <Parallax key={i} speed={p.speed} className={`absolute ${p.cls}`}>
-                <div className={`overflow-hidden rounded-[4px] shadow-[0_18px_30px_-18px_rgb(28_29_26/0.6)] ${i % 2 ? "halftone" : ""}`}>
+                <div className={`overflow-hidden rounded-[4px] bg-white p-1.5 shadow-[0_22px_40px_-20px_rgb(28_29_26/0.55)] ${i === 4 ? "halftone" : ""}`}>
                   <Photo src={p.src} alt="" className="aspect-[4/5] w-full" />
                 </div>
               </Parallax>
