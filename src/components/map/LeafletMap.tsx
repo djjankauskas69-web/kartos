@@ -46,12 +46,12 @@ type Props = {
 export type BaseLayer = "map" | "satellite";
 
 /**
- * Backgrounds. Satellite = Esri World Imagery everywhere, with the Lithuanian national
- * orthophoto (ORT10LT, National Land Service) on top inside Lithuania, where it is usually sharper.
- * Both are stretched past their native zoom so the user can get very close to a grave.
+ * Backgrounds. Satellite = Esri World Imagery with Esri place names and roads on top.
+ * Esri sends "Map data not yet available" pictures past zoom 18 in many places, so we
+ * stop asking at 18 and enlarge those tiles instead, letting the user get very close.
  */
 const MAX_ZOOM = 21;
-const LT_BOUNDS = L.latLngBounds([53.85, 20.9], [56.47, 26.9]);
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 function makeBase(kind: BaseLayer) {
   if (kind === "map") {
     return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -60,22 +60,12 @@ function makeBase(kind: BaseLayer) {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     });
   }
+  const tiles = (path: string, attribution?: string) =>
+    L.tileLayer(`${ESRI}/${path}/MapServer/tile/{z}/{y}/{x}`, { maxZoom: MAX_ZOOM, maxNativeZoom: 18, attribution });
   return L.layerGroup([
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: MAX_ZOOM,
-      maxNativeZoom: 19,
-      attribution: "Esri, Maxar, Earthstar Geographics",
-    }),
-    // ArcGIS cache: level 0 = web zoom 7, level 11 (≈0.6 m/pixel) = zoom 18.
-    L.tileLayer("https://www.geoportal.lt/mapproxy/nzt_ort10lt_recent_wm_public/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: MAX_ZOOM,
-      minZoom: 7,
-      minNativeZoom: 7,
-      maxNativeZoom: 18,
-      zoomOffset: -7,
-      bounds: LT_BOUNDS,
-      attribution: "ORT10LT &copy; Nacionalinė žemės tarnyba, geoportal.lt",
-    }),
+    tiles("World_Imagery", "Esri, Maxar, Earthstar Geographics"),
+    tiles("Reference/World_Transportation"),
+    tiles("Reference/World_Boundaries_and_Places"),
   ]);
 }
 
