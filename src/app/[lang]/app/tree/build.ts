@@ -40,6 +40,8 @@ export function buildTree({
   base,
   addHref,
   graves,
+  families,
+  linkHref,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -53,6 +55,10 @@ export function buildTree({
   addHref?: (kind: string, to: string) => string;
   /** Marked graves by person id. */
   graves?: Map<string, { lat: number; lng: number }>;
+  /** Other families' trees this person is linked to (only those the viewer can open). */
+  families?: Map<string, Array<{ label: string; href: string }>>;
+  /** Administrators: where to link a person with another family's tree. */
+  linkHref?: (id: string) => string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -108,6 +114,8 @@ export function buildTree({
       grave: graves?.get(n.id),
       mapHref: graves?.has(n.id) ? `${base}/map?person=${n.id}` : undefined,
       addOptions: addOptions(n.id),
+      families: families?.get(n.id) ?? [],
+      linkHref: linkHref?.(n.id),
       moreAbove: n.moreAbove,
       moreBelow: n.moreBelow,
     };

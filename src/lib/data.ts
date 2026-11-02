@@ -238,3 +238,21 @@ export async function getLifeStory(locale: Locale, personId: string): Promise<Li
   }
   return out;
 }
+
+/** A link between one person here and the same person in another family's archive. */
+export type FamilyLink = { id: string; mine: string; otherWs: string | null; otherPerson: string | null; accepted: boolean };
+
+/** This archive's family links. Empty until database update 0007 has run. */
+export const familyLinks = cache(async (locale: Locale, workspaceId: string): Promise<FamilyLink[]> => {
+  const { supabase } = await requireUser(locale);
+  const { data, error } = await supabase
+    .from("family_links")
+    .select("id, a_workspace, a_person, b_workspace, b_person, accepted_at")
+    .or(`a_workspace.eq.${workspaceId},b_workspace.eq.${workspaceId}`);
+  if (error || !data) return [];
+  return data.map((l) =>
+    l.a_workspace === workspaceId
+      ? { id: l.id as string, mine: l.a_person as string, otherWs: l.b_workspace as string | null, otherPerson: l.b_person as string | null, accepted: Boolean(l.accepted_at) }
+      : { id: l.id as string, mine: l.b_person as string, otherWs: l.a_workspace as string, otherPerson: l.a_person as string, accepted: true },
+  );
+});

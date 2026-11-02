@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, requireWorkspace } from "@/lib/data";
+import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks } from "@/lib/data";
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
@@ -29,13 +29,21 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
 }
 
 async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Locale; searchPromise: Promise<Search> }) {
-  const [{ current, supabase }, search] = await Promise.all([requireWorkspace(locale), searchPromise]);
-  const [{ people, byId, rels }, { data: burials }] = await Promise.all([
+  const [{ current, supabase, memberships }, search] = await Promise.all([requireWorkspace(locale), searchPromise]);
+  const [{ people, byId, rels }, { data: burials }, links] = await Promise.all([
     getFamilyGraph(locale, current.id),
     supabase.from("burials").select("person_id, lat, lng, created_at").eq("workspace_id", current.id).neq("status", "rejected").not("lat", "is", null).order("created_at"),
+    familyLinks(locale, current.id),
   ]);
   const graves = new Map((burials ?? []).flatMap((b) => (b.lat != null && b.lng != null ? [[b.person_id, { lat: b.lat, lng: b.lng }] as const] : [])));
   const base = `/${locale}/app`;
+  // Linked trees open only for people who are members of the other archive too.
+  const families = new Map<string, Array<{ label: string; href: string }>>();
+  for (const l of links) {
+    const other = l.accepted && l.otherWs ? memberships.find((m) => m.id === l.otherWs) : undefined;
+    if (!other || !l.otherPerson) continue;
+    families.set(l.mine, [...(families.get(l.mine) ?? []), { label: other.name, href: `${base}/open?ws=${other.id}&p=${l.otherPerson}` }]);
+  }
   const canAdd = can.add(current.role);
   const allPortraits = await portraitUrls(locale, people);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
@@ -146,7 +154,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
   const hrefFor = (d: string) => {
@@ -195,6 +203,8 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           menuDirections: t.tree.menuDirections,
           menuAdd: t.tree.menuAdd,
           menuClose: t.tree.menuClose,
+          menuLink: t.familyLink.menuLink,
+          menuOpenFamily: t.familyLink.menuOpen,
           navGoogle: t.grave.navGoogle,
           navWaze: t.grave.navWaze,
           navApple: t.grave.navApple,

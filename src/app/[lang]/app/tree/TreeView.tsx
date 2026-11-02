@@ -23,6 +23,8 @@ export type TreeCard = {
   grave?: { lat: number; lng: number };
   mapHref?: string;
   addOptions: Array<{ label: string; href: string }>;
+  families: Array<{ label: string; href: string }>;
+  linkHref?: string;
   moreAbove: boolean;
   moreBelow: boolean;
 };
@@ -42,6 +44,8 @@ type Labels = {
   menuDirections: string;
   menuAdd: string;
   menuClose: string;
+  menuLink: string;
+  menuOpenFamily: string;
   navGoogle: string;
   navWaze: string;
   navApple: string;
@@ -608,6 +612,15 @@ function CardMenu({
             {labels.menuGrave}
           </Link>
         )}
+        {card.families.map((f) => (
+          <a key={f.href} href={f.href} role="menuitem" onClick={onLeave} className={`${item} py-2`}>
+            <svg {...ICON}><circle cx="6" cy="6" r="2.2" /><circle cx="6" cy="18" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M8 7l8 4M8 17l8-4" /></svg>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold">{f.label}</span>
+              <span className="block text-[0.85rem] text-ink-muted">{labels.menuOpenFamily} →</span>
+            </span>
+          </a>
+        ))}
         {nav.length > 0 && (
           <div className="px-3 pb-2 pt-1">
             <p className="flex items-center gap-3 text-[0.9rem] text-ink-muted">
@@ -622,6 +635,12 @@ function CardMenu({
               ))}
             </div>
           </div>
+        )}
+        {card.linkHref && (
+          <Link href={card.linkHref} role="menuitem" onClick={onLeave} className={`${item} text-ink-muted`}>
+            <svg {...ICON}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>
+            {labels.menuLink}
+          </Link>
         )}
         {card.addOptions.length > 0 && (
           <div className="mt-1 border-t border-line pt-1.5">

@@ -36,6 +36,7 @@ export function errorMessage(t: Dictionary, code?: string): string | null {
     required: t.app.errorRequired,
     year: t.app.errorYear,
     save: t.app.errorSave,
+    familyLink: t.familyLink.error,
     twoParents: t.relative.errorTwoParents,
     pick: t.relative.errorPick,
     self: t.relative.errorSelf,
