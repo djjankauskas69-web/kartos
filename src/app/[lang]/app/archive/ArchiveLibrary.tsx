@@ -157,6 +157,7 @@ export function ArchiveLibrary({
   const [newFolder, setNewFolder] = useState<string | null>(null);
   const [folderMenu, setFolderMenu] = useState<{ id: string; mode: "menu" | "rename" | "delete" } | null>(null);
   const [itemMenu, setItemMenu] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   // Close the little menus on a tap elsewhere.
   useEffect(() => {
@@ -459,25 +460,62 @@ export function ArchiveLibrary({
                       >
                         {t.editPhoto}
                       </button>
-                      <p className="px-3 pb-1 pt-2 text-[0.82rem] text-ink-muted">{t.moveTo}</p>
-                      <div className="max-h-48 overflow-y-auto">
-                        {[{ id: "", name: t.noFolder }, ...folders].map((f) => (
-                          <form
-                            key={f.id || "none"}
-                            action={async (form) => {
-                              await moveItem(form);
-                              setItemMenu(null);
-                            }}
-                          >
-                            <input type="hidden" name="locale" value={locale} />
-                            <input type="hidden" name="id" value={i.id} />
-                            <input type="hidden" name="folderId" value={f.id} />
-                            <button type="submit" className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[0.95rem] hover:bg-paper ${(i.folderId ?? "") === f.id ? "font-semibold" : ""}`}>
-                              {(i.folderId ?? "") === f.id ? "✓" : <span className="w-[0.7rem]" />} {f.name}
+                      {/* Move: one compact folder picker; choosing a folder moves it straight away. */}
+                      <form
+                        action={async (form) => {
+                          await moveItem(form);
+                          setItemMenu(null);
+                        }}
+                        className="px-1.5 pb-1 pt-1.5"
+                      >
+                        <input type="hidden" name="locale" value={locale} />
+                        <input type="hidden" name="id" value={i.id} />
+                        <label className="mb-1 block px-1.5 text-[0.82rem] text-ink-muted" htmlFor={`move-${i.id}`}>
+                          {t.moveTo}
+                        </label>
+                        <select
+                          id={`move-${i.id}`}
+                          name="folderId"
+                          defaultValue={i.folderId ?? ""}
+                          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                          className="min-h-10 w-full cursor-pointer rounded-lg border border-line bg-surface px-2.5 text-[0.95rem] outline-none focus:border-ink/50"
+                        >
+                          {[{ id: "", name: t.noFolder }, ...folders].map((f) => (
+                            <option key={f.id || "none"} value={f.id}>
+                              {f.name}
+                            </option>
+                          ))}
+                        </select>
+                      </form>
+                      {i.canDelete && (
+                        <div className="mt-1 border-t border-line pt-1">
+                          {deleteId === i.id ? (
+                            <form
+                              action={async (form) => {
+                                const r = await deleteItem(form);
+                                if (r.ok) {
+                                  setItemMenu(null);
+                                  setDeleteId(null);
+                                }
+                              }}
+                              className="flex gap-1.5 p-1"
+                            >
+                              <input type="hidden" name="locale" value={locale} />
+                              <input type="hidden" name="id" value={i.id} />
+                              <button type="submit" className="min-h-9 flex-1 rounded-lg bg-danger px-2 text-[0.92rem] font-semibold text-surface">
+                                {t.deleteConfirm}
+                              </button>
+                              <button type="button" onClick={() => setDeleteId(null)} className="min-h-9 rounded-lg px-2 text-[0.92rem] font-semibold hover:bg-paper">
+                                {t.cancel}
+                              </button>
+                            </form>
+                          ) : (
+                            <button type="button" onClick={() => setDeleteId(i.id)} className="flex min-h-10 w-full items-center rounded-lg px-3 text-left font-semibold text-danger hover:bg-paper">
+                              {t.delete}
                             </button>
-                          </form>
-                        ))}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   <button type="button" onClick={() => setOpenId(i.id)} className="group block w-full overflow-hidden rounded-xl bg-surface text-left shadow-[0_1px_2px_rgb(60_45_30/0.06),0_10px_22px_-16px_rgb(60_45_30/0.55)] ring-1 ring-line/80 transition-transform hover:-translate-y-0.5">
