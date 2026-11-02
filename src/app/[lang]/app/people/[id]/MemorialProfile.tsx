@@ -3,12 +3,14 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { MapView, type MapMarker } from "@/components/map/Map";
 import { deletePersonEvent } from "./event-actions";
 import { EventForm } from "./EventForm";
+import { FocusPlaceButton, PlaceForm } from "./PlaceForm";
+import { placeIcons, type PlaceKind } from "./place-icons";
 import { AboutEditor } from "./AboutEditor";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
 export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; pending?: boolean };
 export type ProfileRelative = { id: string; name: string; sub: string; portrait?: string; initials: string; href: string };
-export type MemorialPlace = { key: string; kind: "birthplace" | "residence" | "resting"; place: string; lat?: number | null; lng?: number | null; href?: string; id?: string; canDelete?: boolean };
+export type MemorialPlace = { key: string; kind: PlaceKind; place: string; lat?: number | null; lng?: number | null; year?: number | null; yearTo?: number | null; href?: string; id?: string; canDelete?: boolean };
 
 const I = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 const icons = {
@@ -102,8 +104,10 @@ export function MemorialProfile({
     </div>
   );
   const labels = m as unknown as Record<string, string>;
+  const kindLabel = (k: PlaceKind) => (k === "other" ? m.otherPlace : m[k]);
+  const yearsOf = (p: MemorialPlace) => (p.year ? `${p.year}${p.yearTo ? ` – ${p.yearTo}` : ""}${m.yearSuffix ? ` ${m.yearSuffix}` : ""}` : "");
   const pinned = places.filter((p) => p.lat != null && p.lng != null);
-  const markers: MapMarker[] = pinned.map((p) => ({ id: p.key, lat: p.lat!, lng: p.lng!, title: m[p.kind], lines: [p.place] }));
+  const markers: MapMarker[] = pinned.map((p) => ({ id: p.key, lat: p.lat!, lng: p.lng!, title: kindLabel(p.kind), lines: [p.place] }));
   const center = pinned[0] ? { lat: pinned[0].lat!, lng: pinned[0].lng! } : undefined;
 
   const timeline = (list: MemorialEvent[], full: boolean) =>
@@ -146,7 +150,7 @@ export function MemorialProfile({
           <li key={p.key} className="flex items-center gap-3 py-2.5">
             <span className="text-ink-muted">{icons.pin}</span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold leading-snug">{m[p.kind]}</span>
+              <span className="block font-semibold leading-snug">{kindLabel(p.kind)}</span>
               <span className="block truncate text-[0.92rem] text-ink-muted">{p.place}</span>
             </span>
             {p.href && (
@@ -320,17 +324,85 @@ export function MemorialProfile({
     docs: <div className="space-y-4">{nodes.docs}{docs.length === 0 && <p className="text-ink-muted">{m.noDocs}</p>}</div>,
     family: nodes.family,
     places: (
-      <div className="space-y-5">
-        {(lifePlaces.length > 0 || canAdd) && (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-3 text-[1.6rem] font-semibold">
+              <span className="text-olive-deep">{icons.pin}</span>
+              {m.places}
+              {places.length > 0 && <span className="rounded-full bg-linen px-2.5 py-0.5 text-[0.95rem] font-semibold">{places.length}</span>}
+            </h2>
+            <p className="mt-1 text-ink-muted">{m.placesLead}</p>
+          </div>
+          {canAdd && eventsReady && <FocusPlaceButton label={m.addPlace} />}
+        </div>
+
+        <div className="@container">
+          <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            {places.length === 0 ? (
+              <p className="rounded-[18px] border border-dashed border-line bg-surface p-5 leading-relaxed text-ink-muted">{m.placesHint}</p>
+            ) : (
+              <ol className="relative space-y-3 before:absolute before:bottom-6 before:left-[0.45rem] before:top-6 before:w-px before:bg-line">
+                {places.map((p, i) => (
+                  <li key={p.key} className="relative flex items-center gap-4 pl-8">
+                    <span aria-hidden="true" className={`absolute left-0 top-1/2 h-[0.95rem] w-[0.95rem] -translate-y-1/2 rounded-full border-2 border-white ring-1 ${i === 0 ? "bg-olive ring-olive/40" : "bg-ink-muted/60 ring-line"}`} />
+                    <div className={`flex min-w-0 flex-1 items-center gap-4 rounded-2xl border px-4 py-3 ${i === 0 ? "border-olive/30 bg-[#eef1e4]" : "border-line bg-surface"}`}>
+                      <span className="shrink-0 text-olive-deep">{placeIcons[p.kind]}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{p.place || kindLabel(p.kind)}</span>
+                        <span className="block text-[0.92rem] text-ink-muted">
+                          {[kindLabel(p.kind), yearsOf(p)].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                      {(p.href || (p.id && p.canDelete)) && (
+                        <details className="relative shrink-0" data-menu>
+                          <summary aria-label={m.more} title={m.more} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink [&::-webkit-details-marker]:hidden">⋯</summary>
+                          <div className="absolute right-0 z-20 mt-1 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+                            {p.href && <Link href={p.href} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.openMap}</Link>}
+                            {p.id && p.canDelete && (
+                              <form action={deletePersonEvent}>
+                                <input type="hidden" name="locale" value={locale} />
+                                <input type="hidden" name="id" value={p.id} />
+                                <button type="submit" className="flex min-h-10 w-full items-center rounded-lg px-3 text-left text-danger hover:bg-paper">{m.delete}</button>
+                              </form>
+                            )}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {/* A plain window for the map: the pins when there are any, otherwise a short note. */}
+            <div className="relative overflow-hidden rounded-[18px] border border-line bg-[#f3f1ea]">
+              {markers.length > 0 ? (
+                <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="h-80 w-full" />
+              ) : (
+                <div className="flex h-80 flex-col items-center justify-center gap-3 px-6 text-center text-ink-muted">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface text-olive-deep shadow-[0_6px_16px_-10px_rgb(28_29_26/0.5)]">{icons.pin}</span>
+                  <p className="max-w-[26ch] leading-snug">{m.mapEmpty}</p>
+                </div>
+              )}
+              <span className="pointer-events-none absolute left-3 top-3 z-[500] rounded-full bg-surface/95 px-3 py-1 text-[0.85rem] font-semibold shadow-[0_4px_12px_-8px_rgb(28_29_26/0.5)]">{m.mapCaption}</span>
+            </div>
+          </div>
+        </div>
+
+        {canAdd && (
           <section className={card}>
-            {head(icons.pin, m.places)}
-            <p className="-mt-2 mb-4 max-w-[60ch] text-[0.98rem] leading-relaxed text-ink-muted">{m.placesHint}</p>
-            {markers.length > 0 && <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="mb-3 h-72 w-full rounded-xl border border-line" />}
-            {lifePlaces.length > 0 && placeList(true)}
-            {canAdd && eventsReady && <div className={lifePlaces.length > 0 ? "mt-4" : ""}><EventForm locale={locale} personId={personId} mode="place" labels={labels} center={center} /></div>}
-            {canAdd && !eventsReady && <p className="text-[0.92rem] text-ink-muted">{m.needsUpdate}</p>}
+            <h3 className="mb-4 flex items-center gap-3 text-[1.25rem] font-semibold">
+              <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-olive text-[1.1rem] leading-none text-surface">+</span>
+              {m.addNewPlace}
+            </h3>
+            {eventsReady ? (
+              <PlaceForm locale={locale} personId={personId} labels={labels} center={center} graveHref={living ? undefined : `${base}/people/${personId}/grave`} />
+            ) : (
+              <p className="text-[0.92rem] text-ink-muted">{m.needsUpdate}</p>
+            )}
           </section>
         )}
+
         {nodes.grave}
       </div>
     ),

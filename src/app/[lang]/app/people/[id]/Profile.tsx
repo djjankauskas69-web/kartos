@@ -389,11 +389,15 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     ev.sort((a, b) => last(a) - last(b) || order(a) - order(b));
 
     const pl: MemorialPlace[] = [];
+    const mine = (e: { created_by: string | null }) => can.edit(role) || e.created_by === user.id;
     const birthEv = personEvents.find((e) => e.kind === "birthplace");
-    if (birthEv) pl.push({ key: birthEv.id, id: birthEv.id, kind: "birthplace", place: birthEv.place ?? person.birth_place ?? "", lat: birthEv.lat, lng: birthEv.lng, canDelete: can.edit(role) || birthEv.created_by === user.id });
-    else if (person.birth_place) pl.push({ key: "birth", kind: "birthplace", place: person.birth_place });
-    for (const e of personEvents.filter((e) => e.kind === "residence")) pl.push({ key: e.id, id: e.id, kind: "residence", place: e.place ?? "", lat: e.lat, lng: e.lng, canDelete: can.edit(role) || e.created_by === user.id });
-    if (!person.is_living && burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", "), lat: burial.lat, lng: burial.lng, href: `${base}/map?person=${id}` });
+    if (birthEv) pl.push({ key: birthEv.id, id: birthEv.id, kind: "birthplace", place: birthEv.place ?? person.birth_place ?? "", lat: birthEv.lat, lng: birthEv.lng, year: person.birth_year, canDelete: mine(birthEv) });
+    else if (person.birth_place) pl.push({ key: "birth", kind: "birthplace", place: person.birth_place, year: person.birth_year });
+    // Work, study and other places are stored as residences with that label in the title.
+    const sub = (title: string | null) => (title === "work" || title === "study" || title === "other" ? title : "residence");
+    for (const e of personEvents.filter((e) => e.kind === "residence").sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999)))
+      pl.push({ key: e.id, id: e.id, kind: sub(e.title), place: e.place ?? "", lat: e.lat, lng: e.lng, year: e.year, yearTo: e.year_to, canDelete: mine(e) });
+    if (!person.is_living && burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", "), lat: burial.lat, lng: burial.lng, year: person.death_year, href: `${base}/map?person=${id}` });
 
     const storyText =
       person.biography?.trim() ||
