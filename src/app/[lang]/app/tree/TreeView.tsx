@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { drawerState } from "./drawer-state";
 
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add"). */
 type MenuState = { key: string; mode: "card" | "add" } | null;
@@ -116,6 +117,7 @@ export function TreeView({
   const [grabbing, setGrabbing] = useState(false);
   const [activeGen, setActiveGen] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
+  const opening = useSyncExternalStore(drawerState.subscribe, drawerState.get, drawerState.getServer);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
   useEffect(() => {
@@ -472,8 +474,11 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)}`}>
-                <Link href={c.profileHref} draggable={false} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
+                <Link href={c.profileHref} draggable={false} onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
+                    {opening === c.key && (
+                      <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
+                    )}
                     {c.portrait ? (
                       // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                       <img

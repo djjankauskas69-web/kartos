@@ -11,7 +11,7 @@ import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { ancestorCouples, kinship } from "@/lib/kinship";
 import { Profile } from "../people/[id]/Profile";
-import { ProfileDrawer, ProfileSkeleton } from "./ProfileDrawer";
+import { KartosPulse, ProfileDrawer } from "./ProfileDrawer";
 import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
@@ -267,7 +267,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       />
       {drawerId && (
         <ProfileDrawer closeHref={viewHref()} fullHref={`${base}/people/${drawerId}`} labels={{ close: t.tree.drawerClose, full: t.tree.drawerFull }}>
-          <Suspense key={drawerId} fallback={<ProfileSkeleton />}>
+          <Suspense key={drawerId} fallback={<KartosPulse />}>
             <Profile t={t} locale={locale} idPromise={Promise.resolve(drawerId)} compact />
           </Suspense>
         </ProfileDrawer>
