@@ -728,7 +728,8 @@
     "deleteFolderWarn": "Failai neišsitrins – jie liks „Visi failai“ be aplanko.",
     "itemMenu": "Veiksmai",
     "moveTo": "Perkelti į aplanką",
-    "editPhoto": "Redaguoti"
+    "editPhoto": "Redaguoti",
+    "deleteAsk": "Ištrinti šį failą visam laikui?"
   },
   "peopleList": {
     "title": "Žmonės",

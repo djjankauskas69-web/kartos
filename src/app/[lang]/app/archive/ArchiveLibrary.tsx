@@ -123,6 +123,13 @@ function Dialog({ open, onClose, title, children, wide = false }: { open: boolea
   );
 }
 
+const MI = { width: 17, height: 17, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+const menuIcon = {
+  edit: <svg {...MI}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>,
+  folder: <svg {...MI}><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5V17A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V7.5Z" /></svg>,
+  trash: <svg {...MI}><path d="M4.5 7h15M10 11v5M14 11v5M6 7l1 12a1.5 1.5 0 0 0 1.5 1.4h7A1.5 1.5 0 0 0 17 19l1-12M9.5 7V4.5h5V7" /></svg>,
+};
+
 export function ArchiveLibrary({
   items,
   folders,
@@ -158,6 +165,7 @@ export function ArchiveLibrary({
   const [folderMenu, setFolderMenu] = useState<{ id: string; mode: "menu" | "rename" | "delete" } | null>(null);
   const [itemMenu, setItemMenu] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   // Close the little menus on a tap elsewhere.
   useEffect(() => {
@@ -439,7 +447,11 @@ export function ArchiveLibrary({
                   {canManageFolders && (
                     <button
                       type="button"
-                      onClick={() => setItemMenu(itemMenu === i.id ? null : i.id)}
+                      onClick={() => {
+                        setItemMenu(itemMenu === i.id ? null : i.id);
+                        setMoveOpen(false);
+                        setDeleteId(null);
+                      }}
                       aria-label={`${t.itemMenu}: ${i.title}`}
                       title={t.itemMenu}
                       className={`absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-ink shadow-md hover:bg-ink hover:text-white ${itemMenu === i.id ? "opacity-100" : "opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 focus:opacity-100"}`}
@@ -448,73 +460,87 @@ export function ArchiveLibrary({
                     </button>
                   )}
                   {itemMenu === i.id && (
-                    <div className="absolute right-2 top-12 z-20 w-56 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setItemMenu(null);
-                          setEditId(i.id);
-                          setOpenId(i.id);
-                        }}
-                        className="flex min-h-10 w-full items-center rounded-lg px-3 text-left font-semibold hover:bg-paper"
-                      >
-                        {t.editPhoto}
-                      </button>
-                      {/* Move: one compact folder picker; choosing a folder moves it straight away. */}
-                      <form
-                        action={async (form) => {
-                          await moveItem(form);
-                          setItemMenu(null);
-                        }}
-                        className="px-1.5 pb-1 pt-1.5"
-                      >
-                        <input type="hidden" name="locale" value={locale} />
-                        <input type="hidden" name="id" value={i.id} />
-                        <label className="mb-1 block px-1.5 text-[0.82rem] text-ink-muted" htmlFor={`move-${i.id}`}>
-                          {t.moveTo}
-                        </label>
-                        <select
-                          id={`move-${i.id}`}
-                          name="folderId"
-                          defaultValue={i.folderId ?? ""}
-                          onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                          className="min-h-10 w-full cursor-pointer rounded-lg border border-line bg-surface px-2.5 text-[0.95rem] outline-none focus:border-ink/50"
+                    <div className="absolute right-2 top-12 z-20 w-60 rounded-2xl border border-line bg-surface p-1.5 text-[0.95rem] shadow-[var(--shadow-float)]">
+                      {moveOpen ? (
+                        <>
+                          <button type="button" onClick={() => setMoveOpen(false)} className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left font-semibold hover:bg-paper">
+                            <span aria-hidden="true" className="text-ink-muted">‹</span>
+                            {t.moveTo}
+                          </button>
+                          <div className="mt-1 max-h-60 overflow-y-auto border-t border-line pt-1">
+                            {[{ id: "", name: t.noFolder }, ...folders].map((f) => {
+                              const here = (i.folderId ?? "") === f.id;
+                              return (
+                                <form
+                                  key={f.id || "none"}
+                                  action={async (form) => {
+                                    await moveItem(form);
+                                    setItemMenu(null);
+                                    setMoveOpen(false);
+                                  }}
+                                >
+                                  <input type="hidden" name="locale" value={locale} />
+                                  <input type="hidden" name="id" value={i.id} />
+                                  <input type="hidden" name="folderId" value={f.id} />
+                                  <button type="submit" disabled={here} className={`flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left ${here ? "bg-paper font-semibold" : "hover:bg-paper"}`}>
+                                    <span className="text-ink-muted">{menuIcon.folder}</span>
+                                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                                    {here && <span aria-hidden="true" className="text-olive-deep">✓</span>}
+                                  </button>
+                                </form>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : deleteId === i.id ? (
+                        <form
+                          action={async (form) => {
+                            const r = await deleteItem(form);
+                            if (r.ok) {
+                              setItemMenu(null);
+                              setDeleteId(null);
+                            }
+                          }}
+                          className="p-1.5"
                         >
-                          {[{ id: "", name: t.noFolder }, ...folders].map((f) => (
-                            <option key={f.id || "none"} value={f.id}>
-                              {f.name}
-                            </option>
-                          ))}
-                        </select>
-                      </form>
-                      {i.canDelete && (
-                        <div className="mt-1 border-t border-line pt-1">
-                          {deleteId === i.id ? (
-                            <form
-                              action={async (form) => {
-                                const r = await deleteItem(form);
-                                if (r.ok) {
-                                  setItemMenu(null);
-                                  setDeleteId(null);
-                                }
-                              }}
-                              className="flex gap-1.5 p-1"
-                            >
-                              <input type="hidden" name="locale" value={locale} />
-                              <input type="hidden" name="id" value={i.id} />
-                              <button type="submit" className="min-h-9 flex-1 rounded-lg bg-danger px-2 text-[0.92rem] font-semibold text-surface">
-                                {t.deleteConfirm}
-                              </button>
-                              <button type="button" onClick={() => setDeleteId(null)} className="min-h-9 rounded-lg px-2 text-[0.92rem] font-semibold hover:bg-paper">
-                                {t.cancel}
-                              </button>
-                            </form>
-                          ) : (
-                            <button type="button" onClick={() => setDeleteId(i.id)} className="flex min-h-10 w-full items-center rounded-lg px-3 text-left font-semibold text-danger hover:bg-paper">
+                          <input type="hidden" name="locale" value={locale} />
+                          <input type="hidden" name="id" value={i.id} />
+                          <p className="mb-2.5 px-1 leading-snug">{t.deleteAsk}</p>
+                          <div className="flex gap-1.5">
+                            <button type="submit" className="min-h-10 flex-1 rounded-xl bg-danger px-3 font-semibold text-surface">
+                              {t.deleteConfirm}
+                            </button>
+                            <button type="button" onClick={() => setDeleteId(null)} className="min-h-10 flex-1 rounded-xl border border-line px-3 font-semibold hover:bg-paper">
+                              {t.cancel}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItemMenu(null);
+                              setEditId(i.id);
+                              setOpenId(i.id);
+                            }}
+                            className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left hover:bg-paper"
+                          >
+                            <span className="text-ink-muted">{menuIcon.edit}</span>
+                            {t.editPhoto}
+                          </button>
+                          <button type="button" onClick={() => setMoveOpen(true)} className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left hover:bg-paper">
+                            <span className="text-ink-muted">{menuIcon.folder}</span>
+                            <span className="flex-1">{t.moveTo}</span>
+                            <span aria-hidden="true" className="text-ink-muted">›</span>
+                          </button>
+                          {i.canDelete && (
+                            <button type="button" onClick={() => setDeleteId(i.id)} className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-danger hover:bg-paper">
+                              {menuIcon.trash}
                               {t.delete}
                             </button>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   )}

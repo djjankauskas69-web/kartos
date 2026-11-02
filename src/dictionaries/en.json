@@ -728,7 +728,8 @@
     "deleteFolderWarn": "Files are not deleted – they stay in “All files” without a folder.",
     "itemMenu": "Actions",
     "moveTo": "Move to folder",
-    "editPhoto": "Edit"
+    "editPhoto": "Edit",
+    "deleteAsk": "Delete this file for good?"
   },
   "peopleList": {
     "title": "People",
