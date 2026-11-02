@@ -21,6 +21,7 @@ import { can, getContext, getPerson, myPersonLinks, pendingCount } from "@/lib/d
 import { portraitUrls } from "./portraits";
 import { signOut, switchWorkspace } from "./actions";
 import { SideNav, TopNav, type NavItem } from "./AppNav";
+import { MenuCloser } from "./MenuCloser";
 
 export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -42,7 +43,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <header className="border-b border-line/70 bg-paper/90 px-5 py-3 backdrop-blur sm:px-8 lg:border-b-0 lg:pt-5">
+        <header className="relative z-40 border-b border-line/70 bg-paper/90 px-5 py-3 backdrop-blur sm:px-8 lg:border-b-0 lg:pt-5">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <div className="hidden sm:block lg:hidden">
               <Wordmark href={`/${locale}/app`} />
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
             </Suspense>
           </div>
         </header>
+        <MenuCloser />
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-6">
           {children}
         </main>
@@ -100,7 +102,7 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <>
       {current && (
-        <details className="relative">
+        <details className="relative" data-menu>
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 sm:gap-2.5 sm:px-4 text-[1rem] font-semibold [&::-webkit-details-marker]:hidden">
             <span className="hidden text-ink-muted sm:inline">
               <IconPeople size={20} />
@@ -150,7 +152,7 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
             {pending > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-paper bg-[#c9772f]" />}
           </Link>
         )}
-        <details className="relative">
+        <details className="relative" data-menu>
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full p-0.5 sm:pl-1 sm:pr-2 hover:bg-linen [&::-webkit-details-marker]:hidden" aria-label={t.dash.account}>
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element -- signed private URL

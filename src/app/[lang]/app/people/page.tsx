@@ -109,7 +109,7 @@ async function People({ t, locale, searchPromise }: { t: Dictionary; locale: Loc
           </span>
           <input id="people-q" name="q" type="search" defaultValue={search.q} placeholder={t.peopleList.search} className={`${cls.input} pl-12`} />
         </form>
-        <details className="relative">
+        <details className="relative" data-menu>
           <summary
             className={`flex h-13 w-13 cursor-pointer list-none items-center justify-center rounded-xl border bg-surface [&::-webkit-details-marker]:hidden ${
               filter === "all" ? "border-line text-ink" : "border-sage-deep text-sage-deep"
