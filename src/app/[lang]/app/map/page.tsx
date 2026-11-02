@@ -9,7 +9,7 @@ import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
-import { plural, roman } from "../tree/build";
+import { roman } from "../tree/build";
 import { GravesExplorer, type GraveItem } from "./GravesExplorer";
 
 export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
@@ -103,7 +103,6 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
   // Oldest generation first, then by name.
   items.sort((a, b) => a.gen - b.gen || a.name.localeCompare(b.name, locale));
 
-  const cemeteryCount = new Set(items.map((i) => i.cemetery).filter(Boolean)).size;
   const initial = items.find((i) => i.personId === personParam)?.id ?? null;
   const genOptions = [...new Set(items.map((i) => i.gen))].sort((a, b) => a - b).map((n) => ({ n, label: t.tree.generationN.replace("{n}", roman(n)) }));
 
@@ -112,10 +111,6 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className={cls.h1}>{t.map.title}</h1>
-          <p className="mt-1 text-[1.1rem] text-ink-muted">
-            {plural(locale, items.length, t.map.graves)}
-            {cemeteryCount > 0 && ` · ${plural(locale, cemeteryCount, t.map.cemeteries)}`}
-          </p>
         </div>
         {can.add(current.role) && (
           <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>

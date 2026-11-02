@@ -37,6 +37,12 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
             <Navigation t={t} locale={locale} variant="side" />
           </Suspense>
         </div>
+        {/* Graves sit apart from the family sections, just above the language switch. */}
+        <div className="mb-4">
+          <Suspense fallback={null}>
+            <Navigation t={t} locale={locale} variant="bottom" />
+          </Suspense>
+        </div>
         <div className="px-3">
           <FixedLanguageSwitch current={locale} label={t.nav.language} path="/app" />
         </div>
@@ -67,7 +73,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
   );
 }
 
-async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Locale; variant: "side" | "top" }) {
+async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Locale; variant: "side" | "top" | "bottom" }) {
   const { current } = await getContext(locale);
   if (!current) return null;
   const base = `/${locale}/app`;
@@ -75,14 +81,15 @@ async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Local
     { href: base, label: t.appNav.overview, icon: <IconHome />, exact: true },
     // People profiles open from the tree, so the tree stays highlighted there.
     { href: `${base}/tree`, label: t.appNav.tree, icon: <IconTree />, also: [`${base}/people`] },
-    { href: `${base}/map`, label: t.appNav.map, icon: <IconPin /> },
     { href: `${base}/archive`, label: t.appNav.archive, icon: <IconImage /> },
     { href: `${base}/members`, label: t.appNav.members, icon: <IconMembers /> },
   ];
+  const graves: NavItem = { href: `${base}/map`, label: t.appNav.map, icon: <IconPin /> };
+  if (variant === "bottom") return <SideNav items={[graves]} label={t.appNav.map} />;
   if (can.admin(current.role)) {
     items.push({ href: `${base}/review`, label: t.appNav.review, icon: <IconCheck />, badge: await pendingCount(locale, current.id) });
   }
-  return variant === "side" ? <SideNav items={items} label={t.dash.menu} /> : <TopNav items={items} label={t.dash.menu} />;
+  return variant === "side" ? <SideNav items={items} label={t.dash.menu} /> : <TopNav items={[...items, graves]} label={t.dash.menu} />;
 }
 
 const menu =
