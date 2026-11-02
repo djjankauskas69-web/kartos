@@ -3,17 +3,14 @@
 import { useActionState, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import type { Person, Role } from "@/lib/data";
+import type { Person } from "@/lib/data";
 import { cls, ErrorText, errorMessage } from "@/components/ui";
 import {
   acceptInvite,
   addMemory,
   addRelative,
-  changeRole,
-  createInvite,
   createPerson,
   createWorkspace,
-  removeMember,
   renameWorkspace,
   updatePerson,
   type FormState,
@@ -432,131 +429,6 @@ export function MemoryForm({ t, locale, personId, needsApproval }: { t: T; local
 }
 
 /* ---------- Members ---------- */
-
-export function InviteForm({ t, locale }: { t: T; locale: Locale }) {
-  const [state, action, pending] = useActionState(createInvite, {});
-  const [copied, setCopied] = useState(false);
-  const roles: Role[] = ["contributor", "editor", "viewer"];
-
-  async function copy() {
-    if (!state.link) return;
-    try {
-      await navigator.clipboard.writeText(state.link);
-      setCopied(true);
-    } catch {
-      (document.getElementById("invite-link") as HTMLInputElement | null)?.select();
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      <form action={action} className="space-y-4">
-        <Hidden values={{ locale }} />
-        <fieldset>
-          <legend className="mb-2 font-semibold">{t.members.inviteRole}</legend>
-          <div className="space-y-2">
-            {roles.map((r, i) => (
-              <label key={r} className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 has-[:checked]:border-sage-deep has-[:checked]:bg-sage-wash/50">
-                <input type="radio" name="role" value={r} defaultChecked={i === 0} className="mt-1.5 accent-[var(--color-sage-deep)]" />
-                <span>
-                  <span className="block font-semibold">{t.roles[r]}</span>
-                  <span className="block text-[0.95rem] text-ink-muted">{t.roles[`${r}Help`]}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <button type="submit" disabled={pending} className={cls.primary} onClick={() => setCopied(false)}>
-          {pending ? t.app.loading : t.members.createLink}
-        </button>
-        <ErrorText message={errorMessage(t, state.error)} />
-      </form>
-
-      {state.link && (
-        <div className="rounded-xl border border-sage/40 bg-sage-wash p-4" role="status">
-          <p className="mb-2 font-semibold">{t.members.linkReady}</p>
-          <div className="flex flex-wrap gap-2">
-            <input
-              id="invite-link"
-              readOnly
-              value={state.link}
-              onFocus={(e) => e.currentTarget.select()}
-              className="min-w-0 flex-1 basis-60 rounded-lg border border-line bg-surface px-3 py-2 text-[0.95rem]"
-            />
-            <button type="button" onClick={copy} className={cls.secondary}>
-              {copied ? t.members.copied : t.members.copy}
-            </button>
-          </div>
-          <p className="mt-2 text-[0.92rem] text-ink-muted">{t.members.linkOnce}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function MemberControls({
-  t,
-  locale,
-  userId,
-  role,
-  isSelf,
-  isAdmin,
-}: {
-  t: T;
-  locale: Locale;
-  userId: string;
-  role: Role;
-  isSelf: boolean;
-  isAdmin: boolean;
-}) {
-  const [roleState, roleAction, rolePending] = useActionState(changeRole, {});
-  const [removeState, removeAction, removePending] = useActionState(removeMember, {});
-  const [confirming, setConfirming] = useState(false);
-  const error = errorMessage(t, roleState.error ?? removeState.error);
-
-  return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
-      {isAdmin ? (
-        <form action={roleAction} className="flex items-center gap-2">
-          <Hidden values={{ locale, userId }} />
-          <label htmlFor={`role-${userId}`} className="sr-only">
-            {t.app.role}
-          </label>
-          <select id={`role-${userId}`} name="role" defaultValue={role} className="min-h-11 rounded-xl border border-line bg-surface px-3">
-            {(["owner", "editor", "contributor", "viewer"] as const).map((r) => (
-              <option key={r} value={r}>
-                {t.roles[r]}
-              </option>
-            ))}
-          </select>
-          <button type="submit" disabled={rolePending} className={cls.secondary}>
-            {t.members.changeRole}
-          </button>
-        </form>
-      ) : (
-        <span className="rounded-full bg-linen px-3 py-1 text-[0.95rem]">{t.roles[role]}</span>
-      )}
-
-      {(isAdmin || isSelf) &&
-        (confirming ? (
-          <form action={removeAction} className="flex items-center gap-2">
-            <Hidden values={{ locale, userId }} />
-            <button type="submit" disabled={removePending} className={cls.danger}>
-              {isSelf ? t.members.confirmLeave : t.members.confirmRemove}
-            </button>
-            <button type="button" onClick={() => setConfirming(false)} className={cls.quiet}>
-              {t.app.cancel}
-            </button>
-          </form>
-        ) : (
-          <button type="button" onClick={() => setConfirming(true)} className="text-[0.95rem] text-ink-muted underline-offset-2 hover:text-danger hover:underline">
-            {isSelf ? t.members.leave : t.members.remove}
-          </button>
-        ))}
-      <ErrorText message={error} />
-    </div>
-  );
-}
 
 export function AcceptInviteForm({ t, locale, token }: { t: T; locale: Locale; token: string }) {
   const [state, action, pending] = useActionState(acceptInvite, {});

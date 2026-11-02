@@ -103,3 +103,33 @@ export const IconQuote = (p: P) => (
     <path d="M5 18c0-5 1.5-9 5-11M13 18c0-5 1.5-9 5-11" />
   </svg>
 );
+export const IconDots = (p: P) => (
+  <svg {...s(p)}>
+    <circle cx="12" cy="5.5" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="18.5" r="1.2" fill="currentColor" />
+  </svg>
+);
+export const IconShield = (p: P) => (
+  <svg {...s(p)}>
+    <path d="M12 3.5 5 6.2v5.3c0 4.3 2.9 7.7 7 9 4.1-1.3 7-4.7 7-9V6.2L12 3.5Z" />
+  </svg>
+);
+export const IconPen = (p: P) => (
+  <svg {...s(p)}>
+    <path d="M4.5 19.5 5.3 15.6 15.4 5.5a1.9 1.9 0 0 1 2.7 0l.4.4a1.9 1.9 0 0 1 0 2.7L8.4 18.7l-3.9.8Z" />
+    <path d="m13.8 7.1 3.1 3.1" />
+  </svg>
+);
+export const IconEye = (p: P) => (
+  <svg {...s(p)}>
+    <path d="M2.8 12S6 5.8 12 5.8 21.2 12 21.2 12 18 18.2 12 18.2 2.8 12 2.8 12Z" />
+    <circle cx="12" cy="12" r="2.7" />
+  </svg>
+);
+export const IconLink = (p: P) => (
+  <svg {...s(p)}>
+    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+    <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+  </svg>
+);

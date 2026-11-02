@@ -13,10 +13,11 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
 - Prisijungimo puslapis: nuoroda el. paštu ir „Tęsti su Google“ (Supabase)
 - Duomenų bazės schema su privatumo taisyklėmis (Row Level Security): `supabase/migrations/0001_init.sql`
 - Archyvo vidus (`/lt/app`): žmonės, giminės medis, kapų žemėlapis, nariai, tvirtinimas
-  - Vaidmenys: Administratorius (tvirtina), Redaktorius (matoma iš karto), Narys (laukia patvirtinimo), Žiūrovas
+  - Vaidmenys: Administratorius (tvirtina), Redaktorius (matoma iš karto), Narys (laukia patvirtinimo), Peržiūros teisė
   - Kvietimai nuoroda, nuotraukos (privačios), prisiminimai, kapo vieta su GPS ir žemėlapiu
   - Taisyklės ir tvirtinimas: `supabase/migrations/0002_roles_approval.sql`
   - Archyvas kaip šeimos biblioteka (aplankai, dokumentai, istorijos): `supabase/migrations/0003_library.sql`
+  - Šeimos nariai: filtrai, ⋮ meniu (teisės, perdavimas, šalinimas), kvietimo nuoroda vienu mygtuku; paskutinis prisijungimas: `supabase/migrations/0004_member_activity.sql`
 
 ## Duomenų bazės atnaujinimai
 

@@ -13,6 +13,7 @@ import {
   IconMembers,
   IconPeople,
   IconPin,
+  IconPlus,
   IconSearch,
   IconTree,
 } from "@/components/icons";
@@ -118,6 +119,12 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
                 </button>
               </form>
             ))}
+            <div className="mt-1 border-t border-line pt-1">
+              <Link href={`${base}/new`} className="gap-2 font-semibold text-sage-deep">
+                <IconPlus size={18} />
+                {t.dash.newArchive}
+              </Link>
+            </div>
           </div>
         </details>
       )}

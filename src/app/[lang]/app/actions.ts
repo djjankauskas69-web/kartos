@@ -134,6 +134,38 @@ export async function removeMember(_: FormState, form: FormData): Promise<FormSt
   return { ok: true };
 }
 
+export async function transferOwnership(_: FormState, form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const { supabase, user, workspace } = await actionContext(locale, can.admin);
+  const userId = uuid(form, "userId");
+  if (!userId || userId === user.id) return { error: "save" };
+  // Promote first, so the archive is never without an administrator.
+  const up = await supabase.from("workspace_members").update({ role: "owner" }).eq("workspace_id", workspace.id).eq("user_id", userId);
+  if (up.error) return { error: "save" };
+  const down = await supabase.from("workspace_members").update({ role: "editor" }).eq("workspace_id", workspace.id).eq("user_id", user.id);
+  if (down.error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
+export async function revokeAllInvites(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.admin);
+  await supabase.from("invitations").update({ revoked_at: new Date().toISOString() }).eq("workspace_id", workspace.id).is("revoked_at", null);
+  refresh();
+}
+
+export async function renameSelf(_: FormState, form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const { supabase, user } = await actionContext(locale);
+  const name = text(form, "name", 80);
+  if (!name) return { error: "nameRequired" };
+  const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", user.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
 export async function acceptInvite(_: FormState, form: FormData): Promise<FormState> {
   const locale = formLocale(form);
   const token = String(form.get("token") ?? "");
