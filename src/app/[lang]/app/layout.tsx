@@ -65,7 +65,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
           </div>
         </header>
         <MenuCloser />
-        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-6 has-[.tree-wide]:max-w-none has-[.tree-wide]:py-4 lg:has-[.tree-wide]:px-6">
+        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-6 data-[wide]:max-w-none data-[wide]:py-4 lg:data-[wide]:px-6">
           {children}
         </main>
       </div>

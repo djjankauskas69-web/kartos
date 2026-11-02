@@ -12,6 +12,7 @@ import { portraitUrls } from "../portraits";
 import { ancestorCouples, kinship } from "@/lib/kinship";
 import { Profile } from "../people/[id]/Profile";
 import { ProfileDrawer } from "./ProfileDrawer";
+import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
@@ -217,6 +218,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   return (
     <div className="tree-wide">
+      <WideMain />
       {header(subtitle, "tree")}
       {host}
       <TreeView
