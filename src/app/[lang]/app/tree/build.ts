@@ -58,7 +58,7 @@ export function buildTree({
   /** Marked graves by person id. */
   graves?: Map<string, { lat: number; lng: number }>;
   /** Other families' trees this person is linked to (only those the viewer can open). */
-  families?: Map<string, Array<{ label: string; href: string }>>;
+  families?: Map<string, Array<{ label: string; href: string; compareHref?: string }>>;
   /** Administrators: where to link a person with another family's tree. */
   linkHref?: (id: string) => string;
   /** "Who is this to me?" in words, by person id. */

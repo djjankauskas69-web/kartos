@@ -934,5 +934,34 @@
     "signIn": "Sign in",
     "error": "Couldn't link. Please try again.",
     "needsUpdate": "Linking trees needs database update 0007."
+  },
+  "merge": {
+    "title": "Compare trees",
+    "lead": "Comparing your tree with “{family}”. The shared person is {name}. Tick what to accept and press “Merge”.",
+    "same": "The same",
+    "sameLead": "The same people in both trees – they will be linked.",
+    "diff": "Different",
+    "diffLead": "Choose which information is right in your tree.",
+    "keepMine": "Keep mine",
+    "takeTheirs": "Take theirs",
+    "only": "Only in their tree",
+    "onlyLead": "Ticked people will be added to your tree with their relationships and linked to their tree.",
+    "onlyMine": "{n} people are only in your tree – they stay as they are.",
+    "nothing": "The trees already match – nothing to merge.",
+    "apply": "Merge",
+    "fields": {
+      "given_names": "First name",
+      "surname": "Surname",
+      "birth_year": "Born",
+      "death_year": "Died",
+      "is_living": "Living"
+    },
+    "yes": "yes",
+    "no": "no",
+    "empty": "—",
+    "needsUpdate": "Merging trees needs database update 0008.",
+    "notMember": "You can compare only when you are also a member of the other family's archive.",
+    "compare": "Compare and merge",
+    "error": "Couldn't merge. Please try again."
   }
 }

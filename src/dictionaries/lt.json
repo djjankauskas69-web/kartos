@@ -934,5 +934,34 @@
     "signIn": "Prisijungti",
     "error": "Nepavyko susieti. Pabandykite dar kartą.",
     "needsUpdate": "Kad veiktų medžių susiejimas, reikia atnaujinti duomenų bazę (0007)."
+  },
+  "merge": {
+    "title": "Palyginti medžius",
+    "lead": "Lyginame jūsų medį su „{family}“ medžiu. Bendras žmogus – {name}. Pažymėkite, ką priimti, ir spauskite „Sujungti“.",
+    "same": "Sutampa",
+    "sameLead": "Tie patys žmonės abiejuose medžiuose – bus susieti.",
+    "diff": "Skiriasi",
+    "diffLead": "Pasirinkite, kuri informacija teisinga jūsų medyje.",
+    "keepMine": "Palikti mano",
+    "takeTheirs": "Imti jų",
+    "only": "Yra tik jų medyje",
+    "onlyLead": "Pažymėti žmonės bus pridėti į jūsų medį kartu su ryšiais ir susieti su jų medžiu.",
+    "onlyMine": "{n} žm. yra tik jūsų medyje – jie lieka kaip buvę.",
+    "nothing": "Medžiai jau sutampa – nėra ką sujungti.",
+    "apply": "Sujungti",
+    "fields": {
+      "given_names": "Vardas",
+      "surname": "Pavardė",
+      "birth_year": "Gimimo metai",
+      "death_year": "Mirties metai",
+      "is_living": "Gyvas"
+    },
+    "yes": "taip",
+    "no": "ne",
+    "empty": "—",
+    "needsUpdate": "Kad veiktų medžių sujungimas, reikia atnaujinti duomenų bazę (0008).",
+    "notMember": "Palyginti galite tik tada, kai esate ir kitos šeimos archyvo narys.",
+    "compare": "Palyginti ir sujungti",
+    "error": "Nepavyko sujungti. Pabandykite dar kartą."
   }
 }

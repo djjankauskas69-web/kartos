@@ -84,6 +84,11 @@ async function FamilyLink({ t, locale, idPromise }: { t: Dictionary; locale: Loc
                     {l.accepted ? [f.linked, l.otherPerson && otherName.get(l.otherPerson)].filter(Boolean).join(" · ") : f.pending}
                   </p>
                 </div>
+                {l.accepted && ws && (
+                  <Link href={`${base}/people/${id}/compare?link=${l.id}`} className={`${cls.secondary} ml-auto`}>
+                    {t.merge.compare}
+                  </Link>
+                )}
                 <RemoveLinkButton locale={locale} linkId={l.id} labels={{ remove: f.remove, confirm: f.removeConfirm, cancel: f.cancel, warning: f.removeWarning }} />
               </li>
             );

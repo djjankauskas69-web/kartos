@@ -27,7 +27,7 @@ export type TreeCard = {
   grave?: { lat: number; lng: number };
   mapHref?: string;
   addOptions: Array<{ label: string; href: string }>;
-  families: Array<{ label: string; href: string }>;
+  families: Array<{ label: string; href: string; compareHref?: string }>;
   linkHref?: string;
   moreAbove: boolean;
   moreBelow: boolean;
@@ -50,6 +50,7 @@ type Labels = {
   menuClose: string;
   menuLink: string;
   menuOpenFamily: string;
+  menuCompare: string;
   navGoogle: string;
   navWaze: string;
   navApple: string;
@@ -679,13 +680,20 @@ function CardMenu({
           </Link>
         )}
         {card.families.map((f) => (
-          <a key={f.href} href={f.href} role="menuitem" onClick={onLeave} className={`${item} py-2`}>
-            <svg {...ICON}><circle cx="6" cy="6" r="2.2" /><circle cx="6" cy="18" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M8 7l8 4M8 17l8-4" /></svg>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">{f.label}</span>
-              <span className="block text-[0.85rem] text-ink-muted">{labels.menuOpenFamily} →</span>
-            </span>
-          </a>
+          <div key={f.href}>
+            <a href={f.href} role="menuitem" onClick={onLeave} className={`${item} py-2`}>
+              <svg {...ICON}><circle cx="6" cy="6" r="2.2" /><circle cx="6" cy="18" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M8 7l8 4M8 17l8-4" /></svg>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{f.label}</span>
+                <span className="block text-[0.85rem] text-ink-muted">{labels.menuOpenFamily} →</span>
+              </span>
+            </a>
+            {f.compareHref && (
+              <Link href={f.compareHref} role="menuitem" onClick={onLeave} className={`${item} min-h-10 pl-[2.75rem] text-[0.95rem] text-ink-muted`}>
+                {labels.menuCompare}
+              </Link>
+            )}
+          </div>
         ))}
         {nav.length > 0 && (
           <div>

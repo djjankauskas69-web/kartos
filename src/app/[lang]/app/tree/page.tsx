@@ -40,11 +40,14 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const graves = new Map((burials ?? []).flatMap((b) => (b.lat != null && b.lng != null ? [[b.person_id, { lat: b.lat, lng: b.lng }] as const] : [])));
   const base = `/${locale}/app`;
   // Linked trees open only for people who are members of the other archive too.
-  const families = new Map<string, Array<{ label: string; href: string }>>();
+  const families = new Map<string, Array<{ label: string; href: string; compareHref?: string }>>();
   for (const l of links) {
     const other = l.accepted && l.otherWs ? memberships.find((m) => m.id === l.otherWs) : undefined;
     if (!other || !l.otherPerson) continue;
-    families.set(l.mine, [...(families.get(l.mine) ?? []), { label: other.name, href: `${base}/open?ws=${other.id}&p=${l.otherPerson}` }]);
+    families.set(l.mine, [
+      ...(families.get(l.mine) ?? []),
+      { label: other.name, href: `${base}/open?ws=${other.id}&p=${l.otherPerson}`, compareHref: can.admin(current.role) ? `${base}/people/${l.mine}/compare?link=${l.id}` : undefined },
+    ]);
   }
   const canAdd = can.add(current.role);
   // You in this tree ("Tai aš"): relationships in words and your branches.
@@ -231,6 +234,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           menuClose: t.tree.menuClose,
           menuLink: t.familyLink.menuLink,
           menuOpenFamily: t.familyLink.menuOpen,
+          menuCompare: t.merge.compare,
           navGoogle: t.grave.navGoogle,
           navWaze: t.grave.navWaze,
           navApple: t.grave.navApple,
