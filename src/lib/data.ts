@@ -1,4 +1,6 @@
 import "server-only";
+import { STORY_KEYS, type LifeStory } from "./story";
+export { STORY_KEYS, storyTitle, type LifeStory, type StoryKey } from "./story";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -218,3 +220,16 @@ export const myPersonLinks = cache(async (locale: Locale) => {
   for (const r of data ?? []) if (r.person_id) links.set(r.workspace_id as string, r.person_id as string);
   return { ready: !error, links };
 });
+
+/** Answers to the "what they were like" questions. Empty until database update 0006 has run. */
+export async function getLifeStory(locale: Locale, personId: string): Promise<LifeStory> {
+  const { supabase } = await requireUser(locale);
+  const { data, error } = await supabase.from("persons").select("story").eq("id", personId).maybeSingle();
+  if (error || !data?.story || typeof data.story !== "object") return {};
+  const out: LifeStory = {};
+  for (const k of STORY_KEYS) {
+    const v = (data.story as Record<string, unknown>)[k];
+    if (typeof v === "string" && v.trim()) out[k] = v;
+  }
+  return out;
+}

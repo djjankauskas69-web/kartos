@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { can, WS_COOKIE, type Role } from "@/lib/data";
+import { can, STORY_KEYS, WS_COOKIE, type Role } from "@/lib/data";
 import { actionContext, formLocale, text, uuid, year } from "@/lib/action-context";
 
 export type FormState = {
@@ -277,25 +277,36 @@ export async function updatePerson(_: FormState, form: FormData): Promise<FormSt
   if ("error" in fields) return fields;
 
   const sex = String(form.get("sex") ?? "");
-  const { error } = await supabase
-    .from("persons")
-    .update({
-      ...fields,
-      birth_surname: text(form, "birthSurname", 200),
-      sex: ["female", "male"].includes(sex) ? sex : "unknown",
-      birth_place: text(form, "birthPlace", 200),
-      death_place: fields.is_living ? null : text(form, "deathPlace", 200),
-      biography: text(form, "biography", 20000),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("workspace_id", workspace.id);
+  // "What they were like" answers (needs SQL 0006; saved without them if it hasn't run yet).
+  const story: Record<string, string> = {};
+  for (const k of STORY_KEYS) {
+    const v = text(form, `story_${k}`, 2000);
+    if (v) story[k] = v;
+  }
+  const save = (withStory: boolean) =>
+    supabase
+      .from("persons")
+      .update({
+        ...fields,
+        birth_surname: text(form, "birthSurname", 200),
+        sex: ["female", "male"].includes(sex) ? sex : "unknown",
+        birth_place: text(form, "birthPlace", 200),
+        death_place: fields.is_living ? null : text(form, "deathPlace", 200),
+        biography: text(form, "biography", 20000),
+        updated_at: new Date().toISOString(),
+        ...(withStory ? { story } : {}),
+      })
+      .eq("id", id)
+      .eq("workspace_id", workspace.id);
+  let { error } = await save(true);
+  if (error && /story/.test(error.message)) ({ error } = await save(false));
   if (error) {
     console.error("updatePerson", error);
     return { error: "save" };
   }
   redirect(`/${locale}/app/people/${id}`);
 }
+
 
 export async function deletePerson(form: FormData) {
   const locale = formLocale(form);

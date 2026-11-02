@@ -19,6 +19,7 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
   - Archyvas kaip šeimos biblioteka (aplankai, dokumentai, istorijos): `supabase/migrations/0003_library.sql`
   - Šeimos nariai: filtrai, ⋮ meniu (teisės, perdavimas, šalinimas), kvietimo nuoroda vienu mygtuku; paskutinis prisijungimas: `supabase/migrations/0004_member_activity.sql`
   - „Mano profilis“: narys susieja save su žmogumi medyje ir pats keičia savo duomenis bei nuotrauką: `supabase/migrations/0005_my_profile.sql`
+  - „Kokia buvo“: trumpi klausimai apie žmogų (darbas, pomėgiai, būdas, posakis, ką turėtų žinoti anūkai): `supabase/migrations/0006_life_story.sql`
 
 ## Pradinio puslapio nuotraukos
 

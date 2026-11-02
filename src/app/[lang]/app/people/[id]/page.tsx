@@ -12,6 +12,9 @@ import {
   relativesOf,
   requireWorkspace,
   myPersonLinks,
+  getLifeStory,
+  storyTitle,
+  STORY_KEYS,
   signedUrls,
   type Status,
 } from "@/lib/data";
@@ -37,7 +40,8 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
   const id = await idPromise;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user, current } = await requireWorkspace(locale);
-  const isMe = (await myPersonLinks(locale)).links.get(current.id) === id;
+  const [links, story] = await Promise.all([myPersonLinks(locale), getLifeStory(locale, id)]);
+  const isMe = links.links.get(current.id) === id;
   const { byId, rels } = await getFamilyGraph(locale, current.id);
   const person = byId.get(id);
   if (!person) notFound();
@@ -213,12 +217,56 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
               </div>
             </div>
           </div>
-          {person.biography && (
-            <div className="mt-8 border-t border-line pt-6">
-              <h2 className="mb-3 text-[1.25rem]">{t.person.biography}</h2>
-              <p className="max-w-[65ch] whitespace-pre-line font-serif text-[1.1rem] leading-relaxed">{person.biography}</p>
-            </div>
-          )}
+          {/* What they were like */}
+          {(() => {
+            const title = storyTitle(t.story, person);
+            const answered = STORY_KEYS.filter((k) => story[k]);
+            const q = person.is_living ? t.story.qLiving : t.story.q;
+            if (answered.length === 0 && !person.biography) {
+              if (!can.add(role)) return null;
+              return (
+                <div className="mt-8 rounded-[var(--radius-card)] border border-dashed border-line bg-paper/60 p-5 sm:p-6">
+                  <h2 className="text-[1.25rem]">
+                    {person.is_living ? t.story.emptyTitleLiving : t.story.emptyTitle.replace("{title}", title.toLowerCase())}
+                  </h2>
+                  <p className="mt-1 max-w-[60ch] text-ink-muted">{t.story.emptyLead}</p>
+                  <Link href={can.edit(role) ? `${base}/people/${id}/edit#story` : "#memories"} className={`${cls.secondary} mt-4`}>
+                    {can.edit(role) ? t.story.emptyEdit : t.story.emptyMember}
+                  </Link>
+                </div>
+              );
+            }
+            return (
+              <div className="mt-8 border-t border-line pt-6">
+                {answered.length > 0 && (
+                  <>
+                    <h2 className="mb-4 text-[1.35rem]">{title}</h2>
+                    <dl className="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+                      {answered.map((k) => (
+                        <div key={k} className={k === "legacy" || k === "character" ? "sm:col-span-2" : ""}>
+                          <dt className="text-[0.92rem] font-semibold text-ink-muted">{q[k]}</dt>
+                          <dd className={`mt-1 max-w-[65ch] whitespace-pre-line leading-relaxed ${k === "saying" ? "border-l-2 border-line pl-4 text-[1.12rem] italic" : "text-[1.08rem]"}`}>
+                            {story[k]}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </>
+                )}
+                {person.biography && (
+                  <div className={answered.length > 0 ? "mt-8" : ""}>
+                    <h2 className="mb-3 text-[1.25rem]">{answered.length > 0 ? t.story.more : t.person.biography}</h2>
+                    <p className="max-w-[65ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{person.biography}</p>
+                  </div>
+                )}
+                {can.edit(role) && (
+                  <Link href={`${base}/people/${id}/edit#story`} className={`${cls.quiet} mt-4 -ml-3`}>
+                    {t.person.edit}
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
         </article>
       </div>
 
@@ -364,7 +412,7 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
       )}
 
       {/* Memories */}
-      <section className="max-w-3xl">
+      <section id="memories" className="max-w-3xl scroll-mt-24">
         <h2 className={cls.h2}>{t.memories.title}</h2>
         {(memories ?? []).length === 0 ? (
           <p className="mt-3 text-ink-muted">{t.memories.empty}</p>

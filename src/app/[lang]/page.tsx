@@ -145,6 +145,60 @@ export default async function Home() {
           />
         </section>
 
+        {/* ---------- One person's page: who she was, memories, photos ---------- */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 lg:pt-32">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h2 className="max-w-2xl text-[2.4rem] sm:text-[3.4rem]">{L.personTitle}</h2>
+            <p className="max-w-sm text-ink-muted">{L.personLead}</p>
+          </div>
+          <FadeIn stagger={140} className="mt-12 grid gap-4 lg:grid-cols-[1.05fr_1fr]">
+            <article className="h-full rounded-[22px] border border-line/70 bg-white p-6 shadow-[0_30px_60px_-40px_rgb(28_29_26/0.4)] sm:p-8">
+              <div className="flex items-center gap-5">
+                {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+                <img src="/landing/face-stase.jpg" alt="" className="h-24 w-24 shrink-0 rounded-full object-cover grayscale ring-4 ring-white shadow-[0_10px_24px_-12px_rgb(28_29_26/0.6)] sm:h-28 sm:w-28" />
+                <div>
+                  <h3 className="text-[1.7rem] leading-tight sm:text-[2rem]">{L.personName}</h3>
+                  <p className="text-ink-muted">{L.personNee}</p>
+                  <p className="mt-1 tabular-nums text-ink-muted">1924 – 2001</p>
+                </div>
+              </div>
+              <h4 className="mt-8 text-[1.2rem] font-semibold">{L.personAbout}</h4>
+              <dl className="mt-3 divide-y divide-line">
+                {L.personQA.map((x, i) => (
+                  <div key={x.q} className="grid gap-1 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4">
+                    <dt className="text-[0.95rem] text-ink-muted">{x.q}</dt>
+                    <dd className={i === 2 ? "italic" : ""}>{x.a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+            <div className="grid h-full gap-4">
+              <div className="rounded-[22px] border border-line/70 bg-white p-6 sm:p-7">
+                <h4 className="text-[1.2rem] font-semibold">{L.personMemories}</h4>
+                <ul className="mt-4 space-y-4">
+                  {L.personMemoryList.map((m) => (
+                    <li key={m.by} className="rounded-[14px] bg-paper p-4 ring-1 ring-line/60">
+                      <p className="text-[1.05rem] leading-relaxed">„{m.text}“</p>
+                      <p className="mt-2 text-[0.92rem] text-ink-muted">— {m.by}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-[22px] border border-line/70 bg-white p-6 sm:p-7">
+                <h4 className="text-[1.2rem] font-semibold">{L.personPhotos}</h4>
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {["/landing/memory-01.jpg", "/landing/story-family.jpg", "/landing/letter.jpg"].map((src) => (
+                    <Photo key={src} src={src} alt="" className="aspect-square w-full rounded-[8px]" />
+                  ))}
+                  <span className="flex aspect-square items-center justify-center rounded-[8px] bg-paper text-[0.95rem] font-semibold text-ink-muted ring-1 ring-line/60">
+                    {L.personMore}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </section>
+
         {/* ---------- What you'll keep ---------- */}
         <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 lg:py-32">
           <div className="flex flex-wrap items-end justify-between gap-6">

@@ -808,6 +808,72 @@
         "body": "Teta žino savo pusę, pusbrolis — savo. Administratorius patikrina, kad viskas būtų tikslu."
       }
     ],
-    "treeGen": "karta"
+    "treeGen": "karta",
+    "personTitle": "Kiekvienas žmogus — su savo istorija",
+    "personLead": "Ne tik vardas ir datos. Kokia ji buvo, ką mėgo, ką pasakodavo — ir ką apie ją prisimena kiti.",
+    "personName": "Stasė Jankauskienė",
+    "personNee": "gim. Petrauskaitė",
+    "personAbout": "Kokia ji buvo",
+    "personQA": [
+      {
+        "q": "Kuo dirbo",
+        "a": "30 metų mokė vaikus Plungės mokykloje."
+      },
+      {
+        "q": "Ką mėgo",
+        "a": "Savo sodą, mezgimą ir grybauti su anūkais."
+      },
+      {
+        "q": "Mėgstamas posakis",
+        "a": "„Kas anksti kelia, tam Dievas duoda.“"
+      }
+    ],
+    "personMemories": "Prisiminimai",
+    "personMemoryList": [
+      {
+        "text": "Kiekvieną sekmadienį kepdavo obuolių pyragą — receptą žinojo tik ji.",
+        "by": "anūkė Rūta"
+      },
+      {
+        "text": "Per karą slėpė kaimynų vaikus palėpėje. Papasakojo apie tai tik būdama aštuoniasdešimties.",
+        "by": "sūnus Vytautas"
+      }
+    ],
+    "personPhotos": "Nuotraukos ir laiškai",
+    "personMore": "dar 14"
+  },
+  "story": {
+    "titleFemale": "Kokia ji buvo",
+    "titleMale": "Koks jis buvo",
+    "titleUnknown": "Koks buvo šis žmogus",
+    "titleLiving": "Apie {name}",
+    "lead": "Atsakykite į kelis trumpus klausimus — nebūtinai į visus. Vėliau galėsite papildyti.",
+    "q": {
+      "work": "Kuo dirbo, kuo užsiėmė?",
+      "loved": "Ką mėgo veikti?",
+      "character": "Koks buvo jo ar jos būdas?",
+      "saying": "Mėgstamas posakis, daina ar receptas",
+      "legacy": "Ką norėtumėte, kad žinotų anūkai?"
+    },
+    "qLiving": {
+      "work": "Kuo dirba ar dirbo?",
+      "loved": "Ką mėgsta veikti?",
+      "character": "Koks jo ar jos būdas?",
+      "saying": "Mėgstamas posakis, daina ar receptas",
+      "legacy": "Ką norėtumėte, kad žinotų anūkai?"
+    },
+    "ph": {
+      "work": "Pvz. 30 metų dirbo mokytoja Plungės gimnazijoje",
+      "loved": "Pvz. sodą, mezgimą, grybauti su anūkais",
+      "character": "Pvz. griežta, bet labai rūpestinga; visada visus pavaišindavo",
+      "saying": "Pvz. „Kas anksti kelia, tam Dievas duoda“",
+      "legacy": "Pvz. kad karo metais slėpė kaimynų vaikus"
+    },
+    "more": "Daugiau apie gyvenimą",
+    "emptyTitle": "Papasakokite, {title}",
+    "emptyLead": "Keli sakiniai apie darbą, pomėgius ar būdą padės anūkams pažinti šį žmogų.",
+    "emptyEdit": "Atsakyti į klausimus",
+    "emptyMember": "Parašyti prisiminimą",
+    "emptyTitleLiving": "Papasakokite apie šį žmogų"
   }
 }

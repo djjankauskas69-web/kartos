@@ -808,6 +808,72 @@
         "body": "An aunt knows her side, a cousin knows his. The administrator checks that it stays accurate."
       }
     ],
-    "treeGen": "generation"
+    "treeGen": "generation",
+    "personTitle": "Every person, with their own story",
+    "personLead": "Not just a name and dates. What she was like, what she loved, what she used to tell — and what others remember about her.",
+    "personName": "Stasė Jankauskienė",
+    "personNee": "née Petrauskaitė",
+    "personAbout": "What she was like",
+    "personQA": [
+      {
+        "q": "Work",
+        "a": "Taught children at the Plungė school for 30 years."
+      },
+      {
+        "q": "Loved",
+        "a": "Her garden, knitting and mushroom picking with the grandchildren."
+      },
+      {
+        "q": "Favourite saying",
+        "a": "“The early bird catches the worm.”"
+      }
+    ],
+    "personMemories": "Memories",
+    "personMemoryList": [
+      {
+        "text": "Every Sunday she baked an apple cake — only she knew the recipe.",
+        "by": "granddaughter Rūta"
+      },
+      {
+        "text": "During the war she hid the neighbours' children in the attic. She only told us when she was eighty.",
+        "by": "son Vytautas"
+      }
+    ],
+    "personPhotos": "Photos and letters",
+    "personMore": "14 more"
+  },
+  "story": {
+    "titleFemale": "What she was like",
+    "titleMale": "What he was like",
+    "titleUnknown": "What they were like",
+    "titleLiving": "About {name}",
+    "lead": "Answer a few short questions — not all of them. You can add more later.",
+    "q": {
+      "work": "What did they do for a living?",
+      "loved": "What did they love doing?",
+      "character": "What were they like as a person?",
+      "saying": "A favourite saying, song or recipe",
+      "legacy": "What would you like the grandchildren to know?"
+    },
+    "qLiving": {
+      "work": "What do or did they do for a living?",
+      "loved": "What do they love doing?",
+      "character": "What are they like as a person?",
+      "saying": "A favourite saying, song or recipe",
+      "legacy": "What would you like the grandchildren to know?"
+    },
+    "ph": {
+      "work": "e.g. Taught at the Plungė school for 30 years",
+      "loved": "e.g. Her garden, knitting, mushroom picking with the grandchildren",
+      "character": "e.g. Strict but very caring; always fed everyone",
+      "saying": "e.g. “The early bird catches the worm”",
+      "legacy": "e.g. That she hid the neighbours' children during the war"
+    },
+    "more": "More about their life",
+    "emptyTitle": "Tell us {title}",
+    "emptyLead": "A few sentences about work, hobbies or character help the grandchildren know this person.",
+    "emptyEdit": "Answer the questions",
+    "emptyMember": "Write a memory",
+    "emptyTitleLiving": "Tell us about this person"
   }
 }

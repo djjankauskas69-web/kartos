@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getPerson, requireWorkspace } from "@/lib/data";
+import { can, fullName, getLifeStory, getPerson, requireWorkspace, storyTitle } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { deletePerson } from "../../../actions";
 import { ConfirmAction, EditPersonForm } from "../../../forms";
@@ -22,7 +22,7 @@ async function Edit({ t, locale, idPromise }: { t: Dictionary; locale: Locale; i
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { current } = await requireWorkspace(locale);
   if (!can.edit(current.role)) redirect(`/${locale}/app/people/${id}`);
-  const person = await getPerson(locale, id);
+  const [person, story] = await Promise.all([getPerson(locale, id), getLifeStory(locale, id)]);
   if (!person) notFound();
 
   return (
@@ -31,7 +31,7 @@ async function Edit({ t, locale, idPromise }: { t: Dictionary; locale: Locale; i
         ‹ {fullName(person)}
       </Link>
       <h1 className={`mb-8 mt-6 ${cls.h1}`}>{t.person.editTitle}</h1>
-      <EditPersonForm t={t} locale={locale} person={person} />
+      <EditPersonForm t={t} locale={locale} person={person} story={story} storyTitle={storyTitle(t.story, person)} />
 
       {can.admin(current.role) && (
         <div className="mt-14 border-t border-line pt-8">
