@@ -10,6 +10,7 @@ import { portraitUrls } from "../portraits";
 import { unlinkMe } from "./actions";
 import { AccountRows, ClaimMe, MyDetailsForm, PortraitUpload } from "./MyProfile";
 import { PageLoading } from "@/components/PageLoading";
+import { FixedLanguageSwitch } from "@/components/LanguageSwitch";
 
 export default async function MePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -133,6 +134,14 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
           <section className={card}>
             {head(<svg {...I}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>, m.account, m.accountLead)}
             <AccountRows locale={locale} name={(profile?.display_name as string | null) ?? ""} email={user.email ?? ""} t={m} errors={errors} />
+            {/* Language of the app */}
+            <div className="mt-3 flex items-center gap-3.5 border-t border-line pt-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">
+                <svg {...I} width={22} height={22}><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.5 2.4 3.6 5.2 3.6 8.5s-1.1 6.1-3.6 8.5c-2.5-2.4-3.6-5.2-3.6-8.5s1.1-6.1 3.6-8.5Z" /></svg>
+              </span>
+              <span className="min-w-0 flex-1 text-[0.85rem] text-ink-muted">{t.nav.language}</span>
+              <FixedLanguageSwitch current={locale} label={t.nav.language} path="/app/me" />
+            </div>
           </section>
           <section className={card}>
             {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy, m.privacyLead)}
