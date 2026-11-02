@@ -99,17 +99,21 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
   const { user, current, memberships } = await getContext(locale);
   const base = `/${locale}/app`;
   // Independent lookups run side by side; only the avatar waits for "who am I in the tree".
-  const [pending, avatar] = await Promise.all([
+  const [pending, mine] = await Promise.all([
     current && can.admin(current.role) ? pendingCount(locale, current.id) : Promise.resolve(0),
     (async () => {
       const myId = current ? (await myPersonLinks(locale)).links.get(current.id) : undefined;
       const me = myId ? await getPerson(locale, myId) : null;
-      return me ? (await portraitUrls(locale, [me])).get(me.id) : undefined;
+      return { me, avatar: me ? (await portraitUrls(locale, [me])).get(me.id) : undefined };
     })(),
   ]);
+  const avatar = mine.avatar;
   const email = user.email ?? "";
-  const name = email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
+  // "Justas J." from you in the tree; the e-mail name only when you're not in the tree yet.
+  const given = mine.me?.given_names.trim().split(/\s+/)[0];
+  const sur = mine.me?.surname?.trim();
+  const name = given ? `${given}${sur ? ` ${sur[0]}.` : ""}` : email.split("@")[0];
+  const initials = given ? `${given[0]}${sur?.[0] ?? ""}`.toUpperCase() : name.slice(0, 2).toUpperCase();
 
   return (
     <>
