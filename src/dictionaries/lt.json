@@ -688,7 +688,14 @@
       "other": "failų"
     },
     "emptyTitle": "Archyvas dar tuščias",
-    "emptyLead": "Įkelkite senas nuotraukas, laiškus ar dokumentus – visa šeima juos matys vienoje vietoje."
+    "emptyLead": "Įkelkite senas nuotraukas, laiškus ar dokumentus – visa šeima juos matys vienoje vietoje.",
+    "folderMenu": "Aplanko veiksmai",
+    "rename": "Pervadinti",
+    "deleteFolder": "Ištrinti aplanką",
+    "deleteFolderWarn": "Failai neišsitrins – jie liks „Visi failai“ be aplanko.",
+    "itemMenu": "Veiksmai",
+    "moveTo": "Perkelti į aplanką",
+    "editPhoto": "Redaguoti"
   },
   "peopleList": {
     "title": "Žmonės",

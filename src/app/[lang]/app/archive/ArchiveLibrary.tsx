@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile } from "@/lib/upload";
-import { createFolder, createStory, deleteItem, recordFiles, updateItem } from "./actions";
+import { createFolder, createStory, deleteFolder, deleteItem, moveItem, recordFiles, renameFolder, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
 export type Kind = "photo" | "document" | "story";
@@ -155,6 +155,21 @@ export function ArchiveLibrary({
   const [openId, setOpenId] = useState<string | null>(initialItem);
   const [dialog, setDialog] = useState<null | "upload" | "story">(null);
   const [newFolder, setNewFolder] = useState<string | null>(null);
+  const [folderMenu, setFolderMenu] = useState<{ id: string; mode: "menu" | "rename" | "delete" } | null>(null);
+  const [itemMenu, setItemMenu] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  // Close the little menus on a tap elsewhere.
+  useEffect(() => {
+    if (!folderMenu && !itemMenu) return;
+    const close = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.("[data-menu-root]")) {
+        setFolderMenu(null);
+        setItemMenu(null);
+      }
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [folderMenu, itemMenu]);
 
   const personName = useMemo(() => new Map(people.map((p) => [p.id, p.name])), [people]);
   const folderName = useMemo(() => new Map(folders.map((f) => [f.id, f.name])), [folders]);
@@ -271,22 +286,92 @@ export function ArchiveLibrary({
             </form>
           )}
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible [scrollbar-width:none]">
-            {[{ id: "", name: t.allFiles, n: items.length }, ...folders.map((f) => ({ id: f.id, name: f.name, n: folderCounts.get(f.id) ?? 0 }))].map((f) => (
-              <li key={f.id || "all"} className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setFolder(f.id)}
-                  aria-pressed={folder === f.id}
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${folder === f.id ? "bg-sage-wash font-semibold" : "hover:bg-paper"}`}
-                >
-                  <span className="text-ink-muted">
-                    <FolderIcon />
-                  </span>
-                  <span className="flex-1 truncate">{f.name}</span>
-                  <span className="text-[0.9rem] tabular-nums text-ink-muted">{f.n}</span>
-                </button>
-              </li>
-            ))}
+            {[{ id: "", name: t.allFiles, n: items.length }, ...folders.map((f) => ({ id: f.id, name: f.name, n: folderCounts.get(f.id) ?? 0 }))].map((f) => {
+              const menu = folderMenu?.id === f.id ? folderMenu : null;
+              if (menu?.mode === "rename")
+                return (
+                  <li key={f.id} className="shrink-0" data-menu-root>
+                    <form
+                      action={async (form) => {
+                        const r = await renameFolder(form);
+                        if (r.ok) setFolderMenu(null);
+                      }}
+                      className="flex gap-2 px-1 py-1"
+                    >
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="id" value={f.id} />
+                      <input name="name" defaultValue={f.name} autoFocus maxLength={80} aria-label={t.folderName} className="min-h-10 min-w-0 flex-1 rounded-lg border border-line bg-paper px-3" />
+                      <button type="submit" className="rounded-lg bg-ink px-3 text-[0.92rem] font-semibold text-white">
+                        {t.save}
+                      </button>
+                    </form>
+                  </li>
+                );
+              return (
+                <li key={f.id || "all"} className="group/folder relative shrink-0" data-menu-root>
+                  <button
+                    type="button"
+                    onClick={() => setFolder(f.id)}
+                    aria-pressed={folder === f.id}
+                    className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${folder === f.id ? "bg-linen font-semibold" : "hover:bg-paper"}`}
+                  >
+                    <span className="text-ink-muted">
+                      <FolderIcon />
+                    </span>
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className={`text-[0.9rem] tabular-nums text-ink-muted ${canManageFolders && f.id ? `lg:group-hover/folder:opacity-0 ${menu ? "lg:opacity-0" : ""}` : ""}`}>{f.n}</span>
+                  </button>
+                  {canManageFolders && f.id && (
+                    <button
+                      type="button"
+                      onClick={() => setFolderMenu(menu ? null : { id: f.id, mode: "menu" })}
+                      aria-label={`${t.folderMenu}: ${f.name}`}
+                      title={t.folderMenu}
+                      className={`absolute right-1.5 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-muted hover:bg-surface hover:text-ink lg:flex ${menu ? "opacity-100" : "opacity-0 group-hover/folder:opacity-100 focus:opacity-100"}`}
+                    >
+                      ⋯
+                    </button>
+                  )}
+                  {menu && (
+                    <div className="absolute left-2 right-2 top-full z-20 mt-1 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+                      {menu.mode === "menu" ? (
+                        <>
+                          <button type="button" onClick={() => setFolderMenu({ id: f.id, mode: "rename" })} className="flex min-h-10 w-full items-center rounded-lg px-3 text-left hover:bg-paper">
+                            {t.rename}
+                          </button>
+                          <button type="button" onClick={() => setFolderMenu({ id: f.id, mode: "delete" })} className="flex min-h-10 w-full items-center rounded-lg px-3 text-left text-danger hover:bg-danger/5">
+                            {t.deleteFolder}
+                          </button>
+                        </>
+                      ) : (
+                        <form
+                          action={async (form) => {
+                            const r = await deleteFolder(form);
+                            if (r.ok) {
+                              setFolderMenu(null);
+                              if (folder === f.id) setFolder("");
+                            }
+                          }}
+                          className="p-2"
+                        >
+                          <input type="hidden" name="locale" value={locale} />
+                          <input type="hidden" name="id" value={f.id} />
+                          <p className="text-[0.92rem] text-ink-muted">{t.deleteFolderWarn}</p>
+                          <div className="mt-2 flex gap-2">
+                            <button type="submit" className="rounded-full bg-danger px-3 py-1.5 text-[0.92rem] font-semibold text-white">
+                              {t.deleteConfirm}
+                            </button>
+                            <button type="button" onClick={() => setFolderMenu(null)} className="rounded-full px-3 py-1.5 text-[0.92rem] font-semibold hover:bg-paper">
+                              {t.cancel}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </aside>
 
@@ -349,7 +434,52 @@ export function ArchiveLibrary({
           ) : view === "grid" ? (
             <ul className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
               {shown.map((i) => (
-                <li key={i.id}>
+                <li key={i.id} className="group/card relative" data-menu-root>
+                  {canManageFolders && (
+                    <button
+                      type="button"
+                      onClick={() => setItemMenu(itemMenu === i.id ? null : i.id)}
+                      aria-label={`${t.itemMenu}: ${i.title}`}
+                      title={t.itemMenu}
+                      className={`absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-ink shadow-md hover:bg-ink hover:text-white ${itemMenu === i.id ? "opacity-100" : "opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 focus:opacity-100"}`}
+                    >
+                      ⋯
+                    </button>
+                  )}
+                  {itemMenu === i.id && (
+                    <div className="absolute right-2 top-12 z-20 w-56 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItemMenu(null);
+                          setEditId(i.id);
+                          setOpenId(i.id);
+                        }}
+                        className="flex min-h-10 w-full items-center rounded-lg px-3 text-left font-semibold hover:bg-paper"
+                      >
+                        {t.editPhoto}
+                      </button>
+                      <p className="px-3 pb-1 pt-2 text-[0.82rem] text-ink-muted">{t.moveTo}</p>
+                      <div className="max-h-48 overflow-y-auto">
+                        {[{ id: "", name: t.noFolder }, ...folders].map((f) => (
+                          <form
+                            key={f.id || "none"}
+                            action={async (form) => {
+                              await moveItem(form);
+                              setItemMenu(null);
+                            }}
+                          >
+                            <input type="hidden" name="locale" value={locale} />
+                            <input type="hidden" name="id" value={i.id} />
+                            <input type="hidden" name="folderId" value={f.id} />
+                            <button type="submit" className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[0.95rem] hover:bg-paper ${(i.folderId ?? "") === f.id ? "font-semibold" : ""}`}>
+                              {(i.folderId ?? "") === f.id ? "✓" : <span className="w-[0.7rem]" />} {f.name}
+                            </button>
+                          </form>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <button type="button" onClick={() => setOpenId(i.id)} className="group block w-full overflow-hidden rounded-xl bg-surface text-left shadow-[0_1px_2px_rgb(60_45_30/0.06),0_10px_22px_-16px_rgb(60_45_30/0.55)] ring-1 ring-line/80 transition-transform hover:-translate-y-0.5">
                     <span className="block aspect-[5/4] overflow-hidden">
                       <Preview item={i} />
@@ -407,7 +537,11 @@ export function ArchiveLibrary({
             personName={personName}
             folderName={folderName}
             periodLabels={periodLabels}
-            onClose={() => setOpenId(null)}
+            startEditing={editId === open.id}
+            onClose={() => {
+              setOpenId(null);
+              setEditId(null);
+            }}
           />
         )}
       </Dialog>
@@ -447,6 +581,7 @@ function Detail({
   personName,
   folderName,
   periodLabels,
+  startEditing = false,
   onClose,
 }: {
   item: ArchiveItem;
@@ -457,9 +592,10 @@ function Detail({
   personName: Map<string, string>;
   folderName: Map<string, string>;
   periodLabels: PeriodLabels;
+  startEditing?: boolean;
   onClose: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startEditing);
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;

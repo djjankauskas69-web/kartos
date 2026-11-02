@@ -181,3 +181,39 @@ export async function createFolder(form: FormData): Promise<ArchiveResult & { id
   refresh();
   return { ok: true, id };
 }
+
+export async function renameFolder(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const id = uuid(form, "id");
+  const name = text(form, "name", 80);
+  if (!id || !name) return { error: "title" };
+  const { error } = await supabase.from("media_folders").update({ name }).eq("id", id).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
+/** Removes the folder; its files stay in the archive, just without a folder. */
+export async function deleteFolder(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const id = uuid(form, "id");
+  if (!id) return { error: "save" };
+  await supabase.from("media").update({ folder_id: null }).eq("folder_id", id).eq("workspace_id", workspace.id);
+  const { error } = await supabase.from("media_folders").delete().eq("id", id).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
+export async function moveItem(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const id = uuid(form, "id");
+  if (!id) return { error: "save" };
+  const { error } = await supabase.from("media").update({ folder_id: uuid(form, "folderId") }).eq("id", id).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}

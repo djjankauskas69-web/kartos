@@ -688,7 +688,14 @@
       "other": "files"
     },
     "emptyTitle": "The archive is still empty",
-    "emptyLead": "Upload old photos, letters or documents – the whole family will see them in one place."
+    "emptyLead": "Upload old photos, letters or documents – the whole family will see them in one place.",
+    "folderMenu": "Folder actions",
+    "rename": "Rename",
+    "deleteFolder": "Delete folder",
+    "deleteFolderWarn": "Files are not deleted – they stay in “All files” without a folder.",
+    "itemMenu": "Actions",
+    "moveTo": "Move to folder",
+    "editPhoto": "Edit"
   },
   "peopleList": {
     "title": "People",
