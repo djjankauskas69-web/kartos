@@ -24,6 +24,7 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
   - Medžių palyginimas ir sujungimas (sutampa / skiriasi / tik jų medyje): `supabase/migrations/0008_link_people.sql`
   - Prisijungimas kaip „aš“: kvietimas konkrečiam žmogui ir „Aš esu Petro dukra“: `supabase/migrations/0009_invite_for_person.sql`
   - Nuotrauka prie prisiminimo: `supabase/migrations/0010_memory_photo.sql`
+  - Gyvenimo įvykiai ir vietos mirusiojo profilyje: `supabase/migrations/0011_life_events.sql`
 
 ## Pradinio puslapio nuotraukos
 

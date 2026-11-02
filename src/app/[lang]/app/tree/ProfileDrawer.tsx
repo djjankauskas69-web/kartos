@@ -23,7 +23,7 @@ export function ProfileDrawer({ closeHref, fullHref, labels, children }: { close
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
       <Link href={closeHref} scroll={false} aria-label={labels.close} tabIndex={-1} className="absolute inset-0 bg-ink/15 backdrop-blur-[1px]" />
-      <div className="relative flex h-dvh w-full flex-col bg-paper shadow-[-24px_0_60px_-30px_rgb(28_29_26/0.5)] sm:w-[min(46rem,calc(100vw-4rem))] sm:rounded-l-[22px]">
+      <div className="relative flex h-dvh w-full flex-col bg-paper shadow-[-24px_0_60px_-30px_rgb(28_29_26/0.5)] sm:w-[min(calc(100vw-2rem),max(44rem,68vw))] sm:rounded-l-[22px]">
         <div className="flex items-center justify-between gap-3 border-b border-line bg-surface/90 px-5 py-3 backdrop-blur sm:rounded-tl-[22px]">
           <Link href={fullHref} className="text-[0.95rem] font-semibold text-ink-muted hover:text-ink hover:underline">
             {labels.full} ↗
