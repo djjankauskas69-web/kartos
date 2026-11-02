@@ -278,13 +278,34 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
     if (own.length === 0) continue;
     const minX = Math.min(...own.map((n) => n.x));
     const maxX = Math.max(...own.map((n) => n.x));
-    // Right or left of this tree: whichever puts the shared person's partner closer to them.
-    const partnerKey = side.edges.flatMap((e) => (e.kind === "partner" && (e.a === anchor.key || e.b === anchor.key) ? [e.a === anchor.key ? e.b : e.a] : []))[0];
-    const partner = side.nodes.find((n) => n.key === partnerKey && !here.has(n.id));
-    const mine = here.get(shared.id)!;
-    const dxRight = right - minX;
-    const dxLeft = left - gapX * 3 - cardW - maxX;
-    const dx = partner && Math.abs(partner.x + dxLeft - mine.x) < Math.abs(partner.x + dxRight - mine.x) ? dxLeft : dxRight;
+    // Four ways to put it beside this tree: right or left, as drawn or mirrored. Pick the one
+    // where the people joining the two trees (a parent here, their child there, or partners)
+    // end up closest, so the lines between the trees stay short and don't cross.
+    type Join = { from: (typeof side.nodes)[number]; to: (typeof nodes)[number]; pair?: (typeof side.nodes)[number] };
+    const joins = side.edges.flatMap((e): Join[] => {
+      if (e.kind === "partner") {
+        const a = side.nodes.find((n) => n.key === e.a)!;
+        const b = side.nodes.find((n) => n.key === e.b)!;
+        return here.has(a.id) !== here.has(b.id) ? [{ from: here.has(a.id) ? b : a, to: here.get(here.has(a.id) ? a.id : b.id)! }] : [];
+      }
+      const kids = e.children.map((k) => side.nodes.find((n) => n.key === k)!).filter((n) => here.has(n.id));
+      const ps = e.parents.map((k) => side.nodes.find((n) => n.key === k)!).filter((n) => !here.has(n.id));
+      return ps.length && kids.length ? kids.map((kid) => ({ from: ps[0], to: here.get(kid.id)!, pair: ps[1] })) : [];
+    });
+    const options = [false, true].flatMap((mirror) => {
+      const xOf = (x: number) => (mirror ? minX + maxX - x : x);
+      return [right - minX, left - gapX * 3 - cardW - maxX].map((dx) => ({
+        mirror,
+        dx,
+        cost: joins.reduce((sum, j) => {
+          const fx = (xOf(j.from.x) + (j.pair ? xOf(j.pair.x) : xOf(j.from.x))) / 2 + dx;
+          return sum + Math.abs(fx - j.to.x);
+        }, 0),
+      }));
+    });
+    const best = options.sort((a, b) => a.cost - b.cost)[0];
+    const dx = best.dx;
+    const flip = (x: number) => (best.mirror ? minX + maxX - x : x);
     // Keys of people drawn here point to the cards already on the page.
     const keyMap = new Map<string, string>();
     for (const n of side.nodes) {
@@ -292,7 +313,7 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
       else {
         const key = `side:${n.key}`;
         keyMap.set(n.key, key);
-        nodes.push({ ...n, key, x: n.x + dx, y: n.y + dy });
+        nodes.push({ ...n, key, x: flip(n.x) + dx, y: n.y + dy });
       }
     }
     const mainKeys = new Set(main.nodes.map((n) => n.key));
