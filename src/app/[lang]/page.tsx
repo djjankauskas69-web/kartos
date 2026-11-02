@@ -54,7 +54,7 @@ export default async function Home() {
 
         {/* ---------- One sentence that fills in as you read ---------- */}
         <section className="mx-auto max-w-4xl px-5 py-24 sm:px-8 lg:py-36">
-          <RevealWords text={L.reveal} className="text-center font-serif text-[1.9rem] leading-[1.25] tracking-[-0.015em] sm:text-[2.6rem] lg:text-[3.1rem]" />
+          <RevealWords text={L.reveal} className="text-center font-serif text-[1.8rem] font-medium leading-[1.25] tracking-[-0.03em] sm:text-[2.6rem] lg:text-[3.1rem]" />
         </section>
 
         {/* ---------- Giant words with old photos drifting around ---------- */}
@@ -79,7 +79,7 @@ export default async function Home() {
             {L.bigLines.map((line, i) => (
               <p
                 key={line}
-                className="font-serif text-[3.6rem] leading-[0.95] tracking-[-0.035em] sm:text-[6rem] lg:text-[8.5rem]"
+                className="font-serif text-[3.4rem] font-semibold leading-[0.95] tracking-[-0.05em] sm:text-[6rem] lg:text-[8.5rem]"
                 style={{ marginLeft: i === 1 ? "18%" : i === 2 ? "-6%" : undefined }}
               >
                 {line}
@@ -162,7 +162,7 @@ export default async function Home() {
             <dl className="relative z-10 grid gap-2 p-2 sm:grid-cols-3 sm:p-3">
               {t.hero.facts.map((f) => (
                 <div key={f.big} className="rounded-[14px] bg-surface px-6 py-6 text-ink">
-                  <dt className="font-serif text-[2.6rem] leading-none tracking-[-0.03em]">{f.big}</dt>
+                  <dt className="font-serif text-[2.6rem] font-semibold leading-none tracking-[-0.04em]">{f.big}</dt>
                   <dd className="mt-3 text-ink-muted">{f.label}</dd>
                 </div>
               ))}
@@ -284,7 +284,7 @@ function Footer({ t }: { t: Dictionary }) {
             <a href="mailto:hello@example.com" className="hover:text-surface">{t.footer.contact}</a>
           </nav>
         </div>
-        <p aria-hidden="true" className="mt-10 select-none text-center font-serif text-[26vw] leading-[0.78] tracking-[-0.05em] text-surface/95 lg:text-[19rem]">
+        <p aria-hidden="true" className="mt-10 select-none text-center font-serif text-[24vw] font-semibold leading-[0.8] tracking-[-0.07em] text-surface/95 lg:text-[19rem]">
           kartos
         </p>
         <div className="halftone relative mt-6 h-40 sm:h-56" style={{ ["--ht-angle" as string]: "0deg" }}>

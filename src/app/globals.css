@@ -1,7 +1,5 @@
 @import "tailwindcss";
-@import "@fontsource-variable/newsreader/opsz.css";
-@import "@fontsource-variable/newsreader/opsz-italic.css";
-@import "@fontsource-variable/inter/index.css";
+@import "@fontsource-variable/manrope/index.css";
 
 /*
   Design tokens — "quiet archive".
@@ -26,8 +24,9 @@
   --color-mist: #dfe6e0;
   --color-danger: #a4473a;
 
-  --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
-  --font-sans: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  /* One clean typeface for everything; "serif" is kept as a name so headings pick it up. */
+  --font-serif: "Manrope Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Manrope Variable", "Segoe UI", system-ui, sans-serif;
 
   --radius-card: 10px;
   --shadow-float: 0 1px 2px rgb(28 29 26 / 0.05), 0 14px 36px -14px rgb(28 29 26 / 0.22);
@@ -42,7 +41,7 @@
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 1.0625rem; /* 17px base: Inter runs larger than most sans */
+    font-size: 1.0625rem; /* 17px base */
     line-height: 1.6;
     letter-spacing: -0.005em;
     text-rendering: optimizeLegibility;
@@ -52,9 +51,9 @@
   h3 {
     font-family: var(--font-serif);
     font-optical-sizing: auto;
-    font-weight: 400;
-    letter-spacing: -0.022em;
-    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
     text-wrap: balance;
   }
   p {
