@@ -208,7 +208,7 @@ export function PersonForm({
   );
 }
 
-export function EditPersonForm({ t, locale, person, story = {}, storyTitle }: { t: T; locale: Locale; person: Person; story?: LifeStory; storyTitle: string }) {
+export function EditPersonForm({ t, locale, person, story = {} }: { t: T; locale: Locale; person: Person; story?: LifeStory; storyTitle?: string }) {
   const [state, action, pending] = useActionState(updatePerson, {});
   return (
     <form action={action} className="space-y-6">
@@ -255,30 +255,14 @@ export function EditPersonForm({ t, locale, person, story = {}, storyTitle }: { 
         </div>
       </div>
 
-      <fieldset id="story" className="scroll-mt-24 space-y-4 rounded-[var(--radius-card)] border border-line/80 bg-white p-5 sm:p-6">
-        <legend className="px-1 text-[1.35rem] font-semibold tracking-[-0.02em]">{storyTitle}</legend>
-        <p className="-mt-1 text-[0.98rem] text-ink-muted">{t.story.lead}</p>
-        {STORY_KEYS.map((k) => (
-          <div key={k}>
-            <label htmlFor={`story-${k}`} className={cls.label}>
-              {(person.is_living ? t.story.qLiving : t.story.q)[k]}
-            </label>
-            <textarea
-              id={`story-${k}`}
-              name={`story_${k}`}
-              rows={k === "character" || k === "legacy" ? 3 : 2}
-              maxLength={2000}
-              defaultValue={story[k] ?? ""}
-              placeholder={t.story.ph[k]}
-              className={cls.textarea.replace("min-h-32", "min-h-0")}
-            />
-          </div>
-        ))}
-      </fieldset>
+      {/* Earlier question answers are kept as they are; the description below is the one place to write. */}
+      {STORY_KEYS.filter((k) => story[k]).map((k) => (
+        <input key={k} type="hidden" name={`story_${k}`} value={story[k] ?? ""} />
+      ))}
 
-      <div>
+      <div id="story" className="scroll-mt-24">
         <label htmlFor="edit-bio" className={cls.label}>
-          {t.story.more}
+          {t.memorial.about}
           <Optional t={t} />
         </label>
         <p id="edit-bio-hint" className="mb-2 text-[0.95rem] text-ink-muted">

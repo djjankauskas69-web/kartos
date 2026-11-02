@@ -3,6 +3,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { MapView, type MapMarker } from "@/components/map/Map";
 import { deletePersonEvent } from "./event-actions";
 import { EventForm } from "./EventForm";
+import { AboutEditor } from "./AboutEditor";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
 export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; pending?: boolean };
@@ -219,24 +220,17 @@ export function MemorialProfile({
         <div className="min-w-0 space-y-5">
         <section className={card}>
           {head(icons.book, living ? m.about : m.lifeStory)}
-          {storyText ? (
-            <>
-              <ExpandText text={storyText} more={m.readMore} less={m.readLess} />
-              {editHref && (
-                <Link href={`${editHref}#story`} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full border border-line px-4 font-semibold hover:border-ink/40">
-                  ✎ {m.editAbout}
-                </Link>
-              )}
-            </>
+          {editHref ? (
+            <AboutEditor
+              locale={locale}
+              personId={personId}
+              text={storyText}
+              labels={{ empty: living ? m.noAbout : m.noStory, write: living ? m.writeAbout : m.writeStory, edit: m.editAbout, placeholder: m.aboutPh, save: m.save, saving: m.saving, cancel: m.cancel, error: m.saveError, more: m.readMore, less: m.readLess }}
+            />
+          ) : storyText ? (
+            <ExpandText text={storyText} more={m.readMore} less={m.readLess} />
           ) : (
-            <div>
-              <p className="text-ink-muted">{living ? m.noAbout : m.noStory}</p>
-              {editHref && (
-                <Link href={`${editHref}#story`} className="mt-3 inline-flex min-h-10 items-center rounded-full border border-line px-4 font-semibold hover:border-ink/40">
-                  {living ? m.writeAbout : m.writeStory}
-                </Link>
-              )}
-            </div>
+            <p className="text-ink-muted">{living ? m.noAbout : m.noStory}</p>
           )}
         </section>
         <section className={card}>
