@@ -310,7 +310,7 @@
     "zoomOut": "Zoom out",
     "reset": "Re-centre",
     "openProfile": "Open profile",
-    "hint": "Tap a card to open that person's profile. Drag to move the tree; zoom with the buttons on the left.",
+    "hint": "Click a person to open their page. Drag the tree with the mouse or a finger; zoom with Ctrl + wheel, two fingers or the buttons below.",
     "moreAbove": "More ancestors",
     "moreBelow": "More descendants",
     "noRelatives": "No relatives added for this person yet.",

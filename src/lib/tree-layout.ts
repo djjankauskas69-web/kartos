@@ -214,7 +214,15 @@ export function layoutTree(
  * SVG path data for the lines between cards.
  * With `coupleBoxes`, partners share one box: no line between them, and children hang from the box's bottom.
  */
-export function edgePaths(nodes: TreeNode[], edges: TreeEdge[], size: TreeSize = DEFAULT_SIZE, coupleBoxes = false, boxPad = 0) {
+export function edgePaths(
+  nodes: TreeNode[],
+  edges: TreeEdge[],
+  size: TreeSize = DEFAULT_SIZE,
+  coupleBoxes = false,
+  boxPad = 0,
+  /** Portrait cards: partners join at the photo's centre (y) and lines stop at its edge (r). */
+  photo?: { y: number; r: number },
+) {
   const { cardW, cardH } = size;
   const at = new Map(nodes.map((n) => [n.key, n]));
   const paths: string[] = [];
@@ -225,6 +233,10 @@ export function edgePaths(nodes: TreeNode[], edges: TreeEdge[], size: TreeSize =
       const b = at.get(e.b);
       if (!a || !b) continue;
       const [l, r] = a.x < b.x ? [a, b] : [b, a];
+      if (photo) {
+        paths.push(`M${l.x + cardW / 2 + photo.r + 6} ${l.y + photo.y}H${r.x + cardW / 2 - photo.r - 6}`);
+        continue;
+      }
       const y = l.y + cardH / 2;
       paths.push(`M${l.x + cardW} ${y}H${r.x}`);
       continue;
@@ -234,7 +246,7 @@ export function edgePaths(nodes: TreeNode[], edges: TreeEdge[], size: TreeSize =
     if (!ps.length || !cs.length) continue;
     const sx = ps.length === 2 ? (Math.min(ps[0].x, ps[1].x) + cardW + Math.max(ps[0].x, ps[1].x)) / 2 : ps[0].x + cardW / 2;
     const parentBottom = ps[0].y + cardH + (coupleBoxes ? boxPad : 0);
-    const sy = ps.length === 2 && !coupleBoxes ? ps[0].y + cardH / 2 : parentBottom;
+    const sy = ps.length === 2 && !coupleBoxes ? ps[0].y + (photo ? photo.y : cardH / 2) : parentBottom;
     const childTop = cs[0].y - (coupleBoxes ? boxPad : 0);
     const busY = childTop - (childTop - parentBottom) / 2;
     const xs = cs.map((c) => c.x + cardW / 2);
