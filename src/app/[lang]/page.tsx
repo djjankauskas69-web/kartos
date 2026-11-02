@@ -108,8 +108,8 @@ export default async function Home() {
             visuals={[
               <div key="photo" className="flex h-full items-center justify-center">
                 <figure className="halftone w-[78%] rotate-[-2deg] overflow-hidden bg-surface p-3 pb-12 shadow-[0_30px_60px_-30px_rgb(28_29_26/0.5)]">
-                  <Photo src={PHOTOS.story} alt={L.photoAlt} className="aspect-[3/2] w-full" />
-                  <figcaption className="absolute bottom-3 left-4 font-serif text-[1.05rem] italic text-ink-muted">{s.circa} 1938</figcaption>
+                  <Photo src={PHOTOS.story} alt={L.photoAlt} className="aspect-[4/3] w-full" />
+                  <figcaption className="absolute bottom-3 left-4 font-serif text-[1.05rem] italic text-ink-muted">{s.circa} 1956</figcaption>
                 </figure>
               </div>,
               <div key="tree" className="flex h-full items-center justify-center">
