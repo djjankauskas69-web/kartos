@@ -6,8 +6,21 @@ import { actionContext, formLocale, text, uuid, year } from "@/lib/action-contex
 
 export type AddState = { error?: string; ok?: boolean; id?: string; name?: string; linked?: boolean; at?: number };
 
-const KINDS = ["father", "mother", "child", "partner"] as const;
+const KINDS = ["father", "mother", "son", "daughter", "husband", "wife", "brother", "sister", "child", "partner"] as const;
 type Kind = (typeof KINDS)[number];
+/** The kind of link, and the new person's sex that comes with the choice. */
+const LINK: Record<Kind, { rel: "father" | "mother" | "child" | "partner" | "sibling"; sex: "male" | "female" | null }> = {
+  father: { rel: "father", sex: "male" },
+  mother: { rel: "mother", sex: "female" },
+  son: { rel: "child", sex: "male" },
+  daughter: { rel: "child", sex: "female" },
+  husband: { rel: "partner", sex: "male" },
+  wife: { rel: "partner", sex: "female" },
+  brother: { rel: "sibling", sex: "male" },
+  sister: { rel: "sibling", sex: "female" },
+  child: { rel: "child", sex: null },
+  partner: { rel: "partner", sex: null },
+};
 
 /**
  * The "Add a person" side panel.
@@ -22,6 +35,12 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
   const kindRaw = String(form.get("relKind") ?? "");
   const kind = (KINDS as readonly string[]).includes(kindRaw) ? (kindRaw as Kind) : null;
   if (anchor && !kind) return { error: "relation" };
+  const link = kind ? LINK[kind] : null;
+  // Only the very first person may stand on their own; everyone else joins someone.
+  if (!anchor) {
+    const { count } = await supabase.from("persons").select("id", { head: true, count: "exact" }).eq("workspace_id", workspace.id).is("deleted_at", null);
+    if ((count ?? 0) > 0) return { error: "needAnchor" };
+  }
 
   // Rules for the connection, checked before anything is written.
   let rels: { person_a: string; person_b: string; type: string }[] = [];
@@ -34,7 +53,8 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       .or(`person_a.eq.${anchor},person_b.eq.${anchor}`);
     rels = data ?? [];
     const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
-    if ((kind === "father" || kind === "mother") && parents.length >= 2) return { error: "twoParents" };
+    if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2) return { error: "twoParents" };
+    if (link!.rel === "sibling" && parents.length === 0) return { error: "noParents" };
   }
 
   let personId: string;
@@ -57,7 +77,7 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     if (!given) return { error: "required" };
     if (born === "bad" || died === "bad" || (born && died && died < born)) return { error: "year" };
     const sexRaw = String(form.get("sex") ?? "");
-    const sex = kind === "father" ? "male" : kind === "mother" ? "female" : ["female", "male"].includes(sexRaw) ? sexRaw : "unknown";
+    const sex = link?.sex ?? (["female", "male"].includes(sexRaw) ? sexRaw : "unknown");
     personId = crypto.randomUUID();
     name = [given, text(form, "surname", 200)].filter(Boolean).join(" ");
 
@@ -109,11 +129,15 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     }
   }
 
-  if (anchor && kind) {
+  if (anchor && link) {
     const links: Array<Record<string, unknown>> = [];
-    if (kind === "father" || kind === "mother") {
+    if (link.rel === "father" || link.rel === "mother") {
       links.push({ person_a: personId, person_b: anchor, type: "parent_child", subtype: "biological" });
-    } else if (kind === "child") {
+    } else if (link.rel === "sibling") {
+      for (const r of rels.filter((r) => r.type === "parent_child" && r.person_b === anchor)) {
+        if (r.person_a !== personId) links.push({ person_a: r.person_a, person_b: personId, type: "parent_child", subtype: "biological" });
+      }
+    } else if (link.rel === "child") {
       links.push({ person_a: anchor, person_b: personId, type: "parent_child", subtype: "biological" });
       const otherParent = uuid(form, "otherParent");
       if (otherParent && otherParent !== anchor && otherParent !== personId) {

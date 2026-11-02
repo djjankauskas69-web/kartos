@@ -69,6 +69,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree?${q.toString()}`;
   };
 
+  // People not connected to anyone yet (they don't show in the tree).
+  const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
+  const loose = people.length > 1 ? people.filter((p) => !connected.has(p.id)).length : 0;
+  const looseChip = loose > 0 && (
+    <Link href={`${base}/people?f=loose`} title={t.add.looseHint} className="mb-3 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[0.95rem] font-semibold hover:border-ink/40">
+      <span className="h-2 w-2 rounded-full bg-[#b8892e]" aria-hidden="true" />
+      {t.add.looseChip.replace("{n}", String(loose))} →
+    </Link>
+  );
   const header = (subtitle: React.ReactNode, view: "tree" | "list") => {
     const href = (v: string) => {
       const q = new URLSearchParams();
@@ -199,6 +208,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   return (
     <div>
       {header(subtitle, "tree")}
+      {looseChip}
       {host}
       <TreeView
         cards={tree.cards}

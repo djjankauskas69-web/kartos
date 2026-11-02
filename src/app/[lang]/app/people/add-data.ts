@@ -23,6 +23,8 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
         surname: p.surname,
         years: p.is_living ? (p.birth_year ? `${p.birth_year} –` : t.app.alive) : p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",
         portrait: photo(p.id),
+        sex: p.sex,
+        born: p.birth_year,
         parents: parents.length,
         hasFather: parents.some((x) => x.sex === "male"),
         hasMother: parents.some((x) => x.sex === "female"),
@@ -41,6 +43,8 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
     exists: t.relative.errorExists,
     photo: t.me.photoError,
     save: t.app.errorSave,
+    needAnchor: t.add.errorNeedAnchor,
+    noParents: t.add.errorNoParents,
   };
   const labels = { ...t.add, female: t.add.female, male: t.add.male, unknown: t.add.unknown } as Record<string, string>;
   return { people: options, errors, t: labels };

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Portrait } from "@/components/Portrait";
 import { cls } from "@/components/ui";
-import { IconCheck, IconImage, IconLink, IconMembers, IconSearch } from "@/components/icons";
+import { IconCheck, IconImage, IconLink, IconSearch } from "@/components/icons";
 import { isImage, uploadPhoto } from "@/lib/upload";
 import { addPersonFromPanel, type AddState } from "./add-actions";
 
@@ -16,14 +16,41 @@ export type AddOption = {
   surname: string | null;
   years: string;
   portrait?: string;
+  sex: "female" | "male" | "unknown" | null;
+  born: number | null;
   parents: number;
   hasFather: boolean;
   hasMother: boolean;
   partners: { id: string; name: string }[];
 };
 
-type Kind = "father" | "mother" | "child" | "partner";
-const KINDS: Kind[] = ["father", "mother", "child", "partner"];
+/** What the new person is to the chosen one. The sex comes with the choice. */
+type Kind = "father" | "mother" | "son" | "daughter" | "husband" | "wife" | "brother" | "sister";
+const KINDS: Kind[] = ["father", "mother", "son", "daughter", "husband", "wife", "brother", "sister"];
+
+/**
+ * Lithuanian surname for the new relative, from the chosen person's surname:
+ * Jankauskas → sūnus Jankauskas, dukra Jankauskaitė, žmona/mama Jankauskienė.
+ */
+function surnameFor(base: string | null, kind: Kind): string {
+  if (!base) return "";
+  const s = base.trim();
+  // Back to the man's form first.
+  let m = s;
+  if (/ienė$/.test(s)) m = s.replace(/ienė$/, "as");
+  else if (/aitė$/.test(s)) m = s.replace(/aitė$/, "as");
+  else if (/ytė$/.test(s)) m = s.replace(/ytė$/, "is");
+  else if (/[uū]tė$/.test(s)) m = s.replace(/[uū]tė$/, "us");
+  const female = kind === "mother" || kind === "wife" || kind === "daughter" || kind === "sister";
+  if (!female) return m;
+  if (/(ė|a)$/.test(m)) return m; // already a woman's form or a non-Lithuanian surname
+  const married = kind === "mother" || kind === "wife";
+  if (married) return m.replace(/(as|is|ys|us)$/, "ienė");
+  if (/as$/.test(m)) return m.replace(/as$/, "aitė");
+  if (/(is|ys)$/.test(m)) return m.replace(/(is|ys)$/, "ytė");
+  if (/us$/.test(m)) return m.replace(/us$/, "ūtė");
+  return m;
+}
 type L = Record<string, string>;
 
 const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
@@ -49,6 +76,13 @@ function lookAlikes(people: AddOption[], given: string, surname: string) {
       return prefixLen(ps, s) >= Math.min(6, ps.length, s.length);
     })
     .slice(0, 3);
+}
+
+/** ?add=son etc. as is; the tree's general "child" leaves son/daughter open, "partner" follows the sex. */
+function initialKindFor(kind: string | null, anchor?: AddOption): Kind | null {
+  if (KINDS.includes(kind as Kind)) return kind as Kind;
+  if (kind === "partner") return anchor?.sex === "female" ? "husband" : anchor?.sex === "male" ? "wife" : null;
+  return null;
 }
 
 /* ---------- Opens from ?add=… on the people list or the tree ---------- */
@@ -97,7 +131,7 @@ export function AddPersonHost({
           workspaceId={workspaceId}
           needsApproval={needsApproval}
           initialAnchor={to && people.some((p) => p.id === to) ? to : null}
-          initialKind={KINDS.includes(kind as Kind) ? (kind as Kind) : null}
+          initialKind={initialKindFor(kind, people.find((p) => p.id === to))}
           locale={pathname.split("/")[1] ?? "lt"}
           onClose={close}
           t={t}
@@ -195,7 +229,7 @@ function PersonSearch({
   );
 }
 
-/* ---------- The panel ---------- */
+/* ---------- The panel: whose relative → who → about them ---------- */
 
 function AddPersonPanel({
   people,
@@ -219,65 +253,45 @@ function AddPersonPanel({
   errors: L;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const another = useRef(false);
-  const [tab, setTab] = useState<"main" | "more">("main");
-  const [mode, setMode] = useState<"new" | "existing">("new");
+  const first = people.length === 0;
+  const [anchor, setAnchor] = useState<string | null>(initialAnchor);
+  const [kind, setKind] = useState<Kind | null>(initialKind);
   const [existing, setExisting] = useState<string | null>(null);
   const [given, setGiven] = useState("");
   const [surname, setSurname] = useState("");
-  const [living, setLiving] = useState(false);
-  const [anchor, setAnchor] = useState<string | null>(initialAnchor);
-  const [kind, setKind] = useState<Kind | null>(initialKind);
+  const [surnameTouched, setSurnameTouched] = useState(false);
+  const [living, setLiving] = useState(true);
+  const [more, setMore] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
-  const [addedNote, setAddedNote] = useState<string | null>(null);
 
   const anchorP = people.find((p) => p.id === anchor) ?? null;
   const existingP = people.find((p) => p.id === existing) ?? null;
-  const suggestions = mode === "new" ? lookAlikes(people, given, surname).filter((p) => !dismissed.includes(p.id) && p.id !== anchor) : [];
 
   const kindNote = (k: Kind) => {
     if (!anchorP) return null;
     if ((k === "father" || k === "mother") && anchorP.parents >= 2) return t.twoParents;
     if (k === "father" && anchorP.hasFather) return t.hasFather;
     if (k === "mother" && anchorP.hasMother) return t.hasMother;
+    if ((k === "brother" || k === "sister") && anchorP.parents === 0) return t.noParentsNote;
     return null;
   };
   const effectiveKind = kind && !kindNote(kind) ? kind : null;
-
-  const resetForAnother = () => {
-    formRef.current?.reset();
-    setGiven("");
-    setSurname("");
-    setLiving(false);
-    setMode("new");
-    setExisting(null);
-    setDismissed([]);
-    setTab("main");
-    if (photo) URL.revokeObjectURL(photo.url);
-    setPhoto(null);
-  };
+  const shownSurname = surnameTouched ? surname : effectiveKind && anchorP ? surnameFor(anchorP.surname, effectiveKind) : surname;
+  const suggestions = existing ? [] : lookAlikes(people, given, shownSurname).filter((p) => !dismissed.includes(p.id) && p.id !== anchor);
 
   const [state, dispatch, pending] = useActionState(async (prev: AddState, form: FormData): Promise<AddState> => {
     const file = form.get("photoFile");
     form.delete("photoFile");
-    if (file instanceof File && file.size > 0 && mode === "new") {
+    if (file instanceof File && file.size > 0 && !existing) {
       try {
-        const up = await uploadPhoto(workspaceId, file);
-        form.set("photo", JSON.stringify(up));
+        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, file)));
       } catch {
         return { error: "photo" };
       }
     }
     const result = await addPersonFromPanel(prev, form);
-    if (result.ok) {
-      if (another.current) {
-        setAddedNote((result.linked ? t.linked : t.added).replace("{name}", result.name ?? ""));
-        resetForAnother();
-      } else {
-        onClose(result);
-      }
-    }
+    if (result.ok) onClose(result);
     return result;
   }, {});
 
@@ -295,102 +309,124 @@ function AddPersonPanel({
     startTransition(() => dispatch(form));
   };
 
-  const summaryName = mode === "existing" ? (existingP?.name ?? "") : [given, surname].filter(Boolean).join(" ") || t.newPersonName;
   const err = state.error ? (errors[state.error] ?? errors.save) : null;
+  const ready = first || (anchorP && effectiveKind);
+  const newName = existingP ? existingP.name : [given, shownSurname].filter(Boolean).join(" ");
+  const step = (n: number, title: string, done: boolean) => (
+    <h3 className="mb-3 flex items-center gap-3 text-[1.12rem] font-semibold">
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.9rem] ${done ? "bg-ink text-white" : "border border-line text-ink-muted"}`}>{done ? <IconCheck size={15} /> : n}</span>
+      {title}
+    </h3>
+  );
+  const tile = (on: boolean) => `min-h-12 rounded-xl border px-2 text-[1rem] disabled:cursor-not-allowed disabled:opacity-40 ${on ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface hover:border-ink/40"}`;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end lg:left-auto" role="dialog" aria-modal="true" aria-labelledby="add-title">
       <button type="button" aria-label={t.close} onClick={() => onClose()} className="fixed inset-0 -z-10 cursor-default bg-ink/15 lg:bg-ink/5" tabIndex={-1} />
-      <form
-        ref={formRef}
-        onSubmit={submit}
-        className="flex h-dvh w-full flex-col bg-surface shadow-[var(--shadow-float)] lg:w-[31rem] lg:border-l lg:border-line"
-      >
+      <form ref={formRef} onSubmit={submit} className="flex h-dvh w-full flex-col bg-surface shadow-[var(--shadow-float)] lg:w-[31rem] lg:border-l lg:border-line">
         <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="mode" value={mode} />
+        <input type="hidden" name="mode" value={existing ? "existing" : "new"} />
         <input type="hidden" name="existingId" value={existing ?? ""} />
         <input type="hidden" name="relTo" value={anchor ?? ""} />
         <input type="hidden" name="relKind" value={anchor ? (effectiveKind ?? "") : ""} />
         <input type="hidden" name="living" value={living ? "yes" : "no"} />
 
-        <header className="flex items-start gap-3 px-5 pb-3 pt-5 sm:px-7 sm:pt-7">
-          <div className="min-w-0 flex-1">
-            <h2 id="add-title" className="text-[1.7rem] leading-tight">
-              {t.title}
-            </h2>
-            <p className="mt-1 text-ink-muted">{t.lead}</p>
-          </div>
+        <header className="flex items-start gap-3 border-b border-line px-5 pb-4 pt-5 sm:px-7 sm:pt-7">
+          <h2 id="add-title" className="min-w-0 flex-1 text-[1.7rem] font-semibold leading-tight">
+            {t.title}
+          </h2>
           <button type="button" onClick={() => onClose()} aria-label={t.close} className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.6rem] leading-none text-ink-muted hover:bg-linen hover:text-ink">
             ×
           </button>
         </header>
 
-        {mode === "new" && (
-          <div className="flex gap-1 border-b border-line px-5 sm:px-7" role="tablist">
-            {(["main", "more"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                role="tab"
-                aria-selected={tab === k}
-                onClick={() => setTab(k)}
-                className={`-mb-px flex min-h-12 items-center gap-2 border-b-2 px-2 text-[0.98rem] sm:px-3 ${
-                  tab === k ? "border-sage-deep font-semibold text-sage-deep" : "border-transparent text-ink-muted hover:text-ink"
-                }`}
-              >
-                {k === "main" ? <IconMembers size={18} /> : <IconImage size={18} />}
-                {k === "main" ? t.tabMain : t.tabMore}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
+          {first ? (
+            <p className="rounded-xl bg-linen px-4 py-3">{t.firstPerson}</p>
+          ) : (
+            <>
+              <section>
+                {step(1, t.step1, !!anchorP)}
+                <PersonSearch id="add-anchor" options={people.filter((p) => p.id !== existing)} value={anchor} onChange={setAnchor} placeholder={t.step1Ph} t={t} />
+              </section>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-7">
-          {addedNote && (
-            <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-sage-wash px-4 py-3 font-semibold text-sage-deep">
-              <IconCheck size={18} />
-              {addedNote}
-            </p>
+              <section inert={!anchorP} className={anchorP ? "" : "opacity-40"}>
+                {step(2, t.step2, !!effectiveKind)}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {KINDS.map((k) => {
+                    const note = kindNote(k);
+                    return (
+                      <button key={k} type="button" disabled={!!note} title={note ?? undefined} aria-pressed={kind === k} onClick={() => setKind(k)} className={tile(kind === k && !note)}>
+                        {t[`k_${k}`]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {anchorP && kind && kindNote(kind) && <p className="mt-2 text-[0.92rem] text-ink-muted">{t[`k_${kind}`]}: {kindNote(kind)}</p>}
+                {(effectiveKind === "son" || effectiveKind === "daughter") && anchorP && anchorP.partners.length > 0 && (
+                  <div className="mt-3">
+                    <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
+                      {t.otherParent}
+                    </label>
+                    <select id="add-other-parent" name="otherParent" defaultValue={anchorP.partners[0].id} className={cls.input}>
+                      {anchorP.partners.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                      <option value="">{t.noOtherParent}</option>
+                    </select>
+                  </div>
+                )}
+              </section>
+            </>
           )}
 
-          {/* ----- Main ----- */}
-          <div hidden={mode === "new" && tab !== "main"} className="space-y-6">
-            {mode === "existing" ? (
-              <section>
-                <p className="font-semibold">{t.existingTitle}</p>
-                <p className="mb-3 text-[0.95rem] text-ink-muted">{t.existingLead}</p>
-                <PersonSearch id="add-existing" options={people.filter((p) => p.id !== anchor)} value={existing} onChange={setExisting} placeholder={t.linkToPh} t={t} />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("new");
-                    setExisting(null);
-                  }}
-                  className={`${cls.quiet} mt-2 -ml-3`}
-                >
+          <section inert={!ready} className={ready ? "" : "opacity-40"}>
+            {!first && step(3, t.step3, !!(existingP || given.trim()))}
+            {existingP ? (
+              <div className="flex items-center gap-3 rounded-xl border border-ink px-3 py-2.5">
+                <Portrait given={existingP.given} surname={existingP.surname} src={existingP.portrait} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{existingP.name}</span>
+                  <span className="block text-[0.9rem] text-ink-muted">{t.existingLead}</span>
+                </span>
+                <button type="button" onClick={() => setExisting(null)} className={cls.quiet}>
                   {t.notThis}
                 </button>
-              </section>
+              </div>
             ) : (
-              <>
+              <div className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="add-given" className={cls.label}>
-                      {t.given} <span className="text-danger">*</span>
+                      {t.given}
                     </label>
-                    <input id="add-given" name="givenNames" required maxLength={200} value={given} onChange={(e) => setGiven(e.target.value)} placeholder={t.givenPh} className={cls.input} autoFocus autoComplete="off" />
+                    <input id="add-given" name="givenNames" required maxLength={200} value={given} onChange={(e) => setGiven(e.target.value)} placeholder={t.givenPh} className={cls.input} autoComplete="off" />
                   </div>
                   <div>
                     <label htmlFor="add-surname" className={cls.label}>
                       {t.surname}
                     </label>
-                    <input id="add-surname" name="surname" maxLength={200} value={surname} onChange={(e) => setSurname(e.target.value)} placeholder={t.surnamePh} className={cls.input} autoComplete="off" />
+                    <input
+                      id="add-surname"
+                      name="surname"
+                      maxLength={200}
+                      value={shownSurname}
+                      onChange={(e) => {
+                        setSurnameTouched(true);
+                        setSurname(e.target.value);
+                      }}
+                      placeholder={t.surnamePh}
+                      className={cls.input}
+                      autoComplete="off"
+                    />
                   </div>
                 </div>
 
                 {suggestions.length > 0 && (
-                  <section className="rounded-xl border border-[#e2cfa5] bg-[#faf3e3] p-4" aria-live="polite">
-                    <p className="mb-2 font-semibold text-[#6d5434]">{t.maybeTitle}</p>
+                  <section className="rounded-xl border border-line bg-linen/70 p-4" aria-live="polite">
+                    <p className="mb-2 font-semibold">{t.maybeTitle}</p>
                     <ul className="space-y-2">
                       {suggestions.map((p) => (
                         <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-surface px-3 py-2">
@@ -399,15 +435,8 @@ function AddPersonPanel({
                             <span className="block truncate font-semibold">{p.name}</span>
                             {p.years && <span className="block text-[0.9rem] text-ink-muted">{p.years}</span>}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMode("existing");
-                              setExisting(p.id);
-                            }}
-                            className={cls.secondary}
-                          >
-                            {t.maybeYes}
+                          <button type="button" onClick={() => setExisting(p.id)} className={cls.secondary}>
+                            {t.useExisting}
                           </button>
                           <button type="button" aria-label={t.close} onClick={() => setDismissed((d) => [...d, p.id])} className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-linen">
                             ×
@@ -418,242 +447,144 @@ function AddPersonPanel({
                   </section>
                 )}
 
-                <fieldset>
-                  <legend className={cls.label}>{t.status}</legend>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[true, false].map((v) => (
-                      <button
-                        key={String(v)}
-                        type="button"
-                        aria-pressed={living === v}
-                        onClick={() => setLiving(v)}
-                        className={`flex min-h-13 items-center justify-center gap-2 rounded-xl border text-[1.05rem] ${
-                          living === v ? "border-sage-deep bg-sage-wash/70 font-semibold text-sage-deep" : "border-line bg-surface hover:border-ink-muted"
-                        }`}
-                      >
-                        <span aria-hidden="true">{v ? "♥" : "✢"}</span>
-                        {v ? t.living : t.deceased}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <fieldset>
-                  <legend className="mb-2 text-[1.05rem] font-semibold">{t.dates}</legend>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="add-born" className="mb-1.5 block text-[0.98rem]">
-                        {t.birthYear}
-                      </label>
-                      <input id="add-born" name="birthYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.birthPh} className={cls.input} />
-                    </div>
-                    {!living && (
-                      <div>
-                        <label htmlFor="add-died" className="mb-1.5 block text-[0.98rem]">
-                          {t.deathYear}
-                        </label>
-                        <input id="add-died" name="deathYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.deathPh} className={cls.input} />
-                      </div>
-                    )}
-                  </div>
-                </fieldset>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("existing");
-                    setExisting(null);
-                  }}
-                  className="text-[0.98rem] font-semibold text-sage-deep underline-offset-2 hover:underline"
-                >
-                  {t.pickExisting}
-                </button>
-              </>
-            )}
-
-            <section className="border-t border-line pt-5">
-              <h3 className="mb-3 flex items-center gap-2 text-[1.15rem]">
-                <IconLink size={20} />
-                {t.family}
-              </h3>
-              {mode === "existing" && (!anchor || !effectiveKind) && <p className="mb-3 text-[0.95rem] text-ink-muted">{t.existingNeedsLink}</p>}
-              <label htmlFor="add-anchor" className="mb-1.5 block font-semibold">
-                {t.linkTo}
-              </label>
-              <PersonSearch
-                id="add-anchor"
-                options={people.filter((p) => p.id !== existing)}
-                value={anchor}
-                onChange={(v) => setAnchor(v)}
-                placeholder={t.linkToPh}
-                t={t}
-              />
-              {anchorP && (
-                <>
-                  <p className="mb-2 mt-4 font-semibold">{t.kindQuestion}</p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {KINDS.map((k) => {
-                      const note = kindNote(k);
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          disabled={!!note}
-                          title={note ?? undefined}
-                          aria-pressed={kind === k}
-                          onClick={() => setKind(k)}
-                          className={`min-h-12 rounded-xl border px-2 text-[1rem] disabled:cursor-not-allowed disabled:opacity-40 ${
-                            kind === k && !note ? "border-sage-deep bg-sage-wash/70 font-semibold text-sage-deep" : "border-line bg-surface hover:border-ink-muted"
-                          }`}
-                        >
-                          {t[`kind_${k}`]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {effectiveKind === "child" && anchorP.partners.length > 0 && (
-                    <div className="mt-3">
-                      <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
-                        {t.otherParent}
-                      </label>
-                      <select id="add-other-parent" name="otherParent" defaultValue={anchorP.partners[0].id} className={cls.input}>
-                        {anchorP.partners.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                        <option value="">{t.noOtherParent}</option>
-                      </select>
-                    </div>
-                  )}
-                  {effectiveKind && (
-                    <p className="mt-3 flex items-start gap-2 rounded-lg bg-paper px-3 py-2.5 text-[0.98rem]">
-                      <IconLink size={18} />
-                      <span>
-                        {t.summary
-                          .replace("{anchor}", anchorP.name)
-                          .replace("{kind}", t[`kind_${effectiveKind}`].toLowerCase())
-                          .replace("{name}", summaryName)}
-                      </span>
-                    </p>
-                  )}
-                </>
-              )}
-            </section>
-          </div>
-
-          {/* ----- More ----- */}
-          {mode === "new" && (
-            <div hidden={tab !== "more"} className="space-y-5">
-              <div>
-                <label htmlFor="add-birth-surname" className={cls.label}>
-                  {t.birthSurname}
-                </label>
-                <input id="add-birth-surname" name="birthSurname" maxLength={200} className={cls.input} />
-              </div>
-              {effectiveKind !== "father" && effectiveKind !== "mother" && (
-                <fieldset>
-                  <legend className={cls.label}>{t.sex}</legend>
-                  <div className="flex flex-wrap gap-2">
-                    {(["female", "male", "unknown"] as const).map((s) => (
-                      <label key={s} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-4 has-[:checked]:border-sage-deep has-[:checked]:bg-sage-wash/60">
-                        <input type="radio" name="sex" value={s} defaultChecked={s === "unknown"} className="accent-[var(--color-sage-deep)]" />
-                        {t[s]}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="add-birth-place" className={cls.label}>
-                    {t.birthPlace}
-                  </label>
-                  <input id="add-birth-place" name="birthPlace" maxLength={200} className={cls.input} />
+                <div className="grid grid-cols-2 gap-2">
+                  {[true, false].map((v) => (
+                    <button key={String(v)} type="button" aria-pressed={living === v} onClick={() => setLiving(v)} className={tile(living === v)}>
+                      {v ? t.living : t.deceased}
+                    </button>
+                  ))}
                 </div>
-                {!living && (
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="add-death-place" className={cls.label}>
-                      {t.deathPlace}
+                    <label htmlFor="add-born" className="mb-1.5 block text-[0.98rem]">
+                      {t.birthYear}
                     </label>
-                    <input id="add-death-place" name="deathPlace" maxLength={200} className={cls.input} />
+                    <input id="add-born" name="birthYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.birthPh} className={cls.input} />
                   </div>
-                )}
-              </div>
-              <div>
-                <label htmlFor="add-bio" className={cls.label}>
-                  {t.biography}
-                </label>
-                <textarea id="add-bio" name="biography" rows={4} maxLength={20000} placeholder={t.biographyPh} className={cls.textarea} />
-              </div>
-              <div>
-                <p className={cls.label}>{t.photo}</p>
-                <div className="flex items-center gap-4">
-                  {photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- local preview
-                    <img src={photo.url} alt="" className="h-24 w-20 rounded-[50%] object-cover ring-1 ring-line" />
-                  ) : (
-                    <span className="flex h-24 w-20 items-center justify-center rounded-[50%] border border-dashed border-line text-ink-muted">
-                      <IconImage size={24} />
-                    </span>
+                  {!living && (
+                    <div>
+                      <label htmlFor="add-died" className="mb-1.5 block text-[0.98rem]">
+                        {t.deathYear}
+                      </label>
+                      <input id="add-died" name="deathYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.deathPh} className={cls.input} />
+                    </div>
                   )}
-                  <div className="flex flex-col items-start gap-1">
-                    <label className={`${cls.secondary} cursor-pointer`}>
-                      {t.photoPick}
-                      <input
-                        type="file"
-                        name="photoFile"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (photo) URL.revokeObjectURL(photo.url);
-                          setPhoto(f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null);
-                        }}
-                      />
-                    </label>
-                    {photo && (
-                      <button
-                        type="button"
-                        className={cls.quiet}
-                        onClick={() => {
-                          URL.revokeObjectURL(photo.url);
-                          setPhoto(null);
-                          const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photoFile"]');
-                          if (input) input.value = "";
-                        }}
-                      >
-                        {t.photoRemove}
-                      </button>
-                    )}
+                </div>
+                {first && (
+                  <fieldset>
+                    <legend className={cls.label}>{t.sex}</legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["female", "male"] as const).map((sx) => (
+                        <label key={sx} className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-line has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-white">
+                          <input type="radio" name="sex" value={sx} className="sr-only" />
+                          {t[sx]}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+
+                <div className="rounded-xl border border-line">
+                  <button type="button" aria-expanded={more} onClick={() => setMore((v) => !v)} className="flex min-h-12 w-full items-center gap-2 px-4 text-left">
+                    <span className="font-semibold">{t.more}</span>
+                    <span className="text-[0.92rem] text-ink-muted">· {t.moreHint}</span>
+                    <span aria-hidden="true" className={`ml-auto text-ink-muted transition-transform ${more ? "rotate-180" : ""}`}>⌄</span>
+                  </button>
+                  <div hidden={!more} className="space-y-4 border-t border-line p-4">
+                    <div>
+                      <label htmlFor="add-birth-surname" className={cls.label}>
+                        {t.birthSurname}
+                      </label>
+                      <input id="add-birth-surname" name="birthSurname" maxLength={200} className={cls.input} />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="add-birth-place" className={cls.label}>
+                          {t.birthPlace}
+                        </label>
+                        <input id="add-birth-place" name="birthPlace" maxLength={200} className={cls.input} />
+                      </div>
+                      {!living && (
+                        <div>
+                          <label htmlFor="add-death-place" className={cls.label}>
+                            {t.deathPlace}
+                          </label>
+                          <input id="add-death-place" name="deathPlace" maxLength={200} className={cls.input} />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="add-bio" className={cls.label}>
+                        {t.biography}
+                      </label>
+                      <textarea id="add-bio" name="biography" rows={3} maxLength={20000} placeholder={t.biographyPh} className={cls.textarea} />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- local preview
+                        <img src={photo.url} alt="" className="h-16 w-16 rounded-full object-cover ring-1 ring-line" />
+                      ) : (
+                        <span className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-line text-ink-muted">
+                          <IconImage size={22} />
+                        </span>
+                      )}
+                      <label className={`${cls.secondary} cursor-pointer`}>
+                        {photo ? t.photoRemove : t.photoPick}
+                        <input
+                          type="file"
+                          name="photoFile"
+                          accept="image/*"
+                          className="sr-only"
+                          onClick={(e) => {
+                            if (photo) {
+                              e.preventDefault();
+                              URL.revokeObjectURL(photo.url);
+                              setPhoto(null);
+                              (e.currentTarget as HTMLInputElement).value = "";
+                            }
+                          }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            setPhoto(f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null);
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </section>
         </div>
 
         <footer className="border-t border-line bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-7">
+          {ready && newName && (
+            <div className="mb-3 flex items-center gap-3 rounded-xl bg-linen px-4 py-3">
+              <IconLink size={18} />
+              <p className="min-w-0 text-[0.98rem] leading-snug">
+                <span className="text-ink-muted">{existingP ? t.summaryLink : t.summaryLabel}: </span>
+                <strong className="font-semibold">{newName}</strong>
+                {anchorP && effectiveKind && (
+                  <span className="text-ink-muted">
+                    {" "}
+                    – {t[`k_${effectiveKind}`].toLowerCase()} · {anchorP.name}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
           {err && (
             <p role="alert" className="mb-3 text-danger">
               {err}
             </p>
           )}
-          {needsApproval && mode === "new" && <p className="mb-3 text-[0.95rem] text-ink-muted">{t.approval}</p>}
-          <div className="flex flex-wrap items-center gap-2">
+          {needsApproval && !existing && <p className="mb-3 text-[0.95rem] text-ink-muted">{t.approval}</p>}
+          <div className="flex items-center gap-2">
             <button type="button" onClick={() => onClose()} className={cls.secondary}>
               {t.cancel}
             </button>
-            <button type="submit" disabled={pending} onClick={() => (another.current = true)} className={cls.secondary}>
-              {t.addAnother}
-            </button>
-            <button
-              type="submit"
-              disabled={pending || (mode === "existing" && (!existing || !anchor || !effectiveKind))}
-              onClick={() => (another.current = false)}
-              className={`${cls.primary} ml-auto flex-1 sm:flex-none`}
-            >
-              {pending ? t.saving : mode === "existing" ? t.submitLink : t.submit}
+            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} ml-auto flex-1 sm:flex-none`}>
+              {pending ? t.saving : existing ? t.submitLink : t.submit}
             </button>
           </div>
         </footer>
