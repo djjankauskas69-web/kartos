@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/EmptyState";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
@@ -333,7 +334,16 @@ export function ArchiveLibrary({
           </div>
 
           {items.length === 0 ? (
-            <p className="py-10 text-center text-ink-muted">{t.empty}</p>
+            <div className="mt-5">
+              <EmptyState
+                title={t.emptyTitle}
+                lead={t.emptyLead}
+                picture={
+                  // eslint-disable-next-line @next/next/no-img-element -- static photo
+                  <img src="/landing/letter.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                }
+              />
+            </div>
           ) : shown.length === 0 ? (
             <p className="py-10 text-center text-ink-muted">{t.noResults}</p>
           ) : view === "grid" ? (

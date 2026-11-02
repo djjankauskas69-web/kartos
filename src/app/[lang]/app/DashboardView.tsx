@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, lifeSpan, type Person, type Role } from "@/lib/data";
-import { GravesArt } from "@/components/Illustrations";
-import { LineTree } from "@/components/LineArt";
+import { SatelliteThumb } from "@/components/SatelliteThumb";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 
@@ -28,6 +27,7 @@ export type DashboardData = {
   partner?: Person;
   shownKids: Person[];
   moreKids: number;
+  grave?: { lat: number; lng: number };
   portraits: Record<string, string>;
   latestPhotos: string[];
   recent: RecentItem[];
@@ -36,9 +36,8 @@ export type DashboardData = {
 const card = "rounded-[12px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]";
 
 /** The archive overview: name, numbers, tree, graves, photos, recent additions, invitation. */
-export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, portraits, latestPhotos, recent }: DashboardData) {
+export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, portraits, latestPhotos, recent }: DashboardData) {
   const base = `/${locale}/app`;
-  const graveCount = counts.graves;
   const stats = [
     { icon: <IconPeople size={24} />, n: counts.people, label: t.dash.statPeople, href: `${base}/people` },
     { icon: <IconTree size={24} />, n: counts.generations, label: t.dash.statGenerations, href: `${base}/tree` },
@@ -135,9 +134,13 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
             <div className="min-w-0 flex-1">
               <CardHead icon={<IconPin size={26} />} title={t.appNav.map} lead={t.dash.gravesLead} />
             </div>
-            <div className="hidden h-[7rem] w-40 shrink-0 overflow-hidden rounded-xl sm:block">
-              <GravesArt pins={graveCount} />
-            </div>
+            {/* Their latest grave from above; with none marked yet, a quiet cemetery view (Rasos, Vilnius). */}
+            <SatelliteThumb
+              lat={grave?.lat ?? 54.6736}
+              lng={grave?.lng ?? 25.3031}
+              pin={Boolean(grave)}
+              className={`hidden h-[7.5rem] w-44 shrink-0 rounded-xl ring-4 ring-white shadow-[0_10px_24px_-12px_rgb(28_29_26/0.6)] sm:block ${grave ? "" : "opacity-60 grayscale-[.4]"}`}
+            />
             <span className="absolute right-5 top-5">
               <Arrow label={t.dash.open} />
             </span>
@@ -147,19 +150,19 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
             <div className="min-w-0 flex-1">
               <CardHead icon={<IconImage size={26} />} title={t.appNav.archive} lead={t.dash.archiveLead} />
             </div>
-            <div className="relative hidden h-[7rem] w-40 shrink-0 sm:block" aria-hidden="true">
+            <div className="relative hidden h-[7.5rem] w-44 shrink-0 sm:block" aria-hidden="true">
               {[0, 1].map((i) => {
                 const url = latestPhotos[i];
                 return (
                   <span
                     key={i}
-                    className={`absolute top-2 block h-24 w-24 bg-[#fbf8f1] p-1.5 shadow-[0_6px_14px_-6px_rgb(60_45_30/0.5)] ring-1 ring-line ${i === 0 ? "left-0 -rotate-6" : "left-14 rotate-[5deg]"}`}
+                    className={`absolute block h-[6.2rem] w-[6.2rem] overflow-hidden rounded-xl bg-linen ring-4 ring-white shadow-[0_10px_24px_-12px_rgb(28_29_26/0.6)] ${i === 0 ? "left-0 top-3 -rotate-[5deg]" : "left-[4.6rem] top-0 rotate-[4deg]"}`}
                   >
                     {url ? (
                       // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                      <img src={url} alt="" className="h-full w-full object-cover sepia-[.2]" />
+                      <img src={url} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center bg-linen text-bronze">
+                      <span className="flex h-full w-full items-center justify-center text-ink-muted/60">
                         <IconImage size={26} />
                       </span>
                     )}
@@ -190,12 +193,12 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
               {recent.map((r, i) => (
                 <li key={i}>
                   <Link href={r.href} className="flex items-center gap-4 py-3 hover:bg-paper/60">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-linen text-sage-deep">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-ink-muted ring-2 ring-white shadow-[0_4px_10px_-6px_rgb(28_29_26/0.5)]">
                       {r.thumb ? (
                         // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                         <img src={r.thumb} alt="" className="h-full w-full object-cover" />
                       ) : r.kind === "person" ? (
-                        <span className="font-serif text-bronze">{r.initials}</span>
+                        <span className="text-[0.95rem] font-semibold">{r.initials}</span>
                       ) : r.kind === "photos" ? (
                         <IconImage size={20} />
                       ) : r.kind === "grave" ? (
@@ -215,23 +218,23 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
           )}
         </div>
 
-        <div className={`relative overflow-hidden p-6 sm:p-7 ${card}`}>
-          <LineTree className="pointer-events-none absolute -bottom-12 -right-6 hidden w-60 text-ink/15 sm:block" />
-          <div className="relative max-w-sm">
-            <h2 className="flex items-center gap-3 text-[1.4rem]">
-              <span className="text-ink-muted">
-                <IconPeople size={24} />
-              </span>
+        <div className="relative flex min-h-[18rem] overflow-hidden rounded-[16px] bg-olive-deep text-surface">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+          <img src="/landing/story-family.jpg" alt="" aria-hidden="true" className="absolute inset-y-0 right-0 h-full w-[62%] object-cover opacity-80" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-olive-deep from-40% via-olive-deep/70 to-olive-deep/10" />
+          <div className="relative flex max-w-sm flex-col justify-center p-6 sm:p-8">
+            <h2 className="flex items-center gap-3 text-[1.55rem] leading-tight text-surface">
+              <IconPeople size={24} />
               {t.dash.inviteTitle}
             </h2>
-            <p className="mt-3 text-ink-muted">{t.dash.inviteLead}</p>
+            <p className="mt-3 text-surface/75">{t.dash.inviteLead}</p>
             {can.admin(role) ? (
-              <Link href={`${base}/members`} className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 font-semibold text-surface hover:bg-ink">
+              <Link href={`${base}/members`} className="mt-6 inline-flex min-h-12 w-fit items-center gap-2 rounded-full bg-surface px-6 font-semibold text-ink transition-colors hover:bg-linen">
                 <IconUserPlus size={20} />
                 {t.dash.inviteButton}
               </Link>
             ) : (
-              <p className="mt-6 text-[0.98rem]">{t.dash.inviteAsk}</p>
+              <p className="mt-6 text-[0.98rem] text-surface/90">{t.dash.inviteAsk}</p>
             )}
           </div>
         </div>

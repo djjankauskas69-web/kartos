@@ -29,10 +29,10 @@ export function SideNav({ items, label }: { items: NavItem[]; label: string }) {
             href={item.href}
             aria-current={on ? "page" : undefined}
             className={`flex min-h-12 items-center gap-3.5 rounded-xl px-4 text-[1.05rem] transition-colors ${
-              on ? "bg-sage-wash font-semibold text-ink" : "text-ink/85 hover:bg-linen/70"
+              on ? "bg-ink font-semibold text-white" : "text-ink/85 hover:bg-linen/70"
             }`}
           >
-            <span className={on ? "text-sage-deep" : "text-ink-muted"}>{item.icon}</span>
+            <span className={on ? "text-white" : "text-ink-muted"}>{item.icon}</span>
             {item.label}
             <Badge n={item.badge} />
           </Link>
@@ -55,10 +55,10 @@ export function TopNav({ items, label }: { items: NavItem[]; label: string }) {
             href={item.href}
             aria-current={on ? "page" : undefined}
             className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[0.98rem] ${
-              on ? "border-sage/40 bg-sage-wash font-semibold" : "border-line bg-surface text-ink-muted"
+              on ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface text-ink-muted"
             }`}
           >
-            <span className={on ? "text-sage-deep" : ""}>{item.icon}</span>
+            <span className={on ? "text-white" : ""}>{item.icon}</span>
             {item.label}
             {item.badge ? <span className="rounded-full bg-[#b8892e] px-1.5 text-[0.75rem] font-semibold leading-5 text-surface">{item.badge}</span> : null}
           </Link>

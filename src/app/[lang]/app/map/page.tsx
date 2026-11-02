@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/EmptyState";
+import { SatelliteThumb } from "@/components/SatelliteThumb";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -116,7 +118,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
           </p>
         </div>
         {can.add(current.role) && (
-          <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface hover:bg-ink">
+          <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>
             <IconPlus size={20} />
             {t.map.markGrave}
           </Link>
@@ -124,7 +126,19 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
       </div>
 
       {items.length === 0 ? (
-        <p className={`px-5 py-6 ${cls.card}`}>{t.map.empty}</p>
+        <EmptyState
+          title={t.map.emptyTitle}
+          lead={t.map.emptyLead}
+          picture={<SatelliteThumb lat={54.6736} lng={25.3031} zoom={17} className="absolute inset-0 h-full w-full" />}
+          action={
+            can.add(current.role) ? (
+              <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>
+                <IconPlus size={20} />
+                {t.map.markGrave}
+              </Link>
+            ) : undefined
+          }
+        />
       ) : (
         <GravesExplorer
           items={items}

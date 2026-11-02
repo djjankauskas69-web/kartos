@@ -31,7 +31,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   const ws = current.id;
   const base = `/${locale}/app`;
-  const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories] = await Promise.all([
+  const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories, gravePoint] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected"),
@@ -39,6 +39,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("persons").select("id, created_at").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("burials").select("id, person_id, cemetery_name, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("memories").select("id, person_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
+    supabase.from("burials").select("lat, lng").eq("workspace_id", ws).neq("status", "rejected").not("lat", "is", null).order("created_at", { ascending: false }).limit(1),
   ]);
 
   /* ---- Mini tree: the couple with the most children, and their children ---- */
@@ -99,6 +100,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
       partner={partner}
       shownKids={shownKids}
       moreKids={kids.length - shownKids.length}
+      grave={gravePoint.data?.[0]?.lat != null && gravePoint.data[0].lng != null ? { lat: gravePoint.data[0].lat, lng: gravePoint.data[0].lng } : undefined}
       portraits={Object.fromEntries(portraits)}
       latestPhotos={latest.map((m) => urls.get(m.storage_path) ?? "").filter(Boolean)}
       recent={recent}

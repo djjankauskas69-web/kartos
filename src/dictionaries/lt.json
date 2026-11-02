@@ -514,7 +514,9 @@
     "continue": "Tęsti",
     "addPersonFirst": "Žmogaus dar nėra archyve? Pirmiausia pridėkite jį.",
     "marked": "jau pažymėta",
-    "noDeceased": "Archyve dar nėra mirusių žmonių. Pirmiausia pridėkite žmogų."
+    "noDeceased": "Archyve dar nėra mirusių žmonių. Pirmiausia pridėkite žmogų.",
+    "emptyTitle": "Pažymėkite pirmą kapavietę",
+    "emptyLead": "Atidarykite žmogaus kortelę arba spauskite „Pažymėti kapavietę“ – vietą galite nustatyti telefonu stovėdami prie kapo."
   },
   "dash": {
     "subtitle": "Jūsų šeimos istorija vienoje vietoje.",
@@ -637,7 +639,9 @@
       "few": "failai",
       "many": "failai",
       "other": "failų"
-    }
+    },
+    "emptyTitle": "Archyvas dar tuščias",
+    "emptyLead": "Įkelkite senas nuotraukas, laiškus ar dokumentus – visa šeima juos matys vienoje vietoje."
   },
   "peopleList": {
     "title": "Žmonės",

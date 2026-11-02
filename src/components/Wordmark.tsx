@@ -12,7 +12,7 @@ export function Wordmark({ href }: { href: string }) {
         <path d="M8.5 14.5a4.5 4.5 0 0 1 9 0" stroke="var(--color-sage)" strokeWidth="1.6" strokeLinecap="round" />
         <circle cx="13" cy="7" r="2.2" fill="var(--color-bronze)" />
       </svg>
-      <span className="font-serif text-[1.45rem] font-medium tracking-[-0.01em]">Kartos</span>
+      <span className="font-serif text-[1.6rem] font-semibold leading-none tracking-[-0.05em]">kartos</span>
     </Link>
   );
 }

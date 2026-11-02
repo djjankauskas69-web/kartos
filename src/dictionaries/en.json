@@ -514,7 +514,9 @@
     "continue": "Continue",
     "addPersonFirst": "Not in the archive yet? Add the person first.",
     "marked": "already marked",
-    "noDeceased": "There are no deceased people in the archive yet. Add a person first."
+    "noDeceased": "There are no deceased people in the archive yet. Add a person first.",
+    "emptyTitle": "Mark the first grave",
+    "emptyLead": "Open a person's page or press “Mark a grave” – you can set the spot with your phone while standing at the grave."
   },
   "dash": {
     "subtitle": "Your family's history in one place.",
@@ -637,7 +639,9 @@
       "few": "files",
       "many": "files",
       "other": "files"
-    }
+    },
+    "emptyTitle": "The archive is still empty",
+    "emptyLead": "Upload old photos, letters or documents – the whole family will see them in one place."
   },
   "peopleList": {
     "title": "People",
