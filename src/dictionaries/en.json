@@ -153,7 +153,7 @@
     "addAnother": "Add another person",
     "yearPlaceholder": "e.g. 1921",
     "livingNote": "Details of living people are only ever visible to your family.",
-    "back": "Back to archive",
+    "back": "All people",
     "born": "Born",
     "died": "Died",
     "alive": "Living",
@@ -177,10 +177,12 @@
   },
   "appNav": {
     "people": "People",
-    "tree": "Tree",
+    "tree": "Family tree",
     "map": "Graves",
-    "members": "Members",
-    "review": "Approvals"
+    "members": "Family members",
+    "review": "Approvals",
+    "overview": "Overview",
+    "archive": "Archive"
   },
   "roles": {
     "owner": "Administrator",
@@ -370,5 +372,43 @@
     "lead": "Every marked family grave on one map.",
     "empty": "No graves marked yet. Open a person's profile and mark their grave.",
     "noPin": "not on the map"
+  },
+  "dash": {
+    "subtitle": "Your family's history in one place.",
+    "statPeople": "People",
+    "statGenerations": "Generations",
+    "statGraves": "Graves",
+    "statPhotos": "Photos",
+    "treeLead": "See your family's generations and how they connect.",
+    "treeEmpty": "Add your first person and the tree appears here.",
+    "gravesLead": "Find and mark your relatives' graves on the map.",
+    "archiveLead": "Photos and family memories.",
+    "recentTitle": "Recent additions",
+    "recentEmpty": "Nothing new yet. Start with one person.",
+    "addedPerson": "Person added:",
+    "addedPhotos": "Photos uploaded:",
+    "markedGrave": "Grave marked:",
+    "addedMemory": "New memory:",
+    "inviteTitle": "Build your family history together",
+    "inviteLead": "Invite relatives to add to the family tree and share memories.",
+    "inviteButton": "Invite a family member",
+    "inviteAsk": "To invite more relatives, ask the archive administrator.",
+    "open": "Open",
+    "search": "Search people",
+    "account": "Account",
+    "archives": "Your archives",
+    "newArchive": "Create a new archive",
+    "menu": "Menu"
+  },
+  "archive": {
+    "title": "Archive",
+    "lead": "All family photos, newest first.",
+    "empty": "No photos yet. Open a person's profile and upload photos."
+  },
+  "peopleList": {
+    "title": "People",
+    "search": "Search by first name or surname",
+    "noResults": "No one found.",
+    "clear": "Show everyone"
   }
 }

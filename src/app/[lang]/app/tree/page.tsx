@@ -28,7 +28,7 @@ async function Tree({ t, locale, focusPromise }: { t: Dictionary; locale: Locale
       <div className="max-w-xl">
         <h1 className={cls.h1}>{t.tree.title}</h1>
         <p className="mt-3 text-ink-muted">{t.tree.empty}</p>
-        <Link href={base} className={`mt-6 ${cls.primary}`}>
+        <Link href={`${base}/people#add`} className={`mt-6 ${cls.primary}`}>
           {t.app.addPerson}
         </Link>
       </div>

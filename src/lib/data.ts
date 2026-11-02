@@ -91,7 +91,7 @@ export const can = {
 const personFields =
   "id, given_names, surname, birth_surname, sex, is_living, birth_year, birth_month, birth_day, birth_place, death_year, death_month, death_day, death_place, biography, profile_photo_id, status, created_by";
 
-export async function listPeople(locale: Locale, workspaceId: string): Promise<Person[]> {
+export const listPeople = cache(async (locale: Locale, workspaceId: string): Promise<Person[]> => {
   const { supabase } = await requireUser(locale);
   const { data } = await supabase
     .from("persons")
@@ -102,7 +102,7 @@ export async function listPeople(locale: Locale, workspaceId: string): Promise<P
     .order("surname", { ascending: true, nullsFirst: false })
     .order("given_names", { ascending: true });
   return (data ?? []) as Person[];
-}
+});
 
 export async function getPerson(locale: Locale, id: string): Promise<Person | null> {
   const { supabase } = await requireUser(locale);
@@ -170,8 +170,8 @@ export async function signedUrls(locale: Locale, paths: string[]) {
   );
 }
 
-/** Pending items count for the administrator's badge. */
-export async function pendingCount(locale: Locale, workspaceId: string) {
+/** Pending items count for the administrator's badge (once per request). */
+export const pendingCount = cache(async (locale: Locale, workspaceId: string) => {
   const { supabase } = await requireUser(locale);
   const tables = ["persons", "relationships", "memories", "media", "burials"] as const;
   const counts = await Promise.all(
@@ -180,7 +180,7 @@ export async function pendingCount(locale: Locale, workspaceId: string) {
     ),
   );
   return counts.reduce((sum, c) => sum + (c.count ?? 0), 0);
-}
+});
 
 export async function profileNames(locale: Locale, ids: string[]) {
   const unique = [...new Set(ids.filter(Boolean))];
@@ -188,4 +188,21 @@ export async function profileNames(locale: Locale, ids: string[]) {
   const { supabase } = await requireUser(locale);
   const { data } = await supabase.from("profiles").select("id, display_name, email").in("id", unique);
   return new Map((data ?? []).map((p) => [p.id as string, (p.display_name as string) || (p.email as string) || ""]));
+}
+
+/** Longest parent-to-child line in the archive, counted in people (= number of generations). */
+export function generationCount(people: Person[], rels: Relationship[]) {
+  const children = new Map<string, string[]>();
+  for (const r of rels) if (r.type === "parent_child") children.set(r.person_a, [...(children.get(r.person_a) ?? []), r.person_b]);
+  const memo = new Map<string, number>();
+  const depth = (id: string, path: Set<string>): number => {
+    if (memo.has(id)) return memo.get(id)!;
+    if (path.has(id)) return 0; // a loop in the data
+    path.add(id);
+    const d = 1 + Math.max(0, ...(children.get(id) ?? []).map((c) => depth(c, path)));
+    path.delete(id);
+    memo.set(id, d);
+    return d;
+  };
+  return people.length ? Math.max(...people.map((p) => depth(p.id, new Set()))) : 0;
 }

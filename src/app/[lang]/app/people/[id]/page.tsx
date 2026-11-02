@@ -139,7 +139,7 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
   return (
     <div className="space-y-12">
       <div>
-        <Link href={base} className="text-[1rem] font-semibold text-sage-deep hover:underline">
+        <Link href={`${base}/people`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
           ‹ {t.app.back}
         </Link>
 

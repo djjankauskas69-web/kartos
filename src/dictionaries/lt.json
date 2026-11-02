@@ -153,7 +153,7 @@
     "addAnother": "Pridėti dar vieną žmogų",
     "yearPlaceholder": "pvz. 1921",
     "livingNote": "Gyvų žmonių duomenys visada matomi tik jūsų šeimai.",
-    "back": "Grįžti į archyvą",
+    "back": "Visi žmonės",
     "born": "Gimė",
     "died": "Mirė",
     "alive": "Gyvas",
@@ -177,10 +177,12 @@
   },
   "appNav": {
     "people": "Žmonės",
-    "tree": "Medis",
-    "map": "Kapai",
-    "members": "Nariai",
-    "review": "Tvirtinimas"
+    "tree": "Šeimos medis",
+    "map": "Kapavietės",
+    "members": "Šeimos nariai",
+    "review": "Tvirtinimas",
+    "overview": "Apžvalga",
+    "archive": "Archyvas"
   },
   "roles": {
     "owner": "Administratorius",
@@ -370,5 +372,43 @@
     "lead": "Visi pažymėti šeimos kapai viename žemėlapyje.",
     "empty": "Kapų dar nepažymėta. Atidarykite žmogaus kortelę ir pažymėkite kapą.",
     "noPin": "be vietos žemėlapyje"
+  },
+  "dash": {
+    "subtitle": "Jūsų šeimos istorija vienoje vietoje.",
+    "statPeople": "Žmonės",
+    "statGenerations": "Kartos",
+    "statGraves": "Kapavietės",
+    "statPhotos": "Nuotraukos",
+    "treeLead": "Peržiūrėkite savo šeimos kartas ir jų ryšius.",
+    "treeEmpty": "Pridėkite pirmą žmogų, ir čia atsiras medis.",
+    "gravesLead": "Raskite ir pažymėkite artimųjų kapus žemėlapyje.",
+    "archiveLead": "Nuotraukos ir šeimos prisiminimai.",
+    "recentTitle": "Paskutiniai papildymai",
+    "recentEmpty": "Kol kas nieko naujo. Pradėkite nuo vieno žmogaus.",
+    "addedPerson": "Pridėtas žmogus:",
+    "addedPhotos": "Įkelta nuotraukų:",
+    "markedGrave": "Pažymėta kapavietė:",
+    "addedMemory": "Naujas prisiminimas:",
+    "inviteTitle": "Kurkite šeimos istoriją kartu",
+    "inviteLead": "Pakvieskite artimuosius papildyti šeimos medį ir pasidalinti prisiminimais.",
+    "inviteButton": "Pakviesti šeimos narį",
+    "inviteAsk": "Norėdami pakviesti daugiau giminaičių, paprašykite archyvo administratoriaus.",
+    "open": "Atidaryti",
+    "search": "Ieškoti žmonių",
+    "account": "Paskyra",
+    "archives": "Jūsų archyvai",
+    "newArchive": "Sukurti naują archyvą",
+    "menu": "Meniu"
+  },
+  "archive": {
+    "title": "Archyvas",
+    "lead": "Visos šeimos nuotraukos, nuo naujausių.",
+    "empty": "Nuotraukų dar nėra. Atidarykite žmogaus kortelę ir įkelkite nuotraukų."
+  },
+  "peopleList": {
+    "title": "Žmonės",
+    "search": "Ieškoti pagal vardą ar pavardę",
+    "noResults": "Nieko nerasta.",
+    "clear": "Rodyti visus"
   }
 }
