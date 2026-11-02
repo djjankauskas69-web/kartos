@@ -251,19 +251,8 @@ export function TreeView({
     go({ k: v.k, x: w / 2 - mid * v.k, y: TOP + 24 - row[0].y * v.k }, true);
   }
 
-  // Generation bands: one per row of cards, meeting halfway between rows (drawn across the whole canvas).
-  const rows = [...new Map(cards.map((c) => [c.y, c.gen])).entries()].sort((a, b) => a[0] - b[0]);
-  const genLabel = new Map(generations.map((g) => [g.n, g.label]));
-  const bands = rows.map(([y, gen], i) => ({
-    y,
-    gen,
-    label: genLabel.get(gen),
-    top: i === 0 ? y - 48 : (rows[i - 1][0] + cardH + y) / 2,
-    bottom: i === rows.length - 1 ? y + cardH + 72 : (y + cardH + rows[i + 1][0]) / 2,
-  }));
-
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
-  const glide = smooth ? "transition-[transform,top,height] duration-300 ease-out" : "";
+  const glide = smooth ? "transition-transform duration-300 ease-out" : "";
   const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
@@ -362,20 +351,6 @@ export function TreeView({
         onKeyDown={onKeyDown}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
       >
-        {/* generation bands, endless left and right */}
-        {bands.map((b, i) => (
-          <div
-            key={b.y}
-            aria-hidden="true"
-            style={{ top: y + b.top * k, height: (b.bottom - b.top) * k }}
-            className={`pointer-events-none absolute inset-x-0 border-t border-line/50 ${glide} ${i % 2 ? "bg-white" : "bg-[#f8f6f1]"} ${dim(b.gen)}`}
-          >
-            {b.label && (
-              <span className="ml-3 mt-2 inline-block rounded-full bg-white/85 px-2.5 py-0.5 text-[0.92rem] text-ink-muted ring-1 ring-line/60">{b.label}</span>
-            )}
-          </div>
-        ))}
-
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
           <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
             <g fill="none" stroke="#b9b6aa" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
