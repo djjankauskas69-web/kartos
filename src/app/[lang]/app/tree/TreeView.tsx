@@ -37,6 +37,19 @@ const bgStore = {
   },
 };
 
+/** People from another family open in that family's archive: a full page load, so the whole
+ * screen (header included) switches to that archive. */
+function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { foreign: boolean }) {
+  if (foreign) {
+    const { href, prefetch, scroll, replace, ...rest } = props;
+    void prefetch;
+    void scroll;
+    void replace;
+    return <a href={String(href)} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} />;
+  }
+  return <Link {...props} />;
+}
+
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add"). */
 type MenuState = { key: string; mode: "card" | "add" } | null;
 
@@ -554,7 +567,7 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}>
-                <Link href={c.profileHref} draggable={false} onClick={(e) => { if (!c.foreign && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
+                <CardLink foreign={!!c.foreign} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.foreign && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
@@ -589,7 +602,7 @@ export function TreeView({
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
-                </Link>
+                </CardLink>
                 {(
                   <button
                     type="button"
@@ -730,10 +743,10 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
-        <Link href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
+        <CardLink foreign={!!card.foreign} href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
           {labels.menuProfile}
-        </Link>
+        </CardLink>
         <Link href={card.showFromHref} role="menuitem" onClick={onClose} className={item}>
           <svg {...ICON}><circle cx="6" cy="5.5" r="2.2" /><circle cx="6" cy="18.5" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.7v8.6M6 12h4.5a3 3 0 0 0 3-3V9M13.5 12h2.3" /></svg>
           {labels.showFrom}
