@@ -1,89 +1,181 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { CARD_H, CARD_W } from "@/lib/tree-layout";
+import { useRouter } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export type TreeCard = {
   key: string;
   id: string;
   x: number;
   y: number;
-  focus: boolean;
   name: string;
-  dates: string;
+  years: string;
   portrait?: string;
   initials: string;
+  living: boolean;
   pending: boolean;
+  gen: number;
+  start: boolean;
+  highlight: boolean;
+  profileHref: string;
+  showFromHref: string;
   moreAbove: boolean;
   moreBelow: boolean;
 };
+export type TreeBox = { key: string; x: number; y: number; w: number; h: number; gen: number; joins: Array<{ x: number; y: number }> };
+export type TreePlus = { key: string; x: number; y: number; gen: number; options: Array<{ label: string; href: string }> };
 
-type Labels = { zoomIn: string; zoomOut: string; reset: string; openProfile: string; moreAbove: string; moreBelow: string; pending: string };
+type Labels = {
+  zoomIn: string;
+  zoomOut: string;
+  fit: string;
+  centre: string;
+  fullscreen: string;
+  exitFullscreen: string;
+  showFrom: string;
+  addMenu: string;
+  moreAbove: string;
+  moreBelow: string;
+  pending: string;
+  allGenerations: string;
+  depth: string;
+  legendLiving: string;
+  legendDeceased: string;
+};
 
-const ZOOMS = [0.5, 0.65, 0.8, 1, 1.2];
+const MIN = 0.3;
+const MAX = 1.6;
+const OFFSET_X = 80; // room around the tree inside the scroll area
+const OFFSET_Y = 64;
 
-/** Pannable, zoomable family tree. Tapping a card re-centres the tree on that person. */
+/** Pannable, zoomable family tree. Cards open the person's profile. */
 export function TreeView({
   cards,
+  boxes,
+  pluses,
   paths,
   width,
   height,
-  base,
-  profileHref,
+  cardW,
+  cardH,
+  generations,
+  depth,
   labels,
 }: {
   cards: TreeCard[];
+  boxes: TreeBox[];
+  pluses: TreePlus[];
   paths: string[];
   width: number;
   height: number;
-  base: string;
-  profileHref: string;
+  cardW: number;
+  cardH: number;
+  generations: Array<{ n: number; label: string; count: number }>;
+  depth: { value: string; options: Array<{ value: string; label: string; href: string }> };
   labels: Labels;
 }) {
+  const router = useRouter();
+  const frame = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(2);
-  const scale = ZOOMS[zoom];
-  const focus = cards.find((c) => c.focus);
+  const [scale, setScale] = useState(1);
+  const [ready, setReady] = useState(false);
+  const [activeGen, setActiveGen] = useState<number | null>(null);
+  const [openPlus, setOpenPlus] = useState<string | null>(null);
+  const [full, setFull] = useState(false);
+  const start = cards.find((c) => c.start) ?? cards[0];
 
-  const centre = (s = scale, smooth = false) => {
+  const fitScale = () => {
     const el = scroller.current;
-    if (!el || !focus) return;
+    if (!el) return 1;
+    return Math.max(MIN, Math.min(1, (el.clientWidth - OFFSET_X * 2) / width, (el.clientHeight - OFFSET_Y * 2) / height));
+  };
+
+  const showStart = (s: number, smooth = false) => {
+    const el = scroller.current;
+    if (!el || !start) return;
     el.scrollTo({
-      left: (focus.x + CARD_W / 2) * s - el.clientWidth / 2,
-      top: (focus.y + CARD_H / 2) * s - el.clientHeight / 2,
+      left: OFFSET_X + (start.x + cardW / 2) * s - el.clientWidth / 2,
+      top: Math.max(0, OFFSET_Y + start.y * s - 120),
       behavior: smooth ? "smooth" : "auto",
     });
   };
 
-  // Centre on the person whenever the tree changes.
-  useEffect(() => {
-    centre();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-centre only when the focus moves
-  }, [focus?.key]);
+  // First view: as much of the family as fits, starting from the top person.
+  useLayoutEffect(() => {
+    const frameId = requestAnimationFrame(() => {
+      const el = scroller.current;
+      const s = el ? Math.max(0.6, Math.min(1, (el.clientWidth - OFFSET_X * 2) / width)) : 1;
+      setScale(s);
+      requestAnimationFrame(() => {
+        showStart(s);
+        setReady(true);
+      });
+    });
+    return () => cancelAnimationFrame(frameId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tree
+  }, [start?.key, width, height]);
 
-  function changeZoom(next: number) {
+  useEffect(() => {
+    const onChange = () => setFull(document.fullscreenElement === frame.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  function zoomTo(next: number) {
     const el = scroller.current;
-    const clamped = Math.max(0, Math.min(ZOOMS.length - 1, next));
-    if (!el || clamped === zoom) return;
-    // Keep the middle of the view where it is.
+    if (!el) return;
+    const s = Math.max(MIN, Math.min(MAX, next));
     const cx = (el.scrollLeft + el.clientWidth / 2) / scale;
     const cy = (el.scrollTop + el.clientHeight / 2) / scale;
-    setZoom(clamped);
-    requestAnimationFrame(() => {
-      const s = ZOOMS[clamped];
-      el.scrollTo({ left: cx * s - el.clientWidth / 2, top: cy * s - el.clientHeight / 2 });
-    });
+    setScale(s);
+    requestAnimationFrame(() => el.scrollTo({ left: cx * s - el.clientWidth / 2, top: cy * s - el.clientHeight / 2 }));
   }
+
+  function fit() {
+    const s = fitScale();
+    setScale(s);
+    requestAnimationFrame(() => scroller.current?.scrollTo({ left: 0, top: 0, behavior: "smooth" }));
+  }
+
+  async function toggleFull() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await frame.current?.requestFullscreen();
+    } catch {
+      /* not available here */
+    }
+  }
+
+  function pickGeneration(n: number | null) {
+    setActiveGen(n);
+    if (n === null) return;
+    const first = cards.filter((c) => c.gen === n).sort((a, b) => a.x - b.x)[0];
+    const el = scroller.current;
+    if (first && el) el.scrollTo({ left: OFFSET_X + first.x * scale - 60, top: OFFSET_Y + first.y * scale - 90, behavior: "smooth" });
+  }
+
+  // Ctrl/⌘ + wheel or trackpad pinch zooms.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setScale((s) => Math.max(MIN, Math.min(MAX, s * (e.deltaY < 0 ? 1.08 : 1 / 1.08))));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   // Drag to pan with a mouse (touch screens scroll natively).
   const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
-  function onPointerDown(e: React.PointerEvent) {
+  const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
     const el = scroller.current!;
     drag.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop, moved: false };
-  }
-  function onPointerMove(e: React.PointerEvent) {
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.x;
@@ -91,94 +183,245 @@ export function TreeView({
     if (!d.moved && Math.hypot(dx, dy) < 5) return;
     d.moved = true;
     scroller.current!.scrollTo({ left: d.left - dx, top: d.top - dy });
-  }
-  function onPointerUp() {
-    setTimeout(() => (drag.current = null), 0);
-  }
-  // A drag that ends on a card must not count as a click.
-  function onClickCapture(e: React.MouseEvent) {
+  };
+  const endDrag = () => setTimeout(() => (drag.current = null), 0);
+  const onClickCapture = (e: React.MouseEvent) => {
     if (drag.current?.moved) {
       e.preventDefault();
       e.stopPropagation();
     }
-  }
+  };
 
-  const tool = "flex h-11 min-w-11 items-center justify-center rounded-full border border-line bg-surface px-3 text-[1.1rem] font-semibold hover:border-ink-muted disabled:opacity-40";
+  const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-30" : "");
+  const tool =
+    "flex h-11 w-11 items-center justify-center text-ink hover:bg-paper focus-visible:outline-offset-[-3px] disabled:opacity-40";
 
   return (
-    <div className="relative">
-      <div className="mb-3 flex justify-end gap-2">
-        <button type="button" onClick={() => changeZoom(zoom - 1)} disabled={zoom === 0} className={tool} aria-label={labels.zoomOut} title={labels.zoomOut}>
-          −
+    <div ref={frame} className={`relative overflow-hidden rounded-[20px] border border-line/80 bg-[#fbf9f4] ${full ? "h-screen rounded-none" : ""}`}>
+      {/* Zoom tools */}
+      <div className="absolute left-4 top-4 z-20 flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)]">
+        <button type="button" onClick={() => zoomTo(scale * 1.2)} disabled={scale >= MAX} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button>
-        <button type="button" onClick={() => changeZoom(zoom + 1)} disabled={zoom === ZOOMS.length - 1} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
-          +
+        <button type="button" onClick={() => zoomTo(scale / 1.2)} disabled={scale <= MIN} className={`${tool} border-t border-line`} aria-label={labels.zoomOut} title={labels.zoomOut}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
-        <button type="button" onClick={() => centre(scale, true)} className={`${tool} text-[0.95rem]`}>
-          {labels.reset}
+        <button type="button" onClick={fit} className={`${tool} border-t border-line`} aria-label={labels.fit} title={labels.fit}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
+        </button>
+        <button type="button" onClick={() => showStart(scale, true)} className={`${tool} border-t border-line`} aria-label={labels.centre} title={labels.centre}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
         </button>
       </div>
 
+      {/* Depth and full screen */}
+      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        <label className="sr-only" htmlFor="tree-depth">
+          {labels.depth}
+        </label>
+        <select
+          id="tree-depth"
+          value={depth.value}
+          onChange={(e) => router.push(depth.options.find((o) => o.value === e.target.value)!.href)}
+          className="min-h-11 rounded-xl border border-line bg-surface px-3 text-[0.98rem] shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)]"
+        >
+          {depth.options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={toggleFull}
+          className="hidden h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)] hover:bg-paper sm:flex"
+          aria-label={full ? labels.exitFullscreen : labels.fullscreen}
+          title={full ? labels.exitFullscreen : labels.fullscreen}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+          </svg>
+        </button>
+      </div>
+
+      {/* The tree */}
       <div
         ref={scroller}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
         onClickCapture={onClickCapture}
-        className="h-[70vh] min-h-[28rem] cursor-grab overflow-auto rounded-[var(--radius-card)] border border-line bg-[radial-gradient(circle,_var(--color-line)_1px,_transparent_1px)] [background-size:22px_22px] active:cursor-grabbing"
+        className={`cursor-grab overflow-auto active:cursor-grabbing ${full ? "h-full" : "h-[72vh] min-h-[30rem]"} ${ready ? "" : "opacity-0"}`}
       >
-        <div style={{ width: width * scale, height: height * scale }} className="relative">
-          <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
-            <svg width={width} height={height} className="absolute inset-0" aria-hidden="true">
-              <g fill="none" stroke="var(--color-ink-muted)" strokeOpacity="0.55" strokeWidth="1.5">
+        <div style={{ width: width * scale + OFFSET_X * 2, height: height * scale + OFFSET_Y + 120 }} className="relative mx-auto">
+          <div style={{ width, height, transform: `translate(${OFFSET_X}px, ${OFFSET_Y}px) scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
+            <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
+              <g fill="none" stroke="#7d8f6d" strokeWidth="1.6" strokeLinejoin="round">
                 {paths.map((d, i) => (
                   <path key={i} d={d} />
                 ))}
               </g>
             </svg>
 
+            {boxes.map((b) => (
+              <div
+                key={b.key}
+                style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
+                className={`absolute rounded-[16px] border border-line bg-surface shadow-[0_1px_2px_rgb(60_45_30/0.05),0_10px_24px_-18px_rgb(60_45_30/0.45)] transition-opacity ${dim(b.gen)}`}
+              >
+                {b.joins.map((j, i) => (
+                  <span key={i} aria-hidden="true" style={{ left: j.x - b.x, top: j.y - b.y }} className="absolute -translate-x-1/2 -translate-y-1/2 font-serif text-[1.25rem] text-sage">
+                    ∞
+                  </span>
+                ))}
+              </div>
+            ))}
+
             <ul>
               {cards.map((c) => (
-                <li key={c.key} style={{ left: c.x, top: c.y, width: CARD_W, height: CARD_H }} className="absolute">
-                  {c.moreAbove && (
-                    <span title={labels.moreAbove} className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2 text-[0.75rem] leading-5 text-ink-muted">
-                      ▲<span className="sr-only">{labels.moreAbove}</span>
-                    </span>
-                  )}
+                <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute transition-opacity ${dim(c.gen)}`}>
                   <Link
-                    href={c.focus ? profileHref : `${base}?p=${c.id}`}
+                    href={c.profileHref}
                     draggable={false}
-                    className={`flex h-full items-center gap-2.5 rounded-xl border px-3 shadow-[0_1px_2px_rgb(60_45_30/0.06)] transition-colors ${
-                      c.focus ? "border-2 border-sage-deep bg-sage-wash" : "border-line bg-surface hover:border-ink-muted"
+                    className={`flex h-full flex-col items-center rounded-[11px] p-2 text-center ${c.living ? "hover:bg-sage-wash/50" : "bg-[#f6f2e9] hover:bg-[#efe9dc]"} ${
+                      c.highlight ? "ring-2 ring-sage-deep/70" : ""
                     }`}
                   >
-                    {c.portrait ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                      <img src={c.portrait} alt="" draggable={false} className="h-12 w-10 shrink-0 rounded-[50%] object-cover ring-1 ring-line" />
-                    ) : (
-                      <span aria-hidden="true" className="flex h-12 w-10 shrink-0 items-center justify-center rounded-[50%] border border-line bg-linen font-serif text-[0.95rem] text-bronze">
-                        {c.initials}
-                      </span>
-                    )}
-                    <span className="min-w-0">
-                      <span className="line-clamp-2 font-serif text-[0.98rem] leading-tight text-ink">{c.name}</span>
-                      <span className="flex items-center gap-1.5 text-[0.82rem] text-ink-muted">
-                        {c.dates}
-                        {c.pending && <span className="h-2 w-2 shrink-0 rounded-full bg-[#b8892e]" title={labels.pending} />}
-                      </span>
-                      {c.focus && <span className="text-[0.8rem] font-semibold text-sage-deep">{labels.openProfile} ›</span>}
+                    <span className="relative block h-[92px] w-full overflow-hidden rounded-lg">
+                      {c.portrait ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                        <img
+                          src={c.portrait}
+                          alt=""
+                          draggable={false}
+                          className={`h-full w-full object-cover ${c.living ? "" : "sepia-[.35] saturate-[.8]"}`}
+                        />
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-full w-full items-center justify-center font-serif text-[1.7rem] ${c.living ? "bg-sage-wash text-sage-deep" : "bg-[#ebe3d4] text-bronze"}`}
+                        >
+                          {c.initials}
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-2 line-clamp-2 font-serif text-[1rem] leading-[1.15] text-ink">{c.name}</span>
+                    <span className={`mt-auto flex items-center gap-1.5 text-[0.82rem] ${c.living ? "text-sage-deep" : "text-ink-muted"}`}>
+                      {c.living && <span className="h-1.5 w-1.5 rounded-full bg-sage" aria-hidden="true" />}
+                      {c.years}
+                      {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                     </span>
                   </Link>
+                  <Link
+                    href={c.showFromHref}
+                    title={labels.showFrom}
+                    aria-label={`${labels.showFrom}: ${c.name}`}
+                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 text-ink opacity-0 shadow ring-1 ring-line transition-opacity focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-80"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="6" cy="5.5" r="2.2" /><circle cx="6" cy="18.5" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.7v8.6M6 12h4.5a3 3 0 0 0 3-3V9M13.5 12h2.3" /></svg>
+                  </Link>
+                  {c.moreAbove && (
+                    <Link
+                      href={c.showFromHref}
+                      title={labels.moreAbove}
+                      className="absolute -top-[22px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    >
+                      ▲<span className="sr-only">{labels.moreAbove}</span>
+                    </Link>
+                  )}
                   {c.moreBelow && (
-                    <span title={labels.moreBelow} className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2 text-[0.75rem] leading-5 text-ink-muted">
+                    <Link
+                      href={c.showFromHref}
+                      title={labels.moreBelow}
+                      className="absolute -bottom-[22px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    >
                       ▼<span className="sr-only">{labels.moreBelow}</span>
-                    </span>
+                    </Link>
                   )}
                 </li>
               ))}
             </ul>
+
+            {pluses.map((p) => (
+              <div key={p.key} style={{ left: p.x, top: p.y }} className={`absolute -translate-x-1/2 transition-opacity ${dim(p.gen)}`}>
+                <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#7d8f6d]" />
+                <button
+                  type="button"
+                  onClick={() => setOpenPlus(openPlus === p.key ? null : p.key)}
+                  aria-expanded={openPlus === p.key}
+                  aria-label={labels.addMenu}
+                  title={labels.addMenu}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#7d8f6d] bg-surface text-sage-deep shadow-sm hover:bg-sage-wash"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
+                {openPlus === p.key && (
+                  <ul className="absolute bottom-[2.6rem] left-1/2 z-10 w-56 -translate-x-1/2 rounded-xl border border-line bg-surface p-1.5 text-left shadow-[0_10px_30px_-12px_rgb(60_45_30/0.5)]">
+                    {p.options.map((o) => (
+                      <li key={o.href}>
+                        <Link href={o.href} className="flex min-h-11 items-center rounded-lg px-3 text-[1rem] hover:bg-paper">
+                          + {o.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
           </div>
+        </div>
+      </div>
+
+      {/* A sprig in the corner */}
+      <svg className="pointer-events-none absolute bottom-0 right-0 hidden h-40 w-40 opacity-70 md:block" viewBox="0 0 160 160" aria-hidden="true">
+        <path d="M150 160 C130 120 110 95 70 70" stroke="#8a9a66" strokeWidth="2" fill="none" />
+        {[
+          [132, 128, 35],
+          [120, 108, 20],
+          [104, 94, 40],
+          [92, 84, 15],
+          [80, 76, 45],
+          [140, 140, -10],
+          [112, 116, -30],
+          [96, 100, -40],
+        ].map(([x, y, r], i) => (
+          <ellipse key={i} cx={x} cy={y} rx="11" ry="5" transform={`rotate(${r} ${x} ${y})`} fill={i % 2 ? "#a3b06b" : "#8a9a5b"} opacity="0.75" />
+        ))}
+      </svg>
+
+      {/* Generations and legend */}
+      <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-end justify-between gap-3 md:right-40">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)] [scrollbar-width:none]">
+          <button
+            type="button"
+            onClick={() => pickGeneration(null)}
+            aria-pressed={activeGen === null}
+            className={`shrink-0 rounded-full px-4 py-2 text-[0.95rem] ${activeGen === null ? "bg-sage-deep font-semibold text-surface" : "text-ink-muted hover:text-ink"}`}
+          >
+            {labels.allGenerations}
+          </button>
+          {generations.map((g) => (
+            <button
+              key={g.n}
+              type="button"
+              onClick={() => pickGeneration(g.n)}
+              aria-pressed={activeGen === g.n}
+              className={`shrink-0 rounded-full px-4 py-2 text-[0.95rem] ${activeGen === g.n ? "bg-sage-deep font-semibold text-surface" : "text-ink-muted hover:text-ink"}`}
+            >
+              {g.label} ({g.count})
+            </button>
+          ))}
+        </div>
+        <div className="hidden items-center gap-4 rounded-full bg-surface/90 px-4 py-2 text-[0.88rem] text-ink-muted lg:flex">
+          <span className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-sm border border-line bg-surface" />
+            {labels.legendLiving}
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-sm border border-line bg-[#f0e9db]" />
+            {labels.legendDeceased}
+          </span>
         </div>
       </div>
     </div>
