@@ -39,6 +39,7 @@ type Labels = {
   zoomIn: string;
   zoomOut: string;
   fit: string;
+  fitShort: string;
   centre: string;
   fullscreen: string;
   exitFullscreen: string;
@@ -70,7 +71,7 @@ const MIN = 0.1; // far enough out that the dots are gone, like Recraft
 const MAX = 2;
 const TOP = 96; // room for the generation chips above the tree
 const BOTTOM = 84; // room for the zoom toolbar below it
-const PHOTO = 76;
+const PHOTO = 96;
 
 type View = { x: number; y: number; k: number };
 const clampK = (k: number) => Math.max(MIN, Math.min(MAX, k));
@@ -83,8 +84,8 @@ const clampK = (k: number) => Math.max(MIN, Math.min(MAX, k));
 export function TreeView({
   cards,
   boxes,
-  pluses,
   paths,
+  partnerPaths = [],
   width,
   height,
   cardW,
@@ -95,8 +96,9 @@ export function TreeView({
 }: {
   cards: TreeCard[];
   boxes: TreeBox[];
-  pluses: TreePlus[];
+  pluses?: TreePlus[];
   paths: string[];
+  partnerPaths?: string[];
   width: number;
   height: number;
   cardW: number;
@@ -113,7 +115,6 @@ export function TreeView({
   const [ready, setReady] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
   const [activeGen, setActiveGen] = useState<number | null>(null);
-  const [openPlus, setOpenPlus] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
@@ -326,6 +327,9 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
+  // Quick actions on a person: shown on hover (always on touch screens).
+  const quick =
+    "absolute flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_4px_10px_-4px_rgb(28_29_26/0.45)] transition-[opacity,background-color,color] hover:bg-ink hover:text-white focus-visible:opacity-100 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100";
   const openCard = menu ? cards.find((c) => c.key === menu.key) : undefined;
   /** Beside the card on wide screens: right of it, or left when there is no room. */
   const menuPos = (c: TreeCard) => {
@@ -345,12 +349,12 @@ export function TreeView({
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: which generations to show */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
-        <div className={`flex max-w-full gap-0.5 overflow-x-auto p-1 [scrollbar-width:none] ${pill}`}>
+        <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`}>
           <button
             type="button"
             onClick={() => pickGeneration(null)}
             aria-pressed={activeGen === null}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.95rem] ${activeGen === null ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+            className={`shrink-0 rounded-full px-3 py-1 text-[0.85rem] ${activeGen === null ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
           >
             {labels.allGenerations}
           </button>
@@ -360,7 +364,7 @@ export function TreeView({
               type="button"
               onClick={() => pickGeneration(g.n)}
               aria-pressed={activeGen === g.n}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.95rem] ${activeGen === g.n ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+              className={`shrink-0 rounded-full px-3 py-1 text-[0.85rem] ${activeGen === g.n ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
             >
               {g.label} <span className="opacity-60">{g.count}</span>
             </button>
@@ -376,7 +380,7 @@ export function TreeView({
                 id="tree-branch"
                 value={branch.value}
                 onChange={(e) => router.push(branch.options.find((o) => o.value === e.target.value)!.href)}
-                className={`min-h-10 max-w-[20rem] px-3.5 text-[0.95rem] ${pill}`}
+                className={`min-h-9 max-w-[20rem] px-3 text-[0.88rem] ${pill}`}
               >
                 {branch.options.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -386,22 +390,11 @@ export function TreeView({
               </select>
             </>
           )}
-          <button
-            type="button"
-            onClick={toggleFull}
-            className={`flex h-11 w-11 items-center justify-center text-ink hover:bg-linen ${pill}`}
-            aria-label={full ? labels.exitFullscreen : labels.fullscreen}
-            title={full ? labels.exitFullscreen : labels.fullscreen}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
-            </svg>
-          </button>
         </div>
       </div>
 
-      {/* Bottom centre: one toolbar for moving around */}
-      <div className={`absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 p-1 ${pill}`}>
+      {/* Bottom right: zoom, fit the whole tree, full screen — one floating bar */}
+      <div className={`absolute bottom-4 right-4 z-20 flex items-center gap-0.5 p-1 ${pill}`}>
         <button type="button" onClick={() => (() => { const { w, h } = size(); zoomAt(w / 2, h / 2, k / 1.2, true); })()} disabled={k <= MIN} className={tool} aria-label={labels.zoomOut} title={labels.zoomOut}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
@@ -412,11 +405,14 @@ export function TreeView({
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button>
         <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
-        <button type="button" onClick={fit} className={tool} aria-label={labels.fit} title={labels.fit}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
+        <button type="button" onClick={fit} className={`${tool} w-auto gap-1.5 px-3 text-[0.88rem] font-semibold`} aria-label={labels.fit} title={labels.fit}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
+          <span className="hidden sm:inline">{labels.fitShort}</span>
         </button>
-        <button type="button" onClick={() => centreOn(start, k, true)} className={tool} aria-label={labels.centre} title={labels.centre}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
+        <button type="button" onClick={toggleFull} className={`${tool} hidden sm:flex`} aria-label={full ? labels.exitFullscreen : labels.fullscreen} title={full ? labels.exitFullscreen : labels.fullscreen}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+          </svg>
         </button>
       </div>
 
@@ -445,8 +441,15 @@ export function TreeView({
       >
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
           <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
-            <g fill="none" stroke="#b9b6aa" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
+            {/* parents → children: light */}
+            <g fill="none" stroke="#c4c1b6" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((d, i) => (
+                <path key={i} d={d} />
+              ))}
+            </g>
+            {/* partners: darker and thicker, with ∞ on top */}
+            <g fill="none" stroke="#8d897c" strokeWidth="2.6" strokeLinecap="round">
+              {partnerPaths.map((d, i) => (
                 <path key={i} d={d} />
               ))}
             </g>
@@ -459,7 +462,7 @@ export function TreeView({
                 key={`${b.key}-${i}`}
                 aria-hidden="true"
                 style={{ left: j.x, top: j.y }}
-                className={`absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-[0.95rem] leading-none text-ink-muted ${dim(b.gen)}`}
+                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#8d897c] bg-white text-[1rem] leading-none text-ink ${dim(b.gen)}`}
               >
                 ∞
               </span>
@@ -469,14 +472,7 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)}`}>
-                <button
-                  type="button"
-                  data-card
-                  onClick={() => setMenu(menu?.key === c.key && menu.mode === "card" ? null : { key: c.key, mode: "card" })}
-                  aria-expanded={menu?.key === c.key && menu.mode === "card"}
-                  aria-haspopup="menu"
-                  className="flex h-full w-full cursor-pointer flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2"
-                >
+                <Link href={c.profileHref} draggable={false} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {c.portrait ? (
                       // eslint-disable-next-line @next/next/no-img-element -- signed private URL
@@ -498,25 +494,40 @@ export function TreeView({
                     )}
                     {c.living && <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[3px] border-white bg-[#6f8a4f]" aria-hidden="true" />}
                   </span>
-                  <span className={`mt-2.5 line-clamp-2 text-[1.02rem] font-semibold leading-tight ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[0.86rem] tabular-nums text-ink-muted">
+                  <span className={`mt-3 line-clamp-2 text-[1.12rem] font-semibold leading-tight group-hover:underline ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[0.92rem] tabular-nums text-ink-muted">
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
-                </button>
+                </Link>
                 {(
                   <button
                     type="button"
                     data-card
-                    onClick={() => setMenu(menu?.key === c.key ? null : { key: c.key, mode: "card" })}
-                    aria-expanded={menu?.key === c.key}
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "card" ? null : { key: c.key, mode: "card" })}
+                    aria-expanded={menu?.key === c.key && menu.mode === "card"}
                     aria-haspopup="menu"
                     aria-label={`${labels.menuMore}: ${c.name}`}
                     title={labels.menuMore}
-                    style={{ left: (cardW + PHOTO) / 2 - 22, top: -2 }}
-                    className={`absolute flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_4px_10px_-4px_rgb(28_29_26/0.45)] transition-colors hover:bg-ink hover:text-white ${menu?.key === c.key ? "bg-ink text-white" : ""}`}
+                    style={{ left: (cardW + PHOTO) / 2 - 24, top: -2 }}
+                    className={`${quick} ${menu?.key === c.key && menu.mode === "card" ? "!opacity-100 bg-ink text-white" : ""}`}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18.5" cy="12" r="2" /></svg>
+                  </button>
+                )}
+                {c.addOptions.length > 0 && (
+                  <button
+                    type="button"
+                    data-card
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" ? null : { key: c.key, mode: "add" })}
+                    aria-expanded={menu?.key === c.key && menu.mode === "add"}
+                    aria-haspopup="menu"
+                    aria-label={`${labels.menuAdd}: ${c.name}`}
+                    title={labels.menuAdd}
+                    style={{ left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 14 }}
+                    className={`${quick} ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 )}
                 {c.moreAbove && (
@@ -543,47 +554,13 @@ export function TreeView({
             ))}
           </ul>
 
-          {pluses.map((p) => (
-            <div key={p.key} style={{ left: p.x, top: p.y }} className={`absolute -translate-x-1/2 transition-opacity ${dim(p.gen)}`}>
-              <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#b9b6aa]" />
-              <button
-                type="button"
-                onClick={() => setOpenPlus(openPlus === p.key ? null : p.key)}
-                aria-expanded={openPlus === p.key}
-                aria-label={labels.addMenu}
-                title={labels.addMenu}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm hover:border-ink/30 hover:bg-linen"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-              </button>
-              {openPlus === p.key && (
-                <ul className="absolute bottom-[2.6rem] left-1/2 z-10 w-56 -translate-x-1/2 rounded-xl border border-line bg-surface p-1.5 text-left shadow-[0_10px_30px_-12px_rgb(60_45_30/0.5)]">
-                  {p.options.map((o) => (
-                    <li key={o.href}>
-                      <Link
-                        href={o.href}
-                        scroll={false}
-                        onClick={() => {
-                          // The add panel opens outside the tree frame, so leave full screen first.
-                          if (document.fullscreenElement) void document.exitFullscreen();
-                          setOpenPlus(null);
-                        }}
-                        className="flex min-h-11 items-center rounded-lg px-3 text-[1rem] hover:bg-paper"
-                      >
-                        + {o.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
         </div>
         {openCard && (
           <CardMenu
             key={`${menu!.key}-${menu!.mode}`}
             ref={menuRef}
             card={openCard}
+            mode={menu!.mode}
             labels={labels}
             pos={menuPos(openCard)}
             onClose={() => setMenu(null)}
@@ -604,6 +581,7 @@ const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke
 function CardMenu({
   ref,
   card,
+  mode,
   labels,
   pos,
   onClose,
@@ -611,13 +589,13 @@ function CardMenu({
 }: {
   ref: React.Ref<HTMLDivElement>;
   card: TreeCard;
+  mode: "card" | "add";
   labels: Labels;
   pos: { left: number; top: number };
   onClose: () => void;
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
   const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
@@ -650,6 +628,17 @@ function CardMenu({
           <svg {...ICON} width={18} height={18}><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
+      {mode === "add" ? (
+        <div className="border-t border-line pt-1.5">
+          <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>
+          {card.addOptions.map((o) => (
+            <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className={item}>
+              <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
+              <span className="first-letter:uppercase">{o.label.replace(/^(Pridėti|Add)\s+/i, "")}</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
       <div className="border-t border-line pt-1.5">
         <Link href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
@@ -706,23 +695,6 @@ function CardMenu({
           </Link>
         )}
       </div>
-      {card.addOptions.length > 0 && (
-        <div className="mt-1 border-t border-line pt-1.5">
-          <button type="button" role="menuitem" aria-expanded={showAdd} onClick={() => setShowAdd((v) => !v)} className={`${item} font-semibold`}>
-            <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
-            <span className="flex-1">{labels.menuAdd}</span>
-            <svg {...ICON} width={16} height={16} className={`text-ink-muted transition-transform ${showAdd ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
-          </button>
-          {showAdd && (
-            <div className="flex flex-wrap gap-1.5 pb-2 pl-[2.75rem] pr-3">
-              {card.addOptions.map((o) => (
-                <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className="rounded-full border border-line px-3 py-1.5 text-[0.9rem] font-semibold capitalize hover:border-ink/40 hover:bg-linen">
-                  {o.label.replace(/^(Pridėti|Add)\s+/i, "")}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
       )}
     </div>
   );

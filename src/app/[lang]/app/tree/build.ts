@@ -15,9 +15,9 @@ export type BuildPerson = {
 };
 export type BuildRel = { person_a: string; person_b: string; type: "parent_child" | "partner" };
 
-export const SIZE: TreeSize = { cardW: 140, cardH: 150, gapX: 44, rowGap: 96, pad: 28 };
+export const SIZE: TreeSize = { cardW: 164, cardH: 178, gapX: 48, rowGap: 100, pad: 32 };
 /** Round portrait at the top of each card (radius) — partners join at its centre. */
-export const PHOTO_R = 38;
+export const PHOTO_R = 48;
 const BOX = 8; // padding of the box around a person or a couple
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];
@@ -197,9 +197,11 @@ export function buildTree({
     cards,
     boxes,
     pluses,
-    paths: edgePaths(layout.nodes, layout.edges, SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    // Partners and parent→child lines are drawn differently, so couples read at a glance.
+    partnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner"), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    paths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind !== "partner"), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
     width: layout.width,
-    height: layout.height + 60, // room for the "+" buttons under the last row
+    height: layout.height + 16,
     cardW,
     cardH,
     generationChips,

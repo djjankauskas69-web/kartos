@@ -73,7 +73,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
   const loose = people.length > 1 ? people.filter((p) => !connected.has(p.id)).length : 0;
   const looseChip = loose > 0 && (
-    <Link href={`${base}/people?f=loose`} title={t.add.looseHint} className="mb-3 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[0.95rem] font-semibold hover:border-ink/40">
+    <Link href={`${base}/people?f=loose`} title={t.add.looseHint} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.88rem] font-semibold hover:border-ink/40">
       <span className="h-2 w-2 rounded-full bg-[#b8892e]" aria-hidden="true" />
       {t.add.looseChip.replace("{n}", String(loose))} →
     </Link>
@@ -88,27 +88,24 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       return `${base}/tree${s ? `?${s}` : ""}`;
     };
     const tab = (on: boolean) =>
-      `flex min-h-11 items-center gap-2 rounded-full px-4 text-[1rem] ${on ? "bg-surface font-semibold shadow-[0_1px_3px_rgb(60_45_30/0.15)]" : "text-ink-muted hover:text-ink"}`;
+      `flex min-h-9 items-center rounded-full px-3.5 text-[0.92rem] ${on ? "bg-surface font-semibold shadow-[0_1px_3px_rgb(60_45_30/0.15)]" : "text-ink-muted hover:text-ink"}`;
     return (
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className={cls.h1}>{t.tree.title}</h1>
-          <div className="mt-1 text-[1.1rem] text-ink-muted">{subtitle}</div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <nav className="flex rounded-full border border-line bg-linen/60 p-1" aria-label={t.tree.title}>
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{t.tree.title}</h1>
+        <div className="min-w-0 text-[0.98rem] text-ink-muted">{subtitle}</div>
+        {looseChip}
+        <div className="ml-auto flex items-center gap-2">
+          <nav className="flex rounded-full border border-line bg-linen/60 p-0.5" aria-label={t.tree.title}>
             <Link href={href("tree")} aria-current={view === "tree" ? "page" : undefined} className={tab(view === "tree")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="5" r="2.2" /><circle cx="5.5" cy="18.5" r="2.2" /><circle cx="18.5" cy="18.5" r="2.2" /><path d="M12 7.2v4.3M5.5 16.3V14a2.5 2.5 0 0 1 2.5-2.5h8A2.5 2.5 0 0 1 18.5 14v2.3" /></svg>
               {t.tree.viewTree}
             </Link>
             <Link href={href("list")} aria-current={view === "list" ? "page" : undefined} className={tab(view === "list")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 9.5h8M8 14.5h8" /></svg>
               {t.tree.viewList}
             </Link>
           </nav>
           {canAdd && (
-            <Link href={addHref({ add: "1" })} scroll={false} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface hover:bg-ink">
-              <IconPlus size={20} />
+            <Link href={addHref({ add: "1" })} scroll={false} className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
+              <IconPlus size={18} />
               {t.app.addPerson}
             </Link>
           )}
@@ -206,15 +203,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   );
 
   return (
-    <div>
+    <div className="tree-wide">
       {header(subtitle, "tree")}
-      {looseChip}
       {host}
       <TreeView
         cards={tree.cards}
         boxes={tree.boxes}
         pluses={tree.pluses}
         paths={tree.paths}
+        partnerPaths={tree.partnerPaths}
         width={tree.width}
         height={tree.height}
         cardW={tree.cardW}
@@ -225,6 +222,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           zoomIn: t.tree.zoomIn,
           zoomOut: t.tree.zoomOut,
           fit: t.tree.fit,
+          fitShort: t.tree.fitShort,
           centre: t.tree.centre,
           fullscreen: t.tree.fullscreen,
           exitFullscreen: t.tree.exitFullscreen,
@@ -252,7 +250,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           legendDeceased: t.tree.legendDeceased,
         }}
       />
-      <p className="mt-3 text-[0.95rem] text-ink-muted">{t.tree.hint}</p>
     </div>
   );
 }
