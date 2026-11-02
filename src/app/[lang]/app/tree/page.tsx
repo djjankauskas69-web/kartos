@@ -11,7 +11,7 @@ import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { ancestorCouples, kinship } from "@/lib/kinship";
 import { Profile } from "../people/[id]/Profile";
-import { ProfileDrawer } from "./ProfileDrawer";
+import { ProfileDrawer, ProfileSkeleton } from "./ProfileDrawer";
 import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
@@ -201,7 +201,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, profileHrefFor: (id) => viewHref({ person: id }), linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 
@@ -267,7 +267,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       />
       {drawerId && (
         <ProfileDrawer closeHref={viewHref()} fullHref={`${base}/people/${drawerId}`} labels={{ close: t.tree.drawerClose, full: t.tree.drawerFull }}>
-          <Suspense key={drawerId} fallback={<p className="p-6 text-ink-muted">{t.app.loading}</p>}>
+          <Suspense key={drawerId} fallback={<ProfileSkeleton />}>
             <Profile t={t} locale={locale} idPromise={Promise.resolve(drawerId)} compact />
           </Suspense>
         </ProfileDrawer>

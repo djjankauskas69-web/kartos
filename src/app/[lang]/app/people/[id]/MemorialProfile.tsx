@@ -52,6 +52,7 @@ export function MemorialProfile({
   family,
   treeHref,
   meHref,
+  inDrawer = false,
 }: {
   t: Dictionary;
   locale: string;
@@ -81,6 +82,8 @@ export function MemorialProfile({
   family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[] };
   treeHref: string;
   meHref?: string;
+  /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
+  inDrawer?: boolean;
 }) {
   const m = t.memorial;
   const card = "rounded-[18px] border border-line/80 bg-surface p-5 sm:p-6";
@@ -191,7 +194,7 @@ export function MemorialProfile({
         <ul className="space-y-2.5">
           {list.slice(0, 4).map((r) => (
             <li key={r.id}>
-              <Link href={r.href} scroll={false} className="group flex items-center gap-3">
+              <Link href={r.href} scroll={false} replace={inDrawer} className="group flex items-center gap-3">
                 {r.portrait ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                   <img src={r.portrait} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />

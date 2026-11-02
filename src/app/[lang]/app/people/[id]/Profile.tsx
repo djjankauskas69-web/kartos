@@ -414,7 +414,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     }
     if (person.birth_surname && person.birth_surname !== person.surname) years = [years, `${t.person.nee} ${person.birth_surname}`].filter(Boolean).join(" · ");
     const residence = [...personEvents].reverse().find((e) => e.kind === "residence")?.place ?? null;
-    const relHref = (rid: string) => (compact ? `${base}/tree?person=${rid}` : `${base}/people/${rid}`);
+    const relHref = (rid: string) => `${base}/people/${rid}`;
     const relItem = (rid: string) => {
       const r = byId.get(rid)!;
       return { id: rid, name: fullName(r), sub: lifeSpan(r, t.app.born.toLowerCase()), portrait: portraits.get(rid), initials: `${r.given_names[0] ?? ""}${r.surname?.[0] ?? ""}`.toUpperCase(), href: relHref(rid) };
@@ -458,6 +458,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
           family={famCard}
           treeHref={`${base}/tree?p=${id}`}
           meHref={isMe ? `${base}/me` : undefined}
+          inDrawer={compact}
         />
       </div>
     );
