@@ -625,7 +625,8 @@
     "account": "Paskyra",
     "archives": "Jūsų archyvai",
     "newArchive": "Sukurti naują archyvą",
-    "menu": "Meniu"
+    "menu": "Meniu",
+    "renameFamily": "Pervadinti šią šeimą"
   },
   "archive": {
     "title": "Archyvas",

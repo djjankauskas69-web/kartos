@@ -625,7 +625,8 @@
     "account": "Account",
     "archives": "Your archives",
     "newArchive": "Create a new archive",
-    "menu": "Menu"
+    "menu": "Menu",
+    "renameFamily": "Rename this family"
   },
   "archive": {
     "title": "Archive",
