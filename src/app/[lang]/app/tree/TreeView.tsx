@@ -48,6 +48,7 @@ type Labels = {
   menuDirections: string;
   menuAdd: string;
   menuClose: string;
+  menuMore: string;
   menuLink: string;
   menuOpenFamily: string;
   menuCompare: string;
@@ -501,19 +502,19 @@ export function TreeView({
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                 </button>
-                {c.addOptions.length > 0 && (
+                {(
                   <button
                     type="button"
                     data-card
-                    onClick={() => setMenu(menu?.key === c.key ? null : { key: c.key, mode: "add" })}
+                    onClick={() => setMenu(menu?.key === c.key ? null : { key: c.key, mode: "card" })}
                     aria-expanded={menu?.key === c.key}
                     aria-haspopup="menu"
-                    aria-label={`${labels.menuAdd}: ${c.name}`}
-                    title={labels.menuAdd}
+                    aria-label={`${labels.menuMore}: ${c.name}`}
+                    title={labels.menuMore}
                     style={{ left: (cardW + PHOTO) / 2 - 22, top: -2 }}
-                    className={`absolute flex h-7 w-7 items-center justify-center rounded-full bg-ink text-white shadow-[0_4px_10px_-4px_rgb(28_29_26/0.6)] ring-2 ring-white transition-opacity hover:bg-olive-deep focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100 ${menu?.key === c.key ? "opacity-100" : "opacity-0"}`}
+                    className={`absolute flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_4px_10px_-4px_rgb(28_29_26/0.45)] transition-colors hover:bg-ink hover:text-white ${menu?.key === c.key ? "bg-ink text-white" : ""}`}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18.5" cy="12" r="2" /></svg>
                   </button>
                 )}
                 {c.moreAbove && (
@@ -581,7 +582,6 @@ export function TreeView({
             key={`${menu!.key}-${menu!.mode}`}
             ref={menuRef}
             card={openCard}
-            mode={menu!.mode}
             labels={labels}
             pos={menuPos(openCard)}
             onClose={() => setMenu(null)}
@@ -602,7 +602,6 @@ const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke
 function CardMenu({
   ref,
   card,
-  mode,
   labels,
   pos,
   onClose,
@@ -610,14 +609,13 @@ function CardMenu({
 }: {
   ref: React.Ref<HTMLDivElement>;
   card: TreeCard;
-  mode: "card" | "add";
   labels: Labels;
   pos: { left: number; top: number };
   onClose: () => void;
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
-  const [showAdd, setShowAdd] = useState(mode === "add");
+  const [showAdd, setShowAdd] = useState(false);
   const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave

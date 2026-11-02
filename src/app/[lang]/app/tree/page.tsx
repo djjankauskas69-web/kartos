@@ -232,6 +232,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           menuDirections: t.tree.menuDirections,
           menuAdd: t.tree.menuAdd,
           menuClose: t.tree.menuClose,
+          menuMore: t.tree.menuMore,
           menuLink: t.familyLink.menuLink,
           menuOpenFamily: t.familyLink.menuOpen,
           menuCompare: t.merge.compare,
