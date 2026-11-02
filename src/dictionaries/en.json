@@ -472,7 +472,8 @@
     "saving": "Saving…",
     "photoError": "Couldn't upload the photo.",
     "about": "About",
-    "storiesTitle": "Stories and memories"
+    "storiesTitle": "Stories and memories",
+    "openPhoto": "Open the photo"
   },
   "grave": {
     "title": "Resting place",

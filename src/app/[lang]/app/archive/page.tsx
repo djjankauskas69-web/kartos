@@ -24,6 +24,8 @@ async function Archive({ t, locale, itemPromise }: { t: Dictionary; locale: Loca
       .select("id, kind, title, description, place, taken_year, year_qualifier, year_to, folder_id, storage_path, mime_type, uploader_id, status, created_at, file_name, media_persons(person_id)")
       .eq("workspace_id", current.id)
       .neq("status", "rejected")
+      // Photos that belong to a memory stay with that memory.
+      .or("storage_path.is.null,storage_path.not.like.*/memories/*")
       .order("created_at", { ascending: false })
       .limit(1000),
     supabase.from("media_folders").select("id, preset, name, sort").eq("workspace_id", current.id).order("sort").order("created_at"),

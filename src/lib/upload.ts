@@ -31,11 +31,12 @@ export function isImage(file: File) {
 }
 
 /** Uploads one photo into the archive's private folder. Returns its storage path and size. */
-export async function uploadPhoto(workspaceId: string, file: File) {
+/** Uploads a shrunk JPEG to <workspace>/[folder/]<id>.jpg. */
+export async function uploadPhoto(workspaceId: string, file: File, folder?: string) {
   const supabase = createClient();
   if (!supabase) throw new Error("not configured");
   const { blob, width, height } = await shrink(file);
-  const path = `${workspaceId}/${crypto.randomUUID()}.jpg`;
+  const path = `${workspaceId}/${folder ? `${folder}/` : ""}${crypto.randomUUID()}.jpg`;
   const { error } = await supabase.storage.from("family-media").upload(path, blob, { contentType: "image/jpeg", upsert: false });
   if (error) throw error;
   return { path, width, height };

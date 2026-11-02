@@ -407,11 +407,12 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
   if (!personId) return { error: "save" };
   if (!body) return { error: "empty" };
 
-  // A photo that goes with the story (uploaded by the browser just before): into the archive, tagged with the person.
+  // The photo that belongs to this story only (uploaded to <workspace>/memories/ just before).
+  // It stays with the memory: not tagged with the person and not shown in the archive.
   let mediaId: string | null = null;
   try {
     const photo = JSON.parse(String(form.get("photo") ?? "null")) as { path?: string; width?: number; height?: number } | null;
-    if (photo?.path && photo.path.startsWith(`${workspace.id}/`)) {
+    if (photo?.path && photo.path.startsWith(`${workspace.id}/memories/`)) {
       mediaId = crypto.randomUUID();
       const { error } = await supabase.from("media").insert({
         id: mediaId,
@@ -425,8 +426,6 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
       if (error) {
         console.error("addMemory photo", error);
         mediaId = null;
-      } else {
-        await supabase.from("media_persons").insert({ media_id: mediaId, person_id: personId, workspace_id: workspace.id });
       }
     }
   } catch {
@@ -435,7 +434,7 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
 
   const row: Record<string, unknown> = { workspace_id: workspace.id, person_id: personId, author_id: user.id, body };
   let { error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row);
-  // Before database update 0010 a memory can't point at its photo; the photo is still in the archive.
+  // Before database update 0010 a memory can't point at its photo, so it is saved without it.
   if (error && mediaId && /media_id/.test(error.message)) ({ error } = await supabase.from("memories").insert(row));
   if (error) {
     console.error("addMemory", error);

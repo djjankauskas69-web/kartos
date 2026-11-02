@@ -26,6 +26,7 @@ import { deleteMemory, deletePhoto, removeRelationship, setPortrait } from "../.
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
+import { MemoryPhoto } from "./MemoryPhoto";
 import { GraveView } from "./GraveView";
 import { PendingButton, PortraitWithAdd } from "./PortraitControls";
 
@@ -92,8 +93,13 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
     ? await supabase.from("media").select("storage_path").eq("id", burial.photo_id).maybeSingle()
     : { data: null };
 
+  // Photos that belong to a memory (kept with it, not among the person's photos).
+  const memoryMediaIds = (memories ?? []).flatMap((m) => (m.media_id ? [m.media_id] : []));
+  const { data: memoryMedia } = memoryMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memoryMediaIds) : { data: [] };
+  const memoryPath = new Map((memoryMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
+
   const [urls, portraits, authors] = await Promise.all([
-    signedUrls(locale, [...photos.map((p) => p.storage_path), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
+    signedUrls(locale, [...photos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
     portraitUrls(locale, [person, ...relativeIds.map((r) => byId.get(r)!).filter(Boolean)]),
     profileNames(locale, (memories ?? []).map((m) => m.author_id as string)),
   ]);
@@ -305,11 +311,16 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
         ) : (
           <ul className="mt-4 space-y-4">
             {(memories ?? []).map((m) => {
-              const ph = m.media_id ? photos.find((p) => p.id === m.media_id) : undefined;
-              const phUrl = ph ? urls.get(ph.storage_path) : undefined;
+              const path = m.media_id ? (memoryPath.get(m.media_id) ?? photos.find((p) => p.id === m.media_id)?.storage_path) : undefined;
+              const phUrl = path ? urls.get(path) : undefined;
               const author = authors.get(m.author_id as string) ?? "";
               return (
                 <li key={m.id} className={`p-5 sm:p-6 ${cls.card}`}>
+                  {phUrl && (
+                    <div className="float-right mb-3 ml-4">
+                      <MemoryPhoto src={phUrl} label={t.memories.openPhoto} close={t.add.close} />
+                    </div>
+                  )}
                   <div className="mb-3 flex flex-wrap items-center gap-3 text-[0.95rem]">
                     <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{author.slice(0, 1).toUpperCase()}</span>
                     <span className="font-semibold">{author}</span>
@@ -317,14 +328,8 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
                     {m.status === "pending" && <PendingBadge label={t.app.pending} />}
                   </div>
                   <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
-                  {phUrl && (
-                    <a href={phUrl} target="_blank" rel="noreferrer" className="mt-4 block w-fit overflow-hidden rounded-xl">
-                      {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-                      <img src={phUrl} alt="" loading="lazy" className="max-h-80 w-auto object-cover" />
-                    </a>
-                  )}
                   {(can.edit(role) || m.author_id === user.id) && (
-                    <form action={deleteMemory} className="mt-3 text-right text-[0.92rem] text-ink-muted">
+                    <form action={deleteMemory} className="clear-both mt-3 text-right text-[0.92rem] text-ink-muted">
                       <input type="hidden" name="locale" value={locale} />
                       <input type="hidden" name="id" value={m.id} />
                       <button type="submit" className="hover:text-danger">

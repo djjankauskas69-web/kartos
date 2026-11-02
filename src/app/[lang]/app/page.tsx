@@ -34,8 +34,8 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories, gravePoint, mine] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
-    supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected"),
-    supabase.from("media").select("id, storage_path, created_at").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").order("created_at", { ascending: false }).limit(30),
+    supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
+    supabase.from("media").select("id, storage_path, created_at").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").order("created_at", { ascending: false }).limit(30),
     supabase.from("persons").select("id, created_at").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("burials").select("id, person_id, cemetery_name, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("memories").select("id, person_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),

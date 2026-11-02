@@ -16,7 +16,7 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
     form.delete("photoFile");
     if (photo) {
       try {
-        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, photo.file)));
+        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, photo.file, "memories")));
       } catch {
         return { error: "photo" };
       }
