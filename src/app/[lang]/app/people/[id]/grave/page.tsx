@@ -76,8 +76,9 @@ async function Grave({
       <Link href={back ? `/${locale}/app/map` : `/${locale}/app/people/${id}`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
         ‹ {back ? t.map.title : fullName(person)}
       </Link>
-      <p className="mt-6 font-serif text-[1.15rem] text-bronze">{fullName(person)}</p>
-      <h1 className={`mb-8 mt-1 ${cls.h1}`}>{burial ? t.grave.edit : t.grave.add}</h1>
+      {/* The name is already in the back link, unless that link goes to the map. */}
+      {back && <p className="mt-6 font-serif text-[1.15rem] text-bronze">{fullName(person)}</p>}
+      <h1 className={`mb-8 ${back ? "mt-1" : "mt-6"} ${cls.h1}`}>{burial ? t.grave.edit : t.grave.add}</h1>
       <GraveForm
         t={t}
         locale={locale}

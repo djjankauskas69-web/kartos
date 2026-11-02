@@ -59,8 +59,7 @@ async function AddRelative({
       <Link href={`/${locale}/app/people/${id}`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
         ‹ {fullName(person)}
       </Link>
-      <p className="mt-6 font-serif text-[1.15rem] text-bronze">{fullName(person)}</p>
-      <h1 className={`mb-8 mt-1 ${cls.h1}`}>{title}</h1>
+      <h1 className={`mb-8 mt-6 ${cls.h1}`}>{title}</h1>
       <RelativeForm
         t={t}
         locale={locale}
