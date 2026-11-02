@@ -27,7 +27,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("persons").select("id, given_names, surname, birth_year, death_year, is_living, created_by").eq("workspace_id", ws).eq("status", "pending").is("deleted_at", null),
     supabase.from("relationships").select("id, person_a, person_b, type, created_by").eq("workspace_id", ws).eq("status", "pending"),
     supabase.from("memories").select("id, person_id, body, author_id").eq("workspace_id", ws).eq("status", "pending"),
-    supabase.from("media").select("id, storage_path, uploader_id, media_persons(person_id)").eq("workspace_id", ws).eq("status", "pending"),
+    supabase.from("media").select("id, kind, title, description, file_name, mime_type, storage_path, uploader_id, media_persons(person_id)").eq("workspace_id", ws).eq("status", "pending"),
     supabase.from("burials").select("id, person_id, cemetery_name, section, row_label, plot, lat, lng, photo_id, created_by").eq("workspace_id", ws).eq("status", "pending"),
   ]);
 
@@ -52,7 +52,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
     ...photos.map((m) => m.uploader_id),
     ...(burials.data ?? []).map((b) => b.created_by),
   ]);
-  const urls = await signedUrls(locale, photos.map((m) => m.storage_path));
+  const urls = await signedUrls(locale, photos.map((m) => m.storage_path).filter((p): p is string => !!p));
 
   const total = (persons.data?.length ?? 0) + (rels.data?.length ?? 0) + (memories.data?.length ?? 0) + photos.length + (burials.data?.length ?? 0);
 
@@ -147,17 +147,28 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
         ))}
       </>)}
 
-      {group(t.review.photos, photos.length, <>
+      {group(t.archive.title, photos.length, <>
         {photos.map((m) => {
           const tagged = (m.media_persons as { person_id: string }[] | null) ?? [];
           return (
             <li key={m.id} className={row}>
               <div className="flex min-w-0 items-center gap-4">
-                {urls.get(m.storage_path) && (
+                {m.storage_path && urls.get(m.storage_path) && m.mime_type !== "application/pdf" ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                   <img src={urls.get(m.storage_path)} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-[#efe8d8] p-2 text-center text-[0.85rem] text-bronze">
+                    {m.kind === "story" ? t.archive.kind.story : "PDF"}
+                  </span>
                 )}
                 <div className="min-w-0">
+                  {(m.title || m.file_name) && <p className="font-serif text-[1.1rem]">{m.title || m.file_name}</p>}
+                  {m.kind === "story" && m.description && <p className="line-clamp-3 text-[0.95rem] text-ink-muted">{m.description}</p>}
+                  {m.storage_path && urls.get(m.storage_path) && (
+                    <a href={urls.get(m.storage_path)} target="_blank" rel="noreferrer" className="text-[0.95rem] font-semibold text-sage-deep hover:underline">
+                      {t.archive.openFile} ↗
+                    </a>
+                  )}
                   {tagged.map((tp) => (
                     <p key={tp.person_id}>
                       {t.review.person}: {personLink(tp.person_id)}

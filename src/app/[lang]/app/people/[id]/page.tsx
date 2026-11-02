@@ -16,6 +16,7 @@ import {
 } from "@/lib/data";
 import { Portrait } from "@/components/Portrait";
 import { cls, PendingBadge } from "@/components/ui";
+import { periodLabel } from "@/lib/archive";
 import { deleteMemory, deletePhoto, removeRelationship, setPortrait } from "../../actions";
 import { MemoryForm } from "../../forms";
 import { portraitUrls } from "../../portraits";
@@ -53,7 +54,7 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
       .order("created_at", { ascending: true }),
     supabase
       .from("media_persons")
-      .select("media:media(id, storage_path, status, uploader_id, created_at)")
+      .select("media:media(id, kind, title, file_name, taken_year, year_qualifier, year_to, storage_path, status, uploader_id, created_at)")
       .eq("person_id", id),
     supabase
       .from("memories")
@@ -63,11 +64,25 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
       .order("created_at", { ascending: true }),
   ]);
 
-  type MediaRow = { id: string; storage_path: string; status: Status; uploader_id: string | null; created_at: string };
-  const photos = (tagged ?? [])
+  type MediaRow = {
+    id: string;
+    kind: string;
+    title: string | null;
+    file_name: string | null;
+    taken_year: number | null;
+    year_qualifier: string | null;
+    year_to: number | null;
+    storage_path: string | null;
+    status: Status;
+    uploader_id: string | null;
+    created_at: string;
+  };
+  const linked = (tagged ?? [])
     .map((r) => r.media as unknown as MediaRow | null)
     .filter((m): m is MediaRow => !!m && m.status !== "rejected")
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const photos = linked.filter((m): m is MediaRow & { storage_path: string } => m.kind === "photo" && !!m.storage_path);
+  const papers = linked.filter((m) => m.kind !== "photo");
 
   const burial = burials?.[0] ?? null;
   const { data: gravePhoto } = burial?.photo_id
@@ -312,6 +327,34 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
           </ul>
         )}
       </section>
+
+      {/* Documents and stories from the archive */}
+      {papers.length > 0 && (
+        <section className="max-w-3xl">
+          <h2 className={cls.h2}>{t.archive.docsTitle}</h2>
+          <ul className={`mt-4 divide-y divide-line ${cls.card}`}>
+            {papers.map((m) => (
+              <li key={m.id}>
+                <Link href={`${base}/archive?item=${m.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-paper">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#efe8d8] text-[0.8rem] font-semibold text-bronze">
+                    {m.kind === "story" ? "¶" : "PDF"}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-serif text-[1.1rem]">{m.title || m.file_name || t.archive.kind[m.kind as "document" | "story"]}</span>
+                    <span className="block text-[0.9rem] text-ink-muted">
+                      {[t.archive.kind[m.kind as "document" | "story"], periodLabel(t, m.taken_year, m.year_qualifier, m.year_to)].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  {m.status === "pending" && <PendingBadge label={t.app.pending} />}
+                  <span aria-hidden="true" className="text-ink-muted">
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Memories */}
       <section className="max-w-3xl">

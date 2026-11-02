@@ -16,6 +16,7 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
   - Vaidmenys: Administratorius (tvirtina), Redaktorius (matoma iš karto), Narys (laukia patvirtinimo), Žiūrovas
   - Kvietimai nuoroda, nuotraukos (privačios), prisiminimai, kapo vieta su GPS ir žemėlapiu
   - Taisyklės ir tvirtinimas: `supabase/migrations/0002_roles_approval.sql`
+  - Archyvas kaip šeimos biblioteka (aplankai, dokumentai, istorijos): `supabase/migrations/0003_library.sql`
 
 ## Duomenų bazės atnaujinimai
 

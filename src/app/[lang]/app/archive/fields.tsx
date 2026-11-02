@@ -1,0 +1,176 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+export type PersonOption = { id: string; name: string; years: string };
+export type FolderOption = { id: string; name: string };
+
+const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const input =
+  "block min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-[1.02rem] text-ink placeholder:text-ink-muted/60 focus:border-sage-deep focus:outline-none focus:ring-2 focus:ring-sage/30";
+export const fieldCls = input;
+export const labelCls = "mb-1.5 block font-semibold";
+
+/** Choose people from the family tree; chosen ones are sent as hidden "people" inputs. */
+export function PeoplePicker({
+  people,
+  initial = [],
+  label,
+  hint,
+  placeholder,
+  removeLabel,
+  idPrefix,
+}: {
+  people: PersonOption[];
+  initial?: string[];
+  label: string;
+  hint?: string;
+  placeholder: string;
+  removeLabel: string;
+  idPrefix: string;
+}) {
+  const [chosen, setChosen] = useState<string[]>(initial);
+  const [q, setQ] = useState("");
+  const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+  const matches = useMemo(() => {
+    const terms = fold(q).split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return people.filter((p) => !chosen.includes(p.id) && terms.every((t) => fold(p.name).includes(t))).slice(0, 6);
+  }, [q, people, chosen]);
+
+  return (
+    <div>
+      <label htmlFor={`${idPrefix}-people`} className={labelCls}>
+        {label}
+      </label>
+      {hint && <p className="-mt-0.5 mb-2 text-[0.92rem] text-ink-muted">{hint}</p>}
+      {chosen.length > 0 && (
+        <ul className="mb-2 flex flex-wrap gap-2">
+          {chosen.map((id) => (
+            <li key={id} className="flex items-center gap-1 rounded-full bg-sage-wash py-1 pl-3 pr-1 text-[0.95rem]">
+              <input type="hidden" name="people" value={id} />
+              {byId.get(id)?.name ?? "—"}
+              <button
+                type="button"
+                onClick={() => setChosen((c) => c.filter((x) => x !== id))}
+                className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-surface"
+                aria-label={`${removeLabel}: ${byId.get(id)?.name ?? ""}`}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="relative">
+        <input
+          id={`${idPrefix}-people`}
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (matches[0]) {
+                setChosen((c) => [...c, matches[0].id]);
+                setQ("");
+              }
+            }
+          }}
+          placeholder={placeholder}
+          autoComplete="off"
+          className={input}
+        />
+        {matches.length > 0 && (
+          <ul className="absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-line bg-surface p-1 shadow-[0_10px_30px_-12px_rgb(60_45_30/0.5)]">
+            {matches.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChosen((c) => [...c, p.id]);
+                    setQ("");
+                  }}
+                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-left hover:bg-paper"
+                >
+                  <span className="font-serif text-[1.05rem]">{p.name}</span>
+                  <span className="text-[0.88rem] text-ink-muted">{p.years}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Year, approximate year, or a period between two years. */
+export function PeriodFields({
+  idPrefix,
+  initial,
+  labels,
+}: {
+  idPrefix: string;
+  initial?: { year: number | null; qualifier: "exact" | "about" | "between"; yearTo: number | null };
+  labels: { date: string; exact: string; about: string; between: string; year: string; from: string; to: string; placeholder: string };
+}) {
+  const [qualifier, setQualifier] = useState(initial?.qualifier ?? "exact");
+  return (
+    <fieldset>
+      <legend className={labelCls}>{labels.date}</legend>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <select
+          name="yearQualifier"
+          aria-label={labels.date}
+          value={qualifier}
+          onChange={(e) => setQualifier(e.target.value as typeof qualifier)}
+          className={input}
+        >
+          <option value="exact">{labels.exact}</option>
+          <option value="about">{labels.about}</option>
+          <option value="between">{labels.between}</option>
+        </select>
+        <input
+          id={`${idPrefix}-year`}
+          name="year"
+          inputMode="numeric"
+          maxLength={4}
+          defaultValue={initial?.year ?? ""}
+          placeholder={labels.placeholder}
+          aria-label={qualifier === "between" ? labels.from : labels.year}
+          className={input}
+        />
+        {qualifier === "between" && (
+          <input
+            name="yearTo"
+            inputMode="numeric"
+            maxLength={4}
+            defaultValue={initial?.yearTo ?? ""}
+            aria-label={labels.to}
+            placeholder={labels.to}
+            className={input}
+          />
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
+export function FolderSelect({ folders, value, label, none, id }: { folders: FolderOption[]; value?: string | null; label: string; none: string; id: string }) {
+  return (
+    <div>
+      <label htmlFor={id} className={labelCls}>
+        {label}
+      </label>
+      <select id={id} name="folderId" defaultValue={value ?? ""} className={input}>
+        <option value="">{none}</option>
+        {folders.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
