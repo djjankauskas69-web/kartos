@@ -9,7 +9,7 @@ import { useEffect } from "react";
  */
 export function WideMain() {
   useEffect(() => {
-    const main = document.getElementById("main");
+    const main = document.getElementById("app-col");
     if (!main) return;
     main.dataset.wide = "1";
     return () => {

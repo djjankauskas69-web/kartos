@@ -48,9 +48,10 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-col">
-        <header className="relative z-40 border-b border-line/70 bg-paper/90 px-5 py-3 backdrop-blur sm:px-8 lg:border-b-0 lg:pt-5">
-          <div className="mx-auto flex max-w-6xl items-center gap-3">
+      <div id="app-col" className="group/col flex min-w-0 flex-col">
+        <header className="relative z-40 border-b border-line/70 bg-paper/90 py-3 backdrop-blur lg:border-b-0 lg:pt-5">
+          {/* Same width and side padding as the page below, so the header lines up with the content. */}
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-5 sm:px-8 group-data-[wide]/col:max-w-none lg:group-data-[wide]/col:px-6">
             <div className="hidden sm:block lg:hidden">
               <Wordmark href={`/${locale}/app`} />
             </div>
@@ -58,14 +59,14 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
               <TopBar t={t} locale={locale} />
             </Suspense>
           </div>
-          <div className="mx-auto mt-3 max-w-6xl lg:hidden">
+          <div className="mx-auto mt-3 w-full max-w-6xl px-5 sm:px-8 lg:hidden">
             <Suspense fallback={<div className="h-10" />}>
               <Navigation t={t} locale={locale} variant="top" />
             </Suspense>
           </div>
         </header>
         <MenuCloser />
-        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-6 data-[wide]:max-w-none data-[wide]:py-4 lg:data-[wide]:px-6">
+        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-6 group-data-[wide]/col:max-w-none group-data-[wide]/col:py-4 lg:group-data-[wide]/col:px-6">
           {children}
         </main>
       </div>
