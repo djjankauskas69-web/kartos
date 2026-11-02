@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { MapView } from "@/components/map/Map";
@@ -51,7 +51,12 @@ export function GraveForm({
   const [pin, setPin] = useState<Pin>(initial?.lat != null && initial?.lng != null ? { lat: initial.lat, lng: initial.lng } : null);
   const [accuracy, setAccuracy] = useState<number | null>(initial?.accuracy_m ?? null);
   const [focusKey, setFocusKey] = useState(0);
-  const [gps, setGps] = useState<"idle" | "locating" | "error">("idle");
+  const [gps, setGps] = useState<"idle" | "locating" | "done" | "error">("idle");
+  const [live, setLive] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [coordsText, setCoordsText] = useState("");
+  const [coordsError, setCoordsError] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [query, setQuery] = useState("");
   const [searchMsg, setSearchMsg] = useState<string | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -81,21 +86,104 @@ export function GraveForm({
   const onPick = useCallback((lat: number, lng: number) => {
     setPin({ lat, lng });
     setAccuracy(null);
+    setGps("idle");
   }, []);
+  const center = useRef<{ lat: number; lng: number } | null>(null);
+  const onCenter = useCallback((lat: number, lng: number) => {
+    center.current = { lat, lng };
+  }, []);
+  function markCenter() {
+    if (center.current) onPick(center.current.lat, center.current.lng);
+  }
 
+  // Enlarged map covers the page: stop the page underneath from scrolling.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [expanded]);
+
+  /** Standing at the grave: take several GPS readings for ~10 s and average them (better ones count more). */
   function locate() {
     if (!("geolocation" in navigator)) return setGps("error");
     setGps("locating");
-    navigator.geolocation.getCurrentPosition(
+    setLive(null);
+    const readings: { lat: number; lng: number; acc: number }[] = [];
+    let done = false;
+    const average = () => {
+      const best = Math.min(...readings.map((r) => r.acc));
+      const use = readings.filter((r) => r.acc <= best * 2);
+      const w = use.map((r) => 1 / Math.max(r.acc, 1) ** 2);
+      const sum = w.reduce((a, b) => a + b, 0);
+      return {
+        lat: use.reduce((a, r, i) => a + r.lat * w[i], 0) / sum,
+        lng: use.reduce((a, r, i) => a + r.lng * w[i], 0) / sum,
+        acc: Math.max(1, Math.round(1 / Math.sqrt(sum))),
+      };
+    };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      navigator.geolocation.clearWatch(watch);
+      clearTimeout(timer);
+      if (!readings.length) return setGps("error");
+      const a = average();
+      setPin({ lat: a.lat, lng: a.lng });
+      setAccuracy(a.acc);
+      setFocusKey((k) => k + 1);
+      setGps("done");
+    };
+    const watch = navigator.geolocation.watchPosition(
       (pos) => {
-        setPin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setAccuracy(Math.round(pos.coords.accuracy));
-        setFocusKey((k) => k + 1);
-        setGps("idle");
+        readings.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+        const a = average();
+        setLive(a.acc);
+        setPin({ lat: a.lat, lng: a.lng });
+        setAccuracy(a.acc);
+        if (readings.length === 1) setFocusKey((k) => k + 1);
+        if (readings.length >= 3 && a.acc <= 4) finish();
       },
-      () => setGps("error"),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+      () => {
+        if (!readings.length) finish();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
+    const timer = setTimeout(finish, 10000);
+  }
+
+  /** Accepts "55.7068, 21.1449", "55.7068 21.1449" or "55,7068 21,1449". */
+  function applyCoords() {
+    const raw = coordsText.trim();
+    const parts = raw.includes(".") ? raw.split(/[\s,;]+/) : raw.split(/[\s;]+/).map((x) => x.replace(",", "."));
+    const nums = parts.filter(Boolean).map(Number);
+    const [lat, lng] = nums;
+    if (nums.length !== 2 || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      setCoordsError(true);
+      return;
+    }
+    setPin({ lat, lng });
+    setAccuracy(null);
+    setGps("idle");
+    setFocusKey((k) => k + 1);
+  }
+
+  async function copyCoords() {
+    if (!pin) return;
+    try {
+      await navigator.clipboard.writeText(`${pin.lat.toFixed(6)}, ${pin.lng.toFixed(6)}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCoordsText(`${pin.lat.toFixed(6)}, ${pin.lng.toFixed(6)}`);
+    }
   }
 
   async function search() {
@@ -199,6 +287,9 @@ export function GraveForm({
           <button type="button" onClick={locate} disabled={gps === "locating"} className={cls.secondary}>
             {gps === "locating" ? t.grave.locating : t.grave.useGps}
           </button>
+          <button type="button" onClick={() => setExpanded(true)} className={cls.secondary}>
+            {t.grave.expand}
+          </button>
           <div className="flex min-w-0 flex-1 basis-64 gap-2">
             <label htmlFor="grave-search" className="sr-only">
               {t.grave.searchPlaceholder}
@@ -222,8 +313,62 @@ export function GraveForm({
           </div>
         </div>
         {gps === "error" && <ErrorText message={t.grave.gpsError} />}
+        {gps === "locating" && live !== null && (
+          <p role="status" className="text-[0.95rem] font-semibold text-sage-deep">
+            {t.grave.measuring.replace("{m}", String(live))}
+          </p>
+        )}
+        {gps === "done" && accuracy !== null && (
+          <p role="status" className="text-[0.95rem] font-semibold text-sage-deep">
+            {t.grave.gpsDone.replace("{m}", String(accuracy))}
+          </p>
+        )}
         {searchMsg && <p className="text-[0.95rem] text-ink-muted">{searchMsg}</p>}
-        <MapView value={pin} onPick={onPick} focusKey={focusKey} view={view} viewKey={viewKey} className="h-[22rem] w-full rounded-xl border border-line sm:h-[28rem]" />
+
+        <div className={expanded ? "fixed inset-0 z-[60] flex flex-col bg-surface" : "relative"}>
+          {expanded && (
+            <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+              <p className="min-w-0 flex-1 text-[0.98rem] leading-snug">{t.grave.aimHelp}</p>
+              <button type="button" onClick={() => setExpanded(false)} className={cls.primary}>
+                {t.grave.done}
+              </button>
+            </div>
+          )}
+          <div className={expanded ? "relative min-h-0 flex-1" : "relative"}>
+            <MapView
+              value={pin}
+              onPick={onPick}
+              focusKey={focusKey}
+              view={view}
+              viewKey={viewKey}
+              baseLayer="satellite"
+              layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }}
+              scrollZoom
+              accuracy={accuracy}
+              onCenter={onCenter}
+              className={expanded ? "h-full w-full" : "h-[22rem] w-full rounded-xl border border-line sm:h-[28rem]"}
+            />
+            {expanded && (
+              <>
+                <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[600] -translate-x-1/2 -translate-y-1/2">
+                  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ filter: "drop-shadow(0 0 2px rgb(255 255 255 / .9))" }}>
+                    <circle cx="28" cy="28" r="13" stroke="#fffefb" strokeWidth="4" />
+                    <circle cx="28" cy="28" r="13" stroke="#3f5643" strokeWidth="2" />
+                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#fffefb" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#3f5643" strokeWidth="2" strokeLinecap="round" />
+                    <circle cx="28" cy="28" r="2.2" fill="#3f5643" />
+                  </svg>
+                </span>
+                <div className="absolute inset-x-0 bottom-0 z-[600] flex justify-center p-4 pb-[max(2.75rem,env(safe-area-inset-bottom))]">
+                  <button type="button" onClick={markCenter} className={`${cls.primary} min-h-14 px-8 text-[1.15rem] shadow-[var(--shadow-float)]`}>
+                    {t.grave.markHere}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3 text-[0.95rem] text-ink-muted">
           {pin && (
             <span>
@@ -232,10 +377,47 @@ export function GraveForm({
             </span>
           )}
           {pin && (
+            <button type="button" onClick={copyCoords} className="font-semibold text-sage-deep underline-offset-2 hover:underline">
+              {copied ? t.grave.copied : t.grave.copy}
+            </button>
+          )}
+          {pin && (
             <button type="button" onClick={() => setPin(null)} className="underline underline-offset-2 hover:text-ink">
               {t.grave.clearPin}
             </button>
           )}
+        </div>
+
+        <div>
+          <label htmlFor="grave-coords" className="mb-1.5 block font-semibold">
+            {t.grave.coords} <span className="font-normal text-ink-muted">({t.app.optional})</span>
+          </label>
+          <div className="flex max-w-xl gap-2">
+            <input
+              id="grave-coords"
+              value={coordsText}
+              onChange={(e) => {
+                setCoordsText(e.target.value);
+                setCoordsError(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyCoords();
+                }
+              }}
+              placeholder={t.grave.coordsPlaceholder}
+              inputMode="decimal"
+              aria-describedby="grave-coords-hint"
+              className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
+            />
+            <button type="button" onClick={applyCoords} className={cls.secondary}>
+              {t.grave.coordsApply}
+            </button>
+          </div>
+          <p id="grave-coords-hint" className={`mt-1.5 text-[0.92rem] ${coordsError ? "text-danger" : "text-ink-muted"}`} role={coordsError ? "alert" : undefined}>
+            {coordsError ? t.grave.coordsError : t.grave.coordsHint}
+          </p>
         </div>
       </fieldset>
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { MapView } from "@/components/map/Map";
+import { DirectionsMenu } from "@/components/map/Directions";
 import { cls, PendingBadge } from "@/components/ui";
 import { useMemo } from "react";
 
@@ -65,14 +66,13 @@ export function GraveView({
           )}
           <div className="flex flex-wrap gap-2 pt-2">
             {hasPin && (
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${burial.lat},${burial.lng}`}
-                target="_blank"
-                rel="noreferrer"
-                className={cls.primary}
-              >
-                {t.grave.navigate}
-              </a>
+              <DirectionsMenu
+                lat={burial.lat!}
+                lng={burial.lng!}
+                label={t.grave.navigate}
+                labels={{ google: t.grave.navGoogle, waze: t.grave.navWaze, apple: t.grave.navApple }}
+                summaryClassName={`${cls.primary} gap-2`}
+              />
             )}
             {editHref && (
               <Link href={editHref} className={cls.secondary}>
@@ -81,7 +81,7 @@ export function GraveView({
             )}
           </div>
         </div>
-        {hasPin && <MapView markers={markers} className="h-72 w-full md:h-full md:min-h-72" />}
+        {hasPin && <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="h-72 w-full rounded-xl border border-line md:h-full md:min-h-72" />}
       </div>
     </div>
   );

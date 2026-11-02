@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -31,7 +31,53 @@ type Props = {
   view?: { lat: number; lng: number; zoom: number } | null;
   viewKey?: number;
   className?: string;
+  /** Which background to start with. */
+  baseLayer?: BaseLayer;
+  /** Labels for the Map / Satellite switch; the switch shows only when given. */
+  layerLabels?: { map: string; satellite: string };
+  /** Zoom with the mouse wheel (on in the picker, off where the page scrolls past the map). */
+  scrollZoom?: boolean;
+  /** GPS accuracy around the picked pin, in metres. */
+  accuracy?: number | null;
+  /** Reports the map centre after every move (for the aim-at-centre picker). */
+  onCenter?: (lat: number, lng: number) => void;
 };
+
+export type BaseLayer = "map" | "satellite";
+
+/**
+ * Backgrounds. Satellite = Esri World Imagery everywhere, with the Lithuanian national
+ * orthophoto (ORT10LT, National Land Service) on top inside Lithuania, where it is usually sharper.
+ * Both are stretched past their native zoom so the user can get very close to a grave.
+ */
+const MAX_ZOOM = 21;
+const LT_BOUNDS = L.latLngBounds([53.85, 20.9], [56.47, 26.9]);
+function makeBase(kind: BaseLayer) {
+  if (kind === "map") {
+    return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: MAX_ZOOM,
+      maxNativeZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    });
+  }
+  return L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: MAX_ZOOM,
+      maxNativeZoom: 19,
+      attribution: "Esri, Maxar, Earthstar Geographics",
+    }),
+    // ArcGIS cache: level 0 = web zoom 7, level 11 (≈0.6 m/pixel) = zoom 18.
+    L.tileLayer("https://www.geoportal.lt/mapproxy/nzt_ort10lt_recent_wm_public/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: MAX_ZOOM,
+      minZoom: 7,
+      minNativeZoom: 7,
+      maxNativeZoom: 18,
+      zoomOffset: -7,
+      bounds: LT_BOUNDS,
+      attribution: "ORT10LT &copy; Nacionalinė žemės tarnyba, geoportal.lt",
+    }),
+  ]);
+}
 
 const LITHUANIA = { lat: 55.25, lng: 23.9, zoom: 7 };
 
@@ -62,7 +108,16 @@ export default function LeafletMap({
   view = null,
   viewKey = 0,
   className,
+  baseLayer = "map",
+  layerLabels,
+  scrollZoom = false,
+  accuracy = null,
+  onCenter,
 }: Props) {
+  const [layer, setLayer] = useState<BaseLayer>(baseLayer);
+  const base = useRef<L.Layer | null>(null);
+  const circle = useRef<L.Circle | null>(null);
+  const onCenterRef = useRef(onCenter);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const picked = useRef<L.Marker | null>(null);
@@ -75,21 +130,22 @@ export default function LeafletMap({
   useEffect(() => {
     onPickRef.current = onPick;
     onSelectRef.current = onSelect;
-  }, [onPick, onSelect]);
+    onCenterRef.current = onCenter;
+  }, [onPick, onSelect, onCenter]);
 
   // Create the map once.
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = L.map(el.current, { scrollWheelZoom: false, zoomControl: false }).setView(
+    const m = L.map(el.current, { scrollWheelZoom: false, zoomControl: false, maxZoom: MAX_ZOOM }).setView(
       [fallbackCenter.lat, fallbackCenter.lng],
       fallbackCenter.zoom,
     );
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(m);
     L.control.zoom({ position: "topright" }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => onPickRef.current?.(e.latlng.lat, e.latlng.lng));
+    m.on("moveend", () => {
+      const c = m.getCenter();
+      onCenterRef.current?.(c.lat, c.lng);
+    });
     // Re-measure when the container changes size (e.g. on rotate).
     const ro = new ResizeObserver(() => {
       m.invalidateSize();
@@ -194,5 +250,59 @@ export default function LeafletMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on explicit focus requests
   }, [focusKey]);
 
-  return <div ref={el} className={className ?? "h-80 w-full rounded-xl border border-line"} />;
+  // Background layer (map or satellite).
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    base.current?.remove();
+    base.current = makeBase(layer).addTo(m);
+    if (layer === "satellite" && m.getZoom() < 17 && (value || placed.current.size)) m.setZoom(Math.max(m.getZoom(), 17));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the layer changes
+  }, [layer]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    if (scrollZoom) m.scrollWheelZoom.enable();
+    else m.scrollWheelZoom.disable();
+  }, [scrollZoom]);
+
+  // GPS accuracy circle around the pin.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    circle.current?.remove();
+    circle.current = null;
+    if (value && accuracy && accuracy > 0) {
+      circle.current = L.circle([value.lat, value.lng], {
+        radius: accuracy,
+        color: "#3f5643",
+        weight: 1.5,
+        fillColor: "#56705a",
+        fillOpacity: 0.12,
+        interactive: false,
+      }).addTo(m);
+    }
+  }, [value, accuracy]);
+
+  return (
+    <div className={`relative isolate overflow-hidden ${className ?? "h-80 w-full rounded-xl border border-line"}`}>
+      <div ref={el} className="absolute inset-0" />
+      {layerLabels && (
+        <div className="absolute left-3 top-3 z-[500] flex rounded-full border border-line bg-surface/95 p-1 text-[0.95rem] shadow-sm">
+          {(["map", "satellite"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={layer === k}
+              onClick={() => setLayer(k)}
+              className={`min-h-9 rounded-full px-3.5 ${layer === k ? "bg-sage-deep font-semibold text-surface" : "text-ink hover:bg-linen"}`}
+            >
+              {k === "map" ? layerLabels.map : layerLabels.satellite}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

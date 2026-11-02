@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { MapView } from "@/components/map/Map";
+import { DirectionsMenu } from "@/components/map/Directions";
 
 export type GraveItem = {
   id: string;
@@ -42,6 +43,11 @@ export type ExplorerLabels = {
   noPhotos: string;
   noMemories: string;
   navigate: string;
+  navGoogle: string;
+  navWaze: string;
+  navApple: string;
+  layerMap: string;
+  layerSatellite: string;
   moreActions: string;
   openProfile: string;
   editGrave: string;
@@ -275,7 +281,13 @@ export function GravesExplorer({
               </select>
             </label>
           )}
-          <MapView markers={markers} selectedId={mapSelected} onSelect={choose} className="h-[22rem] w-full sm:h-[26rem]" />
+          <MapView
+            markers={markers}
+            selectedId={mapSelected}
+            onSelect={choose}
+            layerLabels={{ map: labels.layerMap, satellite: labels.layerSatellite }}
+            className="h-[22rem] w-full sm:h-[26rem]"
+          />
         </section>
 
         {/* Chosen grave */}
@@ -299,19 +311,16 @@ export function GravesExplorer({
                 </div>
                 <div className="flex items-center gap-2">
                   {current.lat !== null && current.lng !== null && (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${current.lat},${current.lng}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-4 font-semibold hover:border-ink-muted"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-                      </svg>
-                      {labels.navigate}
-                    </a>
+                    <DirectionsMenu
+                      lat={current.lat}
+                      lng={current.lng}
+                      label={labels.navigate}
+                      labels={{ google: labels.navGoogle, waze: labels.navWaze, apple: labels.navApple }}
+                      align="right"
+                      summaryClassName="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-4 font-semibold hover:border-ink-muted"
+                    />
                   )}
-                  <details className="relative">
+                  <details className="relative" data-menu>
                     <summary
                       className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-line hover:border-ink-muted [&::-webkit-details-marker]:hidden"
                       aria-label={labels.moreActions}
