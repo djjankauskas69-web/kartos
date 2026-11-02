@@ -8,7 +8,7 @@ import { Portrait } from "@/components/Portrait";
 import { ConfirmAction } from "../forms";
 import { portraitUrls } from "../portraits";
 import { unlinkMe } from "./actions";
-import { ClaimMe, MyDetailsForm, MyNameForm, PortraitUpload } from "./MyProfile";
+import { AccountRows, ClaimMe, MyDetailsForm, PortraitUpload } from "./MyProfile";
 import { PageLoading } from "@/components/PageLoading";
 
 export default async function MePage() {
@@ -37,7 +37,22 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
     nameRequired: t.app.errorRequired,
     year: t.app.errorYear,
     save: t.app.errorSave,
+    passwordShort: m.passwordShort,
+    passwordMismatch: m.passwordMismatch,
+    passwordSame: m.passwordSame,
   };
+  const card = "rounded-[20px] border border-line/80 bg-surface p-5 sm:p-7";
+  const I = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  const head = (icon: React.ReactNode, title: string, lead?: string) => (
+    <div className="mb-5 flex items-start gap-3.5">
+      <span className="mt-0.5 text-olive-deep">{icon}</span>
+      <div>
+        <h2 className="text-[1.35rem] font-semibold leading-tight">{title}</h2>
+        {lead && <p className="mt-0.5 text-[0.98rem] text-ink-muted">{lead}</p>}
+      </div>
+    </div>
+  );
+  const chevron = <span aria-hidden="true" className="text-[1.2rem] text-ink-muted">›</span>;
 
   let main;
   if (!ready) {
@@ -66,56 +81,73 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
     const photo = (await portraitUrls(locale, [me])).get(me.id);
     const otherLinked = [...links.keys()].filter((ws) => ws !== current.id && memberships.some((x) => x.id === ws));
     main = (
-      <div className={`p-5 sm:p-7 ${cls.card}`}>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          <div className="flex flex-col items-center gap-3 sm:w-48 sm:shrink-0">
-            <div className="[&>*]:!h-40 [&>*]:!w-32 [&>*]:!text-[2.6rem]">
-              <Portrait given={me.given_names} surname={me.surname} src={photo} size="lg" />
+      <div className="space-y-5">
+        <section className={card}>
+          {head(<svg {...I}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" /></svg>, m.details, m.detailsLead)}
+          <div className="flex flex-col gap-7 md:flex-row md:items-start">
+            <div className="flex flex-col items-center gap-3 md:w-48 md:shrink-0">
+              <div className="rounded-full p-1 ring-1 ring-line [&>*]:!h-40 [&>*]:!w-40 [&>*]:!rounded-full [&>*]:!text-[2.6rem]">
+                <Portrait given={me.given_names} surname={me.surname} src={photo} size="lg" />
+              </div>
+              <PortraitUpload locale={locale} workspaceId={current.id} otherWorkspaces={otherLinked} hasPhoto={!!photo} t={m} />
             </div>
-            <PortraitUpload
-              locale={locale}
-              workspaceId={current.id}
-              otherWorkspaces={otherLinked}
-              hasPhoto={!!photo}
-              t={m}
-            />
+            <div className="min-w-0 flex-1">
+              <MyDetailsForm locale={locale} person={me} t={m} errors={errors} />
+            </div>
           </div>
+        </section>
+        <section className={`flex flex-wrap items-center gap-5 ${card}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- shared picture */}
+          <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-24 w-28 shrink-0 rounded-2xl object-cover opacity-80 sepia-[.3]" />
           <div className="min-w-0 flex-1">
-            <h2 className="mb-4 text-[1.4rem]">{m.details}</h2>
-            <MyDetailsForm locale={locale} person={me} t={m} errors={errors} />
+            <h2 className="text-[1.3rem] font-semibold">{m.inFamily.replace("{name}", current.name)}</h2>
+            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] text-olive-deep">
+              {m.yourRole} <strong className="font-semibold">{t.roles[current.role]}</strong>
+            </p>
           </div>
-        </div>
-        <div className="mt-6 flex flex-wrap items-start justify-between gap-3 border-t border-line pt-4">
-          <Link href={`${base}/people/${me.id}`} className={cls.quiet}>
-            {m.openCard} →
-          </Link>
-          <ConfirmAction
-            action={unlinkMe}
-            values={{ locale }}
-            label={m.unlink}
-            confirmLabel={m.unlinkConfirm}
-            cancelLabel={t.app.cancel}
-            warning={m.unlinkWarning}
-          />
-        </div>
+          <div className="flex flex-col items-end gap-2">
+            <Link href={`${base}/people/${me.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-5 font-semibold hover:border-ink/40">
+              {m.openCard} →
+            </Link>
+            <ConfirmAction action={unlinkMe} values={{ locale }} label={m.unlink} confirmLabel={m.unlinkConfirm} cancelLabel={t.app.cancel} warning={m.unlinkWarning} />
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className={cls.h1}>{m.title}</h1>
-      <p className="mb-8 mt-1 text-[1.1rem] text-ink-muted">{m.lead}</p>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] [&>*]:min-w-0">
-        <section>
-          <p className="mb-3 font-semibold text-ink-muted">{m.inFamily.replace("{name}", current.name)}</p>
-          {main}
-        </section>
-        <aside className={`h-fit p-5 ${cls.card}`}>
-          <h2 className="mb-4 text-[1.25rem]">{m.account}</h2>
-          <MyNameForm locale={locale} name={(profile?.display_name as string | null) ?? ""} t={m} errors={errors} />
-          <p className="mt-5 text-[0.95rem] text-ink-muted">{m.email}</p>
-          <p className="break-all font-semibold">{user.email}</p>
+      <header className="relative mb-6 flex items-center gap-5 overflow-hidden">
+        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#eef1e4] text-olive-deep">
+          <svg {...I} width={34} height={34}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+        </span>
+        <div className="min-w-0">
+          <h1 className={cls.h1}>{m.title}</h1>
+          <p className="mt-1 text-[1.05rem] text-ink-muted">{m.lead}</p>
+        </div>
+      </header>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem] [&>*]:min-w-0">
+        <div>{main}</div>
+        <aside className="space-y-5">
+          <section className={card}>
+            {head(<svg {...I}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>, m.account, m.accountLead)}
+            <AccountRows locale={locale} name={(profile?.display_name as string | null) ?? ""} email={user.email ?? ""} t={m} errors={errors} />
+          </section>
+          <section className={card}>
+            {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy, m.privacyLead)}
+            <p className="rounded-xl bg-paper px-4 py-3 text-[0.95rem] leading-relaxed">{m.privacyNote}</p>
+          </section>
+          {me && (
+            <section className={card}>
+              {head(<svg {...I}><circle cx="12" cy="5.5" r="2.3" /><circle cx="5.5" cy="18.5" r="2.3" /><circle cx="18.5" cy="18.5" r="2.3" /><path d="M12 7.8v4.2M12 12H5.5v4.2M12 12h6.5v4.2" /></svg>, m.myCard, m.myCardLead)}
+              <Link href={`${base}/people/${me.id}`} className="flex min-h-12 items-center gap-3 rounded-xl border border-line px-4 font-semibold hover:border-ink/40">
+                <svg {...I} width={20} height={20}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+                <span className="flex-1">{m.viewMyCard}</span>
+                {chevron}
+              </Link>
+            </section>
+          )}
         </aside>
       </div>
     </div>

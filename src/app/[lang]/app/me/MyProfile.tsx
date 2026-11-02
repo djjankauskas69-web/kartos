@@ -8,7 +8,7 @@ import { Portrait } from "@/components/Portrait";
 import { IconSearch } from "@/components/icons";
 import { isImage, uploadPortrait } from "@/lib/upload";
 import { renameSelf, type FormState } from "../actions";
-import { claimMe, createMe, portraitsDone, recordMyPortrait, updateMe } from "./actions";
+import { changePassword, claimMe, createMe, portraitsDone, recordMyPortrait, updateMe } from "./actions";
 
 type T = Record<string, string>;
 type Errors = Record<string, string>;
@@ -171,12 +171,16 @@ export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; p
           </Field>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={pending} className={cls.primary}>
-          {pending ? "…" : t.save}
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+        <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-olive px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-70">
+          <span aria-hidden="true">✓</span>
+          {pending ? "…" : t.saveChanges}
+        </button>
+        <button type="reset" className="min-h-12 rounded-xl border border-line px-6 font-semibold hover:border-ink/40">
+          {t.cancel}
         </button>
         {state.ok && !pending && (
-          <p role="status" className="font-semibold text-sage-deep">
+          <p role="status" className="font-semibold text-olive-deep">
             {t.saved}
           </p>
         )}
@@ -233,12 +237,13 @@ export function PortraitUpload({
   return (
     <div className="flex w-full flex-col items-center gap-2 text-center">
       <input ref={input} type="file" accept="image/*" className="sr-only" id="my-photo" onChange={(e) => onFile(e.target.files?.[0])} />
-      <button type="button" disabled={status === "busy"} onClick={() => input.current?.click()} className={`${cls.secondary} w-full`}>
+      <button type="button" disabled={status === "busy"} onClick={() => input.current?.click()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 font-semibold hover:border-ink/40">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" /><circle cx="12" cy="13" r="3.5" /></svg>
         {status === "busy" ? t.uploading : hasPhoto ? t.changePhoto : t.addPhoto}
       </button>
       {otherWorkspaces.length > 0 && (
         <label className="flex items-start gap-2 text-left text-[0.92rem] leading-snug">
-          <input type="checkbox" checked={everywhere} onChange={(e) => setEverywhere(e.target.checked)} className="mt-1 accent-[var(--color-sage-deep)]" />
+          <input type="checkbox" checked={everywhere} onChange={(e) => setEverywhere(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--color-olive)]" />
           {t.allFamilies}
         </label>
       )}
@@ -256,27 +261,73 @@ export function PortraitUpload({
   );
 }
 
-/* ---------- Account name ---------- */
+/* ---------- Account: name, e-mail, password as rows with a pencil ---------- */
 
-export function MyNameForm({ locale, name, t, errors }: { locale: Locale; name: string; t: T; errors: Errors }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(renameSelf, {});
+const pencil = (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+);
+
+function Row({ icon, label, value, onEdit, editLabel, children }: { icon: React.ReactNode; label: string; value: React.ReactNode; onEdit?: () => void; editLabel?: string; children?: React.ReactNode }) {
   return (
-    <form action={action} className="space-y-3">
-      <input type="hidden" name="locale" value={locale} />
-      <Field id="display-name" label={t.displayName}>
-        <input id="display-name" name="name" required maxLength={80} defaultValue={name} className={cls.input} />
-      </Field>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={pending} className={cls.secondary}>
-          {pending ? "…" : t.save}
-        </button>
-        {state.ok && !pending && (
-          <p role="status" className="font-semibold text-sage-deep">
-            {t.saved}
-          </p>
+    <div className="py-3 first:pt-0 last:pb-0">
+      <div className="flex items-center gap-3.5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.85rem] text-ink-muted">{label}</span>
+          <span className="block truncate text-[1.02rem]">{value}</span>
+        </span>
+        {onEdit && (
+          <button type="button" onClick={onEdit} aria-label={editLabel} title={editLabel} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line hover:border-ink/40">
+            {pencil}
+          </button>
         )}
-        <Err code={state.error} errors={errors} />
       </div>
-    </form>
+      {children}
+    </div>
+  );
+}
+
+export function AccountRows({ locale, name, email, t, errors }: { locale: Locale; name: string; email: string; t: T; errors: Errors }) {
+  const [edit, setEdit] = useState<"name" | "password" | null>(null);
+  const [nameState, nameAction, namePending] = useActionState<FormState, FormData>(async (prev, form) => {
+    const r = await renameSelf(prev, form);
+    if (r.ok) setEdit(null);
+    return r;
+  }, {});
+  const [pwState, pwAction, pwPending] = useActionState<FormState, FormData>(async (prev, form) => {
+    const r = await changePassword(prev, form);
+    if (r.ok) setEdit(null);
+    return r;
+  }, {});
+  const I = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  const small = "min-h-10 rounded-xl px-4 font-semibold";
+  return (
+    <div className="divide-y divide-line">
+      <Row icon={<svg {...I}><circle cx="12" cy="12" r="4" /><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1" /></svg>} label={t.displayName} value={name || "—"} onEdit={() => setEdit(edit === "name" ? null : "name")} editLabel={t.edit}>
+        {edit === "name" && (
+          <form action={nameAction} className="mt-3 flex flex-wrap gap-2">
+            <input type="hidden" name="locale" value={locale} />
+            <input name="name" required maxLength={80} defaultValue={name} aria-label={t.displayName} autoFocus className={`${cls.input} min-w-0 flex-1`} />
+            <button type="submit" disabled={namePending} className={`${small} bg-olive text-surface hover:bg-olive-deep`}>{t.save}</button>
+            <Err code={nameState.error} errors={errors} />
+          </form>
+        )}
+      </Row>
+      <Row icon={<svg {...I}><rect x="3.5" y="5.5" width="17" height="13" rx="2" /><path d="m4 7 8 6 8-6" /></svg>} label={t.email} value={<span className="break-all">{email}</span>} />
+      <Row icon={<svg {...I}><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /><circle cx="12" cy="15.5" r="1.2" /></svg>} label={t.password} value={pwState.ok ? t.passwordChanged : "••••••••"} onEdit={() => setEdit(edit === "password" ? null : "password")} editLabel={t.changePassword}>
+        {edit === "password" && (
+          <form action={pwAction} className="mt-3 space-y-2">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="password" name="password" required minLength={8} autoComplete="new-password" placeholder={t.newPassword} aria-label={t.newPassword} autoFocus className={cls.input} />
+            <input type="password" name="again" required minLength={8} autoComplete="new-password" placeholder={t.repeatPassword} aria-label={t.repeatPassword} className={cls.input} />
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="submit" disabled={pwPending} className={`${small} bg-olive text-surface hover:bg-olive-deep`}>{t.save}</button>
+              <button type="button" onClick={() => setEdit(null)} className={`${small} border border-line`}>{t.cancel}</button>
+              <Err code={pwState.error} errors={errors} />
+            </div>
+          </form>
+        )}
+      </Row>
+    </div>
   );
 }

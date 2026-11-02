@@ -132,3 +132,16 @@ export async function createMeRelated(_: FormState, form: FormData): Promise<For
   refresh();
   return { ok: true };
 }
+
+/** A new password for the signed-in member (at least 8 characters, typed twice). */
+export async function changePassword(_: FormState, form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const { supabase } = await actionContext(locale);
+  const password = String(form.get("password") ?? "");
+  const again = String(form.get("again") ?? "");
+  if (password.length < 8) return { error: "passwordShort" };
+  if (password !== again) return { error: "passwordMismatch" };
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: /different from the old/i.test(error.message) ? "passwordSame" : "save" };
+  return { ok: true };
+}
