@@ -3,6 +3,8 @@
  * public/landing/ with the same names (JPG, about 1200 px on the long side).
  */
 export const PHOTOS = {
+  heroBackground: "/landing/hero-hills.jpg",
+  heroBackgroundSmall: "/landing/hero-hills-sm.jpg",
   hero: "/landing/photo-01.jpg",
   floating: ["/landing/photo-03.jpg", "/landing/photo-05.jpg", "/landing/photo-06.jpg", "/landing/photo-07.jpg", "/landing/photo-09.jpg", "/landing/photo-11.jpg"],
   story: "/landing/photo-02.jpg",

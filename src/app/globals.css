@@ -7,10 +7,10 @@
   thin hand-drawn lines. Large type stays: many readers are older.
 */
 @theme {
-  --color-paper: #f7f5f0;
-  --color-surface: #fdfcfa;
-  --color-linen: #efece6;
-  --color-line: #e5e0d7;
+  --color-paper: #ffffff;
+  --color-surface: #ffffff;
+  --color-linen: #f2f0eb;
+  --color-line: #e7e3dc;
   --color-ink: #1c1d1a;
   --color-ink-muted: #6b6c63;
   /* "sage" names kept so every screen picks the new palette up */
