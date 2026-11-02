@@ -197,12 +197,12 @@ async function AccountBar({ t, locale, side = false }: { t: Dictionary; locale: 
           </form>
         </div>
       </details>
-      {current && (
+      {current && !side && (
         <Link href={`${base}/people`} className={icon} aria-label={t.dash.search} title={t.dash.search}>
           <IconSearch size={20} />
         </Link>
       )}
-      {current && can.admin(current.role) && (
+      {current && !side && can.admin(current.role) && (
         <Link href={`${base}/review`} className={icon} aria-label={`${t.review.title}${pending ? ` (${pending})` : ""}`} title={t.review.title}>
           <IconBell size={20} />
           {pending > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-surface bg-[#c9772f]" />}
