@@ -23,6 +23,7 @@
   --color-olive-deep: #393c24;
   --color-bronze: #74756d;
   --color-night: #1c1d1a;
+  --color-mist: #dfe6e0;
   --color-danger: #a4473a;
 
   --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
@@ -105,4 +106,22 @@
   100% {
     background-color: transparent;
   }
+}
+
+/* Halftone print dots over part of a photo, like an old newspaper reproduction. */
+.halftone {
+  position: relative;
+  isolation: isolate;
+}
+.halftone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgb(28 29 26 / 0.9) 1.15px, transparent 1.7px);
+  background-size: 6px 6px;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(var(--ht-angle, 125deg), transparent 42%, #000 92%);
+  mask-image: linear-gradient(var(--ht-angle, 125deg), transparent 42%, #000 92%);
+  border-radius: inherit;
 }

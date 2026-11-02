@@ -756,5 +756,40 @@
     "fLoose": "Not connected to the tree",
     "inArchive": "people in the archive",
     "errorRelation": "Choose who this person is to the selected family member."
+  },
+  "landing": {
+    "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",
+    "bigLines": [
+      "Memories",
+      "that",
+      "don't fade"
+    ],
+    "bigLead": "An old photo from a drawer becomes a person's page, and that page becomes part of a story the whole family can see.",
+    "storyTitle": "From a photo to a resting place",
+    "story": [
+      {
+        "title": "Upload an old photo",
+        "body": "Snap it with your phone — even a torn one. Mark who is in it."
+      },
+      {
+        "title": "The person appears in the tree",
+        "body": "Parents, children and spouses join them. The tree grows as relatives join."
+      },
+      {
+        "title": "And you know where they rest",
+        "body": "The grave is marked on the map — with section, row and the way there."
+      }
+    ],
+    "bandTitle": "The whole family, in one place",
+    "bandLead": "Everyone adds what they know. The administrator checks it so the story stays accurate.",
+    "bandChips": [
+      "Grandparents",
+      "Parents",
+      "Children",
+      "Grandchildren",
+      "Cousins",
+      "Godparents"
+    ],
+    "photoAlt": "An old family photograph"
   }
 }

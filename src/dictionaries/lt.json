@@ -756,5 +756,40 @@
     "fLoose": "Neprijungti prie medžio",
     "inArchive": "žmonių archyve",
     "errorRelation": "Pasirinkite, kas šis žmogus yra pasirinktam šeimos nariui."
+  },
+  "landing": {
+    "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",
+    "bigLines": [
+      "Prisiminimai,",
+      "kurie",
+      "neišblėsta"
+    ],
+    "bigLead": "Sena nuotrauka iš stalčiaus tampa žmogaus puslapiu, o šis — dalimi istorijos, kurią mato visa šeima.",
+    "storyTitle": "Nuo nuotraukos iki kapo vietos",
+    "story": [
+      {
+        "title": "Įkelkite seną nuotrauką",
+        "body": "Nufotografuokite telefonu — net ir apiplyšusią. Pažymėkite, kas joje."
+      },
+      {
+        "title": "Žmogus atsiranda medyje",
+        "body": "Prie jo prisijungia tėvai, vaikai ir sutuoktiniai. Medis auga, kai prisijungia giminės."
+      },
+      {
+        "title": "Ir žinote, kur jis ilsisi",
+        "body": "Kapavietė pažymėta žemėlapyje — su kvartalu, eile ir keliu iki jos."
+      }
+    ],
+    "bandTitle": "Visa šeima — vienoje vietoje",
+    "bandLead": "Kiekvienas papildo tai, ką žino. Administratorius patikrina, kad istorija liktų tiksli.",
+    "bandChips": [
+      "Seneliai",
+      "Tėvai",
+      "Vaikai",
+      "Anūkai",
+      "Pusbroliai ir pusseserės",
+      "Krikšto tėvai"
+    ],
+    "photoAlt": "Sena šeimos nuotrauka"
   }
 }

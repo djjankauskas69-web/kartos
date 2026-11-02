@@ -105,7 +105,7 @@ function Person({ name, years, focus }: { name: string; years: string; focus?: b
   );
 }
 
-function FamilyStrip({ s }: { s: Sample }) {
+export function FamilyStrip({ s }: { s: Sample }) {
   return (
     <div className="space-y-2.5 text-ink">
       <div className="grid grid-cols-2 gap-2">
@@ -134,7 +134,7 @@ function FamilyStrip({ s }: { s: Sample }) {
   );
 }
 
-function MiniMap() {
+export function MiniMap() {
   // Plots laid out on a grid; one is ours.
   const plots: Array<[number, number]> = [];
   for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) plots.push([22 + c * 26, 30 + r * 22]);

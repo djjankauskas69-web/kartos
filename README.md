@@ -20,6 +20,10 @@ Darbinis pavadinimas „Kartos“ (lengvai keičiamas: `src/components/Wordmark.
   - Šeimos nariai: filtrai, ⋮ meniu (teisės, perdavimas, šalinimas), kvietimo nuoroda vienu mygtuku; paskutinis prisijungimas: `supabase/migrations/0004_member_activity.sql`
   - „Mano profilis“: narys susieja save su žmogumi medyje ir pats keičia savo duomenis bei nuotrauką: `supabase/migrations/0005_my_profile.sql`
 
+## Pradinio puslapio nuotraukos
+
+Laikinos nuotraukos yra `public/landing/photo-01.jpg` … `photo-12.jpg`. Pakeiskite jas savo nuotraukomis tais pačiais pavadinimais (JPG, apie 1200 px). Kuri nuotrauka kur rodoma – `src/app/[lang]/landing-photos.ts`.
+
 ## Duomenų bazės atnaujinimai
 
 Kiekvieną `supabase/migrations/` failą paleiskite **vieną kartą, iš eilės**: Supabase → SQL Editor → New query → įklijuoti → Run.
