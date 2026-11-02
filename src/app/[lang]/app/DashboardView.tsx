@@ -48,14 +48,15 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
 
   return (
     <div className="space-y-6">
-      {/* Archive name on a dark panel with the family tree in white ink */}
-      <section className="relative overflow-hidden rounded-[20px] bg-night px-6 py-8 text-surface sm:px-9 sm:py-10 md:min-h-[15rem]">
-        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgb(83_86_63/0.6),transparent_60%)]" />
-        <LineTree className="pointer-events-none absolute -bottom-6 right-4 hidden h-[17rem] w-auto text-surface/85 [--line-art-fill:rgb(28_29_26)] md:block lg:right-10" />
+      {/* Archive name over the lone tree on the hills */}
+      <section className="relative isolate overflow-hidden rounded-[20px] px-6 py-9 sm:px-9 sm:py-12 md:min-h-[21rem]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative background */}
+        <img src="/landing/dashboard-tree.jpg" alt="" className="absolute inset-y-0 left-0 -z-20 h-full w-full object-cover object-[75%_40%] md:object-[50%_54%]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-white/85 via-white/45 to-transparent md:via-white/25" />
         <div className="relative max-w-xl">
-          <h1 className="text-[2.6rem] leading-[1.02] text-surface sm:text-[3.4rem]">{name}</h1>
-          <Scribble className="ml-[12%] mt-1 h-4 w-40 text-surface/80" />
-          <p className="mt-4 text-[1.1rem] text-surface/70">{t.dash.subtitle}</p>
+          <h1 className="text-[2.6rem] leading-[1.02] [text-shadow:0_0_20px_rgb(255_255_255/0.8)] sm:text-[3.4rem]">{name}</h1>
+          <Scribble className="ml-[12%] mt-1 h-4 w-40 text-ink/80" />
+          <p className="mt-4 text-[1.1rem] font-medium text-ink/80">{t.dash.subtitle}</p>
         </div>
       </section>
 
