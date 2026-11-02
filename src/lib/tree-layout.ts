@@ -37,6 +37,8 @@ export function layoutTree(
   up = 3,
   down = 2,
   size: TreeSize = DEFAULT_SIZE,
+  /** Partners drawn on the left of the person (so their own family can sit on that side). */
+  leftPartners: Set<string> = new Set(),
 ) {
   const SLOT = size.cardW + size.gapX;
   const ROW = size.cardH + size.rowGap;
@@ -126,14 +128,14 @@ export function layoutTree(
       const coupleLeft = x + (w - unit) / 2;
       const bottom = depth + 1 === down;
       const key = place(
-        { id: c, cx: coupleLeft + 0.5, row: depth + 1, role: "descendant", moreAbove: false, moreBelow: bottom && childrenOf(c).length > 0 },
+        { id: c, cx: coupleLeft + (partners.length === 1 && leftPartners.has(partners[0]) ? 1.5 : 0.5), row: depth + 1, role: "descendant", moreAbove: false, moreBelow: bottom && childrenOf(c).length > 0 },
         `d:${coupleKeys[0]}:${c}`,
       );
       childKeys.push(key);
       const couple = [key];
       partners.forEach((p, j) => {
         const pk = place(
-          { id: p, cx: coupleLeft + 1.5 + j, row: depth + 1, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false },
+          { id: p, cx: partners.length === 1 && leftPartners.has(p) ? coupleLeft + 0.5 : coupleLeft + 1.5 + j, row: depth + 1, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false },
           `p:${key}:${p}`,
         );
         edges.push({ kind: "partner", a: couple[couple.length - 1], b: pk });
@@ -160,7 +162,7 @@ export function layoutTree(
   const focusKey = place(
     {
       id: focusId,
-      cx: coupleLeft + 0.5,
+      cx: coupleLeft + (partners.length === 1 && leftPartners.has(partners[0]) ? 1.5 : 0.5),
       row: 0,
       role: "focus",
       moreAbove: up === 0 && parentsOf(focusId).length > 0,
@@ -170,7 +172,7 @@ export function layoutTree(
   );
   const couple = [focusKey];
   partners.forEach((p, j) => {
-    const pk = place({ id: p, cx: coupleLeft + 1.5 + j, row: 0, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false }, `p:${focusKey}:${p}`);
+    const pk = place({ id: p, cx: partners.length === 1 && leftPartners.has(p) ? coupleLeft + 0.5 : coupleLeft + 1.5 + j, row: 0, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false }, `p:${focusKey}:${p}`);
     edges.push({ kind: "partner", a: couple[couple.length - 1], b: pk });
     couple.push(pk);
   });

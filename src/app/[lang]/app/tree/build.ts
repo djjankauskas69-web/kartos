@@ -83,8 +83,17 @@ export function buildTree({
   if (!start) return null;
 
   const span = depth ? depth - 1 : 99;
-  const main = whole ? layoutTree(start, people, rels, 0, span, SIZE) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE);
-  const layout = sides?.length ? withSides(main, sides, people) : main;
+  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people, rels, 0, span, SIZE, left) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left));
+  // With another family beside this one, try their people standing on the left of their partner
+  // here as well, and keep whichever drawing has the shorter lines between the two families.
+  const layout = (() => {
+    if (!sides?.length) return lay();
+    const a = withSides(lay(), sides, people);
+    const lefts = new Set(people.filter((p) => foreign?.has(p.id) && rels.some((r) => r.type === "partner" && (r.person_a === p.id || r.person_b === p.id))).map((p) => p.id));
+    if (!lefts.size) return a;
+    const b = withSides(lay(lefts), sides, people);
+    return b.cost < a.cost ? b : a;
+  })();
   const { cardW, cardH, gapX } = SIZE;
   const at = new Map(layout.nodes.map((n) => [n.key, n]));
 
@@ -337,7 +346,19 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
   const shiftY = top < pad ? pad - top : 0;
   const shiftX = leftmost < pad ? pad - leftmost : 0;
   const placed = nodes.map((n) => ({ ...n, x: n.x + shiftX, y: n.y + shiftY }));
+  // How long the lines between the two families are (to compare drawings).
+  const at = new Map(placed.map((n) => [n.key, n]));
+  const mainKeys = new Set(main.nodes.map((n) => n.key));
+  let cost = 0;
+  for (const e of edges) {
+    if (e.kind !== "parents") continue;
+    const ks = [...e.parents, ...e.children];
+    if (ks.every((k) => mainKeys.has(k)) || ks.every((k) => !mainKeys.has(k))) continue;
+    const px = e.parents.reduce((sum, k) => sum + (at.get(k)?.x ?? 0), 0) / e.parents.length;
+    for (const k of e.children) cost += Math.abs(px - (at.get(k)?.x ?? px));
+  }
   return {
+    cost,
     nodes: placed,
     edges,
     size: main.size,
