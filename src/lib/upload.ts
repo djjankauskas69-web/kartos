@@ -66,3 +66,14 @@ export async function uploadArchiveFile(workspaceId: string, file: File, kind: "
   if (error) throw error;
   return { path, width, height, mime: "image/jpeg", size: blob.size };
 }
+
+/** Uploads the member's own portrait (square-ish, 900 px) into <workspace>/portraits/. */
+export async function uploadPortrait(workspaceId: string, file: File) {
+  const supabase = createClient();
+  if (!supabase) throw new Error("not configured");
+  const { blob, width, height } = await shrinkTo(file, 900);
+  const path = `${workspaceId}/portraits/${crypto.randomUUID()}.jpg`;
+  const { error } = await supabase.storage.from("family-media").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+  if (error) throw error;
+  return { path, width, height, size: blob.size };
+}

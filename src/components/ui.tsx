@@ -44,6 +44,8 @@ export function errorMessage(t: Dictionary, code?: string): string | null {
     graveEmpty: t.grave.errorEmpty,
     lastOwner: t.members.errorLastOwner,
     invite: t.invite.error,
+    taken: t.me.errorTaken,
+    setup: t.me.errorSetup,
   };
   return map[code] ?? t.app.errorSave;
 }

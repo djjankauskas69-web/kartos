@@ -17,7 +17,8 @@ import {
   IconSearch,
   IconTree,
 } from "@/components/icons";
-import { can, getContext, pendingCount } from "@/lib/data";
+import { can, getContext, getPerson, myPersonLinks, pendingCount } from "@/lib/data";
+import { portraitUrls } from "./portraits";
 import { signOut, switchWorkspace } from "./actions";
 import { SideNav, TopNav, type NavItem } from "./AppNav";
 
@@ -92,6 +93,9 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
   const email = user.email ?? "";
   const name = email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
+  const myId = current ? (await myPersonLinks(locale)).links.get(current.id) : undefined;
+  const me = myId ? await getPerson(locale, myId) : null;
+  const avatar = me ? (await portraitUrls(locale, [me])).get(me.id) : undefined;
 
   return (
     <>
@@ -148,7 +152,12 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
         )}
         <details className="relative">
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full p-0.5 sm:pl-1 sm:pr-2 hover:bg-linen [&::-webkit-details-marker]:hidden" aria-label={t.dash.account}>
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-deep text-[0.95rem] font-semibold text-surface">{initials}</span>
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+              <img src={avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-deep text-[0.95rem] font-semibold text-surface">{initials}</span>
+            )}
             <span className="hidden max-w-[9rem] truncate font-semibold sm:inline">{name}</span>
             <span className="hidden sm:inline">
               <IconChevron size={18} />
@@ -156,6 +165,11 @@ async function TopBar({ t, locale }: { t: Dictionary; locale: Locale }) {
           </summary>
           <div className={`${menu} right-0`}>
             <p className="truncate px-3 pb-2 pt-1 text-[0.92rem] text-ink-muted">{email}</p>
+            {current && (
+              <Link href={`${base}/me`} className="font-semibold">
+                {t.me.menu}
+              </Link>
+            )}
             <div className="px-3 pb-2 lg:hidden">
               <FixedLanguageSwitch current={locale} label={t.nav.language} path="/app" />
             </div>

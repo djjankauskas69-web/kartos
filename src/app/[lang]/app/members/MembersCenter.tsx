@@ -14,6 +14,7 @@ import {
   transferOwnership,
   type FormState,
 } from "../actions";
+import { adminLinkPerson } from "../me/actions";
 
 export type MemberRow = {
   id: string;
@@ -23,9 +24,14 @@ export type MemberRow = {
   role: Role;
   lastSeen: string;
   isSelf: boolean;
+  personId: string | null;
+  personName: string | null;
+  portrait?: string;
 };
 
-type Labels = Record<string, string> & { role: Record<string, string> };
+export type LinkOption = { id: string; name: string; years: string };
+
+type Labels = Record<string, string> & { role: Record<string, string>; me: Record<string, string> };
 type Errors = Record<string, string>;
 
 const ROLES: Role[] = ["owner", "editor", "contributor", "viewer"];
@@ -59,7 +65,11 @@ function RoleBadge({ role, label }: { role: Role; label: string }) {
   );
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, src }: { name: string; src?: string }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+    return <img src={src} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />;
+  }
   const initials = name
     .split(/[\s.@_-]+/)
     .filter(Boolean)
@@ -97,6 +107,8 @@ export function MembersCenter({
   members,
   isAdmin,
   activeInvites,
+  linkReady,
+  people,
   t,
   errors,
 }: {
@@ -104,6 +116,8 @@ export function MembersCenter({
   members: MemberRow[];
   isAdmin: boolean;
   activeInvites: number;
+  linkReady: boolean;
+  people: LinkOption[];
   t: Labels;
   errors: Errors;
 }) {
@@ -154,13 +168,18 @@ export function MembersCenter({
                   className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-4 gap-y-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_10rem_8.5rem_2.75rem]"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <Avatar name={m.name} />
+                    <Avatar name={m.name} src={m.portrait} />
                     <div className="min-w-0">
                       <p className="truncate text-[1.08rem] font-semibold">
                         {m.name}
                         {m.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
                       </p>
                       {m.email && <p className="truncate text-[0.95rem] text-ink-muted">{m.email}</p>}
+                      {m.personName && (
+                        <p className="truncate text-[0.92rem] text-ink-muted">
+                          {t.me.inTree} <span className="text-ink">{m.personName}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="col-start-1 row-start-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:col-start-auto md:row-start-auto md:contents">
@@ -179,6 +198,8 @@ export function MembersCenter({
                         locale={locale}
                         member={m}
                         isAdmin={isAdmin}
+                        linkReady={linkReady}
+                        people={people.filter((p) => p.id === m.personId || !members.some((o) => o.personId === p.id))}
                         open={openId === m.id}
                         onOpen={(o) => setOpenId(o ? m.id : null)}
                         t={t}
@@ -303,12 +324,14 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
 
 /* ---------- Three-dot menu ---------- */
 
-type View = "menu" | "role" | "transfer" | "remove" | "rename";
+type View = "menu" | "role" | "transfer" | "remove" | "rename" | "link";
 
 function MemberMenu({
   locale,
   member,
   isAdmin,
+  linkReady,
+  people,
   open,
   onOpen,
   t,
@@ -317,6 +340,8 @@ function MemberMenu({
   locale: Locale;
   member: MemberRow;
   isAdmin: boolean;
+  linkReady: boolean;
+  people: LinkOption[];
   open: boolean;
   onOpen: (open: boolean) => void;
   t: Labels;
@@ -379,6 +404,13 @@ function MemberMenu({
                   </button>
                 </li>
               )}
+              {isAdmin && linkReady && (
+                <li>
+                  <button type="button" onClick={() => setView("link")}>
+                    {t.me.linkPerson}
+                  </button>
+                </li>
+              )}
               {self && (
                 <li>
                   <button type="button" onClick={() => setView("rename")}>
@@ -410,6 +442,7 @@ function MemberMenu({
               errors={errors}
             />
           )}
+          {view === "link" && <LinkPanel values={values} current={member.personId} people={people} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />}
           {view === "rename" && <RenamePanel locale={locale} name={member.displayName} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />}
         </div>
       )}
@@ -501,6 +534,29 @@ function RenamePanel({ locale, name, onDone, onBack, t, errors }: PanelProps & {
         {t.yourName}
       </label>
       <input id="self-name" name="name" defaultValue={name} required maxLength={80} autoFocus className={cls.input} />
+      <PanelFooter pending={pending} label={t.save} onBack={onBack} t={t} />
+      <Err code={state.error} errors={errors} />
+    </form>
+  );
+}
+
+function LinkPanel({ values, current, people, onDone, onBack, t, errors }: PanelProps & { values: Record<string, string>; current: string | null; people: LinkOption[] }) {
+  const [state, action, pending] = useClosingAction(adminLinkPerson, onDone);
+  return (
+    <form action={action} className="p-2">
+      <Hidden values={values} />
+      <label htmlFor={`link-${values.userId}`} className="mb-1 block font-semibold">
+        {t.me.linkPerson}
+      </label>
+      <p className="mb-3 text-[0.95rem] leading-snug text-ink-muted">{t.me.linkPersonLead}</p>
+      <select id={`link-${values.userId}`} name="personId" defaultValue={current ?? ""} className={cls.input}>
+        <option value="">{t.me.notLinked}</option>
+        {people.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.years ? `${p.name} (${p.years})` : p.name}
+          </option>
+        ))}
+      </select>
       <PanelFooter pending={pending} label={t.save} onBack={onBack} t={t} />
       <Err code={state.error} errors={errors} />
     </form>

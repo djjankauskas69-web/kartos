@@ -11,6 +11,7 @@ import {
   profileNames,
   relativesOf,
   requireWorkspace,
+  myPersonLinks,
   signedUrls,
   type Status,
 } from "@/lib/data";
@@ -36,6 +37,7 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
   const id = await idPromise;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user, current } = await requireWorkspace(locale);
+  const isMe = (await myPersonLinks(locale)).links.get(current.id) === id;
   const { byId, rels } = await getFamilyGraph(locale, current.id);
   const person = byId.get(id);
   if (!person) notFound();
@@ -198,6 +200,11 @@ async function Profile({ t, locale, idPromise }: { t: Dictionary; locale: Locale
                 <Link href={`${base}/tree?p=${id}`} className={cls.secondary}>
                   {t.family.viewTree}
                 </Link>
+                {isMe && (
+                  <Link href={`${base}/me`} className={cls.primary}>
+                    {t.me.editMine}
+                  </Link>
+                )}
                 {can.edit(role) && (
                   <Link href={`${base}/people/${id}/edit`} className={cls.secondary}>
                     {t.person.edit}

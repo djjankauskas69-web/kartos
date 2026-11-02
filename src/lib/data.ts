@@ -206,3 +206,15 @@ export function generationCount(people: Person[], rels: Relationship[]) {
   };
   return people.length ? Math.max(...people.map((p) => depth(p.id, new Set()))) : 0;
 }
+
+/**
+ * Which tree person the signed-in user is, in each archive they belong to.
+ * `ready` is false until database update 0005 has run.
+ */
+export const myPersonLinks = cache(async (locale: Locale) => {
+  const { supabase, user } = await requireUser(locale);
+  const { data, error } = await supabase.from("workspace_members").select("workspace_id, person_id").eq("user_id", user.id);
+  const links = new Map<string, string>();
+  for (const r of data ?? []) if (r.person_id) links.set(r.workspace_id as string, r.person_id as string);
+  return { ready: !error, links };
+});

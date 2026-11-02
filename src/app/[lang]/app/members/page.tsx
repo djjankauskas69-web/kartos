@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, requireWorkspace, type Role } from "@/lib/data";
+import { can, fullName, listPeople, requireWorkspace, type Role } from "@/lib/data";
+import { portraitUrls } from "../portraits";
 import { cls } from "@/components/ui";
 import { IconUserPlus } from "@/components/icons";
 import { RenameWorkspaceForm } from "../forms";
@@ -40,7 +41,7 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
   const { supabase, user, current } = await requireWorkspace(locale);
   const isAdmin = can.admin(current.role);
 
-  const [{ data: rows }, seen, invites] = await Promise.all([
+  const [{ data: rows }, seen, invites, links, people] = await Promise.all([
     supabase
       .from("workspace_members")
       .select("user_id, role, joined_at")
@@ -56,7 +57,15 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
           .is("revoked_at", null)
           .gt("expires_at", new Date().toISOString())
       : Promise.resolve({ count: 0 }),
+    // Needs SQL 0005; until then nobody is linked.
+    supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id),
+    listPeople(locale, current.id),
   ]);
+  const linkReady = !links.error;
+  const personOf = new Map(((links.data ?? []) as { user_id: string; person_id: string | null }[]).filter((r) => r.person_id).map((r) => [r.user_id, r.person_id as string]));
+  const personById = new Map(people.map((p) => [p.id, p]));
+  const linkedPeople = [...personOf.values()].map((id) => personById.get(id)).filter((p) => !!p);
+  const photos = await portraitUrls(locale, linkedPeople);
 
   const ids = (rows ?? []).map((r) => r.user_id as string);
   const { data: profiles } = ids.length
@@ -81,6 +90,9 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
         role: m.role as Role,
         lastSeen: lastSeenLabel(t, locale, lastSeen.get(id), seenKnown && lastSeen.has(id)),
         isSelf: id === user.id,
+        personId: personOf.get(id) ?? null,
+        personName: personOf.has(id) && personById.get(personOf.get(id)!) ? fullName(personById.get(personOf.get(id)!)!) : null,
+        portrait: personOf.has(id) ? photos.get(personOf.get(id)!) : undefined,
       };
     })
     .sort((a, b) => order[a.role] - order[b.role] || a.name.localeCompare(b.name, locale));
@@ -91,8 +103,9 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
     cancel: t.app.cancel,
     loading: t.app.loading,
     role: t.roles,
-  } as unknown as Record<string, string> & { role: Dictionary["roles"] };
-  const errors = { lastOwner: m.errorLastOwner, nameRequired: t.app.errorNameRequired, save: m.error };
+    me: t.me,
+  } as unknown as Record<string, string> & { role: Dictionary["roles"]; me: Dictionary["me"] };
+  const errors = { lastOwner: m.errorLastOwner, nameRequired: t.app.errorNameRequired, save: m.error, taken: t.me.errorTaken, setup: t.me.errorSetup };
 
   return (
     <div>
@@ -114,6 +127,15 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
         members={members}
         isAdmin={isAdmin}
         activeInvites={invites.count ?? 0}
+        linkReady={linkReady}
+        people={
+          isAdmin
+            ? people
+                .filter((p) => p.status !== "rejected")
+                .map((p) => ({ id: p.id, name: fullName(p), years: p.birth_year ? String(p.birth_year) : "" }))
+                .sort((a, b) => a.name.localeCompare(b.name, locale))
+            : []
+        }
         t={labels}
         errors={errors}
       />
