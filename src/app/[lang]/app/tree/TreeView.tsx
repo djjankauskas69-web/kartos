@@ -524,7 +524,7 @@ export function TreeView({
 
           <ul>
             {cards.map((c) => (
-              <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)}`}>
+              <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}>
                 <Link href={c.profileHref} draggable={false} onClick={(e) => { if (!c.foreign && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (

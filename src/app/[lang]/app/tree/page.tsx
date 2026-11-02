@@ -266,7 +266,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const treePeople = foreignPeople.length ? [...people, ...foreignPeople] : people;
   const treeRels = foreignRels.length ? [...rels, ...foreignRels] : rels;
   const treeRelations = foreignPeople.length ? kinship(treePeople, treeRels, me, locale) : relations;
-  const tree = buildTree({ t, people: treePeople, rels: treeRels, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people: treePeople, rels, sides: branches.flatMap((b) => (b ? [b.rels] : [])), portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 

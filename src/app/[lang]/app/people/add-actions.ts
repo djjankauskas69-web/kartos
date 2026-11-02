@@ -49,8 +49,8 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       .from("relationships")
       .select("person_a, person_b, type")
       .eq("workspace_id", workspace.id)
-      .neq("status", "rejected")
-      .or(`person_a.eq.${anchor},person_b.eq.${anchor}`);
+      .neq("status", "rejected");
+    // The whole family: the other parent's partners and the children's parents are needed too.
     rels = data ?? [];
     const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
     if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2) return { error: "twoParents" };
@@ -131,8 +131,15 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
 
   if (anchor && link) {
     const links: Array<Record<string, unknown>> = [];
+    const parentsOf = (id: string) => rels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a);
+    const partnersOf = (id: string) => rels.filter((r) => r.type === "partner" && (r.person_a === id || r.person_b === id)).map((r) => (r.person_a === id ? r.person_b : r.person_a));
     if (link.rel === "father" || link.rel === "mother") {
       links.push({ person_a: personId, person_b: anchor, type: "parent_child", subtype: "biological" });
+      // The child's other parent, if they have no partner yet, becomes this person's partner.
+      const other = parentsOf(anchor).filter((p) => p !== personId);
+      if (other.length === 1 && partnersOf(other[0]).length === 0 && !partnersOf(personId).includes(other[0])) {
+        links.push({ person_a: other[0], person_b: personId, type: "partner", subtype: "married" });
+      }
     } else if (link.rel === "sibling") {
       for (const r of rels.filter((r) => r.type === "parent_child" && r.person_b === anchor)) {
         if (r.person_a !== personId) links.push({ person_a: r.person_a, person_b: personId, type: "parent_child", subtype: "biological" });
@@ -145,6 +152,14 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       }
     } else {
       links.push({ person_a: anchor, person_b: personId, type: "partner", subtype: "married" });
+      // First partner: the children who have only this one parent get the new partner as their
+      // other parent. With a second partner it's a different family, so nothing is assumed.
+      if (partnersOf(anchor).filter((p) => p !== personId).length === 0) {
+        for (const c of rels.filter((r) => r.type === "parent_child" && r.person_a === anchor).map((r) => r.person_b)) {
+          const ps = parentsOf(c);
+          if (c !== personId && ps.length === 1 && !ps.includes(personId)) links.push({ person_a: personId, person_b: c, type: "parent_child", subtype: "biological" });
+        }
+      }
     }
     const { error } = await supabase.from("relationships").insert(links.map((l) => ({ workspace_id: workspace.id, ...l })));
     if (error) {

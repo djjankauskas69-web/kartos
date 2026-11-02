@@ -46,6 +46,7 @@ export function buildTree({
   highlightId,
   profileHrefFor,
   foreign,
+  sides,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -71,15 +72,19 @@ export function buildTree({
   profileHrefFor?: (id: string) => string;
   /** People shown from a linked family: which family, and where they open. */
   foreign?: Map<string, { family: string; href: string }>;
+  /** Other families drawn as their own tree beside this one, joined where people are the same. */
+  sides?: BuildRel[][];
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
-  const gens = generations(people, rels);
+  const gens = generations(people, sides?.length ? [...rels, ...sides.flat()] : rels);
   const whole = !focusId || !byId.has(focusId);
-  const start = whole ? mainRoot(people, rels) : focusId;
+  const local = foreign?.size ? people.filter((p) => !foreign.has(p.id)) : people;
+  const start = whole ? mainRoot(local, rels) : focusId;
   if (!start) return null;
 
   const span = depth ? depth - 1 : 99;
-  const layout = whole ? layoutTree(start, people, rels, 0, span, SIZE) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE);
+  const main = whole ? layoutTree(start, people, rels, 0, span, SIZE) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE);
+  const layout = sides?.length ? withSides(main, sides, people) : main;
   const { cardW, cardH, gapX } = SIZE;
   const at = new Map(layout.nodes.map((n) => [n.key, n]));
 
@@ -244,6 +249,68 @@ export function buildTree({
     cardH,
     generationChips,
     totalGenerations: Math.max(0, ...gens.values()),
+  };
+}
+
+/**
+ * Puts each other family's whole tree to the right of this one, rows lined up with the person
+ * they share. People already drawn here aren't drawn again: their lines join the cards here.
+ */
+function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], people: BuildPerson[]) {
+  const nodes = [...main.nodes];
+  const edges = [...main.edges];
+  const { cardW, gapX, pad } = SIZE;
+  let right = main.width + gapX * 3;
+  for (const sideRels of sides) {
+    const ids = new Set(sideRels.flatMap((r) => [r.person_a, r.person_b]));
+    const sidePeople = people.filter((p) => ids.has(p.id));
+    const here = new Map<string, (typeof nodes)[number]>();
+    for (const n of nodes) if (!here.has(n.id)) here.set(n.id, n);
+    const shared = sidePeople.find((p) => here.has(p.id));
+    const root = mainRoot(sidePeople, sideRels);
+    if (!shared || !root) continue;
+    const side = layoutTree(root, sidePeople, sideRels, 0, 99, SIZE);
+    const anchor = side.nodes.find((n) => n.id === shared.id);
+    if (!anchor) continue;
+    const dy = here.get(shared.id)!.y - anchor.y;
+    const own = side.nodes.filter((n) => !here.has(n.id));
+    if (own.length === 0) continue;
+    const minX = Math.min(...own.map((n) => n.x));
+    const dx = right - minX;
+    // Keys of people drawn here point to the cards already on the page.
+    const keyMap = new Map<string, string>();
+    for (const n of side.nodes) {
+      if (here.has(n.id)) keyMap.set(n.key, here.get(n.id)!.key);
+      else {
+        const key = `side:${n.key}`;
+        keyMap.set(n.key, key);
+        nodes.push({ ...n, key, x: n.x + dx, y: n.y + dy });
+      }
+    }
+    const mainKeys = new Set(main.nodes.map((n) => n.key));
+    for (const e of side.edges) {
+      if (e.kind === "partner") {
+        const a = keyMap.get(e.a)!;
+        const b = keyMap.get(e.b)!;
+        if (!(mainKeys.has(a) && mainKeys.has(b))) edges.push({ kind: "partner", a, b });
+      } else {
+        const parents = e.parents.map((k) => keyMap.get(k)!);
+        const children = e.children.map((k) => keyMap.get(k)!);
+        if (![...parents, ...children].every((k) => mainKeys.has(k))) edges.push({ kind: "parents", parents, children });
+      }
+    }
+    right = Math.max(...nodes.map((n) => n.x)) + cardW + gapX * 3;
+  }
+  // Rows of the other family may reach above this one: move everything down to fit.
+  const top = Math.min(...nodes.map((n) => n.y));
+  const shift = top < pad ? pad - top : 0;
+  const placed = nodes.map((n) => ({ ...n, y: n.y + shift }));
+  return {
+    nodes: placed,
+    edges,
+    size: main.size,
+    width: Math.max(main.width, Math.max(...placed.map((n) => n.x)) + cardW + pad),
+    height: Math.max(...placed.map((n) => n.y)) + SIZE.cardH + pad,
   };
 }
 
