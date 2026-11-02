@@ -47,7 +47,7 @@ type Labels = {
 const MIN = 0.3;
 const MAX = 1.6;
 const OFFSET_X = 80; // room around the tree inside the scroll area
-const OFFSET_Y = 64;
+const OFFSET_Y = 112; // clears the generation and depth controls on top
 
 /** Pannable, zoomable family tree. Cards open the person's profile. */
 export function TreeView({
@@ -193,52 +193,87 @@ export function TreeView({
   };
 
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-30" : "");
+  const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
   const tool =
-    "flex h-11 w-11 items-center justify-center text-ink hover:bg-paper focus-visible:outline-offset-[-3px] disabled:opacity-40";
+    "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
 
   return (
-    <div ref={frame} className={`relative overflow-hidden rounded-[20px] border border-line/80 bg-[#faf8f4] ${full ? "h-screen rounded-none" : ""}`}>
-      {/* Zoom tools */}
-      <div className="absolute left-4 top-4 z-20 flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)]">
-        <button type="button" onClick={() => zoomTo(scale * 1.2)} disabled={scale >= MAX} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        </button>
-        <button type="button" onClick={() => zoomTo(scale / 1.2)} disabled={scale <= MIN} className={`${tool} border-t border-line`} aria-label={labels.zoomOut} title={labels.zoomOut}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
-        </button>
-        <button type="button" onClick={fit} className={`${tool} border-t border-line`} aria-label={labels.fit} title={labels.fit}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
-        </button>
-        <button type="button" onClick={() => showStart(scale, true)} className={`${tool} border-t border-line`} aria-label={labels.centre} title={labels.centre}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
-        </button>
+    <div
+      ref={frame}
+      className={`relative overflow-hidden border border-line/80 bg-white ${full ? "h-screen" : "rounded-[18px]"}`}
+    >
+      {/* Top left: which generations to show */}
+      <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
+        <div className={`flex max-w-full gap-0.5 overflow-x-auto p-1 [scrollbar-width:none] ${pill}`}>
+          <button
+            type="button"
+            onClick={() => pickGeneration(null)}
+            aria-pressed={activeGen === null}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.95rem] ${activeGen === null ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+          >
+            {labels.allGenerations}
+          </button>
+          {generations.map((g) => (
+            <button
+              key={g.n}
+              type="button"
+              onClick={() => pickGeneration(g.n)}
+              aria-pressed={activeGen === g.n}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.95rem] ${activeGen === g.n ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+            >
+              {g.label} <span className="opacity-60">{g.count}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`hidden items-center gap-4 px-4 py-2 text-[0.88rem] text-ink-muted lg:flex ${pill}`}>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#6f8a4f]" />
+              {labels.legendLiving}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full border border-ink-muted/60" />
+              {labels.legendDeceased}
+            </span>
+          </div>
+          <label className="sr-only" htmlFor="tree-depth">
+            {labels.depth}
+          </label>
+          <select
+            id="tree-depth"
+            value={depth.value}
+            onChange={(e) => router.push(depth.options.find((o) => o.value === e.target.value)!.href)}
+            className={`min-h-10 px-3.5 text-[0.95rem] ${pill}`}
+          >
+            {depth.options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Depth and full screen */}
-      <div className="absolute right-4 top-4 z-20 flex gap-2">
-        <label className="sr-only" htmlFor="tree-depth">
-          {labels.depth}
-        </label>
-        <select
-          id="tree-depth"
-          value={depth.value}
-          onChange={(e) => router.push(depth.options.find((o) => o.value === e.target.value)!.href)}
-          className="min-h-11 rounded-xl border border-line bg-surface px-3 text-[0.98rem] shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)]"
-        >
-          {depth.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={toggleFull}
-          className="hidden h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)] hover:bg-paper sm:flex"
-          aria-label={full ? labels.exitFullscreen : labels.fullscreen}
-          title={full ? labels.exitFullscreen : labels.fullscreen}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {/* Bottom centre: one toolbar for moving around */}
+      <div className={`absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 p-1 ${pill}`}>
+        <button type="button" onClick={() => zoomTo(scale / 1.2)} disabled={scale <= MIN} className={tool} aria-label={labels.zoomOut} title={labels.zoomOut}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+        </button>
+        <span className="w-12 text-center text-[0.9rem] tabular-nums text-ink-muted" aria-live="polite">
+          {Math.round(scale * 100)}%
+        </span>
+        <button type="button" onClick={() => zoomTo(scale * 1.2)} disabled={scale >= MAX} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
+        <button type="button" onClick={fit} className={tool} aria-label={labels.fit} title={labels.fit}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
+        </button>
+        <button type="button" onClick={() => showStart(scale, true)} className={tool} aria-label={labels.centre} title={labels.centre}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
+        </button>
+        <button type="button" onClick={toggleFull} className={`${tool} hidden sm:flex`} aria-label={full ? labels.exitFullscreen : labels.fullscreen} title={full ? labels.exitFullscreen : labels.fullscreen}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
           </svg>
         </button>
@@ -252,31 +287,41 @@ export function TreeView({
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
         onClickCapture={onClickCapture}
-        className={`cursor-grab overflow-auto active:cursor-grabbing ${full ? "h-full" : "h-[72vh] min-h-[30rem]"} ${ready ? "" : "opacity-0"}`}
+        style={{
+          // Dot grid that moves and scales with the tree, like a drawing canvas.
+          backgroundImage: "radial-gradient(circle, #d6d2c8 1.15px, transparent 1.4px)",
+          backgroundSize: `${22 * scale}px ${22 * scale}px`,
+          backgroundPosition: `${OFFSET_X}px ${OFFSET_Y}px`,
+          backgroundAttachment: "local",
+        }}
+        className={`cursor-grab overflow-auto active:cursor-grabbing ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
       >
         <div style={{ width: width * scale + OFFSET_X * 2, height: height * scale + OFFSET_Y + 120 }} className="relative mx-auto">
           <div style={{ width, height, transform: `translate(${OFFSET_X}px, ${OFFSET_Y}px) scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
             <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
-              <g fill="none" stroke="#9a9c88" strokeWidth="1.6" strokeLinejoin="round">
+              <g fill="none" stroke="#b9b6aa" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
                 {paths.map((d, i) => (
                   <path key={i} d={d} />
                 ))}
               </g>
             </svg>
 
-            {boxes.map((b) => (
-              <div
-                key={b.key}
-                style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
-                className={`absolute rounded-[16px] border border-line bg-surface shadow-[0_1px_2px_rgb(60_45_30/0.05),0_10px_24px_-18px_rgb(60_45_30/0.45)] transition-opacity ${dim(b.gen)}`}
-              >
-                {b.joins.map((j, i) => (
-                  <span key={i} aria-hidden="true" style={{ left: j.x - b.x, top: j.y - b.y }} className="absolute -translate-x-1/2 -translate-y-1/2 font-serif text-[1.25rem] text-sage">
+            {/* Couples: a short line between partners with a ∞ */}
+            {boxes.flatMap((b) =>
+              b.joins.map((j, i) => (
+                <span
+                  key={`${b.key}-${i}`}
+                  aria-hidden="true"
+                  style={{ left: j.x, top: j.y }}
+                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center transition-opacity ${dim(b.gen)}`}
+                >
+                  <span className="h-px w-11 bg-[#b9b6aa]" />
+                  <span className="absolute left-1/2 top-1/2 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white font-serif text-[0.95rem] leading-none text-ink-muted">
                     ∞
                   </span>
-                ))}
-              </div>
-            ))}
+                </span>
+              )),
+            )}
 
             <ul>
               {cards.map((c) => (
@@ -284,31 +329,31 @@ export function TreeView({
                   <Link
                     href={c.profileHref}
                     draggable={false}
-                    className={`flex h-full flex-col items-center rounded-[11px] p-2 text-center ${c.living ? "hover:bg-sage-wash/50" : "bg-[#f6f2e9] hover:bg-[#efe9dc]"} ${
-                      c.highlight ? "ring-2 ring-sage-deep/70" : ""
-                    }`}
+                    className={`flex h-full flex-col items-center rounded-[14px] border px-3 pb-3 pt-4 text-center shadow-[0_1px_2px_rgb(28_29_26/0.04),0_8px_20px_-14px_rgb(28_29_26/0.3)] transition-[box-shadow,border-color] hover:border-ink/25 hover:shadow-[0_2px_4px_rgb(28_29_26/0.05),0_14px_28px_-14px_rgb(28_29_26/0.35)] ${
+                      c.living ? "border-line/90 bg-white" : "border-line/70 bg-[#fbfaf7]"
+                    } ${c.highlight ? "ring-2 ring-night/70 ring-offset-2" : ""}`}
                   >
-                    <span className="relative block h-[92px] w-full overflow-hidden rounded-lg">
+                    <span className="relative block">
                       {c.portrait ? (
                         // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                         <img
                           src={c.portrait}
                           alt=""
                           draggable={false}
-                          className={`h-full w-full object-cover ${c.living ? "" : "sepia-[.35] saturate-[.8]"}`}
+                          className={`h-16 w-16 rounded-full object-cover ring-1 ring-line ${c.living ? "" : "grayscale-[.55] sepia-[.2]"}`}
                         />
                       ) : (
                         <span
                           aria-hidden="true"
-                          className={`flex h-full w-full items-center justify-center font-serif text-[1.7rem] ${c.living ? "bg-sage-wash text-sage-deep" : "bg-[#ebe3d4] text-bronze"}`}
+                          className={`flex h-16 w-16 items-center justify-center rounded-full font-serif text-[1.4rem] ${c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"}`}
                         >
                           {c.initials}
                         </span>
                       )}
+                      {c.living && <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#6f8a4f]" aria-hidden="true" />}
                     </span>
-                    <span className="mt-2 line-clamp-2 font-serif text-[1rem] leading-[1.15] text-ink">{c.name}</span>
-                    <span className={`mt-auto flex items-center gap-1.5 text-[0.82rem] ${c.living ? "text-sage-deep" : "text-ink-muted"}`}>
-                      {c.living && <span className="h-1.5 w-1.5 rounded-full bg-sage" aria-hidden="true" />}
+                    <span className={`mt-2.5 line-clamp-2 font-serif text-[1.02rem] leading-[1.15] ${c.living ? "text-ink" : "text-ink/80"}`}>{c.name}</span>
+                    <span className="mt-auto flex items-center gap-1.5 text-[0.82rem] tabular-nums text-ink-muted">
                       {c.years}
                       {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                     </span>
@@ -345,14 +390,14 @@ export function TreeView({
 
             {pluses.map((p) => (
               <div key={p.key} style={{ left: p.x, top: p.y }} className={`absolute -translate-x-1/2 transition-opacity ${dim(p.gen)}`}>
-                <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#9a9c88]" />
+                <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#b9b6aa]" />
                 <button
                   type="button"
                   onClick={() => setOpenPlus(openPlus === p.key ? null : p.key)}
                   aria-expanded={openPlus === p.key}
                   aria-label={labels.addMenu}
                   title={labels.addMenu}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#9a9c88] bg-surface text-sage-deep shadow-sm hover:bg-sage-wash"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm hover:border-ink/30 hover:bg-linen"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
@@ -382,57 +427,6 @@ export function TreeView({
         </div>
       </div>
 
-      {/* A sprig in the corner */}
-      <svg className="pointer-events-none absolute bottom-0 right-0 hidden h-40 w-40 opacity-70 md:block" viewBox="0 0 160 160" aria-hidden="true">
-        <path d="M150 160 C130 120 110 95 70 70" stroke="#8a9a66" strokeWidth="2" fill="none" />
-        {[
-          [132, 128, 35],
-          [120, 108, 20],
-          [104, 94, 40],
-          [92, 84, 15],
-          [80, 76, 45],
-          [140, 140, -10],
-          [112, 116, -30],
-          [96, 100, -40],
-        ].map(([x, y, r], i) => (
-          <ellipse key={i} cx={x} cy={y} rx="11" ry="5" transform={`rotate(${r} ${x} ${y})`} fill={i % 2 ? "#a3b06b" : "#8a9a5b"} opacity="0.75" />
-        ))}
-      </svg>
-
-      {/* Generations and legend */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-end justify-between gap-3 md:right-40">
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)] [scrollbar-width:none]">
-          <button
-            type="button"
-            onClick={() => pickGeneration(null)}
-            aria-pressed={activeGen === null}
-            className={`shrink-0 rounded-full px-4 py-2 text-[0.95rem] ${activeGen === null ? "bg-sage-deep font-semibold text-surface" : "text-ink-muted hover:text-ink"}`}
-          >
-            {labels.allGenerations}
-          </button>
-          {generations.map((g) => (
-            <button
-              key={g.n}
-              type="button"
-              onClick={() => pickGeneration(g.n)}
-              aria-pressed={activeGen === g.n}
-              className={`shrink-0 rounded-full px-4 py-2 text-[0.95rem] ${activeGen === g.n ? "bg-sage-deep font-semibold text-surface" : "text-ink-muted hover:text-ink"}`}
-            >
-              {g.label} ({g.count})
-            </button>
-          ))}
-        </div>
-        <div className="hidden items-center gap-4 rounded-full bg-surface/90 px-4 py-2 text-[0.88rem] text-ink-muted lg:flex">
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-sm border border-line bg-surface" />
-            {labels.legendLiving}
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-sm border border-line bg-[#f0e9db]" />
-            {labels.legendDeceased}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
