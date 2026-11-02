@@ -80,8 +80,8 @@ const pin = (accent: boolean, big = false) => {
     iconAnchor: [w / 2, h - 2],
     popupAnchor: [0, -h + 6],
     html: `<svg width="${w}" height="${h}" viewBox="0 0 30 40" aria-hidden="true" style="filter:drop-shadow(0 3px 4px rgb(40 50 35 / .35))"><path d="M15 39C6 27 2 21 2 14a13 13 0 0 1 26 0c0 7-4 13-13 25z" fill="${
-      accent ? "#3f5643" : "#56705a"
-    }" stroke="#fffefb" stroke-width="${big ? 2.5 : 2}"/><circle cx="15" cy="14" r="${big ? 6 : 5}" fill="#fffefb"/></svg>`,
+      accent ? "#1c1d1a" : "#737660"
+    }" stroke="#fdfcfa" stroke-width="${big ? 2.5 : 2}"/><circle cx="15" cy="14" r="${big ? 6 : 5}" fill="#fdfcfa"/></svg>`,
   });
 };
 
@@ -163,7 +163,7 @@ export default function LeafletMap({
     for (const mk of markers) {
       const html = [
         `<strong style="font-family:var(--font-serif);font-size:1.05rem">${esc(mk.title)}</strong>`,
-        ...(mk.lines ?? []).map((l) => `<div style="color:#6b625a">${esc(l)}</div>`),
+        ...(mk.lines ?? []).map((l) => `<div style="color:#6b6c63">${esc(l)}</div>`),
         `<div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap">`,
         mk.href ? `<a href="${esc(mk.href)}">${esc(mk.linkLabel ?? "")}</a>` : "",
         mk.directionsLabel
@@ -266,9 +266,9 @@ export default function LeafletMap({
     if (value && accuracy && accuracy > 0) {
       circle.current = L.circle([value.lat, value.lng], {
         radius: accuracy,
-        color: "#3f5643",
+        color: "#1c1d1a",
         weight: 1.5,
-        fillColor: "#56705a",
+        fillColor: "#737660",
         fillOpacity: 0.12,
         interactive: false,
       }).addTo(m);

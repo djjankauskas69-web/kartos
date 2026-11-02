@@ -141,18 +141,18 @@ function MiniMap() {
   return (
     <svg viewBox="0 0 280 140" className="block w-full rounded-lg bg-[#eef0e8]" aria-hidden="true">
       <path d="M0 118 C70 108 120 128 190 116 S260 104 280 110 V140 H0Z" fill="#e4e0d3" />
-      <path d="M-5 122 C70 112 120 132 190 120 S262 108 285 114" stroke="#fffefb" strokeWidth="5" fill="none" />
+      <path d="M-5 122 C70 112 120 132 190 120 S262 108 285 114" stroke="#fdfcfa" strokeWidth="5" fill="none" />
       <rect x="10" y="16" width="250" height="96" rx="8" fill="#e6e9de" stroke="#cdd3c3" />
       {plots.map(([x, y], i) => (
-        <rect key={i} x={x} y={y} width="16" height="11" rx="2" fill="#f7f5ef" stroke="#d7d1c3" />
+        <rect key={i} x={x} y={y} width="16" height="11" rx="2" fill="#f7f5f0" stroke="#d7d1c3" />
       ))}
       <circle cx="226" cy="40" r="11" fill="#c9d3c2" opacity="0.8" />
       <circle cx="236" cy="48" r="8" fill="#bfcab7" opacity="0.8" />
       {/* our grave */}
-      <rect x="48" y="96" width="16" height="11" rx="2" fill="#56705a" />
+      <rect x="48" y="96" width="16" height="11" rx="2" fill="#737660" />
       <g transform="translate(56 96)">
-        <path d="M0 0 C-9 -12 -10 -16 -10 -21 a10 10 0 0 1 20 0 c0 5 -1 9 -10 21z" fill="#3f5643" />
-        <circle cx="0" cy="-21" r="3.6" fill="#fffefb" />
+        <path d="M0 0 C-9 -12 -10 -16 -10 -21 a10 10 0 0 1 20 0 c0 5 -1 9 -10 21z" fill="#1c1d1a" />
+        <circle cx="0" cy="-21" r="3.6" fill="#fdfcfa" />
       </g>
     </svg>
   );

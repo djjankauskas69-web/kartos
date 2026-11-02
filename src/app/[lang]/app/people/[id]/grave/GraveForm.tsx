@@ -352,11 +352,11 @@ export function GraveForm({
               <>
                 <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[600] -translate-x-1/2 -translate-y-1/2">
                   <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ filter: "drop-shadow(0 0 2px rgb(255 255 255 / .9))" }}>
-                    <circle cx="28" cy="28" r="13" stroke="#fffefb" strokeWidth="4" />
-                    <circle cx="28" cy="28" r="13" stroke="#3f5643" strokeWidth="2" />
-                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#fffefb" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#3f5643" strokeWidth="2" strokeLinecap="round" />
-                    <circle cx="28" cy="28" r="2.2" fill="#3f5643" />
+                    <circle cx="28" cy="28" r="13" stroke="#fdfcfa" strokeWidth="4" />
+                    <circle cx="28" cy="28" r="13" stroke="#1c1d1a" strokeWidth="2" />
+                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#fdfcfa" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#1c1d1a" strokeWidth="2" strokeLinecap="round" />
+                    <circle cx="28" cy="28" r="2.2" fill="#1c1d1a" />
                   </svg>
                 </span>
                 <div className="absolute inset-x-0 bottom-0 z-[600] flex justify-center p-4 pb-[max(2.75rem,env(safe-area-inset-bottom))]">

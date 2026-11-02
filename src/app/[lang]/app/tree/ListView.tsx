@@ -38,7 +38,7 @@ export function ListView({
   }, [q, people]);
 
   return (
-    <div className="rounded-[20px] border border-line/80 bg-[#fbf9f4] p-4 sm:p-6">
+    <div className="rounded-[20px] border border-line/80 bg-[#faf8f4] p-4 sm:p-6">
       <label htmlFor="tree-list-q" className="sr-only">
         {labels.search}
       </label>

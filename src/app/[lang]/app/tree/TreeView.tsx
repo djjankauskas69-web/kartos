@@ -197,7 +197,7 @@ export function TreeView({
     "flex h-11 w-11 items-center justify-center text-ink hover:bg-paper focus-visible:outline-offset-[-3px] disabled:opacity-40";
 
   return (
-    <div ref={frame} className={`relative overflow-hidden rounded-[20px] border border-line/80 bg-[#fbf9f4] ${full ? "h-screen rounded-none" : ""}`}>
+    <div ref={frame} className={`relative overflow-hidden rounded-[20px] border border-line/80 bg-[#faf8f4] ${full ? "h-screen rounded-none" : ""}`}>
       {/* Zoom tools */}
       <div className="absolute left-4 top-4 z-20 flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_2px_8px_-4px_rgb(60_45_30/0.3)]">
         <button type="button" onClick={() => zoomTo(scale * 1.2)} disabled={scale >= MAX} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
@@ -257,7 +257,7 @@ export function TreeView({
         <div style={{ width: width * scale + OFFSET_X * 2, height: height * scale + OFFSET_Y + 120 }} className="relative mx-auto">
           <div style={{ width, height, transform: `translate(${OFFSET_X}px, ${OFFSET_Y}px) scale(${scale})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
             <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
-              <g fill="none" stroke="#7d8f6d" strokeWidth="1.6" strokeLinejoin="round">
+              <g fill="none" stroke="#9a9c88" strokeWidth="1.6" strokeLinejoin="round">
                 {paths.map((d, i) => (
                   <path key={i} d={d} />
                 ))}
@@ -345,14 +345,14 @@ export function TreeView({
 
             {pluses.map((p) => (
               <div key={p.key} style={{ left: p.x, top: p.y }} className={`absolute -translate-x-1/2 transition-opacity ${dim(p.gen)}`}>
-                <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#7d8f6d]" />
+                <span aria-hidden="true" className="mx-auto block h-5 w-px bg-[#9a9c88]" />
                 <button
                   type="button"
                   onClick={() => setOpenPlus(openPlus === p.key ? null : p.key)}
                   aria-expanded={openPlus === p.key}
                   aria-label={labels.addMenu}
                   title={labels.addMenu}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#7d8f6d] bg-surface text-sage-deep shadow-sm hover:bg-sage-wash"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#9a9c88] bg-surface text-sage-deep shadow-sm hover:bg-sage-wash"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                 </button>

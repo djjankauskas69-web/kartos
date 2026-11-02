@@ -66,11 +66,11 @@ function PinIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
       <path
         d="M12 21s6.5-6.1 6.5-11a6.5 6.5 0 0 0-13 0c0 4.9 6.5 11 6.5 11z"
-        fill={filled ? "#3f5643" : "none"}
-        stroke={filled ? "#3f5643" : "#6b625a"}
+        fill={filled ? "#1c1d1a" : "none"}
+        stroke={filled ? "#1c1d1a" : "#6b6c63"}
         strokeWidth="1.6"
       />
-      <circle cx="12" cy="10" r="2.3" fill={filled ? "#fffefb" : "none"} stroke={filled ? "none" : "#6b625a"} strokeWidth="1.4" />
+      <circle cx="12" cy="10" r="2.3" fill={filled ? "#fdfcfa" : "none"} stroke={filled ? "none" : "#6b6c63"} strokeWidth="1.4" />
     </svg>
   );
 }
@@ -369,7 +369,7 @@ export function GravesExplorer({
                     <div className="min-w-0 flex-1 basis-56 space-y-3">
                       {current.directions ? (
                         <p className="flex gap-3">
-                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6b625a" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true" className="shrink-0">
+                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6b6c63" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true" className="shrink-0">
                             <path d="M7 20V9a5 5 0 0 1 10 0v11M5 20h14M10 13h4" />
                           </svg>
                           <span>

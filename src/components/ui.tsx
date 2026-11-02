@@ -8,14 +8,14 @@ export const cls = {
     "block min-h-32 w-full rounded-xl border border-line bg-surface px-4 py-3 text-[1.1rem] leading-relaxed text-ink placeholder:text-ink-muted/60 focus:border-sage-deep focus:outline-none focus:ring-2 focus:ring-sage/30",
   label: "mb-1.5 block font-semibold",
   primary:
-    "inline-flex min-h-12 items-center justify-center rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface transition-colors hover:bg-ink disabled:opacity-60",
+    "inline-flex min-h-12 items-center justify-center rounded-full bg-night px-6 text-[1.02rem] font-medium text-surface transition-colors hover:bg-olive-deep disabled:opacity-60",
   secondary:
-    "inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-surface px-5 text-[1rem] font-semibold text-ink hover:border-ink-muted disabled:opacity-60",
+    "inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-surface px-5 text-[1rem] font-medium text-ink transition-colors hover:border-ink/40 disabled:opacity-60",
   quiet: "inline-flex min-h-10 items-center rounded-full px-3 text-[0.98rem] font-semibold text-sage-deep hover:bg-sage-wash",
   danger:
     "inline-flex min-h-11 items-center justify-center rounded-full border border-danger/40 px-5 text-[1rem] font-semibold text-danger hover:bg-danger/5",
-  card: "rounded-[var(--radius-card)] border border-line bg-surface",
-  h1: "text-[2.1rem] leading-tight sm:text-[2.6rem]",
+  card: "rounded-[var(--radius-card)] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]",
+  h1: "text-[2.3rem] leading-[1.05] sm:text-[3rem]",
   h2: "text-[1.5rem]",
 };
 

@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-[#f2efe7] px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line/70 bg-surface px-4 py-6 lg:flex">
         <div className="px-3">
           <Wordmark href={`/${locale}/app`} />
         </div>

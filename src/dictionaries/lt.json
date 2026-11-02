@@ -15,7 +15,23 @@
     "lead": "Sudėkite savo šeimos istoriją į vieną privatų archyvą: kas kam kuo buvo, kur kas palaidotas, senos nuotraukos ir prisiminimai, kuriuos verta išsaugoti vaikams.",
     "cta": "Sukurti šeimos archyvą",
     "secondary": "Kaip tai veikia",
-    "note": "Nemokama. Jūsų duomenys matomi tik jūsų šeimai."
+    "note": "Nemokama. Jūsų duomenys matomi tik jūsų šeimai.",
+    "facts": [
+      {
+        "big": "Privatu",
+        "label": "Mato tik pakviesti šeimos nariai"
+      },
+      {
+        "big": "0 €",
+        "label": "Jokių privalomų prenumeratų"
+      },
+      {
+        "big": "1 min.",
+        "label": "Ir pirmas žmogus jau medyje"
+      }
+    ],
+    "showTitle": "Taip atrodo jūsų archyvas",
+    "showLead": "Šeimos medis, žmogaus puslapis ir vieta, kur jis ilsisi – viskas susieta tarpusavyje."
   },
   "sample": {
     "name": "Ona Jankauskienė",

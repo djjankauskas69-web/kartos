@@ -15,7 +15,23 @@
     "lead": "Gather your family's history into one private archive: who was who, where each person rests, the old photographs, and the stories worth keeping for your children.",
     "cta": "Create your family archive",
     "secondary": "How it works",
-    "note": "Free. Only your family can see what you add."
+    "note": "Free. Only your family can see what you add.",
+    "facts": [
+      {
+        "big": "Private",
+        "label": "Only invited family can see it"
+      },
+      {
+        "big": "€0",
+        "label": "No forced subscriptions"
+      },
+      {
+        "big": "1 min",
+        "label": "And the first person is in the tree"
+      }
+    ],
+    "showTitle": "What your archive looks like",
+    "showLead": "The family tree, a person's page and where they rest – all connected."
   },
   "sample": {
     "name": "Ona Jankauskienė",

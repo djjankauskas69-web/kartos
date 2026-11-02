@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, lifeSpan, type Person, type Role } from "@/lib/data";
-import { GravesArt, HeroTree } from "@/components/Illustrations";
+import { GravesArt } from "@/components/Illustrations";
+import { LineTree } from "@/components/LineArt";
+import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 
 export type RecentItem = {
@@ -31,7 +33,7 @@ export type DashboardData = {
   recent: RecentItem[];
 };
 
-const card = "rounded-[18px] border border-line/80 bg-surface shadow-[0_1px_2px_rgb(60_45_30/0.04),0_8px_24px_-16px_rgb(60_45_30/0.25)]";
+const card = "rounded-[12px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]";
 
 /** The archive overview: name, numbers, tree, graves, photos, recent additions, invitation. */
 export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, portraits, latestPhotos, recent }: DashboardData) {
@@ -46,12 +48,14 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
 
   return (
     <div className="space-y-6">
-      {/* Archive name over the oak */}
-      <section className="relative -mx-2 overflow-hidden px-2 pb-4 pt-4 sm:pt-8 md:min-h-[13.5rem]">
-        <HeroTree className="pointer-events-none absolute -top-2 right-0 hidden h-[14.5rem] w-auto md:block lg:h-[15.5rem]" />
+      {/* Archive name on a dark panel with the family tree in white ink */}
+      <section className="relative overflow-hidden rounded-[20px] bg-night px-6 py-8 text-surface sm:px-9 sm:py-10 md:min-h-[15rem]">
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgb(83_86_63/0.6),transparent_60%)]" />
+        <LineTree className="pointer-events-none absolute -bottom-6 right-4 hidden h-[17rem] w-auto text-surface/85 [--line-art-fill:rgb(28_29_26)] md:block lg:right-10" />
         <div className="relative max-w-xl">
-          <h1 className="text-[2.6rem] leading-[1.05] sm:text-[3.4rem]">{name}</h1>
-          <p className="mt-3 text-[1.15rem] text-ink-muted">{t.dash.subtitle}</p>
+          <h1 className="text-[2.6rem] leading-[1.02] text-surface sm:text-[3.4rem]">{name}</h1>
+          <Scribble className="ml-[12%] mt-1 h-4 w-40 text-surface/80" />
+          <p className="mt-4 text-[1.1rem] text-surface/70">{t.dash.subtitle}</p>
         </div>
       </section>
 
@@ -205,11 +209,7 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
         </div>
 
         <div className={`relative overflow-hidden p-6 sm:p-7 ${card}`}>
-          <div className="pointer-events-none absolute -bottom-8 -right-8 hidden w-80 rotate-[4deg] bg-[#fbf8f1] p-2 pb-6 opacity-90 shadow-[0_8px_20px_-8px_rgb(60_45_30/0.45)] ring-1 ring-line sm:block" aria-hidden="true">
-            <div className="bg-[#efe9dc]">
-              <HeroTree className="h-auto w-full" />
-            </div>
-          </div>
+          <LineTree className="pointer-events-none absolute -bottom-12 -right-6 hidden w-60 text-ink/15 sm:block" />
           <div className="relative max-w-sm">
             <h2 className="flex items-center gap-3 text-[1.4rem]">
               <span className="text-ink-muted">

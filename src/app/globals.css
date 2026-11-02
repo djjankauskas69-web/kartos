@@ -1,30 +1,35 @@
 @import "tailwindcss";
 @import "@fontsource-variable/newsreader/opsz.css";
 @import "@fontsource-variable/newsreader/opsz-italic.css";
-@import "@fontsource-variable/source-sans-3/index.css";
+@import "@fontsource-variable/inter/index.css";
 
 /*
-  Design tokens — "archive paper".
-  Warm ivory paper, ink-brown text, sage for actions, bronze for memorial details.
+  Design tokens — "quiet archive".
+  Warm off-white paper, near-black ink, charcoal actions, olive for living things,
+  thin hand-drawn lines. Large type stays: many readers are older.
 */
 @theme {
-  --color-paper: #f7f5ef;
-  --color-surface: #fffefb;
-  --color-linen: #ede8dd;
-  --color-line: #ddd5c6;
-  --color-ink: #2a2622;
-  --color-ink-muted: #6b625a;
-  --color-sage: #56705a;
-  --color-sage-deep: #3f5643;
-  --color-sage-wash: #e3e9e0;
-  --color-bronze: #94795a;
+  --color-paper: #f7f5f0;
+  --color-surface: #fdfcfa;
+  --color-linen: #efece6;
+  --color-line: #e5e0d7;
+  --color-ink: #1c1d1a;
+  --color-ink-muted: #6b6c63;
+  /* "sage" names kept so every screen picks the new palette up */
+  --color-sage: #737660;
+  --color-sage-deep: #1c1d1a;
+  --color-sage-wash: #ecebe3;
+  --color-olive: #4e552d;
+  --color-olive-deep: #393c24;
+  --color-bronze: #74756d;
+  --color-night: #1c1d1a;
   --color-danger: #a4473a;
 
   --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
-  --font-sans: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Segoe UI", system-ui, sans-serif;
 
-  --radius-card: 14px;
-  --shadow-float: 0 1px 2px rgb(60 45 30 / 0.06), 0 12px 32px -12px rgb(60 45 30 / 0.18);
+  --radius-card: 10px;
+  --shadow-float: 0 1px 2px rgb(28 29 26 / 0.05), 0 14px 36px -14px rgb(28 29 26 / 0.22);
 }
 
 @layer base {
@@ -36,8 +41,9 @@
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 1.125rem; /* 18px base for older readers */
+    font-size: 1.0625rem; /* 17px base: Inter runs larger than most sans */
     line-height: 1.6;
+    letter-spacing: -0.005em;
     text-rendering: optimizeLegibility;
   }
   h1,
@@ -45,9 +51,9 @@
   h3 {
     font-family: var(--font-serif);
     font-optical-sizing: auto;
-    font-weight: 450;
-    letter-spacing: -0.01em;
-    line-height: 1.12;
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.08;
     text-wrap: balance;
   }
   p {

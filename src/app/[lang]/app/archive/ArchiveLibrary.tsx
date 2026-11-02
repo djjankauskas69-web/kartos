@@ -115,7 +115,7 @@ function Dialog({ open, onClose, title, children, wide = false }: { open: boolea
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto max-h-[92dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#2a2622]/45 ${wide ? "max-w-5xl" : "max-w-2xl"}`}
+      className={`m-auto max-h-[92dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${wide ? "max-w-5xl" : "max-w-2xl"}`}
     >
       {open && children}
     </dialog>

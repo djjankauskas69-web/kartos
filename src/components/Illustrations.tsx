@@ -106,17 +106,17 @@ export function GravesArt({ pins }: { pins: number }) {
     <svg viewBox="0 0 190 130" className="h-full w-full" aria-hidden="true">
       <rect width="190" height="130" rx="12" fill="#e7ece0" />
       <path d="M0 112 C50 100 100 120 190 104 V130 H0Z" fill="#dfe3d4" />
-      <path d="M-4 116 C50 104 100 124 194 108" stroke="#fffefb" strokeWidth="4" fill="none" />
-      <path d="M118 -4 C114 40 132 70 126 134" stroke="#fffefb" strokeWidth="3" fill="none" opacity="0.8" />
+      <path d="M-4 116 C50 104 100 124 194 108" stroke="#fdfcfa" strokeWidth="4" fill="none" />
+      <path d="M118 -4 C114 40 132 70 126 134" stroke="#fdfcfa" strokeWidth="3" fill="none" opacity="0.8" />
       {plots.map(([x, y], i) => (
-        <rect key={i} x={x} y={y} width="13" height="9" rx="2" fill="#f7f5ef" stroke="#d3d8c8" />
+        <rect key={i} x={x} y={y} width="13" height="9" rx="2" fill="#f7f5f0" stroke="#d3d8c8" />
       ))}
       <circle cx="160" cy="34" r="12" fill="#c7d1bd" opacity="0.8" />
       <circle cx="170" cy="44" r="9" fill="#bac6af" opacity="0.8" />
       {marked.map(([x, y], i) => (
         <g key={i} transform={`translate(${x + 6.5} ${y + 4})`}>
-          <path d="M0 0 C-7 -9 -8 -12 -8 -16 a8 8 0 0 1 16 0 c0 4 -1 7 -8 16z" fill="#3f5643" />
-          <circle cx="0" cy="-16" r="3" fill="#fffefb" />
+          <path d="M0 0 C-7 -9 -8 -12 -8 -16 a8 8 0 0 1 16 0 c0 4 -1 7 -8 16z" fill="#1c1d1a" />
+          <circle cx="0" cy="-16" r="3" fill="#fdfcfa" />
         </g>
       ))}
     </svg>
