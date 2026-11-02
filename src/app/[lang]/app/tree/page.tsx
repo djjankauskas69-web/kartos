@@ -10,11 +10,13 @@ import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { ancestorCouples, kinship } from "@/lib/kinship";
+import { Profile } from "../people/[id]/Profile";
+import { ProfileDrawer } from "./ProfileDrawer";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 
-type Search = { p: string; d: string; view: string; hl: string };
+type Search = { p: string; d: string; view: string; hl: string; person: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -23,7 +25,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? "") }))}
       />
     </Suspense>
   );
@@ -167,6 +169,17 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const depthValue = /^[2-6]$/.test(search.d) ? search.d : focusId ? "4" : "all";
   const depth = depthValue === "all" ? null : Number(depthValue);
   const hl = me && search.hl === me ? me : undefined;
+  // The tree as it is now (person shown from, depth, you highlighted), plus extra parameters.
+  const viewHref = (extra: Record<string, string> = {}) => {
+    const q = new URLSearchParams();
+    if (focusId) q.set("p", focusId);
+    if (search.d) q.set("d", search.d);
+    if (hl) q.set("hl", hl);
+    for (const [k, v] of Object.entries(extra)) q.set(k, v);
+    const qs = q.toString();
+    return `${base}/tree${qs ? `?${qs}` : ""}`;
+  };
+  const drawerId = byId.has(search.person) ? search.person : null;
   const firstName = (id: string) => byId.get(id)?.given_names ?? "";
   const branchOptions = couples.map((c) => ({
     value: c.ids[0],
@@ -187,7 +200,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, families, relations, highlightId: hl, profileHrefFor: (id) => viewHref({ person: id }), linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 
@@ -250,6 +263,13 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           legendDeceased: t.tree.legendDeceased,
         }}
       />
+      {drawerId && (
+        <ProfileDrawer closeHref={viewHref()} fullHref={`${base}/people/${drawerId}`} labels={{ close: t.tree.drawerClose, full: t.tree.drawerFull }}>
+          <Suspense key={drawerId} fallback={<p className="p-6 text-ink-muted">{t.app.loading}</p>}>
+            <Profile t={t} locale={locale} idPromise={Promise.resolve(drawerId)} compact />
+          </Suspense>
+        </ProfileDrawer>
+      )}
     </div>
   );
 }

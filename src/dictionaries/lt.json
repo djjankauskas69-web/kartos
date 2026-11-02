@@ -383,7 +383,9 @@
     "and": "ir",
     "relationToYou": "Jums",
     "menuMore": "Daugiau veiksmų",
-    "fitShort": "Visas medis"
+    "fitShort": "Visas medis",
+    "drawerClose": "Uždaryti",
+    "drawerFull": "Atidaryti visą profilį"
   },
   "family": {
     "title": "Šeima",

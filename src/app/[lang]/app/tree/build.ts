@@ -44,6 +44,7 @@ export function buildTree({
   linkHref,
   relations,
   highlightId,
+  profileHrefFor,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -65,6 +66,8 @@ export function buildTree({
   relations?: Map<string, string>;
   /** Mark this person (e.g. you) instead of the start person. */
   highlightId?: string;
+  /** Where clicking a person goes (the tree opens the profile in a side panel). */
+  profileHrefFor?: (id: string) => string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -116,7 +119,7 @@ export function buildTree({
       start: n.role === "focus",
       highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
       relation: relations?.get(n.id),
-      profileHref: `${base}/people/${n.id}`,
+      profileHref: profileHrefFor ? profileHrefFor(n.id) : `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),
       grave: graves?.get(n.id),
       mapHref: graves?.has(n.id) ? `${base}/map?person=${n.id}` : undefined,
