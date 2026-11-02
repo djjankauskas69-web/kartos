@@ -117,12 +117,15 @@ export function MemorialProfile({
       </ol>
     );
 
-  const placeList = (full: boolean) =>
-    places.length === 0 ? (
+  // In the Places tab the resting place lives in the grave card below, so it is not listed twice.
+  const lifePlaces = places.filter((p) => p.kind !== "resting");
+  const placeList = (full: boolean) => {
+    const list = full ? lifePlaces : places;
+    return list.length === 0 ? (
       <p className="text-ink-muted">{m.noPlaces}</p>
     ) : (
       <ul className="divide-y divide-line">
-        {places.map((p) => (
+        {list.map((p) => (
           <li key={p.key} className="flex items-center gap-3 py-2.5">
             <span className="text-ink-muted">{icons.pin}</span>
             <span className="min-w-0 flex-1">
@@ -145,6 +148,7 @@ export function MemorialProfile({
         ))}
       </ul>
     );
+  };
 
   const photoGrid = (
     photos.length === 0 ? (
@@ -248,12 +252,14 @@ export function MemorialProfile({
     family: nodes.family,
     places: (
       <div className="space-y-5">
-        <section className={card}>
-          {head(icons.pin, m.places)}
-          {markers.length > 0 && <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="mb-3 h-72 w-full rounded-xl border border-line" />}
-          {placeList(true)}
-          {canAdd && eventsReady && <div className="mt-4"><EventForm locale={locale} personId={personId} mode="place" labels={labels} center={center} /></div>}
-        </section>
+        {(lifePlaces.length > 0 || (canAdd && eventsReady)) && (
+          <section className={card}>
+            {head(icons.pin, m.places)}
+            {markers.length > 0 && <MapView markers={markers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="mb-3 h-72 w-full rounded-xl border border-line" />}
+            {lifePlaces.length > 0 && placeList(true)}
+            {canAdd && eventsReady && <div className={lifePlaces.length > 0 ? "mt-4" : ""}><EventForm locale={locale} personId={personId} mode="place" labels={labels} center={center} /></div>}
+          </section>
+        )}
         {nodes.grave}
       </div>
     ),
