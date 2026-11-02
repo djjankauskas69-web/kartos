@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+/** Open menu: a card's menu ("card") or its "add a relative" menu ("add"). */
+type MenuState = { key: string; mode: "card" | "add" } | null;
+
 export type TreeCard = {
   key: string;
   id: string;
@@ -106,7 +109,7 @@ export function TreeView({
   const [grabbing, setGrabbing] = useState(false);
   const [activeGen, setActiveGen] = useState<number | null>(null);
   const [openPlus, setOpenPlus] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
   useEffect(() => {
@@ -297,7 +300,7 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
-  const openCard = menu ? cards.find((c) => c.key === menu) : undefined;
+  const openCard = menu ? cards.find((c) => c.key === menu.key) : undefined;
   /** Beside the card on wide screens: right of it, or left when there is no room. */
   const menuPos = (c: TreeCard) => {
     const { w, h } = area;
@@ -442,8 +445,8 @@ export function TreeView({
                 <button
                   type="button"
                   data-card
-                  onClick={() => setMenu(menu === c.key ? null : c.key)}
-                  aria-expanded={menu === c.key}
+                  onClick={() => setMenu(menu?.key === c.key && menu.mode === "card" ? null : { key: c.key, mode: "card" })}
+                  aria-expanded={menu?.key === c.key && menu.mode === "card"}
                   aria-haspopup="menu"
                   className="flex h-full w-full cursor-pointer flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2"
                 >
@@ -474,6 +477,21 @@ export function TreeView({
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                 </button>
+                {c.addOptions.length > 0 && (
+                  <button
+                    type="button"
+                    data-card
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" ? null : { key: c.key, mode: "add" })}
+                    aria-expanded={menu?.key === c.key && menu.mode === "add"}
+                    aria-haspopup="menu"
+                    aria-label={`${labels.menuAdd}: ${c.name}`}
+                    title={labels.menuAdd}
+                    style={{ left: (cardW + PHOTO) / 2 - 22, top: -2 }}
+                    className={`absolute flex h-7 w-7 items-center justify-center rounded-full bg-ink text-white shadow-[0_4px_10px_-4px_rgb(28_29_26/0.6)] ring-2 ring-white transition-opacity hover:bg-olive-deep focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100 ${menu?.key === c.key ? "opacity-100" : "opacity-0"}`}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                  </button>
+                )}
                 {c.moreAbove && (
                   <Link
                     href={c.showFromHref}
@@ -536,8 +554,10 @@ export function TreeView({
         </div>
         {openCard && (
           <CardMenu
+            key={`${menu!.key}-${menu!.mode}`}
             ref={menuRef}
             card={openCard}
+            mode={menu!.mode}
             labels={labels}
             pos={menuPos(openCard)}
             onClose={() => setMenu(null)}
@@ -558,6 +578,7 @@ const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke
 function CardMenu({
   ref,
   card,
+  mode,
   labels,
   pos,
   onClose,
@@ -565,11 +586,13 @@ function CardMenu({
 }: {
   ref: React.Ref<HTMLDivElement>;
   card: TreeCard;
+  mode: "card" | "add";
   labels: Labels;
   pos: { left: number; top: number };
   onClose: () => void;
   onLeave: () => void;
 }) {
+  const [showNav, setShowNav] = useState(false);
   const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
@@ -590,13 +613,32 @@ function CardMenu({
     >
       <div className="flex items-center gap-3 px-3 pb-2 pt-1.5">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
-          {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
+          {mode === "add" ? (
+            <>
+              <p className="text-[1.08rem] font-semibold leading-tight">{labels.menuAdd}</p>
+              <p className="truncate text-[0.88rem] text-ink-muted">{card.name}</p>
+            </>
+          ) : (
+            <>
+              <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
+              {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
+            </>
+          )}
         </div>
         <button type="button" onClick={onClose} aria-label={labels.menuClose} title={labels.menuClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
           <svg {...ICON} width={18} height={18}><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
+      {mode === "add" ? (
+        <div className="border-t border-line pt-1.5">
+          {card.addOptions.map((o) => (
+            <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className={item}>
+              <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
+              {o.label}
+            </Link>
+          ))}
+        </div>
+      ) : (
       <div className="border-t border-line pt-1.5">
         <Link href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
@@ -622,18 +664,21 @@ function CardMenu({
           </a>
         ))}
         {nav.length > 0 && (
-          <div className="px-3 pb-2 pt-1">
-            <p className="flex items-center gap-3 text-[0.9rem] text-ink-muted">
-              <svg {...ICON} width={18} height={18}><path d="m3 11 18-8-8 18-2-8-8-2Z" /></svg>
-              {labels.menuDirections}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 pl-[1.9rem]">
+          <div>
+            <button type="button" role="menuitem" aria-expanded={showNav} onClick={() => setShowNav((v) => !v)} className={item}>
+              <svg {...ICON}><path d="m3 11 18-8-8 18-2-8-8-2Z" /></svg>
+              <span className="flex-1">{labels.menuDirections}</span>
+              <svg {...ICON} width={16} height={16} className={`text-ink-muted transition-transform ${showNav ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {showNav && (
+            <div className="flex flex-wrap gap-1.5 pb-2 pl-[2.75rem] pr-3">
               {nav.map((n) => (
                 <a key={n.label} href={n.href} target="_blank" rel="noreferrer" role="menuitem" className="rounded-full border border-line px-3 py-1.5 text-[0.9rem] font-semibold hover:border-ink/40 hover:bg-linen">
                   {n.label}
                 </a>
               ))}
             </div>
+            )}
           </div>
         )}
         {card.linkHref && (
@@ -642,19 +687,8 @@ function CardMenu({
             {labels.menuLink}
           </Link>
         )}
-        {card.addOptions.length > 0 && (
-          <div className="mt-1 border-t border-line pt-1.5">
-            <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>
-            <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-              {card.addOptions.map((o) => (
-                <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className="rounded-full bg-linen px-3 py-1.5 text-[0.9rem] font-semibold hover:bg-line">
-                  + {o.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+      )}
     </div>
   );
 }
