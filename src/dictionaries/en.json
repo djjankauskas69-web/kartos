@@ -126,7 +126,7 @@
   },
   "login": {
     "title": "Sign in",
-    "lead": "We'll email you a sign-in link. No password needed.",
+    "lead": "Enter your email and a password. If you're new, your account is created straight away – no confirmation email needed.",
     "email": "Email address",
     "emailPlaceholder": "name@example.com",
     "submit": "Email me a sign-in link",
@@ -140,7 +140,22 @@
     "back": "Back to home",
     "terms": "By signing in you agree to the terms of use and privacy policy.",
     "linkError": "The sign-in link has expired or was opened in a different browser. Request a new one.",
-    "rateLimit": "Too many emails in a short time. Wait a few minutes and try again."
+    "rateLimit": "Too many emails in a short time. Wait a few minutes and try again.",
+    "password": "Password",
+    "passwordHint": "At least 6 characters. First time here – make one up.",
+    "passwordSubmit": "Sign in",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "orLink": "or get a link by email",
+    "passwordErrors": {
+      "invalid": "Enter an email address, e.g. name@example.com.",
+      "weak": "The password is too short – at least 6 characters.",
+      "wrongPassword": "Wrong password. If you signed in with an email link before, you don't have a password yet – use the link.",
+      "confirmOn": "Wrong password, or Supabase still requires a confirmation email (for the administrator: Authentication → Sign In / Providers → Email → turn off “Confirm email”).",
+      "notConfigured": "Sign-in is not set up yet: Supabase keys are missing.",
+      "error": "Couldn't sign in. Please try again.",
+      "invite": "You're signed in, but the invitation couldn't be accepted – it may have expired."
+    }
   },
   "app": {
     "loading": "Loading…",
@@ -296,11 +311,13 @@
     "invitedBy": "Invited by",
     "access": "Your access",
     "join": "Join the archive",
-    "signInFirst": "Sign in to accept the invitation. An account is created automatically.",
+    "signInFirst": "Enter your email and make up a password – your account is created at once and you'll be in the family archive.",
     "signIn": "Sign in and accept",
     "invalid": "This invitation is no longer valid",
     "invalidLead": "Ask the administrator to send you a new link.",
-    "error": "Couldn't accept the invitation. Try again."
+    "error": "Couldn't accept the invitation. Try again.",
+    "joinNow": "Join the family",
+    "otherWays": "Other ways to sign in"
   },
   "tree": {
     "title": "Family tree",

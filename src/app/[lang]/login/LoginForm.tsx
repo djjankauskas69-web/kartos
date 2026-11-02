@@ -104,7 +104,7 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
         <button
           type="submit"
           disabled={status === "sending"}
-          className="flex min-h-13 w-full items-center justify-center rounded-full bg-sage-deep px-6 text-[1.08rem] font-semibold text-surface transition-colors hover:bg-ink disabled:opacity-60"
+          className="flex min-h-13 w-full items-center justify-center rounded-full border border-line bg-surface px-6 text-[1.05rem] font-semibold text-ink transition-colors hover:border-ink/40 disabled:opacity-60"
         >
           {status === "sending" ? t.sending : t.submit}
         </button>

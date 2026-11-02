@@ -126,7 +126,7 @@
   },
   "login": {
     "title": "Prisijunkite",
-    "lead": "Atsiųsime prisijungimo nuorodą el. paštu. Slaptažodžio nereikia.",
+    "lead": "Įveskite el. paštą ir slaptažodį. Jei čia pirmą kartą, paskyra susikurs iškart – jokio patvirtinimo laiško nereikia.",
     "email": "El. pašto adresas",
     "emailPlaceholder": "vardas@pavyzdys.lt",
     "submit": "Siųsti prisijungimo nuorodą",
@@ -140,7 +140,22 @@
     "back": "Grįžti į pradžią",
     "terms": "Prisijungdami sutinkate su naudojimo sąlygomis ir privatumo politika.",
     "linkError": "Prisijungimo nuoroda nebegalioja arba buvo atidaryta kitoje naršyklėje. Užsisakykite naują.",
-    "rateLimit": "Per daug laiškų per trumpą laiką. Palaukite kelias minutes ir bandykite vėl."
+    "rateLimit": "Per daug laiškų per trumpą laiką. Palaukite kelias minutes ir bandykite vėl.",
+    "password": "Slaptažodis",
+    "passwordHint": "Bent 6 simboliai. Pirmą kartą – sugalvokite naują.",
+    "passwordSubmit": "Prisijungti",
+    "showPassword": "Rodyti",
+    "hidePassword": "Slėpti",
+    "orLink": "arba gaukite nuorodą el. paštu",
+    "passwordErrors": {
+      "invalid": "Įveskite el. pašto adresą, pavyzdžiui vardas@pavyzdys.lt.",
+      "weak": "Slaptažodis per trumpas – bent 6 simboliai.",
+      "wrongPassword": "Neteisingas slaptažodis. Jei anksčiau jungėtės nuoroda iš laiško, slaptažodžio dar neturite – prisijunkite nuoroda.",
+      "confirmOn": "Neteisingas slaptažodis, arba Supabase vis dar reikalauja patvirtinimo laiško (administratoriui: Authentication → Sign In / Providers → Email → išjunkite „Confirm email“).",
+      "notConfigured": "Prisijungimas dar neįjungtas: trūksta Supabase raktų.",
+      "error": "Nepavyko prisijungti. Bandykite dar kartą.",
+      "invite": "Prisijungėte, bet kvietimo priimti nepavyko – galbūt jis nebegalioja."
+    }
   },
   "app": {
     "loading": "Įkeliama…",
@@ -296,11 +311,13 @@
     "invitedBy": "Pakvietė",
     "access": "Jūsų teisės",
     "join": "Prisijungti prie archyvo",
-    "signInFirst": "Prisijunkite, kad priimtumėte kvietimą. Paskyra susikurs automatiškai.",
+    "signInFirst": "Įveskite savo el. paštą ir sugalvokite slaptažodį – paskyra susikurs iškart, ir būsite šeimos archyve.",
     "signIn": "Prisijungti ir priimti",
     "invalid": "Kvietimas nebegalioja",
     "invalidLead": "Paprašykite administratoriaus atsiųsti naują nuorodą.",
-    "error": "Nepavyko priimti kvietimo. Bandykite dar kartą."
+    "error": "Nepavyko priimti kvietimo. Bandykite dar kartą.",
+    "joinNow": "Prisijungti prie šeimos",
+    "otherWays": "Kiti prisijungimo būdai"
   },
   "tree": {
     "title": "Giminės medis",

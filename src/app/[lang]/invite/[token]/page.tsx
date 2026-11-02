@@ -7,6 +7,7 @@ import { cls } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/data";
 import { AcceptInviteForm } from "../../app/forms";
+import { PasswordForm } from "../../login/PasswordForm";
 
 export default async function InvitePage({ params }: PageProps<"/[lang]/invite/[token]">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -64,9 +65,12 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
           <AcceptInviteForm t={t} locale={locale} token={token} />
         ) : (
           <>
-            <p className="mb-4 text-ink-muted">{t.invite.signInFirst}</p>
-            <Link href={`/${locale}/login?next=${encodeURIComponent(next)}`} className={cls.primary}>
-              {t.invite.signIn}
+            <p className="mb-5 text-ink-muted">{t.invite.signInFirst}</p>
+            <Suspense fallback={null}>
+              <PasswordForm t={t.login} locale={locale} token={token} submit={t.invite.joinNow} />
+            </Suspense>
+            <Link href={`/${locale}/login?next=${encodeURIComponent(next)}`} className="mt-5 inline-block text-[0.98rem] font-semibold text-ink-muted hover:text-ink hover:underline">
+              {t.invite.otherWays}
             </Link>
           </>
         )}
