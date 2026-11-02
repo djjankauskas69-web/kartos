@@ -348,7 +348,7 @@ export function TreeView({
   const dotAlpha = Math.min(1, Math.max(0, (k - 0.12) / 0.33));
 
   return (
-    <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
+    <div ref={frame} className={`relative overflow-hidden border border-line/60 bg-[#faf8f4] ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: which generations to show */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`}>
@@ -434,8 +434,8 @@ export function TreeView({
           height: full || fitH === null ? undefined : fitH,
           // Recraft-style canvas: the dot grid moves and scales with the tree, but each dot stays
           // the same small size, and the grid steps between densities so it never gets crowded.
-          backgroundColor: "#f2f2f2",
-          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(188 188 188 / ${dotAlpha.toFixed(2)}) 0.6px, transparent 1px)` : "none",
+          backgroundColor: "#faf8f4",
+          backgroundImage: dotAlpha > 0 ? `radial-gradient(circle, rgb(196 186 170 / ${(dotAlpha * 0.8).toFixed(2)}) 0.6px, transparent 1px)` : "none",
           backgroundSize: `${gridStep}px ${gridStep}px`,
           backgroundPosition: `${x}px ${y}px`,
         }}
