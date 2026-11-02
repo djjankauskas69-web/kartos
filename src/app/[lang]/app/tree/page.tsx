@@ -19,7 +19,7 @@ import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { PageLoading } from "@/components/PageLoading";
 
-type Search = { p: string; d: string; view: string; hl: string; person: string; w: string };
+type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -28,7 +28,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? ""), h: String(s.h ?? "") }))}
       />
     </Suspense>
   );
@@ -46,12 +46,28 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const base = `/${locale}/app`;
   // Linked trees open only for people who are members of the other archive too.
   const families = new Map<string, Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>>();
-  const openLinks = links.flatMap((l) => {
+  const explicitLinks = links.flatMap((l) => {
     const other = l.accepted && l.otherWs ? memberships.find((m) => m.id === l.otherWs) : undefined;
-    return other && l.otherPerson && byId.has(l.mine) ? [{ ...l, otherPerson: l.otherPerson, other }] : [];
+    return other && l.otherPerson && byId.has(l.mine) ? [{ ...l, otherPerson: l.otherPerson, other, self: false }] : [];
   });
-  // Linked families shown right in this tree (?w=link ids).
-  const shown = new Set(search.w.split(",").filter((id) => openLinks.some((l) => l.id === id)));
+  // You are "This is me" in another family archive too: that's the same person, so the two
+  // families join at you without any linking step, and your other side shows by default.
+  const meHere = mine.links.get(current.id);
+  const selfLinks =
+    meHere && byId.has(meHere)
+      ? memberships.flatMap((m) => {
+          const there = mine.links.get(m.id);
+          if (m.id === current.id || !there || explicitLinks.some((l) => l.other.id === m.id && l.mine === meHere)) return [];
+          return [{ id: `me-${m.id}`, mine: meHere, otherWs: m.id, otherPerson: there, accepted: true, other: m, self: true }];
+        })
+      : [];
+  const openLinks = [...explicitLinks, ...selfLinks];
+  // Linked families shown right in this tree: ?w= turns on linked ones, ?h= hides your own.
+  const hidden = new Set(search.h.split(",").filter(Boolean));
+  const shown = new Set([
+    ...search.w.split(",").filter((id) => explicitLinks.some((l) => l.id === id)),
+    ...selfLinks.filter((l) => !hidden.has(l.id)).map((l) => l.id),
+  ]);
   const branches = await Promise.all(
     openLinks
       .filter((l) => shown.has(l.id))
@@ -193,7 +209,9 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     if (focusId) q.set("p", focusId);
     if (search.d) q.set("d", search.d);
     if (hl) q.set("hl", hl);
-    if (shown.size) q.set("w", [...shown].join(","));
+    const w = [...shown].filter((id) => !id.startsWith("me-"));
+    if (w.length) q.set("w", w.join(","));
+    if (hidden.size) q.set("h", [...hidden].join(","));
     for (const [k, v] of Object.entries(extra)) {
       if (v) q.set(k, v);
       else q.delete(k);
@@ -231,14 +249,16 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   });
   for (const l of openLinks) {
     const on = shown.has(l.id);
-    const next = on ? [...shown].filter((x) => x !== l.id) : [...shown, l.id];
+    const toggle = l.self
+      ? viewHref({ h: (on ? [...hidden, l.id] : [...hidden].filter((x) => x !== l.id)).join(",") })
+      : viewHref({ w: (on ? [...shown].filter((x) => x !== l.id && !x.startsWith("me-")) : [...[...shown].filter((x) => !x.startsWith("me-")), l.id]).join(",") });
     families.set(l.mine, [
       ...(families.get(l.mine) ?? []),
       {
         label: l.other.name,
         href: `${base}/open?ws=${l.other.id}&p=${l.otherPerson}`,
-        compareHref: can.admin(current.role) ? `${base}/people/${l.mine}/compare?link=${l.id}` : undefined,
-        branchHref: viewHref({ w: next.join(",") }),
+        compareHref: can.admin(current.role) && !l.self ? `${base}/people/${l.mine}/compare?link=${l.id}` : undefined,
+        branchHref: toggle,
         branchOn: on,
       },
     ]);
