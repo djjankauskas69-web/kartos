@@ -6,6 +6,7 @@ import { EventForm } from "./EventForm";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
 export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; pending?: boolean };
+export type ProfileRelative = { id: string; name: string; sub: string; portrait?: string; initials: string; href: string };
 export type MemorialPlace = { key: string; kind: "birthplace" | "residence" | "resting"; place: string; lat?: number | null; lng?: number | null; href?: string; id?: string; canDelete?: boolean };
 
 const I = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
@@ -21,7 +22,7 @@ const icons = {
   work: <svg {...I}><path d="M4 20c4-6 8-9 16-15M8 13c1.5-.2 3 0 4 1M11 9.5c1.5-.2 3 0 4 1" /></svg>,
 };
 
-/** The profile of someone who has passed away: their life at a glance, with tabs for the rest. */
+/** A person's profile: their life at a glance, with tabs for the rest. `living` drops the places and grave. */
 export function MemorialProfile({
   t,
   locale,
@@ -45,6 +46,12 @@ export function MemorialProfile({
   places,
   eventsReady,
   nodes,
+  living = false,
+  aliveLabel,
+  residence,
+  family,
+  treeHref,
+  meHref,
 }: {
   t: Dictionary;
   locale: string;
@@ -68,6 +75,12 @@ export function MemorialProfile({
   places: MemorialPlace[];
   eventsReady: boolean;
   nodes: { photos: React.ReactNode; docs: React.ReactNode; family: React.ReactNode; grave: React.ReactNode; memories: React.ReactNode; composer: React.ReactNode };
+  living?: boolean;
+  aliveLabel?: string;
+  residence?: string | null;
+  family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[] };
+  treeHref: string;
+  meHref?: string;
 }) {
   const m = t.memorial;
   const card = "rounded-[18px] border border-line/80 bg-surface p-5 sm:p-6";
@@ -171,39 +184,91 @@ export function MemorialProfile({
     )
   );
 
+  const relCol = (title: string, list: ProfileRelative[]) =>
+    list.length > 0 && (
+      <div className="min-w-0">
+        <h3 className="mb-2.5 text-[0.95rem] text-ink-muted">{title}</h3>
+        <ul className="space-y-2.5">
+          {list.slice(0, 4).map((r) => (
+            <li key={r.id}>
+              <Link href={r.href} scroll={false} className="group flex items-center gap-3">
+                {r.portrait ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                  <img src={r.portrait} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen text-[0.9rem] font-semibold text-ink-muted">{r.initials}</span>
+                )}
+                <span className="min-w-0">
+                  <span className="block text-[0.95rem] font-semibold leading-snug [overflow-wrap:anywhere] group-hover:underline">{r.name}</span>
+                  {r.sub && <span className="block text-[0.88rem] tabular-nums text-ink-muted">{r.sub}</span>}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  const hasFamily = family.parents.length + family.partners.length + family.children.length > 0;
+
   const overview = (
-    <div className="@container space-y-5">
-      <div className="grid gap-5 @3xl:grid-cols-2">
+    <div className="@container">
+      <div className="grid items-start gap-5 @3xl:grid-cols-2">
+        <div className="min-w-0 space-y-5">
         <section className={card}>
-          {head(icons.book, m.lifeStory)}
+          {head(icons.book, living ? m.about : m.lifeStory)}
           {storyText ? (
-            <ExpandText text={storyText} more={m.readMore} less={m.readLess} />
+            <>
+              <ExpandText text={storyText} more={m.readMore} less={m.readLess} />
+              {editHref && (
+                <Link href={`${editHref}#story`} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full border border-line px-4 font-semibold hover:border-ink/40">
+                  ✎ {m.editAbout}
+                </Link>
+              )}
+            </>
           ) : (
             <div>
-              <p className="text-ink-muted">{m.noStory}</p>
+              <p className="text-ink-muted">{living ? m.noAbout : m.noStory}</p>
               {editHref && (
                 <Link href={`${editHref}#story`} className="mt-3 inline-flex min-h-10 items-center rounded-full border border-line px-4 font-semibold hover:border-ink/40">
-                  {m.writeStory}
+                  {living ? m.writeAbout : m.writeStory}
                 </Link>
               )}
             </div>
           )}
         </section>
         <section className={card}>
-          {head(icons.photo, m.photos, photoCount, "photos")}
-          {photoGrid}
-        </section>
-      </div>
-      <div className="grid gap-5 @3xl:grid-cols-2 @6xl:grid-cols-3">
-        <section className={card}>
           {head(icons.calendar, m.events, undefined, "events")}
           {timeline(events.slice(0, 7), false)}
           {canAdd && eventsReady && <div className="mt-5"><EventForm locale={locale} personId={personId} mode="event" labels={labels} center={center} /></div>}
         </section>
+        {!living && (
+          <section className={card}>
+            {head(icons.pin, m.places, undefined, "places")}
+            {markers.length > 0 && <MapView markers={markers} className="mb-3 h-44 w-full rounded-xl border border-line" />}
+            {placeList(false)}
+          </section>
+        )}
+        </div>
+        <div className="min-w-0 space-y-5">
         <section className={card}>
-          {head(icons.pin, m.places, undefined, "places")}
-          {markers.length > 0 && <MapView markers={markers} className="mb-3 h-44 w-full rounded-xl border border-line" />}
-          {placeList(false)}
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-ink-muted">{icons.people}</span>
+            <h2 className="flex-1 text-[1.25rem] font-semibold">{m.tabFamily}</h2>
+            <Link href={treeHref} className="text-[0.92rem] font-semibold hover:underline">{m.viewInTree} ↗</Link>
+          </div>
+          {hasFamily ? (
+            <div className="@container/fam"><div className="grid gap-5 @md/fam:grid-cols-3 @md/fam:gap-4">
+              {relCol(t.family.parents, family.parents)}
+              {relCol(t.family.partners, family.partners)}
+              {relCol(t.family.children, family.children)}
+            </div></div>
+          ) : (
+            <p className="text-ink-muted">{t.family.none}</p>
+          )}
+        </section>
+        <section className={card}>
+          {head(icons.photo, m.photos, photoCount, "photos")}
+          {photoGrid}
         </section>
         <section className={card}>
           {head(icons.doc, m.documents, docs.length, "docs")}
@@ -231,6 +296,7 @@ export function MemorialProfile({
             </Link>
           )}
         </section>
+        </div>
       </div>
     </div>
   );
@@ -280,7 +346,7 @@ export function MemorialProfile({
           src="/landing/hero-hills.jpg"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 h-full w-[70%] object-cover opacity-60 sepia-[.55] [mask-image:linear-gradient(to_left,black_35%,transparent)]"
+          className={`pointer-events-none absolute inset-y-0 right-0 h-full w-[70%] object-cover [mask-image:linear-gradient(to_left,black_35%,transparent)] ${living ? "opacity-75" : "opacity-60 sepia-[.55]"}`}
         />
         <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-7">
           {portrait ? (
@@ -294,15 +360,30 @@ export function MemorialProfile({
           <div className="min-w-0 flex-1">
             <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
             {years && <p className="mt-2 text-[1.25rem] tabular-nums text-ink-muted">{years}</p>}
-            {toMe && <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep first-letter:uppercase">{toMe}</p>}
-            {(birthPlace || occupation) && (
+            {(toMe || (living && aliveLabel)) && (
+              <p className="mt-3 flex flex-wrap gap-2">
+                {living && aliveLabel && (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep">
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#5c8a3a]" />
+                    {aliveLabel}
+                  </span>
+                )}
+                {toMe && <span className="inline-flex items-center rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep first-letter:uppercase">{toMe}</span>}
+              </p>
+            )}
+            {((living ? residence || birthPlace : birthPlace) || occupation) && (
               <p className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.98rem]">
-                {birthPlace && <span className="flex items-center gap-1.5">{icons.pin}{birthPlace}</span>}
+                {(living ? residence || birthPlace : birthPlace) && <span className="flex items-center gap-1.5">{icons.pin}{living ? residence || birthPlace : birthPlace}</span>}
                 {occupation && <span className="flex items-center gap-1.5">{icons.work}{occupation}</span>}
               </p>
             )}
           </div>
           <div className="flex gap-2 self-start sm:absolute sm:right-5 sm:top-5">
+            {meHref && (
+              <Link href={meHref} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
+                {m.editMine}
+              </Link>
+            )}
             {editHref && (
               <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
                 ✎ {m.edit}
@@ -313,7 +394,7 @@ export function MemorialProfile({
                 ⋯
               </summary>
               <div className="absolute right-0 z-20 mt-2 w-60 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-                <Link href={`${base}/tree?p=${personId}`} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.goToTree}</Link>
+                <Link href={treeHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.goToTree}</Link>
                 {linkHref && <Link href={linkHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.linkFamily}</Link>}
               </div>
             </details>
@@ -328,7 +409,7 @@ export function MemorialProfile({
           { id: "photos", label: m.tabPhotos, count: photoCount, icon: icons.photo },
           { id: "docs", label: m.tabDocs, count: docs.length, icon: icons.doc },
           { id: "family", label: m.tabFamily, icon: icons.people },
-          { id: "places", label: m.tabPlaces, icon: icons.pin },
+          ...(living ? [] : [{ id: "places", label: m.tabPlaces, icon: icons.pin }]),
           { id: "memories", label: m.tabMemories, icon: icons.quote },
         ]}
         panels={panels}

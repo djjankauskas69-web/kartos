@@ -13,7 +13,6 @@ import {
   requireWorkspace,
   myPersonLinks,
   getLifeStory,
-  storyTitle,
   STORY_KEYS,
   signedUrls,
   type Status,
@@ -28,7 +27,7 @@ import { MemoryComposer } from "./MemoryComposer";
 import { MemoryPhoto } from "./MemoryPhoto";
 import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./MemorialProfile";
 import { GraveView } from "./GraveView";
-import { PendingButton, PortraitWithAdd } from "./PortraitControls";
+import { PendingButton } from "./PortraitControls";
 
 export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
@@ -168,59 +167,6 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
                 needsApproval={can.needsApproval(role)}
                 labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
-  );
-  const storyNode = (
-    <>
-          {(() => {
-            const title = storyTitle(t.story, person);
-            const answered = STORY_KEYS.filter((k) => story[k]);
-            const q = person.is_living ? t.story.qLiving : t.story.q;
-            if (answered.length === 0 && !person.biography) {
-              if (!can.add(role)) return null;
-              return (
-                <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-paper/60 p-5 sm:p-6">
-                  <h2 className="text-[1.25rem]">
-                    {person.is_living ? t.story.emptyTitleLiving : t.story.emptyTitle.replace("{title}", title.toLowerCase())}
-                  </h2>
-                  <p className="mt-1 max-w-[60ch] text-ink-muted">{t.story.emptyLead}</p>
-                  <Link href={can.edit(role) ? `${base}/people/${id}/edit#story` : "#memory-composer"} className={`${cls.secondary} mt-4`}>
-                    {can.edit(role) ? t.story.emptyEdit : t.story.emptyMember}
-                  </Link>
-                </div>
-              );
-            }
-            return (
-              <div className={`p-6 sm:p-7 ${cls.card}`}>
-                {answered.length > 0 && (
-                  <>
-                    <h2 className="mb-4 text-[1.35rem]">{title}</h2>
-                    <dl className="grid gap-x-10 gap-y-5 sm:grid-cols-2">
-                      {answered.map((k) => (
-                        <div key={k} className={k === "legacy" || k === "character" ? "sm:col-span-2" : ""}>
-                          <dt className="text-[0.92rem] font-semibold text-ink-muted">{q[k]}</dt>
-                          <dd className={`mt-1 max-w-[65ch] whitespace-pre-line leading-relaxed ${k === "saying" ? "border-l-2 border-line pl-4 text-[1.12rem] italic" : "text-[1.08rem]"}`}>
-                            {story[k]}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </>
-                )}
-                {person.biography && (
-                  <div className={answered.length > 0 ? "mt-8" : ""}>
-                    <h2 className="mb-3 text-[1.25rem]">{answered.length > 0 ? t.story.more : t.person.biography}</h2>
-                    <p className="max-w-[65ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{person.biography}</p>
-                  </div>
-                )}
-                {can.edit(role) && (
-                  <Link href={`${base}/people/${id}/edit#story`} className={`${cls.quiet} mt-4 -ml-3`}>
-                    {t.person.edit}
-                  </Link>
-                )}
-              </div>
-            );
-          })()}
-    </>
   );
   const memoriesNode = (
     <>
@@ -416,7 +362,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     </>
   );
 
-  if (!person.is_living) {
+  {
     const mt = t.memorial;
     const female = person.sex === "female";
     const ev: MemorialEvent[] = [];
@@ -432,8 +378,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     for (const e of personEvents.filter((e) => e.kind === "event")) {
       ev.push({ key: e.id, id: e.id, year: e.year, yearTo: e.year_to, title: e.title ?? "", sub: e.place, canDelete: can.edit(role) || e.created_by === user.id, pending: e.status === "pending" });
     }
-    if (person.death_year || person.death_place) ev.push({ key: "died", year: person.death_year, title: mt.died, sub: person.death_place });
-    if (burial?.cemetery_name) ev.push({ key: "buried", year: person.death_year, title: female ? mt.buriedF : mt.buriedM, sub: burial.cemetery_name });
+    if (!person.is_living && (person.death_year || person.death_place)) ev.push({ key: "died", year: person.death_year, title: mt.died, sub: person.death_place });
+    if (!person.is_living && burial?.cemetery_name) ev.push({ key: "buried", year: person.death_year, title: female ? mt.buriedF : mt.buriedM, sub: burial.cemetery_name });
     // Events without a year (a marriage) go after the birth; everything else by year.
     const firstChild = Math.min(...fam.children.map((c) => byId.get(c)?.birth_year ?? 9999));
     // Death and burial always close the timeline.
@@ -446,7 +392,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     if (birthEv) pl.push({ key: birthEv.id, id: birthEv.id, kind: "birthplace", place: birthEv.place ?? person.birth_place ?? "", lat: birthEv.lat, lng: birthEv.lng, canDelete: can.edit(role) || birthEv.created_by === user.id });
     else if (person.birth_place) pl.push({ key: "birth", kind: "birthplace", place: person.birth_place });
     for (const e of personEvents.filter((e) => e.kind === "residence")) pl.push({ key: e.id, id: e.id, kind: "residence", place: e.place ?? "", lat: e.lat, lng: e.lng, canDelete: can.edit(role) || e.created_by === user.id });
-    if (burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", "), lat: burial.lat, lng: burial.lng, href: `${base}/map?person=${id}` });
+    if (!person.is_living && burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", "), lat: burial.lat, lng: burial.lng, href: `${base}/map?person=${id}` });
 
     const storyText =
       person.biography?.trim() ||
@@ -456,143 +402,66 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
       null;
     const occupation = story.work ? story.work.split(/[.\n]/)[0].slice(0, 60) : null;
 
-    return (
-      <MemorialProfile
-        t={t}
-        locale={locale}
-        base={base}
-        personId={id}
-        name={fullName(person)}
-        years={dates ?? ""}
-        portrait={portraits.get(id)}
-        initials={`${person.given_names[0] ?? ""}${person.surname?.[0] ?? ""}`.toUpperCase()}
-        toMe={toMe}
-        birthPlace={person.birth_place}
-        occupation={occupation}
-        editHref={can.edit(role) ? `${base}/people/${id}/edit` : undefined}
-        linkHref={can.admin(role) ? `${base}/people/${id}/link` : undefined}
-        storyText={storyText}
-        canAdd={can.add(role)}
-        photos={photos.flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
-        photoCount={photos.length}
-        docs={papers.map((d) => ({ id: d.id, title: d.title || d.file_name || t.archive.kind[d.kind as "document" | "story"], sub: periodLabel(t, d.taken_year, d.year_qualifier, d.year_to) ?? "", href: `${base}/archive?item=${d.id}` }))}
-        events={ev}
-        places={pl}
-        eventsReady={eventsReady}
-        nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) ? composerNode : null }}
-      />
-    );
-  }
+    // Living: "1984 m. gegužės 14 d. (41 m.)"; otherwise the years.
+    let years = dates ?? "";
+    if (person.is_living && person.birth_year) {
+      const now = new Date();
+      const exact = person.birth_month && person.birth_day;
+      const born = exact ? dateFmt.format(new Date(person.birth_year, person.birth_month! - 1, person.birth_day!)) : String(person.birth_year);
+      let age = now.getFullYear() - person.birth_year;
+      if (exact && (now.getMonth() + 1 < person.birth_month! || (now.getMonth() + 1 === person.birth_month && now.getDate() < person.birth_day!))) age--;
+      years = `${born} (${mt.ageYears.replace("{n}", String(age))})`;
+    }
+    if (person.birth_surname && person.birth_surname !== person.surname) years = [years, `${t.person.nee} ${person.birth_surname}`].filter(Boolean).join(" · ");
+    const residence = [...personEvents].reverse().find((e) => e.kind === "residence")?.place ?? null;
+    const relHref = (rid: string) => (compact ? `${base}/tree?person=${rid}` : `${base}/people/${rid}`);
+    const relItem = (rid: string) => {
+      const r = byId.get(rid)!;
+      return { id: rid, name: fullName(r), sub: lifeSpan(r, t.app.born.toLowerCase()), portrait: portraits.get(rid), initials: `${r.given_names[0] ?? ""}${r.surname?.[0] ?? ""}`.toUpperCase(), href: relHref(rid) };
+    };
+    const famCard = { parents: fam.parents.filter((x) => byId.has(x)).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
 
-  return (
-    <div className="space-y-12">
-      <div>
+    return (
+      <div className="space-y-4">
         {!compact && (
           <Link href={`${base}/people`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
             ‹ {t.app.back}
           </Link>
         )}
-
-        <article className={`${compact ? "" : "mt-5"} p-6 sm:p-8 ${cls.card}`}>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <PortraitWithAdd
-              locale={locale}
-              workspaceId={current.id}
-              personId={id}
-              given={person.given_names}
-              surname={person.surname}
-              src={portraits.get(id)}
-              canEdit={can.edit(role)}
-              labels={{ add: t.photos.addPortrait, change: t.photos.changePortrait, uploading: t.photos.portraitUploading, error: t.photos.portraitError }}
-            />
-            <div className="min-w-0 flex-1">
-              {person.status === "pending" && (
-                <div className="mb-2">
-                  <PendingBadge label={t.app.pending} />
-                </div>
-              )}
-              <h1 className={cls.h1}>{fullName(person)}</h1>
-              {toMe && (
-                <p className="mt-2 inline-flex rounded-full bg-linen px-3 py-1 text-[0.95rem]">
-                  {t.tree.relationToYou}:&nbsp;<strong className="font-semibold">{toMe}</strong>
-                </p>
-              )}
-              {person.birth_surname && person.birth_surname !== person.surname && (
-                <p className="text-ink-muted">
-                  {t.person.nee} {person.birth_surname}
-                </p>
-              )}
-              {dates && (
-                <p className="mt-2 flex items-center gap-2 font-serif text-[1.2rem] text-bronze">
-                  {!person.is_living && <span aria-hidden="true" className="inline-block h-px w-4 bg-bronze" />}
-                  {dates}
-                </p>
-              )}
-              {person.is_living && <p className="text-ink-muted">{t.app.alive}</p>}
-              <dl className="mt-3 space-y-0.5 text-[1rem]">
-                {person.birth_place && (
-                  <div className="flex gap-2">
-                    <dt className="text-ink-muted">{t.person.birthPlace}:</dt>
-                    <dd>{person.birth_place}</dd>
-                  </div>
-                )}
-                {person.death_place && (
-                  <div className="flex gap-2">
-                    <dt className="text-ink-muted">{t.person.deathPlace}:</dt>
-                    <dd>{person.death_place}</dd>
-                  </div>
-                )}
-              </dl>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link href={`${base}/tree?p=${id}`} className={cls.secondary}>
-                  {t.family.viewTree}
-                </Link>
-                {isMe && (
-                  <Link href={`${base}/me`} className={cls.primary}>
-                    {t.me.editMine}
-                  </Link>
-                )}
-                {can.edit(role) && (
-                  <Link href={`${base}/people/${id}/edit`} className={cls.secondary}>
-                    {t.person.edit}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </article>
+        {person.status === "pending" && <PendingBadge label={t.app.pending} />}
+        <MemorialProfile
+          t={t}
+          locale={locale}
+          base={base}
+          personId={id}
+          name={fullName(person)}
+          years={years}
+          portrait={portraits.get(id)}
+          initials={`${person.given_names[0] ?? ""}${person.surname?.[0] ?? ""}`.toUpperCase()}
+          toMe={toMe}
+          birthPlace={person.birth_place}
+          occupation={occupation}
+          editHref={can.edit(role) ? `${base}/people/${id}/edit` : undefined}
+          linkHref={can.admin(role) ? `${base}/people/${id}/link` : undefined}
+          storyText={storyText}
+          canAdd={can.add(role)}
+          photos={photos.flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
+          photoCount={photos.length}
+          docs={papers.map((d) => ({ id: d.id, title: d.title || d.file_name || t.archive.kind[d.kind as "document" | "story"], sub: periodLabel(t, d.taken_year, d.year_qualifier, d.year_to) ?? "", href: `${base}/archive?item=${d.id}` }))}
+          events={ev}
+          places={pl}
+          eventsReady={eventsReady}
+          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) ? composerNode : null }}
+          living={person.is_living}
+          aliveLabel={person.sex === "female" ? mt.aliveF : mt.aliveM}
+          residence={residence}
+          family={famCard}
+          treeHref={`${base}/tree?p=${id}`}
+          meHref={isMe ? `${base}/me` : undefined}
+        />
       </div>
-
-      {/* Everything about them first; the story box beside it */}
-      <div className={`grid items-start gap-8 ${compact ? "" : "lg:grid-cols-[minmax(0,1fr)_24rem]"}`}>
-        <div className="min-w-0 space-y-10">
-          {/* What they were like */}
-          {storyNode}
-
-          {can.add(role) && (
-            <div id="memory-composer" className={`scroll-mt-24 ${compact ? "" : "lg:hidden"}`}>
-              {composerNode}
-            </div>
-          )}
-
-      {memoriesNode}
-      {photosNode}
-      {docsNode}
-
-       </div>
-        {can.add(role) && !compact && (
-          <aside className="sticky top-6 hidden lg:block">
-            {composerNode}
-          </aside>
-        )}
-      </div>
-
-      {familyNode}
-      {graveNode}
-
-
-    </div>
-  );
+    );
+  }
 }
 
 type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null };
