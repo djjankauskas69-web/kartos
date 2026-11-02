@@ -267,7 +267,7 @@ const pencil = (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
 );
 
-function Row({ icon, label, value, onEdit, editLabel, children }: { icon: React.ReactNode; label: string; value: React.ReactNode; onEdit?: () => void; editLabel?: string; children?: React.ReactNode }) {
+function Row({ icon, label, value, hint, onEdit, editLabel, children }: { icon: React.ReactNode; label: string; value: React.ReactNode; hint?: string; onEdit?: () => void; editLabel?: string; children?: React.ReactNode }) {
   return (
     <div className="py-3 first:pt-0 last:pb-0">
       <div className="flex items-center gap-3.5">
@@ -275,6 +275,7 @@ function Row({ icon, label, value, onEdit, editLabel, children }: { icon: React.
         <span className="min-w-0 flex-1">
           <span className="block text-[0.85rem] text-ink-muted">{label}</span>
           <span className="block truncate text-[1.02rem]">{value}</span>
+          {hint && <span className="mt-0.5 block text-[0.82rem] leading-snug text-ink-muted">{hint}</span>}
         </span>
         {onEdit && (
           <button type="button" onClick={onEdit} aria-label={editLabel} title={editLabel} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line hover:border-ink/40">
@@ -303,7 +304,7 @@ export function AccountRows({ locale, name, email, t, errors }: { locale: Locale
   const small = "min-h-10 rounded-xl px-4 font-semibold";
   return (
     <div className="divide-y divide-line">
-      <Row icon={<svg {...I}><circle cx="12" cy="12" r="4" /><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1" /></svg>} label={t.displayName} value={name || "—"} onEdit={() => setEdit(edit === "name" ? null : "name")} editLabel={t.edit}>
+      <Row icon={<svg {...I}><circle cx="12" cy="12" r="4" /><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1" /></svg>} label={t.displayName} value={name || "—"} hint={t.displayNameHint} onEdit={() => setEdit(edit === "name" ? null : "name")} editLabel={t.edit}>
         {edit === "name" && (
           <form action={nameAction} className="mt-3 flex flex-wrap gap-2">
             <input type="hidden" name="locale" value={locale} />

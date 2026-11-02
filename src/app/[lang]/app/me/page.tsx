@@ -52,7 +52,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
       </div>
     </div>
   );
-  const chevron = <span aria-hidden="true" className="text-[1.2rem] text-ink-muted">›</span>;
+  
 
   let main;
   if (!ready) {
@@ -138,16 +138,6 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
             {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy, m.privacyLead)}
             <p className="rounded-xl bg-paper px-4 py-3 text-[0.95rem] leading-relaxed">{m.privacyNote}</p>
           </section>
-          {me && (
-            <section className={card}>
-              {head(<svg {...I}><circle cx="12" cy="5.5" r="2.3" /><circle cx="5.5" cy="18.5" r="2.3" /><circle cx="18.5" cy="18.5" r="2.3" /><path d="M12 7.8v4.2M12 12H5.5v4.2M12 12h6.5v4.2" /></svg>, m.myCard, m.myCardLead)}
-              <Link href={`${base}/people/${me.id}`} className="flex min-h-12 items-center gap-3 rounded-xl border border-line px-4 font-semibold hover:border-ink/40">
-                <svg {...I} width={20} height={20}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>
-                <span className="flex-1">{m.viewMyCard}</span>
-                {chevron}
-              </Link>
-            </section>
-          )}
         </aside>
       </div>
     </div>

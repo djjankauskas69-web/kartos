@@ -766,12 +766,12 @@
     "birthPlace": "Gimimo vieta",
     "save": "Išsaugoti",
     "saved": "Išsaugota.",
-    "openCard": "Atidaryti mano kortelę",
+    "openCard": "Peržiūrėti mano kortelę medyje",
     "unlink": "Tai ne aš – atsieti",
     "unlinkWarning": "Jūsų duomenys medyje liks, tik nebegalėsite jų redaguoti patys.",
     "unlinkConfirm": "Taip, atsieti",
     "account": "Paskyra",
-    "displayName": "Vartotojo vardas",
+    "displayName": "Rodomas vardas",
     "email": "El. paštas",
     "errorTaken": "Šis žmogus jau susietas su kitu nariu. Paprašykite administratoriaus pagalbos.",
     "errorSetup": "Šiai funkcijai reikia duomenų bazės atnaujinimo 0005.",
@@ -799,7 +799,8 @@
     "myCard": "Mano kortelė šeimos medyje",
     "myCardLead": "Peržiūrėkite, kaip jūsų profilis matomas kitiems.",
     "viewMyCard": "Peržiūrėti mano kortelę",
-    "yourRole": "Jūsų rolė:"
+    "yourRole": "Jūsų rolė:",
+    "displayNameHint": "Matomas prie jūsų prisiminimų ir narių sąraše. Vardas medyje keičiamas kairėje."
   },
   "add": {
     "title": "Pridėti žmogų",
