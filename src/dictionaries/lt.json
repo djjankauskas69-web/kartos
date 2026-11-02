@@ -310,7 +310,7 @@
     "zoomOut": "Sumažinti",
     "reset": "Į centrą",
     "openProfile": "Atidaryti kortelę",
-    "hint": "Paspaudę žmogų atidarysite jo puslapį. Medį tempkite pele ar pirštu; priartinkite Ctrl + ratuku, dviem pirštais arba mygtukais apačioje.",
+    "hint": "Paspaudę žmogų pamatysite, ką galite atidaryti: profilį, medį nuo jo ar kapavietę. Medį tempkite pele ar pirštu; priartinkite Ctrl + ratuku, dviem pirštais arba mygtukais apačioje.",
     "moreAbove": "Yra daugiau protėvių",
     "moreBelow": "Yra daugiau palikuonių",
     "noRelatives": "Šiam žmogui dar nepridėta giminaičių.",
@@ -346,7 +346,12 @@
       "few": "žmonės",
       "many": "žmonės",
       "other": "žmonių"
-    }
+    },
+    "menuProfile": "Atidaryti profilį",
+    "menuGrave": "Kapavietė žemėlapyje",
+    "menuDirections": "Nuvesti iki kapo",
+    "menuAdd": "Pridėti giminaitį",
+    "menuClose": "Uždaryti"
   },
   "family": {
     "title": "Šeima",

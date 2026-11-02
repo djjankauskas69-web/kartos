@@ -29,8 +29,12 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
 }
 
 async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Locale; searchPromise: Promise<Search> }) {
-  const [{ current }, search] = await Promise.all([requireWorkspace(locale), searchPromise]);
-  const { people, byId, rels } = await getFamilyGraph(locale, current.id);
+  const [{ current, supabase }, search] = await Promise.all([requireWorkspace(locale), searchPromise]);
+  const [{ people, byId, rels }, { data: burials }] = await Promise.all([
+    getFamilyGraph(locale, current.id),
+    supabase.from("burials").select("person_id, lat, lng, created_at").eq("workspace_id", current.id).neq("status", "rejected").not("lat", "is", null).order("created_at"),
+  ]);
+  const graves = new Map((burials ?? []).flatMap((b) => (b.lat != null && b.lng != null ? [[b.person_id, { lat: b.lat, lng: b.lng }] as const] : [])));
   const base = `/${locale}/app`;
   const canAdd = can.add(current.role);
   const allPortraits = await portraitUrls(locale, people);
@@ -142,7 +146,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
-  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people, rels, portraits, focusId, depth, canAdd, base, graves, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
   const hrefFor = (d: string) => {
@@ -186,6 +190,14 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           fullscreen: t.tree.fullscreen,
           exitFullscreen: t.tree.exitFullscreen,
           showFrom: t.tree.showFrom,
+          menuProfile: t.tree.menuProfile,
+          menuGrave: t.tree.menuGrave,
+          menuDirections: t.tree.menuDirections,
+          menuAdd: t.tree.menuAdd,
+          menuClose: t.tree.menuClose,
+          navGoogle: t.grave.navGoogle,
+          navWaze: t.grave.navWaze,
+          navApple: t.grave.navApple,
           addMenu: t.tree.addMenu,
           moreAbove: t.tree.moreAbove,
           moreBelow: t.tree.moreBelow,

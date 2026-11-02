@@ -20,6 +20,9 @@ export type TreeCard = {
   highlight: boolean;
   profileHref: string;
   showFromHref: string;
+  grave?: { lat: number; lng: number };
+  mapHref?: string;
+  addOptions: Array<{ label: string; href: string }>;
   moreAbove: boolean;
   moreBelow: boolean;
 };
@@ -34,6 +37,14 @@ type Labels = {
   fullscreen: string;
   exitFullscreen: string;
   showFrom: string;
+  menuProfile: string;
+  menuGrave: string;
+  menuDirections: string;
+  menuAdd: string;
+  menuClose: string;
+  navGoogle: string;
+  navWaze: string;
+  navApple: string;
   addMenu: string;
   moreAbove: string;
   moreBelow: string;
@@ -55,7 +66,7 @@ const clampK = (k: number) => Math.max(MIN, Math.min(MAX, k));
 /**
  * The family tree as an open canvas (like a design tool): drag anywhere to move,
  * scroll or two fingers to pan, Ctrl/⌘ + wheel or pinch to zoom where you point.
- * Cards open the person's profile.
+ * Tapping a card opens a small menu: profile, tree from them, grave, add a relative.
  */
 export function TreeView({
   cards,
@@ -91,6 +102,25 @@ export function TreeView({
   const [grabbing, setGrabbing] = useState(false);
   const [activeGen, setActiveGen] = useState<number | null>(null);
   const [openPlus, setOpenPlus] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [area, setArea] = useState({ w: 800, h: 600 });
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setArea({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Close the card menu on a tap anywhere else.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node) && !(e.target as Element).closest?.("[data-card]")) setMenu(null);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [menu]);
   const [full, setFull] = useState(false);
   const start = cards.find((c) => c.start) ?? cards[0];
   const viewRef = useRef(view);
@@ -199,6 +229,7 @@ export function TreeView({
     if (!gesture.current.moved && Math.hypot(dx, dy) < 2) return;
     if (!gesture.current.moved) {
       gesture.current.moved = true;
+      setMenu(null);
       setGrabbing(true);
       canvas.current?.setPointerCapture(e.pointerId);
     }
@@ -221,6 +252,11 @@ export function TreeView({
   const onKeyDown = (e: React.KeyboardEvent) => {
     const { w, h } = size();
     const v = viewRef.current;
+    if (e.key === "Escape" && menu) {
+      setMenu(null);
+      e.preventDefault();
+      return;
+    }
     if (e.key === "+" || e.key === "=") zoomAt(w / 2, h / 2, v.k * 1.2, true);
     else if (e.key === "-") zoomAt(w / 2, h / 2, v.k / 1.2, true);
     else if (e.key === "0") fit();
@@ -257,6 +293,16 @@ export function TreeView({
   const tool =
     "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
+  const openCard = menu ? cards.find((c) => c.key === menu) : undefined;
+  /** Beside the card on wide screens: right of it, or left when there is no room. */
+  const menuPos = (c: TreeCard) => {
+    const { w, h } = area;
+    const W = 288;
+    const right = (c.x + cardW) * k + x + 6;
+    const left = right + W > w - 8 ? Math.max(8, c.x * k + x - W - 6) : right;
+    const top = Math.min(Math.max(8, c.y * k + y), Math.max(8, h - 480));
+    return { left, top };
+  };
   // Measured from Recraft (screen recording): 32 px between 2 px dots at 100 %, the gap scales
   // smoothly with the zoom, and below 50 % the dots fade until they are gone at ~11 %.
   const gridStep = 32 * k;
@@ -389,7 +435,14 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)}`}>
-                <Link href={c.profileHref} draggable={false} className="flex h-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
+                <button
+                  type="button"
+                  data-card
+                  onClick={() => setMenu(menu === c.key ? null : c.key)}
+                  aria-expanded={menu === c.key}
+                  aria-haspopup="menu"
+                  className="flex h-full w-full cursor-pointer flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2"
+                >
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {c.portrait ? (
                       // eslint-disable-next-line @next/next/no-img-element -- signed private URL
@@ -416,16 +469,7 @@ export function TreeView({
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
-                </Link>
-                <Link
-                  href={c.showFromHref}
-                  title={labels.showFrom}
-                  aria-label={`${labels.showFrom}: ${c.name}`}
-                  draggable={false}
-                  className="absolute right-3 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 text-ink opacity-0 shadow ring-1 ring-line transition-opacity focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-80"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="6" cy="5.5" r="2.2" /><circle cx="6" cy="18.5" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.7v8.6M6 12h4.5a3 3 0 0 0 3-3V9M13.5 12h2.3" /></svg>
-                </Link>
+                </button>
                 {c.moreAbove && (
                   <Link
                     href={c.showFromHref}
@@ -486,6 +530,111 @@ export function TreeView({
             </div>
           ))}
         </div>
+        {openCard && (
+          <CardMenu
+            ref={menuRef}
+            card={openCard}
+            labels={labels}
+            pos={menuPos(openCard)}
+            onClose={() => setMenu(null)}
+            onLeave={() => {
+              if (document.fullscreenElement) void document.exitFullscreen();
+              setMenu(null);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+
+/** The small menu that opens on a card: on wide screens beside the card, on phones as a sheet at the bottom. */
+function CardMenu({
+  ref,
+  card,
+  labels,
+  pos,
+  onClose,
+  onLeave,
+}: {
+  ref: React.Ref<HTMLDivElement>;
+  card: TreeCard;
+  labels: Labels;
+  pos: { left: number; top: number };
+  onClose: () => void;
+  onLeave: () => void;
+}) {
+  const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
+  const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
+  const nav = card.grave
+    ? [
+        { label: labels.navGoogle, href: `https://www.google.com/maps/dir/?api=1&destination=${at}` },
+        { label: labels.navWaze, href: `https://waze.com/ul?ll=${at}&navigate=yes` },
+        { label: labels.navApple, href: `https://maps.apple.com/?daddr=${at}` },
+      ]
+    : [];
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      aria-label={card.name}
+      onPointerDown={(e) => e.stopPropagation()}
+      style={{ ["--mx" as string]: `${pos.left}px`, ["--my" as string]: `${pos.top}px` }}
+      className="fixed inset-x-2 bottom-2 z-40 max-h-[85dvh] overflow-y-auto cursor-default rounded-[18px] border border-line bg-surface p-2 shadow-[0_24px_60px_-20px_rgb(28_29_26/0.5)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-[var(--mx)] sm:top-[var(--my)] sm:max-h-[calc(100%-16px)] sm:w-72 sm:overflow-y-auto"
+    >
+      <div className="flex items-center gap-3 px-3 pb-2 pt-1.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
+          {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
+        </div>
+        <button type="button" onClick={onClose} aria-label={labels.menuClose} title={labels.menuClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
+          <svg {...ICON} width={18} height={18}><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div className="border-t border-line pt-1.5">
+        <Link href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
+          <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+          {labels.menuProfile}
+        </Link>
+        <Link href={card.showFromHref} role="menuitem" onClick={onClose} className={item}>
+          <svg {...ICON}><circle cx="6" cy="5.5" r="2.2" /><circle cx="6" cy="18.5" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.7v8.6M6 12h4.5a3 3 0 0 0 3-3V9M13.5 12h2.3" /></svg>
+          {labels.showFrom}
+        </Link>
+        {card.mapHref && (
+          <Link href={card.mapHref} role="menuitem" onClick={onLeave} className={item}>
+            <svg {...ICON}><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
+            {labels.menuGrave}
+          </Link>
+        )}
+        {nav.length > 0 && (
+          <div className="px-3 pb-2 pt-1">
+            <p className="flex items-center gap-3 text-[0.9rem] text-ink-muted">
+              <svg {...ICON} width={18} height={18}><path d="m3 11 18-8-8 18-2-8-8-2Z" /></svg>
+              {labels.menuDirections}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5 pl-[1.9rem]">
+              {nav.map((n) => (
+                <a key={n.label} href={n.href} target="_blank" rel="noreferrer" role="menuitem" className="rounded-full border border-line px-3 py-1.5 text-[0.9rem] font-semibold hover:border-ink/40 hover:bg-linen">
+                  {n.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+        {card.addOptions.length > 0 && (
+          <div className="mt-1 border-t border-line pt-1.5">
+            <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>
+            <div className="flex flex-wrap gap-1.5 px-3 pb-2">
+              {card.addOptions.map((o) => (
+                <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className="rounded-full bg-linen px-3 py-1.5 text-[0.9rem] font-semibold hover:bg-line">
+                  + {o.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

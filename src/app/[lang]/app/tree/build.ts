@@ -39,6 +39,7 @@ export function buildTree({
   canAdd,
   base,
   addHref,
+  graves,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -50,6 +51,8 @@ export function buildTree({
   base: string; // e.g. /lt/app
   /** Link that opens the "Add a person" panel with the relation filled in. */
   addHref?: (kind: string, to: string) => string;
+  /** Marked graves by person id. */
+  graves?: Map<string, { lat: number; lng: number }>;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, rels);
@@ -72,6 +75,18 @@ export function buildTree({
         : "";
 
   const treeHref = (id: string) => `${base}/tree?p=${id}`;
+  const addOptions = (id: string) => {
+    if (!canAdd) return [];
+    const parentCount = rels.filter((r) => r.type === "parent_child" && r.person_b === id && byId.has(r.person_a)).length;
+    const hasSex = (sex: string) => rels.some((r) => r.type === "parent_child" && r.person_b === id && byId.get(r.person_a)?.sex === sex);
+    const rel = (kind: string) => (addHref ? addHref(kind, id) : `${base}/people/${id}/relative?kind=${kind}`);
+    return [
+      { label: t.family.addChild, href: rel("child") },
+      { label: t.family.addPartner, href: rel("partner") },
+      ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father") }] : []),
+      ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother") }] : []),
+    ];
+  };
   const cards: TreeCard[] = layout.nodes.map((n) => {
     const p = byId.get(n.id)!;
     return {
@@ -90,6 +105,9 @@ export function buildTree({
       highlight: !whole && n.role === "focus",
       profileHref: `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),
+      grave: graves?.get(n.id),
+      mapHref: graves?.has(n.id) ? `${base}/map?person=${n.id}` : undefined,
+      addOptions: addOptions(n.id),
       moreAbove: n.moreAbove,
       moreBelow: n.moreBelow,
     };
@@ -140,21 +158,12 @@ export function buildTree({
       const box = boxOf.get(n.key)!;
       if (usedBoxes.has(box.key)) continue;
       usedBoxes.add(box.key);
-      const parentCount = rels.filter((r) => r.type === "parent_child" && r.person_b === n.id && byId.has(r.person_a)).length;
-      const hasSex = (sex: string) =>
-        rels.some((r) => r.type === "parent_child" && r.person_b === n.id && byId.get(r.person_a)?.sex === sex);
-      const rel = (kind: string) => (addHref ? addHref(kind, n.id) : `${base}/people/${n.id}/relative?kind=${kind}`);
       pluses.push({
         key: `+${n.key}`,
         x: box.x + box.w / 2,
         y: box.y + box.h,
         gen: box.gen,
-        options: [
-          { label: t.family.addChild, href: rel("child") },
-          { label: t.family.addPartner, href: rel("partner") },
-          ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father") }] : []),
-          ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother") }] : []),
-        ],
+        options: addOptions(n.id),
       });
     }
   }

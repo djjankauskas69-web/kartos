@@ -310,7 +310,7 @@
     "zoomOut": "Zoom out",
     "reset": "Re-centre",
     "openProfile": "Open profile",
-    "hint": "Click a person to open their page. Drag the tree with the mouse or a finger; zoom with Ctrl + wheel, two fingers or the buttons below.",
+    "hint": "Tap a person to see what you can open: their profile, the tree from them, or their grave. Drag the tree with the mouse or a finger; zoom with Ctrl + wheel, two fingers or the buttons below.",
     "moreAbove": "More ancestors",
     "moreBelow": "More descendants",
     "noRelatives": "No relatives added for this person yet.",
@@ -346,7 +346,12 @@
       "few": "people",
       "many": "people",
       "other": "people"
-    }
+    },
+    "menuProfile": "Open profile",
+    "menuGrave": "Grave on the map",
+    "menuDirections": "Directions to the grave",
+    "menuAdd": "Add a relative",
+    "menuClose": "Close"
   },
   "family": {
     "title": "Family",
