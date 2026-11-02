@@ -1,6 +1,6 @@
 /**
  * A small still satellite picture around one point (Esri World Imagery tiles, the same source
- * as the grave map). Nine tiles are laid out so the point sits in the middle of the box.
+ * as the grave map). A 5×5 block of tiles is laid out so the point sits in the middle of the box.
  */
 /** Rasų kapinės, Vilnius: a calm picture for places where nothing is marked yet. */
 export const QUIET_CEMETERY = { lat: 54.6681, lng: 25.3069 };
@@ -15,7 +15,7 @@ export function SatelliteThumb({ lat, lng, zoom = 17, pin = true, className = ""
   const x0 = Math.floor(fx);
   const y0 = Math.floor(fy);
   const tiles: Array<{ x: number; y: number }> = [];
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) tiles.push({ x: x0 + dx, y: y0 + dy });
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) tiles.push({ x: x0 + dx, y: y0 + dy });
 
   return (
     <div className={`relative overflow-hidden bg-[#c9cbbf] ${className}`} aria-hidden="true">
