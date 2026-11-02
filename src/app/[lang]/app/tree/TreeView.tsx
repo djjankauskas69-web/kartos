@@ -66,7 +66,7 @@ type Labels = {
   legendDeceased: string;
 };
 
-const MIN = 0.25;
+const MIN = 0.1; // far enough out that the dots are gone, like Recraft
 const MAX = 2;
 const TOP = 104; // room for the generation and depth controls above the tree
 const PHOTO = 76;
@@ -314,10 +314,10 @@ export function TreeView({
     const top = Math.min(Math.max(8, c.y * k + y), Math.max(8, h - 480));
     return { left, top };
   };
-  // Dots keep a fixed 32 px grid (they move with the tree but never spread out) and show
-  // only close to full size: zoomed out to see the whole tree, the canvas is plain.
-  const gridStep = 32;
-  const dotAlpha = Math.min(1, Math.max(0, (k - 0.85) / 0.15));
+  // As in Recraft (measured from the screen recording): 32 px between 2 px dots at 100 %, the
+  // grid shrinks together with the tree, and from ~45 % the dots fade until they are gone at ~12 %.
+  const gridStep = 32 * k;
+  const dotAlpha = Math.min(1, Math.max(0, (k - 0.12) / 0.33));
 
   return (
     <div ref={frame} className={`relative overflow-hidden border border-line/80 bg-[#f2f2f2] ${full ? "h-screen" : "rounded-[18px]"}`}>
