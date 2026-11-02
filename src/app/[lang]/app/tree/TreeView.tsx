@@ -350,10 +350,10 @@ export function TreeView({
         onClickCapture={onClickCapture}
         onKeyDown={onKeyDown}
         style={{
-          // Recraft-style canvas: light grey with fine dots that move and scale with the tree.
+          // Recraft-style canvas: light grey with fine dots that move with the tree but keep their size when zooming.
           backgroundColor: "#f4f4f2",
           backgroundImage: "radial-gradient(circle, #cfcfca 1px, transparent 1.3px)",
-          backgroundSize: `${20 * k}px ${20 * k}px`,
+          backgroundSize: "20px 20px",
           backgroundPosition: `${x}px ${y}px`,
         }}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : "h-[calc(100dvh-14rem)] min-h-[32rem]"} ${ready ? "" : "opacity-0"}`}
