@@ -12,6 +12,7 @@ import { portraitUrls } from "../portraits";
 import { roman } from "../tree/build";
 import { GravesExplorer, type GraveItem } from "./GravesExplorer";
 import { PageLoading } from "@/components/PageLoading";
+import { WideMain } from "../tree/WideMain";
 
 export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -45,7 +46,9 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
   // One grave per person (the first one recorded).
   const seen = new Set<string>();
   const graves = (burials ?? []).filter((b) => byId.has(b.person_id) && !seen.has(b.person_id) && seen.add(b.person_id));
-  const personIds = graves.map((g) => g.person_id);
+  // People who have passed away but whose grave isn't recorded yet ("not marked").
+  const unmarked = people.filter((p) => !p.is_living && p.status !== "rejected" && !seen.has(p.id));
+  const personIds = [...graves.map((g) => g.person_id), ...unmarked.map((p) => p.id)];
 
   const [tagged, memories, gravePhotos] = await Promise.all([
     personIds.length
@@ -76,6 +79,14 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
 
   const gens = generations(people, rels);
   const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
+  const canEdit = can.edit(current.role);
+  const canAddGrave = can.add(current.role);
+  const extra = (id: string) => ({
+    photos: (photosOf.get(id) ?? []).map((path) => urls.get(path)).filter((u): u is string => !!u),
+    memories: (memories.data ?? [])
+      .filter((m) => m.person_id === id)
+      .map((m) => ({ body: m.body, author: authors.get(m.author_id) ?? "", date: dateFmt.format(new Date(m.created_at)) })),
+  });
   const items: GraveItem[] = graves.map((g) => {
     const p = byId.get(g.person_id)!;
     return {
@@ -93,14 +104,31 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
       lng: g.lng,
       pending: g.status === "pending",
       gravePhoto: g.photo_id ? urls.get(gravePhotoPath.get(g.photo_id) ?? "") : undefined,
-      photos: (photosOf.get(p.id) ?? []).map((path) => urls.get(path)).filter((u): u is string => !!u),
-      memories: (memories.data ?? [])
-        .filter((m) => m.person_id === p.id)
-        .map((m) => ({ body: m.body, author: authors.get(m.author_id) ?? "", date: dateFmt.format(new Date(m.created_at)) })),
+      ...extra(p.id),
       profileHref: `${base}/people/${p.id}`,
-      editHref: can.edit(current.role) ? `${base}/people/${p.id}/grave?back=map` : undefined,
+      editHref: canEdit ? `${base}/people/${p.id}/grave?back=map` : undefined,
     };
   });
+  for (const p of unmarked) {
+    items.push({
+      id: `p-${p.id}`,
+      personId: p.id,
+      name: fullName(p),
+      years: p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",
+      portrait: portraits.get(p.id),
+      initials: `${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase(),
+      gen: gens.get(p.id) ?? 1,
+      cemetery: null,
+      plot: "",
+      directions: null,
+      lat: null,
+      lng: null,
+      pending: false,
+      ...extra(p.id),
+      profileHref: `${base}/people/${p.id}`,
+      editHref: canAddGrave ? `${base}/people/${p.id}/grave?back=map` : undefined,
+    });
+  }
   // Oldest generation first, then by name.
   items.sort((a, b) => a.gen - b.gen || a.name.localeCompare(b.name, locale));
 
@@ -109,14 +137,17 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
 
   return (
     <div>
+      {/* List, map and details side by side need the full width. */}
+      <WideMain />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className={cls.h1}>{t.map.title}</h1>
+          <p className="mt-1 text-[1.05rem] text-ink-muted">{t.map.pageLead}</p>
         </div>
         {can.add(current.role) && (
-          <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>
+          <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-olive px-6 font-semibold text-surface hover:bg-olive-deep">
             <IconPlus size={20} />
-            {t.map.markGrave}
+            {t.map.addGrave}
           </Link>
         )}
       </div>
@@ -170,6 +201,24 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
             choose: t.map.choose,
             pending: t.app.pending,
             directions: t.grave.directions,
+            filterMarked: t.map.filterMarked,
+            filterUnmarked: t.map.filterUnmarked,
+            badgeMarked: t.map.badgeMarked,
+            badgeUnmarked: t.map.badgeUnmarked,
+            graveMarked: t.map.graveMarked,
+            graveUnmarked: t.map.graveUnmarked,
+            unknownPlace: t.map.unknownPlace,
+            showAll: t.map.showAll,
+            cemeteryPlace: t.map.cemeteryPlace,
+            coords: t.map.coords,
+            copy: t.map.copy,
+            copied: t.map.copied,
+            personProfile: t.map.personProfile,
+            tabOverview: t.map.tabOverview,
+            markThis: t.map.markThis,
+            peopleOne: t.map.people.one,
+            peopleFew: t.map.people.few,
+            peopleOther: t.map.people.other,
           }}
         />
       )}
