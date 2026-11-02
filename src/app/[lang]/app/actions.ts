@@ -493,7 +493,7 @@ export async function saveGrave(_: FormState, form: FormData): Promise<FormState
     console.error("saveGrave", error);
     return { error: "save" };
   }
-  redirect(`/${locale}/app/people/${personId}`);
+  redirect(form.get("back") === "map" ? `/${locale}/app/map?person=${personId}` : `/${locale}/app/people/${personId}`);
 }
 
 export async function deleteGrave(form: FormData) {

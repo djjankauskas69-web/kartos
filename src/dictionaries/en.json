@@ -382,7 +382,7 @@
     "directions": "How to find it",
     "directionsPlaceholder": "e.g. By the birch, third row from the chapel",
     "mapTitle": "Location on the map",
-    "mapHelp": "Tap the map at the grave or, standing at it, use your phone's location. You can drag the pin.",
+    "mapHelp": "You don't need exact coordinates. Tap the map at the grave, or just enter the cemetery, section and grave number. If you're standing at the grave, you can use your phone's location.",
     "useGps": "Use my location",
     "locating": "Finding your location…",
     "gpsError": "Couldn't get your location. Allow location access or tap the map.",
@@ -397,13 +397,47 @@
     "navigate": "Directions",
     "errorEmpty": "Enter a cemetery or mark the spot on the map.",
     "remove": "Remove resting place",
-    "choosePhoto": "Choose a photo"
+    "choosePhoto": "Choose a photo",
+    "cemeteryHint": "Pick from the list or type a new one."
   },
   "map": {
-    "title": "Family graves",
+    "title": "Graves",
     "lead": "Every marked family grave on one map.",
     "empty": "No graves marked yet. Open a person's profile and mark their grave.",
-    "noPin": "not on the map"
+    "noPin": "not on the map",
+    "markGrave": "Mark a grave",
+    "search": "Search graves, people or cemeteries…",
+    "all": "All",
+    "cemetery": "Cemetery",
+    "allCemeteries": "All cemeteries",
+    "generation": "Generations",
+    "showMore": "Show more",
+    "tabInfo": "Details",
+    "tabPhotos": "Photos",
+    "tabMemories": "Memories",
+    "noNote": "No notes about the grave yet.",
+    "moreActions": "More actions",
+    "notOnMap": "This grave isn't on the map yet.",
+    "addPin": "Mark on the map",
+    "choose": "Choose a grave in the list or on the map.",
+    "graves": {
+      "one": "marked grave",
+      "few": "marked graves",
+      "many": "marked graves",
+      "other": "marked graves"
+    },
+    "cemeteries": {
+      "one": "cemetery",
+      "few": "different cemeteries",
+      "many": "different cemeteries",
+      "other": "different cemeteries"
+    },
+    "newLead": "Choose whose grave you're marking. Next you can pick the cemetery, tap the spot on the map, or simply enter the grave number.",
+    "person": "Person",
+    "continue": "Continue",
+    "addPersonFirst": "Not in the archive yet? Add the person first.",
+    "marked": "already marked",
+    "noDeceased": "There are no deceased people in the archive yet. Add a person first."
   },
   "dash": {
     "subtitle": "Your family's history in one place.",

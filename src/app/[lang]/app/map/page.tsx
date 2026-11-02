@@ -2,91 +2,161 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, getFamilyGraph, lifeSpan, requireWorkspace } from "@/lib/data";
-import { cls, PendingBadge } from "@/components/ui";
-import { FamilyMap } from "./FamilyMap";
+import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
+import { generations } from "@/lib/tree-layout";
+import { IconPlus } from "@/components/icons";
+import { cls } from "@/components/ui";
+import { portraitUrls } from "../portraits";
+import { plural, roman } from "../tree/build";
+import { GravesExplorer, type GraveItem } from "./GravesExplorer";
 
-export default async function MapPage() {
+export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
-      <Graves t={t} locale={locale} />
+      <Graves t={t} locale={locale} personPromise={searchParams.then((s) => String(s.person ?? ""))} />
     </Suspense>
   );
 }
 
-async function Graves({ t, locale }: { t: Dictionary; locale: Locale }) {
+function plotText(t: Dictionary, b: { section: string | null; row_label: string | null; plot: string | null }) {
+  return [b.section && `${t.grave.section} ${b.section}`, b.row_label && `${t.grave.row} ${b.row_label}`, b.plot && `${t.grave.plot} ${b.plot}`]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Locale; personPromise: Promise<string> }) {
   const { supabase, current } = await requireWorkspace(locale);
-  const [{ byId }, { data: burials }] = await Promise.all([
+  const [{ people, byId, rels }, { data: burials }, personParam] = await Promise.all([
     getFamilyGraph(locale, current.id),
     supabase
       .from("burials")
-      .select("id, person_id, cemetery_name, section, row_label, plot, lat, lng, status")
+      .select("id, person_id, cemetery_name, section, row_label, plot, directions_note, lat, lng, photo_id, status")
       .eq("workspace_id", current.id)
-      .neq("status", "rejected"),
+      .neq("status", "rejected")
+      .order("created_at", { ascending: true }),
+    personPromise,
   ]);
   const base = `/${locale}/app`;
-  const graves = (burials ?? [])
-    .filter((b) => byId.has(b.person_id))
-    .map((b) => ({ ...b, person: byId.get(b.person_id)! }))
-    .sort((a, b) => (a.cemetery_name ?? "").localeCompare(b.cemetery_name ?? "", locale) || fullName(a.person).localeCompare(fullName(b.person), locale));
 
-  const plot = (b: (typeof graves)[number]) =>
-    [b.section && `${t.grave.section} ${b.section}`, b.row_label && `${t.grave.row} ${b.row_label}`, b.plot && `${t.grave.plot} ${b.plot}`]
-      .filter(Boolean)
-      .join(" · ");
+  // One grave per person (the first one recorded).
+  const seen = new Set<string>();
+  const graves = (burials ?? []).filter((b) => byId.has(b.person_id) && !seen.has(b.person_id) && seen.add(b.person_id));
+  const personIds = graves.map((g) => g.person_id);
 
-  const markers = graves
-    .filter((g) => g.lat !== null && g.lng !== null)
-    .map((g) => ({
+  const [tagged, memories, gravePhotos] = await Promise.all([
+    personIds.length
+      ? supabase.from("media_persons").select("person_id, media:media(storage_path, status, created_at)").in("person_id", personIds)
+      : Promise.resolve({ data: [] as Array<{ person_id: string; media: unknown }> }),
+    personIds.length
+      ? supabase.from("memories").select("person_id, body, author_id, created_at").in("person_id", personIds).neq("status", "rejected").order("created_at")
+      : Promise.resolve({ data: [] as Array<{ person_id: string; body: string; author_id: string; created_at: string }> }),
+    graves.some((g) => g.photo_id)
+      ? supabase.from("media").select("id, storage_path").in("id", graves.map((g) => g.photo_id).filter(Boolean) as string[])
+      : Promise.resolve({ data: [] as Array<{ id: string; storage_path: string }> }),
+  ]);
+
+  type M = { storage_path: string; status: string; created_at: string };
+  const photosOf = new Map<string, string[]>();
+  for (const r of tagged.data ?? []) {
+    const m = r.media as M | null;
+    if (!m || m.status === "rejected") continue;
+    const list = photosOf.get(r.person_id) ?? [];
+    if (list.length < 12) photosOf.set(r.person_id, [...list, m.storage_path]);
+  }
+  const gravePhotoPath = new Map((gravePhotos.data ?? []).map((m) => [m.id, m.storage_path]));
+  const [urls, portraits, authors] = await Promise.all([
+    signedUrls(locale, [...[...photosOf.values()].flat(), ...gravePhotoPath.values()]),
+    portraitUrls(locale, personIds.map((id) => byId.get(id)!)),
+    profileNames(locale, (memories.data ?? []).map((m) => m.author_id)),
+  ]);
+
+  const gens = generations(people, rels);
+  const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
+  const items: GraveItem[] = graves.map((g) => {
+    const p = byId.get(g.person_id)!;
+    return {
       id: g.id,
-      lat: g.lat as number,
-      lng: g.lng as number,
-      title: fullName(g.person),
-      lines: [lifeSpan(g.person, t.app.born.toLowerCase()), g.cemetery_name ?? "", plot(g)].filter(Boolean),
-      href: `${base}/people/${g.person_id}`,
-      linkLabel: t.tree.openProfile,
-      directionsLabel: t.grave.navigate,
-    }));
+      personId: p.id,
+      name: fullName(p),
+      years: p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",
+      portrait: portraits.get(p.id),
+      initials: `${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase(),
+      gen: gens.get(p.id) ?? 1,
+      cemetery: g.cemetery_name,
+      plot: plotText(t, g),
+      directions: g.directions_note,
+      lat: g.lat,
+      lng: g.lng,
+      pending: g.status === "pending",
+      gravePhoto: g.photo_id ? urls.get(gravePhotoPath.get(g.photo_id) ?? "") : undefined,
+      photos: (photosOf.get(p.id) ?? []).map((path) => urls.get(path)).filter((u): u is string => !!u),
+      memories: (memories.data ?? [])
+        .filter((m) => m.person_id === p.id)
+        .map((m) => ({ body: m.body, author: authors.get(m.author_id) ?? "", date: dateFmt.format(new Date(m.created_at)) })),
+      profileHref: `${base}/people/${p.id}`,
+      editHref: can.edit(current.role) ? `${base}/people/${p.id}/grave?back=map` : undefined,
+    };
+  });
+  // Oldest generation first, then by name.
+  items.sort((a, b) => a.gen - b.gen || a.name.localeCompare(b.name, locale));
+
+  const cemeteryCount = new Set(items.map((i) => i.cemetery).filter(Boolean)).size;
+  const initial = items.find((i) => i.personId === personParam)?.id ?? null;
+  const genOptions = [...new Set(items.map((i) => i.gen))].sort((a, b) => a - b).map((n) => ({ n, label: t.tree.generationN.replace("{n}", roman(n)) }));
 
   return (
     <div>
-      <h1 className={cls.h1}>{t.map.title}</h1>
-      <p className="mt-2 text-ink-muted">{t.map.lead}</p>
-
-      {graves.length === 0 ? (
-        <p className={`mt-8 px-5 py-6 ${cls.card}`}>{t.map.empty}</p>
-      ) : (
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-          {markers.length > 0 && <FamilyMap markers={markers} />}
-          <ul className={`min-w-0 divide-y divide-line self-start ${cls.card}`}>
-            {graves.map((g) => (
-              <li key={g.id} className="px-5 py-4">
-                <Link href={`${base}/people/${g.person_id}`} className="font-serif text-[1.15rem] hover:underline">
-                  {fullName(g.person)}
-                </Link>
-                <p className="text-[0.95rem] text-ink-muted">{lifeSpan(g.person, t.app.born.toLowerCase())}</p>
-                <p className="text-[0.95rem]">
-                  {[g.cemetery_name, plot(g)].filter(Boolean).join(" · ")}
-                  {(g.lat === null || g.lng === null) && <span className="text-ink-muted"> ({t.map.noPin})</span>}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  {g.status === "pending" && <PendingBadge label={t.app.pending} />}
-                  {g.lat !== null && g.lng !== null && (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${g.lat},${g.lng}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[0.95rem] font-semibold text-sage-deep hover:underline"
-                    >
-                      {t.grave.navigate} ↗
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className={cls.h1}>{t.map.title}</h1>
+          <p className="mt-1 text-[1.1rem] text-ink-muted">
+            {plural(locale, items.length, t.map.graves)}
+            {cemeteryCount > 0 && ` · ${plural(locale, cemeteryCount, t.map.cemeteries)}`}
+          </p>
         </div>
+        {can.add(current.role) && (
+          <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-sage-deep px-6 text-[1.05rem] font-semibold text-surface hover:bg-ink">
+            <IconPlus size={20} />
+            {t.map.markGrave}
+          </Link>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <p className={`px-5 py-6 ${cls.card}`}>{t.map.empty}</p>
+      ) : (
+        <GravesExplorer
+          items={items}
+          generations={genOptions}
+          initialId={initial}
+          labels={{
+            search: t.map.search,
+            all: t.map.all,
+            cemetery: t.map.cemetery,
+            allCemeteries: t.map.allCemeteries,
+            generation: t.map.generation,
+            allGenerations: t.tree.allGenerations,
+            showMore: t.map.showMore,
+            noResults: t.peopleList.noResults,
+            noPin: t.map.noPin,
+            tabInfo: t.map.tabInfo,
+            tabPhotos: t.map.tabPhotos,
+            tabMemories: t.map.tabMemories,
+            noNote: t.map.noNote,
+            noPhotos: t.photos.empty,
+            noMemories: t.memories.empty,
+            navigate: t.grave.navigate,
+            moreActions: t.map.moreActions,
+            openProfile: t.tree.openProfile,
+            editGrave: t.grave.edit,
+            notOnMap: t.map.notOnMap,
+            addPin: t.map.addPin,
+            choose: t.map.choose,
+            pending: t.app.pending,
+            directions: t.grave.directions,
+          }}
+        />
       )}
     </div>
   );

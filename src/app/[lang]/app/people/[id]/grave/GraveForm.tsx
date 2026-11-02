@@ -21,6 +21,7 @@ export type GraveValues = {
 };
 
 type Pin = { lat: number; lng: number } | null;
+export type KnownCemetery = { name: string; lat: number | null; lng: number | null };
 
 export function GraveForm({
   t,
@@ -29,6 +30,8 @@ export function GraveForm({
   personId,
   initial,
   needsApproval,
+  cemeteries = [],
+  back,
 }: {
   t: Dictionary;
   locale: Locale;
@@ -36,7 +39,15 @@ export function GraveForm({
   personId: string;
   initial?: GraveValues;
   needsApproval: boolean;
+  cemeteries?: KnownCemetery[];
+  back?: string;
 }) {
+  // A cemetery the family already uses: open the map there.
+  const startCemetery = cemeteries.find((c) => c.name === initial?.cemetery_name && c.lat !== null);
+  const [view, setView] = useState<{ lat: number; lng: number; zoom: number } | null>(
+    startCemetery && initial?.lat == null ? { lat: startCemetery.lat!, lng: startCemetery.lng!, zoom: 17 } : null,
+  );
+  const [viewKey, setViewKey] = useState(0);
   const [pin, setPin] = useState<Pin>(initial?.lat != null && initial?.lng != null ? { lat: initial.lat, lng: initial.lng } : null);
   const [accuracy, setAccuracy] = useState<number | null>(initial?.accuracy_m ?? null);
   const [focusKey, setFocusKey] = useState(0);
@@ -119,12 +130,47 @@ export function GraveForm({
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="personId" value={personId} />
       {initial?.id && <input type="hidden" name="burialId" value={initial.id} />}
+      {back && <input type="hidden" name="back" value={back} />}
       <input type="hidden" name="lat" value={pin?.lat ?? ""} />
       <input type="hidden" name="lng" value={pin?.lng ?? ""} />
       <input type="hidden" name="accuracy" value={accuracy ?? ""} />
 
       <div className="space-y-4">
-        {field("cemetery", t.grave.cemetery, initial?.cemetery_name, t.grave.cemeteryPlaceholder)}
+        <div>
+          <label htmlFor="grave-cemetery" className={cls.label}>
+            {t.grave.cemetery}
+          </label>
+          <input
+            id="grave-cemetery"
+            name="cemetery"
+            list="known-cemeteries"
+            defaultValue={initial?.cemetery_name ?? ""}
+            placeholder={t.grave.cemeteryPlaceholder}
+            maxLength={200}
+            autoComplete="off"
+            onChange={(e) => {
+              const known = cemeteries.find((c) => c.name === e.target.value && c.lat !== null);
+              if (known && !pin) {
+                setView({ lat: known.lat!, lng: known.lng!, zoom: 17 });
+                setViewKey((k) => k + 1);
+              }
+            }}
+            aria-describedby={cemeteries.length ? "grave-cemetery-hint" : undefined}
+            className={cls.input}
+          />
+          {cemeteries.length > 0 && (
+            <>
+              <datalist id="known-cemeteries">
+                {cemeteries.map((c) => (
+                  <option key={c.name} value={c.name} />
+                ))}
+              </datalist>
+              <p id="grave-cemetery-hint" className="mt-1.5 text-[0.92rem] text-ink-muted">
+                {t.grave.cemeteryHint}
+              </p>
+            </>
+          )}
+        </div>
         <div className="grid grid-cols-3 gap-3">
           {field("section", t.grave.section, initial?.section)}
           {field("row", t.grave.row, initial?.row_label)}
@@ -177,7 +223,7 @@ export function GraveForm({
         </div>
         {gps === "error" && <ErrorText message={t.grave.gpsError} />}
         {searchMsg && <p className="text-[0.95rem] text-ink-muted">{searchMsg}</p>}
-        <MapView value={pin} onPick={onPick} focusKey={focusKey} className="h-[22rem] w-full rounded-xl border border-line sm:h-[28rem]" />
+        <MapView value={pin} onPick={onPick} focusKey={focusKey} view={view} viewKey={viewKey} className="h-[22rem] w-full rounded-xl border border-line sm:h-[28rem]" />
         <div className="flex flex-wrap items-center gap-3 text-[0.95rem] text-ink-muted">
           {pin && (
             <span>

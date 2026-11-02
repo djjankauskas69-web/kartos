@@ -382,7 +382,7 @@
     "directions": "Kaip rasti",
     "directionsPlaceholder": "Pvz. prie beržo, trečia eilė nuo koplyčios",
     "mapTitle": "Vieta žemėlapyje",
-    "mapHelp": "Paspauskite žemėlapyje ties kapu arba, stovėdami prie kapo, naudokite telefono vietą. Smeigtuką galima tempti.",
+    "mapHelp": "Tikslių koordinačių nereikia. Užtenka paspausti žemėlapyje ties kapu arba tiesiog įrašyti kapines, kvartalą ir kapo numerį. Jei stovite prie kapo, galite naudoti telefono vietą.",
     "useGps": "Naudoti mano vietą",
     "locating": "Nustatoma vieta…",
     "gpsError": "Nepavyko nustatyti vietos. Leiskite naršyklei naudoti vietą arba paspauskite žemėlapyje.",
@@ -397,13 +397,47 @@
     "navigate": "Nuvesti",
     "errorEmpty": "Nurodykite kapines arba pažymėkite vietą žemėlapyje.",
     "remove": "Pašalinti kapo vietą",
-    "choosePhoto": "Pasirinkti nuotrauką"
+    "choosePhoto": "Pasirinkti nuotrauką",
+    "cemeteryHint": "Pasirinkite iš sąrašo arba įrašykite naujas."
   },
   "map": {
-    "title": "Šeimos kapai",
+    "title": "Kapavietės",
     "lead": "Visi pažymėti šeimos kapai viename žemėlapyje.",
     "empty": "Kapų dar nepažymėta. Atidarykite žmogaus kortelę ir pažymėkite kapą.",
-    "noPin": "be vietos žemėlapyje"
+    "noPin": "be vietos žemėlapyje",
+    "markGrave": "Pažymėti kapavietę",
+    "search": "Ieškoti kapavietės, žmogaus ar kapinių…",
+    "all": "Visos",
+    "cemetery": "Kapinės",
+    "allCemeteries": "Visos kapinės",
+    "generation": "Kartos",
+    "showMore": "Rodyti daugiau",
+    "tabInfo": "Informacija",
+    "tabPhotos": "Nuotraukos",
+    "tabMemories": "Prisiminimai",
+    "noNote": "Pastabų apie kapo vietą dar nėra.",
+    "moreActions": "Daugiau veiksmų",
+    "notOnMap": "Ši kapavietė dar nepažymėta žemėlapyje.",
+    "addPin": "Pažymėti žemėlapyje",
+    "choose": "Pasirinkite kapavietę sąraše arba žemėlapyje.",
+    "graves": {
+      "one": "pažymėta kapavietė",
+      "few": "pažymėtos kapavietės",
+      "many": "pažymėtos kapavietės",
+      "other": "pažymėtų kapaviečių"
+    },
+    "cemeteries": {
+      "one": "kapinės",
+      "few": "skirtingos kapinės",
+      "many": "skirtingos kapinės",
+      "other": "skirtingų kapinių"
+    },
+    "newLead": "Pasirinkite žmogų, kurio kapavietę norite pažymėti. Toliau galėsite pasirinkti kapines, paspausti vietą žemėlapyje arba tiesiog įrašyti kapo numerį.",
+    "person": "Žmogus",
+    "continue": "Tęsti",
+    "addPersonFirst": "Žmogaus dar nėra archyve? Pirmiausia pridėkite jį.",
+    "marked": "jau pažymėta",
+    "noDeceased": "Archyve dar nėra mirusių žmonių. Pirmiausia pridėkite žmogų."
   },
   "dash": {
     "subtitle": "Jūsų šeimos istorija vienoje vietoje.",
