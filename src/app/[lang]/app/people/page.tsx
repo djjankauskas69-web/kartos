@@ -12,6 +12,7 @@ import { portraitUrls } from "../portraits";
 import { AddPersonHost } from "./AddPersonPanel";
 import { addPanelProps } from "./add-data";
 import { NewHighlight } from "./NewHighlight";
+import { PageLoading } from "@/components/PageLoading";
 
 type Search = { q: string; f: string; add: string; isNew: string };
 const FILTERS = ["all", "living", "deceased", "pending", "loose"] as const;
@@ -20,7 +21,7 @@ type Filter = (typeof FILTERS)[number];
 export default async function PeoplePage({ searchParams }: PageProps<"/[lang]/app/people">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <People
         t={t}
         locale={locale}

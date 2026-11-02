@@ -16,13 +16,14 @@ import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
+import { PageLoading } from "@/components/PageLoading";
 
 type Search = { p: string; d: string; view: string; hl: string; person: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Tree
         t={t}
         locale={locale}

@@ -6,11 +6,12 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, lifeSpan, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { review } from "../actions";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function ReviewPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Review t={t} locale={locale} />
     </Suspense>
   );

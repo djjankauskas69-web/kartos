@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/data";
 import { AcceptInviteForm } from "../../app/forms";
 import { PasswordForm } from "../../login/PasswordForm";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function InvitePage({ params }: PageProps<"/[lang]/invite/[token]">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -15,7 +16,7 @@ export default async function InvitePage({ params }: PageProps<"/[lang]/invite/[
     <>
       <SiteHeader t={t} locale={locale} minimal />
       <main id="main" className="mx-auto w-full max-w-lg px-5 pb-20 pt-10 sm:pt-16">
-        <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+        <Suspense fallback={<PageLoading />}>
           <Invite t={t} locale={locale} tokenPromise={params.then((p) => p.token)} />
         </Suspense>
       </main>

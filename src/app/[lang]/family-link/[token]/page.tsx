@@ -7,6 +7,7 @@ import { cls } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { fullName, lifeSpan } from "@/lib/data";
 import { AcceptLinkForm } from "../../app/people/[id]/link/LinkForms";
+import { PageLoading } from "@/components/PageLoading";
 
 /** The other family's administrator opens this to link their tree with ours. */
 export default async function FamilyLinkInvitePage({ params }: PageProps<"/[lang]/family-link/[token]">) {
@@ -15,7 +16,7 @@ export default async function FamilyLinkInvitePage({ params }: PageProps<"/[lang
     <>
       <SiteHeader t={t} locale={locale} minimal />
       <main id="main" className="mx-auto w-full max-w-lg px-5 pb-20 pt-10 sm:pt-16">
-        <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+        <Suspense fallback={<PageLoading />}>
           <Accept t={t} locale={locale} tokenPromise={params.then((p) => p.token)} />
         </Suspense>
       </main>

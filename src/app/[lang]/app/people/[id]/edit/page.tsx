@@ -7,11 +7,12 @@ import { can, fullName, getLifeStory, getPerson, requireWorkspace, storyTitle } 
 import { cls } from "@/components/ui";
 import { deletePerson } from "../../../actions";
 import { ConfirmAction, EditPersonForm } from "../../../forms";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function EditPersonPage({ params }: PageProps<"/[lang]/app/people/[id]/edit">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Edit t={t} locale={locale} idPromise={params.then((p) => p.id)} />
     </Suspense>
   );

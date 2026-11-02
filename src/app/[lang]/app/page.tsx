@@ -6,11 +6,12 @@ import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
 import { DashboardView, type RecentItem } from "./DashboardView";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function Overview() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Dashboard t={t} locale={locale} />
     </Suspense>
   );

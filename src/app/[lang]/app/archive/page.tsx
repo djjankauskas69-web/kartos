@@ -5,11 +5,12 @@ import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUr
 import { folderLabel, periodLabel, type FolderRow } from "@/lib/archive";
 import { cls } from "@/components/ui";
 import { ArchiveLibrary, type ArchiveItem, type Kind } from "./ArchiveLibrary";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/app/archive">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Archive t={t} locale={locale} itemPromise={searchParams.then((s) => String(s.item ?? ""))} />
     </Suspense>
   );

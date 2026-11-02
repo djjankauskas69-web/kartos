@@ -6,11 +6,12 @@ import type { Locale } from "@/i18n/config";
 import { can, familyLinks, fullName, getPerson, lifeSpan, requireWorkspace } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { DirectLinkForm, InviteLinkForm, RemoveLinkButton } from "./LinkForms";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function FamilyLinkPage({ params }: PageProps<"/[lang]/app/people/[id]/link">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <FamilyLink t={t} locale={locale} idPromise={params.then((p) => p.id)} />
     </Suspense>
   );

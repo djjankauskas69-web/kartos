@@ -8,11 +8,12 @@ import { kinship } from "@/lib/kinship";
 import { cls } from "@/components/ui";
 import { loadMerge } from "../../../merge-data";
 import { MergeForm } from "./MergeForm";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function ComparePage({ params, searchParams }: PageProps<"/[lang]/app/people/[id]/compare">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Compare t={t} locale={locale} idPromise={params.then((p) => p.id)} linkPromise={searchParams.then((s) => String(s.link ?? ""))} />
     </Suspense>
   );

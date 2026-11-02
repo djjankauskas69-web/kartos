@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, lifeSpan, relativesOf, requireWorkspace } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { RelativeForm } from "../../../forms";
+import { PageLoading } from "@/components/PageLoading";
 
 const KINDS = ["father", "mother", "partner", "child"] as const;
 type Kind = (typeof KINDS)[number];
@@ -13,7 +14,7 @@ type Kind = (typeof KINDS)[number];
 export default async function AddRelativePage({ params, searchParams }: PageProps<"/[lang]/app/people/[id]/relative">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <AddRelative
         t={t}
         locale={locale}

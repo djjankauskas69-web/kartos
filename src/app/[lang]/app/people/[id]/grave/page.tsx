@@ -8,11 +8,12 @@ import { cls } from "@/components/ui";
 import { deleteGrave } from "../../../actions";
 import { ConfirmAction } from "../../../forms";
 import { GraveForm, type GraveValues } from "./GraveForm";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function GravePage({ params, searchParams }: PageProps<"/[lang]/app/people/[id]/grave">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Grave t={t} locale={locale} idPromise={params.then((p) => p.id)} backPromise={searchParams.then((s) => String(s.back ?? ""))} />
     </Suspense>
   );

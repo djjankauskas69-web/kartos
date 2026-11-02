@@ -11,11 +11,12 @@ import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { roman } from "../tree/build";
 import { GravesExplorer, type GraveItem } from "./GravesExplorer";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Graves t={t} locale={locale} personPromise={searchParams.then((s) => String(s.person ?? ""))} />
     </Suspense>
   );

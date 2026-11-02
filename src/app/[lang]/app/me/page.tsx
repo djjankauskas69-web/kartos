@@ -9,11 +9,12 @@ import { ConfirmAction } from "../forms";
 import { portraitUrls } from "../portraits";
 import { unlinkMe } from "./actions";
 import { ClaimMe, MyDetailsForm, MyNameForm, PortraitUpload } from "./MyProfile";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function MePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Me t={t} locale={locale} />
     </Suspense>
   );

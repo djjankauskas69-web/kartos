@@ -6,12 +6,13 @@ import { fullName, getFamilyGraph, lifeSpan, myPersonLinks, requireWorkspace } f
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { Welcome } from "./Welcome";
+import { PageLoading } from "@/components/PageLoading";
 
 /** First step after joining: "Who are you in this tree?" */
 export default async function WelcomePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <WelcomeStep t={t} locale={locale} />
     </Suspense>
   );

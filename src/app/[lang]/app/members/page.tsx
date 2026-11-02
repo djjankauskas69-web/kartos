@@ -7,11 +7,12 @@ import { cls } from "@/components/ui";
 import { IconUserPlus } from "@/components/icons";
 import { RenameWorkspaceForm } from "../forms";
 import { MembersCenter, type MemberRow } from "./MembersCenter";
+import { PageLoading } from "@/components/PageLoading";
 
 export default async function MembersPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<p className="text-ink-muted">{t.app.loading}</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Members t={t} locale={locale} />
     </Suspense>
   );
