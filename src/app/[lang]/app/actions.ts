@@ -78,9 +78,14 @@ export async function createInvite(_: FormState, form: FormData): Promise<FormSt
 
   const token = randomBytes(24).toString("base64url");
   const tokenHash = createHash("sha256").update(token, "utf8").digest("hex");
-  const { error } = await supabase
+  const personId = uuid(form, "personId");
+  let { error } = await supabase
     .from("invitations")
-    .insert({ workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id });
+    .insert({ workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id, ...(personId ? { person_id: personId } : {}) });
+  // Before database update 0009 there is no person_id column: invite without it.
+  if (error && personId && /person_id/.test(error.message)) {
+    ({ error } = await supabase.from("invitations").insert({ workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id }));
+  }
   if (error) {
     console.error("createInvite", error);
     return { error: "save" };
@@ -179,7 +184,7 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
     return { error: "invite" };
   }
   (await cookies()).set(WS_COOKIE, String(data), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-  redirect(`/${locale}/app`);
+  redirect(`/${locale}/app/welcome`);
 }
 
 /* ---------- Approval queue (administrator) ---------- */

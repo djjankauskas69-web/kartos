@@ -28,6 +28,8 @@ export type DashboardData = {
   shownKids: Person[];
   moreKids: number;
   grave?: { lat: number; lng: number };
+  /** Not yet "this is me" in this tree: a nudge to the welcome step. */
+  welcomeHref?: string;
   portraits: Record<string, string>;
   latestPhotos: string[];
   recent: RecentItem[];
@@ -36,7 +38,7 @@ export type DashboardData = {
 const card = "rounded-[12px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]";
 
 /** The archive overview: name, numbers, tree, graves, photos, recent additions, invitation. */
-export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, portraits, latestPhotos, recent }: DashboardData) {
+export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, welcomeHref, portraits, latestPhotos, recent }: DashboardData) {
   const base = `/${locale}/app`;
   const stats = [
     { icon: <IconPeople size={24} />, n: counts.people, label: t.dash.statPeople, href: `${base}/people` },
@@ -81,6 +83,16 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
           </Link>
         )}
       </section>
+
+      {welcomeHref && (
+        <Link href={welcomeHref} className={`group flex flex-wrap items-center gap-4 p-5 sm:p-6 ${card} border-ink/20`}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-white">
+            <IconPeople size={22} />
+          </span>
+          <span className="min-w-0 flex-1 text-[1.05rem]">{t.welcome.banner}</span>
+          <span className={`${"inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-white"} group-hover:bg-olive-deep`}>{t.welcome.bannerButton}</span>
+        </Link>
+      )}
 
       {/* Tree, graves, archive */}
       <section className="grid gap-5 lg:grid-cols-[1.25fr_1fr] [&>*]:min-w-0">

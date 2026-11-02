@@ -289,7 +289,10 @@
     "menuFor": "Actions for {name}",
     "empty": "No members in this filter.",
     "daysAgo": "{n} days ago",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "inviteFor": "Invitation for",
+    "inviteForAnyone": "Anyone (they'll choose themselves)",
+    "inviteForHelp": "Pick someone from the tree and, once they join, they're linked to their own card straight away."
   },
   "review": {
     "title": "Awaiting approval",
@@ -982,5 +985,44 @@
     "notMember": "You can compare only when you are also a member of the other family's archive.",
     "compare": "Compare and merge",
     "error": "Couldn't merge. Please try again."
+  },
+  "welcome": {
+    "kicker": "Welcome",
+    "title": "Who are you in this tree?",
+    "lead": "Pick yourself – the tree will then show how everyone is related to you, and you can keep your own photo and details up to date.",
+    "search": "Search by name",
+    "thisIsMe": "This is me",
+    "none": "There are no unclaimed living people in the tree.",
+    "notHere": "I'm not in the tree yet",
+    "notHereLead": "Add yourself and say where you belong.",
+    "given": "First name",
+    "surname": "Surname",
+    "born": "Year of birth",
+    "sex": "Sex",
+    "male": "Man",
+    "female": "Woman",
+    "iAm": "I am the",
+    "of": "of",
+    "pick": "Choose…",
+    "kinds": {
+      "child": "child (son / daughter)",
+      "parent": "father / mother",
+      "partner": "husband / wife",
+      "sibling": "brother / sister"
+    },
+    "create": "Add me to the tree",
+    "skip": "Skip",
+    "pendingNote": "You'll appear in the tree straight away; the administrator confirms the relationship.",
+    "errors": {
+      "pick": "Choose a person.",
+      "taken": "Another member has already chosen this person.",
+      "nameRequired": "Enter a first name.",
+      "year": "Check the year.",
+      "noParents": "This person has no parents yet – choose another relationship.",
+      "setup": "The database needs update 0009.",
+      "save": "Couldn't save. Please try again."
+    },
+    "banner": "Mark which person in the tree is you – then you'll see how the others are related to you.",
+    "bannerButton": "Choose"
   }
 }

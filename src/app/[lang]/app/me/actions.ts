@@ -104,3 +104,31 @@ export async function adminLinkPerson(_: FormState, form: FormData): Promise<For
   refresh();
   return { ok: true };
 }
+
+const KINDS_SELF = ["child", "parent", "partner", "sibling"] as const;
+
+/** "I'm not in the tree yet" with where you belong: "I'm the daughter of Petras". */
+export async function createMeRelated(_: FormState, form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale);
+  const given = text(form, "given", 120);
+  const born = year(form, "birthYear");
+  const kind = String(form.get("kind") ?? "");
+  const relative = uuid(form, "relativeId");
+  const sex = String(form.get("sex") ?? "");
+  if (!given) return { error: "nameRequired" };
+  if (born === "bad") return { error: "year" };
+  if (!relative || !(KINDS_SELF as readonly string[]).includes(kind)) return { error: "pick" };
+  const { error } = await supabase.rpc("create_my_person_related", {
+    ws: workspace.id,
+    p_given: given,
+    p_surname: text(form, "surname", 120),
+    p_birth_year: born,
+    p_sex: sex === "male" || sex === "female" ? sex : null,
+    p_kind: kind,
+    p_relative: relative,
+  });
+  if (error) return { error: /no parents/.test(error.message) ? "noParents" : rpcError(error.message) };
+  refresh();
+  return { ok: true };
+}

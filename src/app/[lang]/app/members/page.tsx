@@ -136,6 +136,14 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
                 .sort((a, b) => a.name.localeCompare(b.name, locale))
             : []
         }
+        inviteFor={
+          isAdmin
+            ? people
+                .filter((p) => p.status !== "rejected" && p.is_living && ![...personOf.values()].includes(p.id))
+                .map((p) => ({ id: p.id, name: fullName(p), years: p.birth_year ? String(p.birth_year) : "" }))
+                .sort((a, b) => a.name.localeCompare(b.name, locale))
+            : []
+        }
         t={labels}
         errors={errors}
       />

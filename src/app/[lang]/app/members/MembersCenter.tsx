@@ -109,6 +109,7 @@ export function MembersCenter({
   activeInvites,
   linkReady,
   people,
+  inviteFor,
   t,
   errors,
 }: {
@@ -118,6 +119,7 @@ export function MembersCenter({
   activeInvites: number;
   linkReady: boolean;
   people: LinkOption[];
+  inviteFor: LinkOption[];
   t: Labels;
   errors: Errors;
 }) {
@@ -215,7 +217,7 @@ export function MembersCenter({
       </section>
 
       <aside className="space-y-6">
-        {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
+        {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} people={inviteFor} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
 
         <section className={`p-5 ${cls.card}`}>
           <h2 className="mb-3 text-[1.25rem]">{t.levelsTitle}</h2>
@@ -240,7 +242,7 @@ export function MembersCenter({
 
 /* ---------- Invite card ---------- */
 
-function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; activeInvites: number; t: Labels; errors: Errors }) {
+function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Locale; activeInvites: number; people: LinkOption[]; t: Labels; errors: Errors }) {
   const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
     const result = await createInvite(prev, form);
@@ -274,6 +276,23 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
             ))}
           </select>
         </div>
+        {people.length > 0 && (
+          <div>
+            <label htmlFor="invite-person" className={cls.label}>
+              {t.inviteFor}
+            </label>
+            <select id="invite-person" name="personId" defaultValue="" className={cls.input}>
+              <option value="">{t.inviteForAnyone}</option>
+              {people.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.years ? `, ${p.years}` : ""}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[0.9rem] text-ink-muted">{t.inviteForHelp}</p>
+          </div>
+        )}
         <button type="submit" disabled={pending} className={`${cls.primary} w-full gap-2`}>
           {copy === "copied" ? <IconCheck size={20} /> : <IconLink size={20} />}
           {pending ? t.loading : t.copyLink}

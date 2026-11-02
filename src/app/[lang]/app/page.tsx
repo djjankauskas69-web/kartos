@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person } from "@/lib/data";
+import { fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
@@ -31,7 +31,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   const ws = current.id;
   const base = `/${locale}/app`;
-  const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories, gravePoint] = await Promise.all([
+  const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories, gravePoint, mine] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected"),
@@ -40,6 +40,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("burials").select("id, person_id, cemetery_name, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("memories").select("id, person_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("burials").select("lat, lng").eq("workspace_id", ws).neq("status", "rejected").not("lat", "is", null).order("created_at", { ascending: false }).limit(1),
+    myPersonLinks(locale),
   ]);
 
   /* ---- Mini tree: the couple with the most children, and their children ---- */
@@ -101,6 +102,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
       shownKids={shownKids}
       moreKids={kids.length - shownKids.length}
       grave={gravePoint.data?.[0]?.lat != null && gravePoint.data[0].lng != null ? { lat: gravePoint.data[0].lat, lng: gravePoint.data[0].lng } : undefined}
+      welcomeHref={mine.ready && !mine.links.get(ws) && people.length > 0 ? `${base}/welcome` : undefined}
       portraits={Object.fromEntries(portraits)}
       latestPhotos={latest.map((m) => urls.get(m.storage_path) ?? "").filter(Boolean)}
       recent={recent}

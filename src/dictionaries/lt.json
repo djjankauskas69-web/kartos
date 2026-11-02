@@ -289,7 +289,10 @@
     "menuFor": "Veiksmai: {name}",
     "empty": "Šiame filtre narių nėra.",
     "daysAgo": "prieš {n} d.",
-    "yesterday": "Vakar"
+    "yesterday": "Vakar",
+    "inviteFor": "Kvietimas skirtas",
+    "inviteForAnyone": "Bet kam (žmogus pasirinks pats)",
+    "inviteForHelp": "Pasirinkus žmogų iš medžio, jis prisijungęs iškart bus susietas su savo kortele."
   },
   "review": {
     "title": "Laukia patvirtinimo",
@@ -982,5 +985,44 @@
     "notMember": "Palyginti galite tik tada, kai esate ir kitos šeimos archyvo narys.",
     "compare": "Palyginti ir sujungti",
     "error": "Nepavyko sujungti. Pabandykite dar kartą."
+  },
+  "welcome": {
+    "kicker": "Sveiki atvykę",
+    "title": "Kas jūs šiame medyje?",
+    "lead": "Pasirinkite save – tada medis rodys, kuo jums yra kiekvienas žmogus, o savo nuotrauką ir duomenis galėsite tvarkyti patys.",
+    "search": "Ieškoti pagal vardą",
+    "thisIsMe": "Tai aš",
+    "none": "Gyvų nepriskirtų žmonių medyje nėra.",
+    "notHere": "Manęs dar nėra medyje",
+    "notHereLead": "Įveskite save ir nurodykite, kur medyje esate.",
+    "given": "Vardas",
+    "surname": "Pavardė",
+    "born": "Gimimo metai",
+    "sex": "Lytis",
+    "male": "Vyras",
+    "female": "Moteris",
+    "iAm": "Aš esu",
+    "of": "žmogaus",
+    "pick": "Pasirinkite…",
+    "kinds": {
+      "child": "vaikas (sūnus / dukra)",
+      "parent": "tėvas / mama",
+      "partner": "sutuoktinis / sutuoktinė",
+      "sibling": "brolis / sesuo"
+    },
+    "create": "Pridėti mane į medį",
+    "skip": "Praleisti",
+    "pendingNote": "Jūs atsirasite medyje iškart, o ryšį patvirtins administratorius.",
+    "errors": {
+      "pick": "Pasirinkite žmogų.",
+      "taken": "Šį žmogų jau pasirinko kitas narys.",
+      "nameRequired": "Įrašykite vardą.",
+      "year": "Patikrinkite metus.",
+      "noParents": "Šiam žmogui dar nepridėti tėvai – pasirinkite kitą ryšį.",
+      "setup": "Reikia atnaujinti duomenų bazę (0009).",
+      "save": "Nepavyko išsaugoti. Bandykite dar kartą."
+    },
+    "banner": "Pažymėkite, kuris žmogus medyje esate jūs – tada matysite, kuo jums yra kiti.",
+    "bannerButton": "Pasirinkti"
   }
 }

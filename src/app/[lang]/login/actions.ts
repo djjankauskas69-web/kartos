@@ -63,7 +63,7 @@ export async function passwordSignIn(_: AuthState, form: FormData): Promise<Auth
     const { data, error: inviteError } = await supabase.rpc("accept_invitation", { p_token: token });
     if (inviteError || !data) return { error: "invite" };
     (await cookies()).set(WS_COOKIE, String(data), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-    redirect(`/${locale}/app`);
+    redirect(`/${locale}/app/welcome`);
   }
   redirect(next ?? `/${locale}/app`);
 }
