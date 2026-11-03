@@ -431,7 +431,9 @@
       },
       "from": "From:",
       "you": "You",
-      "empty": "none yet"
+      "empty": "none yet",
+      "fromHim": "From him",
+      "fromHer": "From her"
     }
   },
   "family": {

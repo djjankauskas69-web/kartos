@@ -135,7 +135,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
-  show: { button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
+  show: { fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
 };
 
 const MIN = 0.1;
@@ -203,6 +203,11 @@ export function TreeView({
   const [fromId, setFromId] = useState<string | null>(null);
   const from = fromId ?? meCard?.id ?? null;
   const kin = useMemo(() => (from && show ? kinGroups(from, show.rels) : ({} as ReturnType<typeof kinGroups>)), [from, show]);
+  const fromOther = !!from && from !== meCard?.id;
+  // One strong black ring: on whoever the tree is counted from (you, unless someone else is chosen).
+  const strongRing = (c: TreeCard) => (fromOther ? c.id === from : c.me || c.highlight);
+  const ringOf = (c: TreeCard) =>
+    strongRing(c) ? "outline outline-[3px] outline-offset-2 outline-night" : c.me ? "outline outline-2 outline-offset-2 outline-[#a7a397]" : c.foreign ? "outline outline-[3px] outline-offset-0" : "";
   // "Who is this to me" under each name — counted from you, or from whoever is chosen above.
   const relationTo = useMemo(() => (from && show && from !== meCard?.id ? kinship(show.people, show.rels, from, show.lang) : null), [from, show, meCard?.id]);
   const people = useMemo(() => [...new Map(cards.map((c) => [c.id, c.name])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [cards]);
@@ -746,19 +751,24 @@ export function TreeView({
                         src={c.portrait}
                         alt=""
                         draggable={false}
-                        style={{ width: PHOTO, height: PHOTO, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign ?? "")?.ring }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.93]"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
+                        style={{ width: PHOTO, height: PHOTO, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign ?? "")?.ring }}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.93]"} ${ringOf(c)}`}
                       />
                     ) : (
                       <span
                         aria-hidden="true"
-                        style={{ width: PHOTO, height: PHOTO, ...(c.foreign ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign)?.ring } : {}) }}
-                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-[#ebe6da] text-ink/85"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
+                        style={{ width: PHOTO, height: PHOTO, ...(c.foreign ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign)?.ring } : {}) }}
+                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-[#ebe6da] text-ink/85"} ${ringOf(c)}`}
                       >
                         {c.initials}
                       </span>
                     )}
-                    {c.me && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full border-2 border-white bg-night px-2.5 py-0.5 text-[0.85rem] font-semibold text-surface">{labels.me}</span>}
+                    {c.me && <span className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full border-2 border-white px-2.5 py-0.5 text-[0.85rem] font-semibold ${fromOther ? "bg-[#8a867b] text-surface" : "bg-night text-surface"}`}>{labels.me}</span>}
+                    {fromOther && c.id === from && (
+                      <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-night px-2.5 py-0.5 text-[0.85rem] font-semibold text-surface">
+                        {show?.people.find((p) => p.id === from)?.sex === "female" ? labels.show.fromHer : labels.show.fromHim}
+                      </span>
+                    )}
                   </span>
                   <span title={c.foreign} className="mt-3.5 line-clamp-2 text-[1.32rem] font-semibold leading-[1.25] text-ink group-hover:underline">{c.name}</span>
                   <span className="mt-0.5 flex items-center gap-1.5 text-[1.08rem] tabular-nums text-ink/70">
@@ -767,7 +777,7 @@ export function TreeView({
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                   {(() => {
-                    const rel = relationTo ? relationTo.get(c.id) : c.me ? undefined : c.relation;
+                    const rel = relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
                     return rel ? <span className="mt-1 line-clamp-2 text-[0.98rem] font-semibold leading-tight text-olive-deep first-letter:uppercase">{rel}</span> : null;
                   })()}
                 </CardLink>

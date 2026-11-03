@@ -431,7 +431,9 @@
       },
       "from": "Nuo:",
       "you": "Tavęs",
-      "empty": "nėra medyje"
+      "empty": "nėra medyje",
+      "fromHim": "Nuo jo",
+      "fromHer": "Nuo jos"
     }
   },
   "family": {
