@@ -21,7 +21,6 @@ import { portraitUrls } from "./portraits";
 import { signOut, switchWorkspace } from "./actions";
 import { SideNav, TopNav, type NavItem } from "./AppNav";
 import { MenuCloser } from "./MenuCloser";
-import { WorkspaceRename } from "./WorkspaceRename";
 
 export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -140,8 +139,7 @@ async function WorkspaceMenu({ t, locale, wide = false }: { t: Dictionary; local
           </form>
         ))}
         <div className="mt-1 border-t border-line pt-1">
-          {can.admin(current.role) && <WorkspaceRename key={current.name} locale={locale} name={current.name} labels={{ rename: t.dash.renameFamily, save: t.me.save, cancel: t.app.cancel }} />}
-          <Link href={`${base}/new`} className="gap-2 font-semibold text-sage-deep">
+          <Link href={`${base}/new`} className="gap-2.5 text-[1rem] text-ink">
             <IconPlus size={18} />
             {t.dash.newArchive}
           </Link>
