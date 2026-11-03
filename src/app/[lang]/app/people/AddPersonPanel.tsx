@@ -211,6 +211,26 @@ export function AddPersonHost({
   );
 }
 
+/** Lithuanian dative of a name: "Justas Jankauskas" → "Justui Jankauskui", "Ieva" → "Ievai". */
+function datLt(name: string) {
+  return name
+    .split(/\s+/)
+    .map((w) => {
+      const rules: Array<[RegExp, string]> = [
+        [/ius$/, "iui"],
+        [/ys$/, "iui"],
+        [/is$/, "iui"],
+        [/as$/, "ui"],
+        [/us$/, "ui"],
+        [/ė$/, "ei"],
+        [/a$/, "ai"],
+      ];
+      for (const [re, to] of rules) if (re.test(w)) return w.replace(re, to);
+      return w;
+    })
+    .join(" ");
+}
+
 /* ---------- Search a person (relation target, or someone already in the tree) ---------- */
 
 function PersonSearch({
@@ -456,7 +476,7 @@ function AddPersonPanel({
               </section>
 
               <section inert={!anchorP} className={anchorP ? "" : "opacity-40"}>
-                {step(t.step2)}
+                {step(anchorP ? t.step2Name.replace("{name}", locale === "lt" ? datLt(anchorP.name) : anchorP.name) : t.step2)}
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {/* Only the relationships still possible (no third parent…). */}
                   {KINDS.filter((k) => !kindNote(k)).map((k) => (

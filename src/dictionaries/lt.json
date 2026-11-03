@@ -1027,7 +1027,8 @@
     "cropHint": "Pastumkite nuotrauką, kad veidas būtų apskritime, ir priartinkite.",
     "saveAgain": "Išsaugoti ir dar",
     "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}",
-    "titleLink": "Prijungti prie medžio"
+    "titleLink": "Prijungti prie medžio",
+    "step2Name": "Kas jis {name}?"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",
