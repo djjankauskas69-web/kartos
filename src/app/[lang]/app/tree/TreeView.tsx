@@ -80,7 +80,7 @@ function directLine(start: string, rels: Array<{ person_a: string; person_b: str
 
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add", maybe one kind only). */
 type AddGroup = "parent" | "partner" | "child" | "sibling";
-type MenuState = { key: string; mode: "card" | "add"; group?: AddGroup } | null;
+type MenuState = { key: string; mode: "card" | "add" | "which"; group?: AddGroup } | null;
 
 /** Each linked family gets its own soft colour (the same as its dot above the tree). */
 const FAMILY_COLORS = [
@@ -864,7 +864,7 @@ export function TreeView({
                   <button
                     type="button"
                     data-card
-                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "card" ? null : { key: c.key, mode: "card" })}
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "which" ? null : { key: c.key, mode: "which" })}
                     aria-label={`${labels.which.missing}: ${c.name}`}
                     title={c.missingParent.kind === "mother" ? labels.which.mother : labels.which.father}
                     style={{ left: (cardW - PHOTO) / 2 - 4, top: -4 }}
@@ -898,7 +898,7 @@ export function TreeView({
           </ul>
 
         </div>
-        {openCard && (
+        {openCard && !(menu?.mode === "which" && !openCard.missingParent) && (
           <CardMenu
             key={`${menu!.key}-${menu!.mode}-${menu!.group ?? ""}`}
             ref={menuRef}
@@ -945,7 +945,7 @@ function CardMenu({
 }: {
   ref: React.Ref<HTMLDivElement>;
   card: TreeCard;
-  mode: "card" | "add";
+  mode: "card" | "add" | "which";
   group?: AddGroup;
   labels: Labels;
   locale: string;
@@ -954,6 +954,29 @@ function CardMenu({
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
+  const whichBlock = (
+      card.missingParent && (
+          <div className="mb-1.5 rounded-xl bg-[#fbf3e2] px-3 py-2.5">
+            <p className="font-semibold">{card.missingParent.kind === "mother" ? labels.which.mother : labels.which.father}</p>
+            <p className="mb-2 text-[0.82rem] leading-snug text-ink-muted">{card.missingParent.openHref ? labels.which.there.replace("{family}", card.missingParent.family ?? "") : labels.which.hint}</p>
+            {card.missingParent.openHref && (
+              <a href={card.missingParent.openHref} onClick={onLeave} className="inline-flex min-h-9 items-center rounded-full bg-ink px-3.5 text-[0.9rem] font-semibold text-surface hover:bg-olive-deep">
+                {labels.which.open.replace("{family}", card.missingParent.family ?? "")}
+              </a>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {card.missingParent.options.map((o) => (
+                <form key={o.id} action={setOtherParent}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="childId" value={card.id} />
+                  <input type="hidden" name="parentId" value={o.id} />
+                  <AskButton label={o.name} busy="…" />
+                </form>
+              ))}
+            </div>
+          </div>
+        )
+  );
   const item = "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.97rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
@@ -986,7 +1009,9 @@ function CardMenu({
           <svg {...ICON} width={18} height={18}><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
-      {mode === "add" ? (
+      {mode === "which" ? (
+        <div className="border-t border-line pt-1.5">{whichBlock}</div>
+      ) : mode === "add" ? (
         <div className="border-t border-line pt-1.5">
           <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{group ? labels.addGroup[group] : labels.menuAdd}</p>
           {card.addOptions.filter((o) => !group || o.group === group).map((o) => (
@@ -998,27 +1023,7 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
-        {card.missingParent && (
-          <div className="mb-1.5 rounded-xl bg-[#fbf3e2] px-3 py-2.5">
-            <p className="font-semibold">{card.missingParent.kind === "mother" ? labels.which.mother : labels.which.father}</p>
-            <p className="mb-2 text-[0.82rem] leading-snug text-ink-muted">{card.missingParent.openHref ? labels.which.there.replace("{family}", card.missingParent.family ?? "") : labels.which.hint}</p>
-            {card.missingParent.openHref && (
-              <a href={card.missingParent.openHref} onClick={onLeave} className="inline-flex min-h-9 items-center rounded-full bg-ink px-3.5 text-[0.9rem] font-semibold text-surface hover:bg-olive-deep">
-                {labels.which.open.replace("{family}", card.missingParent.family ?? "")}
-              </a>
-            )}
-            <div className="flex flex-wrap gap-1.5">
-              {card.missingParent.options.map((o) => (
-                <form key={o.id} action={setOtherParent}>
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="childId" value={card.id} />
-                  <input type="hidden" name="parentId" value={o.id} />
-                  <AskButton label={o.name} busy="…" />
-                </form>
-              ))}
-            </div>
-          </div>
-        )}
+        {whichBlock}
         {card.elsewhere && (
           <div className="mb-1.5 rounded-xl bg-[#eef4ea] px-3 py-2.5">
             <p className="text-[0.85rem] text-[#3d6a52]">{labels.elsewhere.has}</p>
