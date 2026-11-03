@@ -506,7 +506,7 @@ export function TreeView({
               )}
             </button>
             {showOpen && (
-              <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(40rem,calc(100dvh-12rem))] sm:w-[23rem]">
+              <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(40rem,calc(100dvh-12rem))] sm:w-[18.5rem]">
                 <div className="mb-2 flex items-center justify-between px-1">
                   <p className="font-semibold">{labels.show.title}</p>
                   <button type="button" onClick={() => setShowOpen(false)} aria-label={labels.show.close} className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
