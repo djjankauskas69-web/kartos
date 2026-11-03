@@ -12,7 +12,7 @@ import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
-import { ancestorCouples, kinship } from "@/lib/kinship";
+import { kinship } from "@/lib/kinship";
 import { Profile } from "../people/[id]/Profile";
 import { KartosPulse, ProfileDrawer } from "./ProfileDrawer";
 import { WideMain } from "./WideMain";
@@ -88,7 +88,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   // You in this tree ("Tai aš"): relationships in words and your branches.
   const me = mine.links.get(current.id);
   const relations = kinship(people, rels, me, locale);
-  const couples = ancestorCouples(people, rels, me);
   const [allPortraits, foreignPortraits] = await Promise.all([
     portraitUrls(locale, people),
     Promise.all(branches.map((b) => (b ? portraitUrls(locale, b.original.filter((p) => [...b.originalId.values()].includes(p.id))) : Promise.resolve(new Map<string, string>())))),
@@ -222,24 +221,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree${qs ? `?${qs}` : ""}`;
   };
   const drawerId = byId.has(search.person) ? search.person : null;
-  const firstName = (id: string) => byId.get(id)?.given_names ?? "";
-  const branchOptions = couples.map((c) => ({
-    value: c.ids[0],
-    label: `${[t.tree.branchH2, t.tree.branchH3, t.tree.branchH4][c.h - 2]}${c.side === "female" ? ` (${t.tree.viaMother})` : c.side === "male" ? ` (${t.tree.viaFather})` : ""}: ${c.ids.map(firstName).join(` ${t.tree.and} `)}`,
-    href: `${base}/tree?p=${c.ids[0]}&d=all&hl=${me}`,
-  }));
-  const branchValue = hl && branchOptions.some((o) => o.value === focusId) && depthValue === "all" ? focusId! : focusId ? "other" : "all";
-  const branch = me
-    ? {
-        value: branchValue,
-        options: [
-          { value: "all", label: t.tree.branchAll, href: `${base}/tree` },
-          ...(branchValue === "other" ? [{ value: "other", label: fullName(byId.get(focusId!)!), href: `${base}/tree?p=${focusId}` }] : []),
-          ...branchOptions,
-        ],
-      }
-    : undefined;
-
   // Portraits for everyone who can appear (cheap: one query + one signing call).
   const portraits = Object.fromEntries(allPortraits);
   branches.forEach((b, i) => {
@@ -344,7 +325,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardW={tree.cardW}
         cardH={tree.cardH}
         generations={tree.generationChips}
-        branch={branch}
         show={{ rels: [...mainRels, ...sides.flat()].map((r) => ({ person_a: r.person_a, person_b: r.person_b, type: r.type })) }}
         familyToggles={[{ label: current.name, on: true }, ...openLinks.filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i).map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref }))]}
         labels={{
