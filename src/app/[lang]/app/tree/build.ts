@@ -334,7 +334,7 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
       if (e.kind === "partner") {
         const a = keyMap.get(e.a)!;
         const b = keyMap.get(e.b)!;
-        if (!(mainKeys.has(a) && mainKeys.has(b))) edges.push({ kind: "partner", a, b });
+        if (!(mainKeys.has(a) && mainKeys.has(b))) edges.push({ kind: "partner", a, b, later: e.later });
       } else {
         const parents = e.parents.map((k) => keyMap.get(k)!);
         const children = e.children.map((k) => keyMap.get(k)!);
