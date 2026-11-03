@@ -486,16 +486,13 @@ export function TreeView({
               type="button"
               onClick={() => setShowOpen((o) => !o)}
               aria-expanded={showOpen}
+              aria-label={labels.show.title}
+              title={labels.show.title}
               className={`flex h-9 items-center gap-2 px-3.5 text-[0.9rem] ${pill}`}
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
               <span>
-                {labels.show.button}
-                {picked.length > 0 && (
-                  <>
-                    : <b className="font-semibold">{labels.show.cats[picked[0]]}{picked.length > 1 ? ` ${labels.show.more.replace("{n}", String(picked.length - 1))}` : ""}</b>
-                  </>
-                )}
+                {picked.length > 0 && <b className="font-semibold">{labels.show.cats[picked[0]]}{picked.length > 1 ? ` ${labels.show.more.replace("{n}", String(picked.length - 1))}` : ""}</b>}
               </span>
               {familyToggles.length > 1 && (
                 <span className="flex -space-x-1" aria-hidden="true">
