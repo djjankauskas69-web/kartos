@@ -11,6 +11,7 @@ import {
   removeMember,
   renameSelf,
   revokeAllInvites,
+  revokeInvite,
   transferOwnership,
   type FormState,
 } from "../actions";
@@ -116,7 +117,7 @@ export function MembersCenter({
   locale: Locale;
   members: MemberRow[];
   isAdmin: boolean;
-  activeInvites: number;
+  activeInvites: ActiveInvite[];
   linkReady: boolean;
   people: LinkOption[];
   inviteFor: LinkOption[];
@@ -242,7 +243,10 @@ export function MembersCenter({
 
 /* ---------- Invite card ---------- */
 
-function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Locale; activeInvites: number; people: LinkOption[]; t: Labels; errors: Errors }) {
+export type ActiveInvite = { id: string; who: string | null; role: Role; expires: string; uses: number };
+
+function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Locale; activeInvites: ActiveInvite[]; people: LinkOption[]; t: Labels; errors: Errors }) {
+  const [listOpen, setListOpen] = useState(false);
   const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
     const result = await createInvite(prev, form);
@@ -324,7 +328,7 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
         </div>
       )}
 
-      {activeInvites > 0 && (
+      {activeInvites.length > 0 && (
         <div className="mt-4 border-t border-line pt-3">
           {confirmRevoke ? (
             <form action={revokeAllInvites} className="flex flex-wrap items-center gap-2" onSubmit={() => setConfirmRevoke(false)}>
@@ -337,14 +341,38 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
               </button>
             </form>
           ) : (
-            <p className="flex flex-wrap items-center justify-between gap-2 text-[0.92rem] text-ink-muted">
-              <span>
-                {t.activeCount} {activeInvites}
-              </span>
-              <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
-                {t.revokeAll}
-              </button>
-            </p>
+            <>
+              <p className="flex flex-wrap items-center justify-between gap-2 text-[0.92rem] text-ink-muted">
+                <button type="button" aria-expanded={listOpen} onClick={() => setListOpen((o) => !o)} className="inline-flex items-center gap-1.5 font-semibold text-ink underline-offset-2 hover:underline">
+                  {t.activeCount} {activeInvites.length}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform ${listOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
+                  {t.revokeAll}
+                </button>
+              </p>
+              {listOpen && (
+                <ul className="mt-3 space-y-2">
+                  {activeInvites.map((i) => (
+                    <li key={i.id} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{i.who ?? t.inviteAnyone}</span>
+                        <span className="block text-[0.85rem] text-ink-muted">
+                          {t.role[i.role]} · {t.inviteUntil.replace("{date}", i.expires)}
+                          {i.uses > 0 ? ` · ${t.inviteUsed.replace("{n}", String(i.uses))}` : ""}
+                        </span>
+                      </span>
+                      <form action={revokeInvite}>
+                        <Hidden values={{ locale, id: i.id }} />
+                        <button type="submit" className="text-[0.9rem] font-semibold text-ink-muted hover:text-danger">
+                          {t.inviteRevoke}
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}

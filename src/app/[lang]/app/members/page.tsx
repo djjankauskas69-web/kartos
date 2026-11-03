@@ -54,11 +54,12 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
     isAdmin
       ? supabase
           .from("invitations")
-          .select("id", { count: "exact", head: true })
+          .select("id, email, role, person_id, expires_at, use_count, created_at")
           .eq("workspace_id", current.id)
           .is("revoked_at", null)
           .gt("expires_at", new Date().toISOString())
-      : Promise.resolve({ count: 0 }),
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
     // Needs SQL 0005; until then nobody is linked.
     supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id),
     listPeople(locale, current.id),
@@ -128,7 +129,13 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
         locale={locale}
         members={members}
         isAdmin={isAdmin}
-        activeInvites={invites.count ?? 0}
+        activeInvites={((invites.data ?? []) as Array<{ id: string; email: string | null; role: Role; person_id: string | null; expires_at: string; use_count: number }>).map((i) => ({
+          id: i.id,
+          who: i.person_id && personById.get(i.person_id) ? fullName(personById.get(i.person_id)!) : i.email || null,
+          role: i.role,
+          expires: new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { month: "long", day: "numeric" }).format(new Date(i.expires_at)),
+          uses: i.use_count ?? 0,
+        }))}
         linkReady={linkReady}
         people={
           isAdmin

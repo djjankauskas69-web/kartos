@@ -293,7 +293,11 @@
     "inviteFor": "Kas jis medyje?",
     "inviteForAnyone": "Pasirinks pats",
     "inviteForHelp": "Pasirinkus žmogų iš medžio, jis prisijungęs iškart bus susietas su savo kortele.",
-    "change": "keisti"
+    "change": "keisti",
+    "inviteAnyone": "Bet kam su nuoroda",
+    "inviteUntil": "galioja iki {date}",
+    "inviteUsed": "panaudota {n} k.",
+    "inviteRevoke": "Atšaukti"
   },
   "review": {
     "title": "Laukia patvirtinimo",

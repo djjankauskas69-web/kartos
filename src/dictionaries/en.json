@@ -293,7 +293,11 @@
     "inviteFor": "Who are they in the tree?",
     "inviteForAnyone": "They'll choose",
     "inviteForHelp": "Pick someone from the tree and, once they join, they're linked to their own card straight away.",
-    "change": "change"
+    "change": "change",
+    "inviteAnyone": "Anyone with the link",
+    "inviteUntil": "valid until {date}",
+    "inviteUsed": "used {n}×",
+    "inviteRevoke": "Revoke"
   },
   "review": {
     "title": "Awaiting approval",
