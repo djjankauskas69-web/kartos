@@ -151,9 +151,6 @@ export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; p
         <Field id="my-surname" label={t.surname}>
           <input id="my-surname" name="surname" maxLength={120} defaultValue={person.surname ?? ""} className={cls.input} />
         </Field>
-        <Field id="my-birth-surname" label={t.birthSurname}>
-          <input id="my-birth-surname" name="birthSurname" maxLength={120} defaultValue={person.birth_surname ?? ""} className={cls.input} />
-        </Field>
         <Field id="my-born" label={t.birthYear}>
           <input
             id="my-born"
@@ -165,11 +162,17 @@ export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; p
             className={cls.input}
           />
         </Field>
-        <div className="sm:col-span-2">
-          <Field id="my-place" label={t.birthPlace}>
-            <input id="my-place" name="birthPlace" maxLength={200} defaultValue={person.birth_place ?? ""} className={cls.input} />
+        <Field id="my-place" label={t.birthPlace}>
+          <input id="my-place" name="birthPlace" maxLength={200} defaultValue={person.birth_place ?? ""} className={cls.input} />
+        </Field>
+        {/* A maiden name mostly matters for women; men only see it when one is already given. */}
+        {person.sex !== "male" || person.birth_surname ? (
+          <Field id="my-birth-surname" label={t.birthSurname}>
+            <input id="my-birth-surname" name="birthSurname" maxLength={120} defaultValue={person.birth_surname ?? ""} className={cls.input} />
           </Field>
-        </div>
+        ) : (
+          <input type="hidden" name="birthSurname" value="" />
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-olive px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-70">
