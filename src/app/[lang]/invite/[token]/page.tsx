@@ -7,6 +7,7 @@ import { cls } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/data";
 import { AcceptInviteForm } from "../../app/forms";
+import { signOut } from "../../app/actions";
 import { PasswordForm } from "../../login/PasswordForm";
 import { PageLoading } from "@/components/PageLoading";
 
@@ -41,6 +42,10 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
 
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   const next = `/${locale}/invite/${token}`;
+  // Meant for one email: signing in with another would make a second account that joins nothing.
+  const { data: meantFor } = supabase ? await supabase.rpc("invitation_email", { p_token: token }) : { data: null };
+  const forEmail = typeof meantFor === "string" && meantFor.trim() ? meantFor.trim() : null;
+  const otherAccount = !!(user && forEmail && user.email && user.email.toLowerCase() !== forEmail.toLowerCase());
 
   return (
     <div>
@@ -62,6 +67,18 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
         </div>
       </dl>
       <div className="mt-8">
+        {otherAccount && (
+          <div className="mb-6 rounded-2xl border border-[#b8892e]/40 bg-[#fbf3e2] p-4">
+            <p className="font-semibold">{t.invite.otherAccount.replace("{email}", forEmail!).replace("{me}", user!.email!)}</p>
+            <p className="mt-1 text-[0.95rem] text-ink-muted">{t.invite.otherAccountLead}</p>
+            <form action={signOut} className="mt-3">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="next" value={next} />
+              <button type="submit" className="min-h-10 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">{t.invite.switchAccount}</button>
+            </form>
+          </div>
+        )}
+        {!user && forEmail && <p className="mb-4 rounded-xl bg-paper px-4 py-3 text-[0.95rem]">{t.invite.meantFor.replace("{email}", forEmail)}</p>}
         {user ? (
           <AcceptInviteForm t={t} locale={locale} token={token} />
         ) : (

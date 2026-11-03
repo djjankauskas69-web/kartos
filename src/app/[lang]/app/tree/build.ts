@@ -47,6 +47,7 @@ export function buildTree({
   relations,
   highlightId,
   meId,
+  elsewhere,
   profileHrefFor,
   foreign,
   sides,
@@ -73,6 +74,8 @@ export function buildTree({
   highlightId?: string;
   /** You (marked "you" in the tree). */
   meId?: string;
+  /** People here who have their own tree in another family (that you may ask to see). */
+  elsewhere?: Map<string, { family: string; ws: string; status: string | null }>;
   /** Where clicking a person goes (the tree opens the profile in a side panel). */
   profileHrefFor?: (id: string) => string;
   /** People shown from a linked family: which family, and where they open. */
@@ -158,6 +161,7 @@ export function buildTree({
         addOptions: [],
         families: [],
         foreign: far.family,
+        grave: graves?.get(n.id),
         moreAbove: n.moreAbove,
         moreBelow: n.moreBelow,
       };
@@ -177,6 +181,7 @@ export function buildTree({
       start: n.role === "focus",
       highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
       me: n.id === meId,
+      elsewhere: elsewhere?.get(n.id),
       relation: relations?.get(n.id),
       profileHref: profileHrefFor ? profileHrefFor(n.id) : `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),

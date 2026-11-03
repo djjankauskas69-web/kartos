@@ -30,6 +30,10 @@ export type DashboardData = {
   grave?: { lat: number; lng: number };
   /** Not yet "this is me" in this tree: a nudge to the welcome step. */
   welcomeHref?: string;
+  /** You are "this is me" in another family's archive: marking yourself here joins the trees. */
+  welcomeJoin?: string;
+  /** Other families asking to see this tree (administrator). */
+  accessRequests?: { n: number; href: string };
   portraits: Record<string, string>;
   latestPhotos: string[];
   recent: RecentItem[];
@@ -38,7 +42,7 @@ export type DashboardData = {
 const card = "rounded-[12px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]";
 
 /** The archive overview: name, numbers, tree, graves, photos, recent additions, invitation. */
-export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, welcomeHref, portraits, latestPhotos, recent }: DashboardData) {
+export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, welcomeHref, welcomeJoin, accessRequests, portraits, latestPhotos, recent }: DashboardData) {
   const base = `/${locale}/app`;
   const stats = [
     { icon: <IconPeople size={24} />, n: counts.people, label: t.dash.statPeople, href: `${base}/people` },
@@ -89,8 +93,18 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-white">
             <IconPeople size={22} />
           </span>
-          <span className="min-w-0 flex-1 text-[1.05rem]">{t.welcome.banner}</span>
+          <span className="min-w-0 flex-1 text-[1.05rem]">{welcomeJoin ? t.welcome.bannerJoin.replace("{family}", welcomeJoin) : t.welcome.banner}</span>
           <span className={`${"inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-white"} group-hover:bg-olive-deep`}>{t.welcome.bannerButton}</span>
+        </Link>
+      )}
+
+      {accessRequests && accessRequests.n > 0 && (
+        <Link href={accessRequests.href} className={`group flex flex-wrap items-center gap-4 p-5 sm:p-6 ${card} border-[#3d6a52]/30 bg-[#f1f6ee]`}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#3d6a52] text-white">
+            <IconTree size={22} />
+          </span>
+          <span className="min-w-0 flex-1 text-[1.05rem]">{(accessRequests.n === 1 ? t.otherFamilies.bannerOne : t.otherFamilies.bannerMany).replace("{n}", String(accessRequests.n))}</span>
+          <span className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-white group-hover:bg-olive-deep">{t.otherFamilies.bannerButton}</span>
         </Link>
       )}
 

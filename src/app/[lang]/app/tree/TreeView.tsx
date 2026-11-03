@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useFormStatus } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
+import { requestTreeAccess } from "../tree-access-actions";
 import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
 import { kinship } from "@/lib/kinship";
 
@@ -86,6 +88,8 @@ export type TreeCard = {
   addOptions: Array<{ label: string; href: string; group: AddGroup }>;
   /** You. */
   me?: boolean;
+  /** Has their own family tree in an archive you are not in. */
+  elsewhere?: { family: string; ws: string; status: string | null };
   families: Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>;
   linkHref?: string;
   /** Shown from a linked family (its name). */
@@ -135,6 +139,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
+  elsewhere: { has: string; ask: string; askAgain: string; pending: string; asking: string; hint: string };
   show: { fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
 };
 
@@ -168,6 +173,7 @@ export function TreeView({
   branch,
   familyToggles = [],
   show,
+  locale = "lt",
   labels,
 }: {
   cards: TreeCard[];
@@ -185,6 +191,7 @@ export function TreeView({
   /** Which families are shown together: this one, and the ones joined to it. */
   familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
   /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
+  locale?: string;
   show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }>; people: Array<{ id: string; sex: "male" | "female" | "unknown" | null }>; lang: "lt" | "en" };
   labels: Labels;
 }) {
@@ -763,6 +770,12 @@ export function TreeView({
                         {c.initials}
                       </span>
                     )}
+                    {c.elsewhere && (
+                      <span title={`${labels.elsewhere.has}: ${c.elsewhere.family}`} className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#e6efe2] text-[#3d6a52] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)]">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21v-7M12 14l-4-3M12 12l4-3M12 3a6 6 0 0 1 6 6c0 2.5-2 4-4 4.5M12 3a6 6 0 0 0-6 6c0 2.5 2 4 4 4.5" /></svg>
+                        <span className="sr-only">{labels.elsewhere.has}</span>
+                      </span>
+                    )}
                     {c.me && <span className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full border-2 border-white px-2.5 py-0.5 text-[0.85rem] font-semibold ${fromOther ? "bg-[#8a867b] text-surface" : "bg-night text-surface"}`}>{labels.me}</span>}
                     {fromOther && c.id === from && (
                       <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-night px-2.5 py-0.5 text-[0.85rem] font-semibold text-surface">
@@ -829,6 +842,7 @@ export function TreeView({
             mode={menu!.mode}
             group={menu!.group}
             labels={labels}
+            locale={locale}
             pos={menuPos(openCard)}
             onClose={() => setMenu(null)}
             onLeave={() => {
@@ -842,6 +856,15 @@ export function TreeView({
   );
 }
 
+function AskButton({ label, busy }: { label: string; busy: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className="inline-flex min-h-9 items-center rounded-full bg-ink px-3.5 text-[0.9rem] font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
+      {pending ? busy : label}
+    </button>
+  );
+}
+
 const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 
 /** The small menu that opens on a card: on wide screens beside the card, on phones as a sheet at the bottom. */
@@ -851,6 +874,7 @@ function CardMenu({
   mode,
   group,
   labels,
+  locale,
   pos,
   onClose,
   onLeave,
@@ -860,6 +884,7 @@ function CardMenu({
   mode: "card" | "add";
   group?: AddGroup;
   labels: Labels;
+  locale: string;
   pos: { left: number; top: number };
   onClose: () => void;
   onLeave: () => void;
@@ -909,6 +934,22 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
+        {card.elsewhere && (
+          <div className="mb-1.5 rounded-xl bg-[#eef4ea] px-3 py-2.5">
+            <p className="text-[0.85rem] text-[#3d6a52]">{labels.elsewhere.has}</p>
+            <p className="font-semibold">{card.elsewhere.family}</p>
+            {card.elsewhere.status === "pending" ? (
+              <p className="mt-1.5 text-[0.9rem] text-ink-muted">{labels.elsewhere.pending}</p>
+            ) : (
+              <form action={requestTreeAccess} className="mt-2">
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="owner" value={card.elsewhere.ws} />
+                <AskButton label={card.elsewhere.status === "rejected" || card.elsewhere.status === "revoked" ? labels.elsewhere.askAgain : labels.elsewhere.ask} busy={labels.elsewhere.asking} />
+                <p className="mt-1.5 text-[0.82rem] leading-snug text-ink-muted">{labels.elsewhere.hint}</p>
+              </form>
+            )}
+          </div>
+        )}
         {card.addOptions.length > 0 && (
           <div className="border-b border-line px-3 pb-3 pt-1.5">
             <p className="mb-2 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>

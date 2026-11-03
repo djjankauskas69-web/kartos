@@ -322,7 +322,11 @@
     "invalidLead": "Ask the administrator to send you a new link.",
     "error": "Couldn't accept the invitation. Try again.",
     "joinNow": "Join the family",
-    "otherWays": "Other ways to sign in"
+    "otherWays": "Other ways to sign in",
+    "otherAccount": "This invitation is for {email}, but you are signed in as {me}.",
+    "otherAccountLead": "If you have an account with that email, sign in with it – then everything links to it and you'll see all your trees together.",
+    "switchAccount": "Sign in with another account",
+    "meantFor": "This invitation is for {email}. Sign in with that email so it links to your account."
   },
   "tree": {
     "title": "Family tree",
@@ -434,6 +438,14 @@
       "empty": "none yet",
       "fromHim": "From him",
       "fromHer": "From her"
+    },
+    "elsewhere": {
+      "has": "Has their own family tree",
+      "ask": "Ask to see it",
+      "askAgain": "Ask again",
+      "pending": "Request sent. Waiting for their answer.",
+      "asking": "Sending…",
+      "hint": "If they agree you'll see names, years, graves and what they share."
     }
   },
   "family": {
@@ -1205,7 +1217,8 @@
       "save": "Couldn't save. Please try again."
     },
     "banner": "Mark which person in the tree is you – then you'll see how the others are related to you.",
-    "bannerButton": "Choose"
+    "bannerButton": "Choose",
+    "bannerJoin": "Mark who you are in this tree, and it will join with “{family}”."
   },
   "memorial": {
     "tabOverview": "Overview",
@@ -1309,5 +1322,26 @@
       "birth_place": "Birthplace",
       "death_place": "Place of death"
     }
+  },
+  "sharedTree": {
+    "readOnly": "This is {family}'s tree. They let you see names, years, graves and what they share. Nothing can be changed.",
+    "noMemories": "They haven't shared memories about this person yet."
+  },
+  "otherFamilies": {
+    "title": "Other families",
+    "lead": "When someone in your tree also has their own family tree, the families can ask to see each other's trees.",
+    "discoverable": "Let other families see that we have a tree",
+    "discoverableOn": "Linked families see a badge and can ask for permission.",
+    "discoverableOff": "Nobody can see that your family has a tree.",
+    "pendingTitle": "Asking to see your tree",
+    "askedBy": "Asked by {name}",
+    "allow": "Allow",
+    "refuse": "Refuse",
+    "allowHint": "If allowed they'll see only names, years (no birth year for the living), graves and what you share with linked families. They can't change anything.",
+    "approvedTitle": "Can see your tree",
+    "revoke": "Take back",
+    "bannerOne": "{n} family is asking to see your tree.",
+    "bannerMany": "{n} families are asking to see your tree.",
+    "bannerButton": "Review"
   }
 }

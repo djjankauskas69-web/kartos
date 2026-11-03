@@ -59,7 +59,9 @@ export async function signOut(form: FormData) {
   const supabase = await createClient();
   await supabase?.auth.signOut();
   (await cookies()).delete(WS_COOKIE);
-  redirect(`/${locale}`);
+  // Back to where it was asked from (e.g. an invitation, to sign in with the right account).
+  const next = String(form.get("next") ?? "");
+  redirect(next.startsWith(`/${locale}/`) && !next.startsWith("//") ? next : `/${locale}`);
 }
 
 /* ---------- Members and invitations (administrator) ---------- */

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks, profileNames } from "@/lib/data";
+import { can, fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks, profileNames } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
@@ -18,7 +18,7 @@ export default async function Overview() {
 }
 
 async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const { supabase, current } = await getContext(locale);
+  const { supabase, current, memberships: ctxMemberships = [] } = await getContext(locale);
 
   if (!current) {
     return (
@@ -43,6 +43,11 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("burials").select("lat, lng").eq("workspace_id", ws).neq("status", "rejected").not("lat", "is", null).order("created_at", { ascending: false }).limit(1),
     myPersonLinks(locale),
   ]);
+  // Administrator: other families asking to see this tree (database update 0013).
+  const { data: accessList } = can.admin(current.role) ? await supabase.rpc("tree_access_list", { ws }) : { data: null };
+  const pendingAccess = ((accessList ?? []) as Array<{ status: string }>).filter((r) => r.status === "pending").length;
+  // Not yet "this is me" here, but in another archive you are: say that marking yourself joins the trees.
+  const meElsewhere = ctxMemberships.find((m) => m.id !== ws && mine.links.get(m.id));
 
   /* ---- Mini tree: the couple with the most children, and their children ---- */
   const childCount = (id: string) => relativesOf(id, rels).children.length;
@@ -108,6 +113,8 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
       moreKids={kids.length - shownKids.length}
       grave={gravePoint.data?.[0]?.lat != null && gravePoint.data[0].lng != null ? { lat: gravePoint.data[0].lat, lng: gravePoint.data[0].lng } : undefined}
       welcomeHref={mine.ready && !mine.links.get(ws) && people.length > 0 ? `${base}/welcome` : undefined}
+      welcomeJoin={meElsewhere?.name}
+      accessRequests={pendingAccess ? { n: pendingAccess, href: `${base}/members#other-families` } : undefined}
       portraits={Object.fromEntries(portraits)}
       latestPhotos={latest.map((m) => urls.get(m.storage_path) ?? "").filter(Boolean)}
       recent={recent}

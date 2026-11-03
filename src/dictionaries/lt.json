@@ -322,7 +322,11 @@
     "invalidLead": "Paprašykite administratoriaus atsiųsti naują nuorodą.",
     "error": "Nepavyko priimti kvietimo. Bandykite dar kartą.",
     "joinNow": "Prisijungti prie šeimos",
-    "otherWays": "Kiti prisijungimo būdai"
+    "otherWays": "Kiti prisijungimo būdai",
+    "otherAccount": "Šis kvietimas skirtas {email}, o jūs prisijungę kaip {me}.",
+    "otherAccountLead": "Jei turite paskyrą su tuo el. paštu, prisijunkite ja – tada viskas susies su ta paskyra ir matysite visus savo medžius kartu.",
+    "switchAccount": "Prisijungti kita paskyra",
+    "meantFor": "Kvietimas skirtas {email}. Prisijunkite šiuo el. paštu, kad viskas susietų su jūsų paskyra."
   },
   "tree": {
     "title": "Giminės medis",
@@ -434,6 +438,14 @@
       "empty": "nėra medyje",
       "fromHim": "Nuo jo",
       "fromHer": "Nuo jos"
+    },
+    "elsewhere": {
+      "has": "Turi savo šeimos medį",
+      "ask": "Prašyti leidimo matyti",
+      "askAgain": "Prašyti dar kartą",
+      "pending": "Prašymas išsiųstas. Laukiama jų atsakymo.",
+      "asking": "Siunčiama…",
+      "hint": "Gavę leidimą matysite jų vardus, metus, kapavietes ir tai, kuo jie dalijasi."
     }
   },
   "family": {
@@ -1205,7 +1217,8 @@
       "save": "Nepavyko išsaugoti. Bandykite dar kartą."
     },
     "banner": "Pažymėkite, kuris žmogus medyje esate jūs – tada matysite, kuo jums yra kiti.",
-    "bannerButton": "Pasirinkti"
+    "bannerButton": "Pasirinkti",
+    "bannerJoin": "Pažymėkite, kuris žmogus šiame medyje esate jūs – tada jūsų ir „{family}“ medžiai susijungs."
   },
   "memorial": {
     "tabOverview": "Apžvalga",
@@ -1309,5 +1322,26 @@
       "birth_place": "Gimimo vieta",
       "death_place": "Mirties vieta"
     }
+  },
+  "sharedTree": {
+    "readOnly": "Tai {family} medis. Jie leido jums matyti vardus, metus, kapavietes ir tai, kuo dalijasi. Keisti nieko negalima.",
+    "noMemories": "Prisiminimais apie šį žmogų jie dar nesidalino."
+  },
+  "otherFamilies": {
+    "title": "Kitos šeimos",
+    "lead": "Kai kas nors jūsų medyje turi ir savo šeimos medį, šeimos gali paprašyti leidimo pamatyti vienos kitų medžius.",
+    "discoverable": "Leisti kitoms šeimoms matyti, kad turime medį",
+    "discoverableOn": "Susietos šeimos mato ženkliuką ir gali paprašyti leidimo.",
+    "discoverableOff": "Niekas nemato, kad jūsų šeima turi medį.",
+    "pendingTitle": "Prašo leidimo matyti jūsų medį",
+    "askedBy": "Prašė {name}",
+    "allow": "Leisti",
+    "refuse": "Atmesti",
+    "allowHint": "Leidus jie matys tik vardus ir pavardes, metus (gyvų – be gimimo metų), kapavietes ir tai, kuo dalijatės su susietomis šeimomis. Keisti nieko negalės.",
+    "approvedTitle": "Mato jūsų medį",
+    "revoke": "Atšaukti leidimą",
+    "bannerOne": "{n} šeima prašo leidimo matyti jūsų medį.",
+    "bannerMany": "{n} šeimos prašo leidimo matyti jūsų medį.",
+    "bannerButton": "Peržiūrėti"
   }
 }
