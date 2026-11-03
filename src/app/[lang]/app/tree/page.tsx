@@ -338,6 +338,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         pluses={tree.pluses}
         paths={tree.paths}
         partnerPaths={tree.partnerPaths}
+        laterPartnerPaths={tree.laterPartnerPaths}
         width={tree.width}
         height={tree.height}
         cardW={tree.cardW}

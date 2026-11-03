@@ -22,7 +22,7 @@ export type TreeNode = {
 };
 
 export type TreeEdge =
-  | { kind: "partner"; a: string; b: string }
+  | { kind: "partner"; a: string; b: string; later?: boolean }
   | { kind: "parents"; parents: string[]; children: string[] };
 
 export type TreeSize = { cardW: number; cardH: number; gapX: number; rowGap: number; pad: number };
@@ -114,37 +114,52 @@ export function layoutTree(
     const kidsW = kids.reduce((s, c) => s + descWidth(c, depth + 1, next), 0);
     return Math.max(unit, kidsW);
   };
-  const placeChildren = (id: string, coupleKeys: string[], depth: number, center: number, seen: Set<string>) => {
-    const kids = depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : [];
+  /**
+   * A person and their partners on one row: the first partner on the right, a second on the
+   * left, a third on the right again… Each partner is joined to the person (never to each
+   * other); a later marriage is marked so it can be drawn lighter. Returns where the person
+   * stands and the keys of everyone placed.
+   */
+  const placeCouple = (id: string, key: string, unitLeft: number, row: number, node: Omit<Placed, "key" | "id" | "cx" | "row">) => {
+    const partners = partnersOf(id);
+    const onLeft = (p: string, i: number) => (partners.length === 1 ? leftPartners.has(p) : i % 2 === 1);
+    const lefts = partners.filter(onLeft);
+    const rights = partners.filter((p, i) => !onLeft(p, i));
+    const cx = unitLeft + lefts.length + 0.5;
+    place({ ...node, id, cx, row }, key);
+    const keyOf = new Map<string, string>();
+    partners.forEach((p, i) => {
+      const side = onLeft(p, i) ? -1 - lefts.indexOf(p) : 1 + rights.indexOf(p);
+      const pk = place({ id: p, cx: cx + side, row, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false }, `p:${key}:${p}`);
+      keyOf.set(p, pk);
+      edges.push({ kind: "partner", a: key, b: pk, later: i > 0 });
+    });
+    return { cx, keyOf };
+  };
+
+  /** Children below a person, grouped by their other parent, each group hanging from its couple. */
+  const placeChildren = (id: string, key: string, partnerKeys: Map<string, string>, partnerX: Map<string, number>, ownX: number, depth: number, center: number, seen: Set<string>) => {
+    const otherOf = (c: string) => parentsOf(c).find((p) => p !== id && partnerKeys.has(p)) ?? "";
+    const xOf = (c: string) => (otherOf(c) ? (partnerX.get(otherOf(c)) ?? ownX) : ownX);
+    const kids = (depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : []).sort((a, b) => xOf(a) - xOf(b) || born(a) - born(b));
     if (kids.length === 0) return;
     const next = new Set(seen).add(id);
     const widths = kids.map((c) => descWidth(c, depth + 1, next));
     let x = center - widths.reduce((a, b) => a + b, 0) / 2;
-    const childKeys: string[] = [];
+    const groups = new Map<string, string[]>();
     kids.forEach((c, i) => {
       const w = widths[i];
-      const partners = partnersOf(c);
-      const unit = 1 + partners.length;
-      const coupleLeft = x + (w - unit) / 2;
+      const unit = 1 + partnersOf(c).length;
       const bottom = depth + 1 === down;
-      const key = place(
-        { id: c, cx: coupleLeft + (partners.length === 1 && leftPartners.has(partners[0]) ? 1.5 : 0.5), row: depth + 1, role: "descendant", moreAbove: false, moreBelow: bottom && childrenOf(c).length > 0 },
-        `d:${coupleKeys[0]}:${c}`,
-      );
-      childKeys.push(key);
-      const couple = [key];
-      partners.forEach((p, j) => {
-        const pk = place(
-          { id: p, cx: partners.length === 1 && leftPartners.has(p) ? coupleLeft + 0.5 : coupleLeft + 1.5 + j, row: depth + 1, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false },
-          `p:${key}:${p}`,
-        );
-        edges.push({ kind: "partner", a: couple[couple.length - 1], b: pk });
-        couple.push(pk);
-      });
-      placeChildren(c, couple.slice(0, 2), depth + 1, coupleLeft + unit / 2, next);
+      const ck = `d:${key}:${c}`;
+      const { cx, keyOf } = placeCouple(c, ck, x + (w - unit) / 2, depth + 1, { role: "descendant", moreAbove: false, moreBelow: bottom && childrenOf(c).length > 0 });
+      const px = new Map([...keyOf.keys()].map((p) => [p, placed.find((n) => n.key === keyOf.get(p))!.cx]));
+      placeChildren(c, ck, keyOf, px, cx, depth + 1, x + w / 2, next);
+      const g = otherOf(c);
+      groups.set(g, [...(groups.get(g) ?? []), ck]);
       x += w;
     });
-    edges.push({ kind: "parents", parents: coupleKeys, children: childKeys });
+    for (const [other, childKeys] of groups) edges.push({ kind: "parents", parents: other ? [key, partnerKeys.get(other)!] : [key], children: childKeys });
   };
 
   /* ---- Middle row: brothers and sisters, the person, partners ---- */
@@ -159,34 +174,24 @@ export function layoutTree(
   const siblingKeys = siblings.map((s, i) =>
     place({ id: s, cx: i + 0.5, row: 0, role: "sibling", moreAbove: false, moreBelow: childrenOf(s).length > 0 }, `s:${s}`),
   );
-  const focusKey = place(
-    {
-      id: focusId,
-      cx: coupleLeft + (partners.length === 1 && leftPartners.has(partners[0]) ? 1.5 : 0.5),
-      row: 0,
-      role: "focus",
-      moreAbove: up === 0 && parentsOf(focusId).length > 0,
-      moreBelow: down === 0 && childrenOf(focusId).length > 0,
-    },
-    `f:${focusId}`,
-  );
-  const couple = [focusKey];
-  partners.forEach((p, j) => {
-    const pk = place({ id: p, cx: partners.length === 1 && leftPartners.has(p) ? coupleLeft + 0.5 : coupleLeft + 1.5 + j, row: 0, role: "partner", moreAbove: parentsOf(p).length > 0, moreBelow: false }, `p:${focusKey}:${p}`);
-    edges.push({ kind: "partner", a: couple[couple.length - 1], b: pk });
-    couple.push(pk);
+  const focusKey = `f:${focusId}`;
+  const focus = placeCouple(focusId, focusKey, coupleLeft, 0, {
+    role: "focus",
+    moreAbove: up === 0 && parentsOf(focusId).length > 0,
+    moreBelow: down === 0 && childrenOf(focusId).length > 0,
   });
 
   if (parents.length > 0) {
     // The parents' block is centred over the brothers, sisters and the person.
-    const groupCenter = siblings.length ? (0.5 + coupleLeft + 0.5) / 2 : coupleLeft + 0.5;
+    const groupCenter = siblings.length ? (0.5 + focus.cx) / 2 : focus.cx;
     const width = ancWidth(focusId, 0, new Set());
     placeAncestors(focusId, focusKey, 0, groupCenter - width / 2, new Set());
     for (const e of edges) {
       if (e.kind === "parents" && e.children.length === 1 && e.children[0] === focusKey) e.children = [...siblingKeys, focusKey];
     }
   }
-  placeChildren(focusId, couple.slice(0, 2), 0, blockLeft + block / 2, new Set());
+  const focusPartnerX = new Map([...focus.keyOf.keys()].map((p) => [p, placed.find((n) => n.key === focus.keyOf.get(p))!.cx]));
+  placeChildren(focusId, focusKey, focus.keyOf, focusPartnerX, focus.cx, 0, blockLeft + block / 2, new Set());
 
   /* ---- To pixels ---- */
   const minX = Math.min(...placed.map((p) => p.cx - 0.5));

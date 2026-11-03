@@ -185,11 +185,11 @@ export function buildTree({
   /* Couples share one box: join runs of partner links. */
   const group = new Map<string, string>(layout.nodes.map((n) => [n.key, n.key]));
   const find = (k: string): string => (group.get(k) === k ? k : find(group.get(k)!));
-  const joins: Array<{ a: string; b: string }> = [];
+  const joins: Array<{ a: string; b: string; later?: boolean }> = [];
   for (const e of layout.edges) {
     if (e.kind !== "partner") continue;
     group.set(find(e.b), find(e.a));
-    joins.push({ a: e.a, b: e.b });
+    joins.push({ a: e.a, b: e.b, later: e.later });
   }
   const members = new Map<string, string[]>();
   for (const n of layout.nodes) members.set(find(n.key), [...(members.get(find(n.key)) ?? []), n.key]);
@@ -209,7 +209,7 @@ export function buildTree({
         .filter((j) => keys.includes(j.a))
         .map((j) => {
           const l = Math.min(at.get(j.a)!.x, at.get(j.b)!.x);
-          return { x: l + cardW + gapX / 2, y: ns[0].y + PHOTO_R };
+          return { x: l + cardW + gapX / 2, y: ns[0].y + PHOTO_R, later: !!j.later };
         }),
     };
     keys.forEach((k) => boxOf.set(k, box));
@@ -252,7 +252,9 @@ export function buildTree({
     boxes,
     pluses,
     // Partners and parent→child lines are drawn differently, so couples read at a glance.
-    partnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner"), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    partnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner" && !e.later), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    // A second (later) marriage is drawn lighter and dashed.
+    laterPartnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner" && e.later), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
     paths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind !== "partner"), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
     width: layout.width,
     height: layout.height + 16,

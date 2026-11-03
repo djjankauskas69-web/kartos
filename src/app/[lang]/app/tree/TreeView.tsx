@@ -80,7 +80,7 @@ export type TreeCard = {
   moreAbove: boolean;
   moreBelow: boolean;
 };
-export type TreeBox = { key: string; x: number; y: number; w: number; h: number; gen: number; joins: Array<{ x: number; y: number }> };
+export type TreeBox = { key: string; x: number; y: number; w: number; h: number; gen: number; joins: Array<{ x: number; y: number; later?: boolean }> };
 export type TreePlus = { key: string; x: number; y: number; gen: number; options: Array<{ label: string; href: string }> };
 
 type Labels = {
@@ -138,6 +138,7 @@ export function TreeView({
   boxes,
   paths,
   partnerPaths = [],
+  laterPartnerPaths = [],
   width,
   height,
   cardW,
@@ -152,6 +153,7 @@ export function TreeView({
   pluses?: TreePlus[];
   paths: string[];
   partnerPaths?: string[];
+  laterPartnerPaths?: string[];
   width: number;
   height: number;
   cardW: number;
@@ -548,6 +550,11 @@ export function TreeView({
                 <path key={i} d={d} />
               ))}
             </g>
+            <g fill="none" stroke="#b3afa3" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="5 6">
+              {laterPartnerPaths.map((d, i) => (
+                <path key={i} d={d} />
+              ))}
+            </g>
           </svg>
 
           {/* ∞ between partners */}
@@ -557,7 +564,7 @@ export function TreeView({
                 key={`${b.key}-${i}`}
                 aria-hidden="true"
                 style={{ left: j.x, top: j.y }}
-                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#8d897c] bg-white text-[1rem] leading-none text-ink ${dim(b.gen)}`}
+                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
               >
                 ∞
               </span>
