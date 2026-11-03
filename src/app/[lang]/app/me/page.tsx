@@ -84,7 +84,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
     main = (
       <div className="space-y-5">
         <section className={card}>
-          {head(<svg {...I}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" /></svg>, m.details, m.detailsLead)}
+          {head(<svg {...I}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" /></svg>, m.details)}
           <div className="flex flex-col gap-7 md:flex-row md:items-start">
             <div className="flex flex-col items-center gap-3 md:w-48 md:shrink-0">
               <div className="rounded-full p-1 ring-1 ring-line [&>*]:!h-40 [&>*]:!w-40 [&>*]:!rounded-full [&>*]:!text-[2.6rem]">
@@ -125,14 +125,13 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
         </span>
         <div className="min-w-0">
           <h1 className={cls.h1}>{m.title}</h1>
-          <p className="mt-1 text-[1.05rem] text-ink-muted">{m.lead}</p>
         </div>
       </header>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem] [&>*]:min-w-0">
         <div>{main}</div>
         <aside className="space-y-5">
           <section className={card}>
-            {head(<svg {...I}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>, m.account, m.accountLead)}
+            {head(<svg {...I}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>, m.account)}
             <AccountRows locale={locale} linked={!!me} name={(profile?.display_name as string | null) ?? ""} email={user.email ?? ""} t={m} errors={errors} />
             {/* Language of the app */}
             <div className="mt-3 flex items-center gap-3.5 border-t border-line pt-3">
@@ -144,7 +143,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
             </div>
           </section>
           <section className={card}>
-            {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy, m.privacyLead)}
+            {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy)}
             <p className="rounded-xl bg-paper px-4 py-3 text-[0.95rem] leading-relaxed">{m.privacyNote}</p>
           </section>
         </aside>
