@@ -626,7 +626,8 @@
     "archives": "Your archives",
     "newArchive": "Create a new archive",
     "menu": "Menu",
-    "renameFamily": "Rename this family"
+    "renameFamily": "Rename this family",
+    "uploadedPhotosBy": "{name} uploaded photos:"
   },
   "archive": {
     "title": "Archive",
@@ -698,7 +699,7 @@
     "dropHint": "Photos (JPG, PNG) and documents (PDF), up to 25 MB each. You can choose several at once.",
     "fileTitle": "Title",
     "asDocument": "This is a document (scanned letter, certificate…)",
-    "commonInfo": "Details for all chosen files",
+    "commonInfo": "Who is in these photos and when? (for all files)",
     "startUpload": "Upload",
     "uploading": "Uploading",
     "tooBig": "File too large (over 25 MB):",
@@ -732,7 +733,24 @@
     "itemMenu": "Actions",
     "moveTo": "Move to folder",
     "editPhoto": "Edit",
-    "deleteAsk": "Delete this file for good?"
+    "deleteAsk": "Delete this file for good?",
+    "dropHere": "Drop the files here",
+    "dropHereLead": "Photos and PDF documents go into the archive",
+    "uploadFirst": "Upload the first photos",
+    "uploadFirstHint": "You can choose many files at once, or just drag them into this window.",
+    "showEmptyFolders": "Show empty folders ({n})",
+    "hideEmptyFolders": "Hide empty folders",
+    "select": "Select",
+    "selectDone": "Done",
+    "selectedN": "Selected: {n}",
+    "bulkTag": "Mark people",
+    "bulkTagTitle": "Who is in these files? ({n})",
+    "bulkDeleteTitle": "Delete {n} files?",
+    "bulkDeleteLead": "The files will be deleted for good – they can't be restored.",
+    "decades": "Decades",
+    "allYears": "All years",
+    "decade": "{d}s",
+    "uploadedOf": "Uploaded {done} of {n}…"
   },
   "peopleList": {
     "title": "People",

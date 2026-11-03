@@ -217,3 +217,55 @@ export async function moveItem(form: FormData): Promise<ArchiveResult> {
   refresh();
   return { ok: true };
 }
+
+/* ---------- Several files at once ---------- */
+
+const idList = (form: FormData) =>
+  String(form.get("ids") ?? "")
+    .split(",")
+    .filter((s) => /^[0-9a-f-]{36}$/i.test(s))
+    .slice(0, 500);
+
+/** Move the chosen files into one folder (or out of folders). */
+export async function moveItems(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const ids = idList(form);
+  if (!ids.length) return { error: "save" };
+  const { error } = await supabase.from("media").update({ folder_id: uuid(form, "folderId") }).in("id", ids).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
+/** Mark who is in the chosen files (adds to the people already marked). */
+export async function tagItems(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const ids = idList(form);
+  const people = readPeople(form);
+  if (!ids.length || !people.length) return { error: "save" };
+  const { data: existing } = await supabase.from("media_persons").select("media_id, person_id").in("media_id", ids);
+  const have = new Set((existing ?? []).map((r) => `${r.media_id}:${r.person_id}`));
+  for (const id of ids) {
+    const add = people.filter((p) => !have.has(`${id}:${p}`));
+    if (add.length) await tag(supabase, workspace.id, [id], add);
+  }
+  refresh();
+  return { ok: true };
+}
+
+/** Delete the chosen files for good (files in storage too). */
+export async function deleteItems(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const ids = idList(form);
+  if (!ids.length) return { error: "save" };
+  const { data } = await supabase.from("media").select("storage_path").in("id", ids).eq("workspace_id", workspace.id);
+  const paths = (data ?? []).flatMap((m) => (m.storage_path ? [m.storage_path as string] : []));
+  if (paths.length) await supabase.storage.from("family-media").remove(paths);
+  const { error } = await supabase.from("media").delete().in("id", ids).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}

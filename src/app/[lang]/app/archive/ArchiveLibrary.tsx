@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile } from "@/lib/upload";
-import { createFolder, createStory, deleteFolder, deleteItem, moveItem, recordFiles, renameFolder, updateItem } from "./actions";
+import { createFolder, createStory, deleteFolder, deleteItem, deleteItems, moveItem, moveItems, recordFiles, renameFolder, tagItems, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
 export type Kind = "photo" | "document" | "story";
@@ -167,6 +167,14 @@ export function ArchiveLibrary({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [dropped, setDropped] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [decade, setDecade] = useState<number | null>(null);
+  const [showEmpty, setShowEmpty] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulk, setBulk] = useState<null | "tag" | "delete">(null);
+  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   // Close the little menus on a tap elsewhere.
   useEffect(() => {
     if (!folderMenu && !itemMenu) return;
@@ -204,6 +212,7 @@ export function ArchiveLibrary({
       if (type !== "all" && i.kind !== type) return false;
       if (folder === "none" ? i.folderId : folder && i.folderId !== folder) return false;
       if (person && !i.people.includes(person)) return false;
+      if (decade !== null && (i.year === null || Math.floor(i.year / 10) * 10 !== decade)) return false;
       if (!terms.length) return true;
       const hay = fold(
         [i.title, i.description, i.place, i.dateLabel, i.uploader, t.kind[i.kind], i.folderId ? folderName.get(i.folderId) : "", ...i.people.map((p) => personName.get(p) ?? "")]
@@ -224,7 +233,8 @@ export function ArchiveLibrary({
               ? a.title.localeCompare(b.title, locale)
               : b.createdAt.localeCompare(a.createdAt),
     );
-  }, [items, type, folder, person, q, sort, t.kind, folderName, personName, locale]);
+  }, [items, type, folder, person, q, sort, t.kind, folderName, personName, locale, decade]);
+  const decades = useMemo(() => [...new Set(items.flatMap((i) => (i.year ? [Math.floor(i.year / 10) * 10] : [])))].sort((a, b) => a - b), [items]);
 
   const open = items.find((i) => i.id === openId) ?? null;
   const tab = (on: boolean) =>
@@ -239,7 +249,36 @@ export function ArchiveLibrary({
   const periodLabels = { date: t.date, exact: t.dateExact, about: t.dateAbout, between: t.dateBetween, year: t.year, from: t.yearFrom, to: t.yearTo, placeholder: t.yearPlaceholder };
 
   return (
-    <div>
+    <div
+      className="relative"
+      onDragOver={(e) => {
+        if (!canAdd || !e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!canAdd) return;
+        e.preventDefault();
+        setDragging(false);
+        const files = [...e.dataTransfer.files];
+        if (files.length) {
+          setDropped(files);
+          setDialog("upload");
+        }
+      }}
+    >
+      {/* Files dragged over the archive: drop anywhere */}
+      {dragging && (
+        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-ink/10 p-6 backdrop-blur-[1px]">
+          <div className="rounded-[22px] border-2 border-dashed border-olive bg-surface px-10 py-8 text-center shadow-[var(--shadow-float)]">
+            <p className="text-[1.4rem] font-semibold">{t.dropHere}</p>
+            <p className="mt-1 text-ink-muted">{t.dropHereLead}</p>
+          </div>
+        </div>
+      )}
       {/* Header actions sit on the page; this is the library itself */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <nav aria-label={t.type} className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
@@ -295,7 +334,10 @@ export function ArchiveLibrary({
             </form>
           )}
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible [scrollbar-width:none]">
-            {[{ id: "", name: t.allFiles, n: items.length }, ...folders.map((f) => ({ id: f.id, name: f.name, n: folderCounts.get(f.id) ?? 0 }))].map((f) => {
+            {[{ id: "", name: t.allFiles, n: items.length }, ...folders.map((f) => ({ id: f.id, name: f.name, n: folderCounts.get(f.id) ?? 0 }))]
+              // Empty folders stay tucked away until asked for (or chosen).
+              .filter((f) => !f.id || f.n > 0 || showEmpty || folder === f.id || folderMenu?.id === f.id)
+              .map((f) => {
               const menu = folderMenu?.id === f.id ? folderMenu : null;
               if (menu?.mode === "rename")
                 return (
@@ -382,6 +424,11 @@ export function ArchiveLibrary({
               );
             })}
           </ul>
+          {folders.some((f) => !(folderCounts.get(f.id) ?? 0)) && (
+            <button type="button" onClick={() => setShowEmpty((v) => !v)} className="mt-1 hidden min-h-10 w-full items-center rounded-xl px-3 text-left text-[0.92rem] text-ink-muted hover:bg-paper hover:text-ink lg:flex">
+              {showEmpty ? t.hideEmptyFolders : t.showEmptyFolders.replace("{n}", String(folders.filter((f) => !(folderCounts.get(f.id) ?? 0)).length))}
+            </button>
+          )}
         </aside>
 
         {/* Files */}
@@ -418,6 +465,19 @@ export function ArchiveLibrary({
               <option value="dateDesc">{t.sortDateDesc}</option>
               <option value="title">{t.sortTitle}</option>
             </select>
+            {canAdd && items.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelecting((v) => !v);
+                  setSelected([]);
+                }}
+                aria-pressed={selecting}
+                className={`min-h-12 rounded-full border px-4 font-semibold ${selecting ? "border-ink bg-ink text-surface" : "border-line bg-surface hover:border-ink/40"}`}
+              >
+                {selecting ? t.selectDone : t.select}
+              </button>
+            )}
             <div className="flex rounded-full border border-line p-0.5">
               {(["grid", "list"] as const).map((v) => (
                 <button key={v} type="button" onClick={() => setView(v)} aria-pressed={view === v} aria-label={v === "grid" ? t.viewGrid : t.viewList} title={v === "grid" ? t.viewGrid : t.viewList} className={`flex h-10 w-10 items-center justify-center rounded-full ${view === v ? "bg-sage-wash text-ink" : "text-ink-muted"}`}>
@@ -427,11 +487,38 @@ export function ArchiveLibrary({
             </div>
           </div>
 
+          {decades.length > 1 && (
+            <div className="mt-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none]" role="group" aria-label={t.decades}>
+              {[null, ...decades].map((d) => (
+                <button
+                  key={d ?? "all"}
+                  type="button"
+                  onClick={() => setDecade(d)}
+                  aria-pressed={decade === d}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.9rem] tabular-nums ${decade === d ? "bg-ink font-semibold text-surface" : "bg-paper text-ink-muted hover:text-ink"}`}
+                >
+                  {d === null ? t.allYears : t.decade.replace("{d}", String(d))}
+                </button>
+              ))}
+            </div>
+          )}
+
           {items.length === 0 ? (
             <div className="mt-5">
               <EmptyState
                 title={t.emptyTitle}
                 lead={t.emptyLead}
+                action={
+                  canAdd ? (
+                    <div>
+                      <button type="button" onClick={() => setDialog("upload")} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-olive px-6 font-semibold text-surface hover:bg-olive-deep">
+                        <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
+                        {t.uploadFirst}
+                      </button>
+                      <p className="mt-3 text-[0.92rem] text-ink-muted">{t.uploadFirstHint}</p>
+                    </div>
+                  ) : undefined
+                }
                 picture={
                   // eslint-disable-next-line @next/next/no-img-element -- static photo
                   <img src="/landing/letter.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -444,7 +531,20 @@ export function ArchiveLibrary({
             <ul className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
               {shown.map((i) => (
                 <li key={i.id} className="group/card relative" data-menu-root>
-                  {canManageFolders && (
+                  {selecting && (
+                    <button
+                      type="button"
+                      onClick={() => toggle(i.id)}
+                      aria-pressed={selected.includes(i.id)}
+                      aria-label={i.title}
+                      className={`absolute inset-0 z-20 rounded-xl ${selected.includes(i.id) ? "ring-[3px] ring-olive" : "hover:ring-2 hover:ring-ink/20"}`}
+                    >
+                      <span aria-hidden="true" className={`absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full border-2 text-[0.9rem] font-bold ${selected.includes(i.id) ? "border-olive bg-olive text-white" : "border-white bg-white/80 text-transparent shadow"}`}>
+                        ✓
+                      </span>
+                    </button>
+                  )}
+                  {canManageFolders && !selecting && (
                     <button
                       type="button"
                       onClick={() => {
@@ -568,7 +668,10 @@ export function ArchiveLibrary({
             <ul className="mt-5 divide-y divide-line">
               {shown.map((i) => (
                 <li key={i.id}>
-                  <button type="button" onClick={() => setOpenId(i.id)} className="flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left hover:bg-paper">
+                  <button type="button" onClick={() => (selecting ? toggle(i.id) : setOpenId(i.id))} aria-pressed={selecting ? selected.includes(i.id) : undefined} className={`flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left hover:bg-paper ${selecting && selected.includes(i.id) ? "bg-[#eef1e4]" : ""}`}>
+                    {selecting && (
+                      <span aria-hidden="true" className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-[0.8rem] font-bold ${selected.includes(i.id) ? "border-olive bg-olive text-white" : "border-line text-transparent"}`}>✓</span>
+                    )}
                     <span className="h-14 w-16 shrink-0 overflow-hidden rounded-md ring-1 ring-line">
                       <Preview item={i} />
                     </span>
@@ -588,6 +691,95 @@ export function ArchiveLibrary({
           )}
         </section>
       </div>
+
+      {/* Several files chosen: one bar for what to do with them */}
+      {selecting && selected.length > 0 && (
+        <div className="fixed bottom-5 left-1/2 z-30 flex w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-surface shadow-[var(--shadow-float)]">
+          <span className="mr-auto font-semibold">{t.selectedN.replace("{n}", String(selected.length))}</span>
+          <button type="button" onClick={() => setBulk("tag")} className="min-h-10 rounded-full bg-surface/15 px-4 font-semibold hover:bg-surface/25">
+            {t.bulkTag}
+          </button>
+          {canManageFolders && (
+            <form
+              action={async (form) => {
+                await moveItems(form);
+                setSelected([]);
+              }}
+            >
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="ids" value={selected.join(",")} />
+              <select
+                name="folderId"
+                defaultValue="__"
+                aria-label={t.moveTo}
+                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                className="min-h-10 cursor-pointer rounded-full bg-surface/15 px-4 font-semibold text-surface outline-none hover:bg-surface/25 [&>option]:text-ink"
+              >
+                <option value="__" disabled>
+                  {t.moveTo}
+                </option>
+                {[{ id: "", name: t.noFolder }, ...folders].map((f) => (
+                  <option key={f.id || "none"} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </form>
+          )}
+          {canManageFolders && (
+            <button type="button" onClick={() => setBulk("delete")} className="min-h-10 rounded-full px-4 font-semibold text-[#f3b2a4] hover:bg-surface/10">
+              {t.delete}
+            </button>
+          )}
+        </div>
+      )}
+      <Dialog open={bulk === "tag"} onClose={() => setBulk(null)} title={t.bulkTagTitle}>
+        <form
+          action={async (form) => {
+            const r = await tagItems(form);
+            if (r.ok) {
+              setBulk(null);
+              setSelected([]);
+            }
+          }}
+        >
+          <DialogHead title={t.bulkTagTitle.replace("{n}", String(selected.length))} onClose={() => setBulk(null)} closeLabel={t.close} />
+          <div className="space-y-5 px-6 py-5">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="ids" value={selected.join(",")} />
+            <PeoplePicker idPrefix="bulk" people={people} label={t.linkPeople} hint={t.linkHint} placeholder={t.searchPeople} removeLabel={t.remove} />
+            <button type="submit" className="min-h-12 rounded-full bg-olive px-7 font-semibold text-surface hover:bg-olive-deep">
+              {t.save}
+            </button>
+          </div>
+        </form>
+      </Dialog>
+      <Dialog open={bulk === "delete"} onClose={() => setBulk(null)} title={t.bulkDeleteTitle}>
+        <form
+          action={async (form) => {
+            const r = await deleteItems(form);
+            if (r.ok) {
+              setBulk(null);
+              setSelected([]);
+            }
+          }}
+        >
+          <DialogHead title={t.bulkDeleteTitle.replace("{n}", String(selected.length))} onClose={() => setBulk(null)} closeLabel={t.close} />
+          <div className="space-y-5 px-6 py-5">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="ids" value={selected.join(",")} />
+            <p className="text-ink-muted">{t.bulkDeleteLead}</p>
+            <div className="flex gap-2">
+              <button type="submit" className="min-h-12 rounded-full bg-danger px-6 font-semibold text-surface">
+                {t.deleteConfirm}
+              </button>
+              <button type="button" onClick={() => setBulk(null)} className="min-h-12 rounded-full border border-line px-6 font-semibold">
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </form>
+      </Dialog>
 
       {/* Detail */}
       <Dialog open={!!open} onClose={() => setOpenId(null)} title={open?.title ?? ""} wide>
@@ -611,8 +803,30 @@ export function ArchiveLibrary({
       </Dialog>
 
       {/* Upload */}
-      <Dialog open={dialog === "upload"} onClose={() => setDialog(null)} title={t.uploadTitle}>
-        <UploadForm t={t} locale={locale} workspaceId={workspaceId} folders={folders} people={people} periodLabels={periodLabels} needsApproval={needsApproval} initialFolder={folder && folder !== "none" ? folder : null} onDone={() => setDialog(null)} />
+      <Dialog
+        open={dialog === "upload"}
+        onClose={() => {
+          setDialog(null);
+          setDropped([]);
+        }}
+        title={t.uploadTitle}
+      >
+        <UploadForm
+          key={dropped.length ? dropped.map((f) => f.name).join("|") : "pick"}
+          t={t}
+          locale={locale}
+          workspaceId={workspaceId}
+          folders={folders}
+          people={people}
+          periodLabels={periodLabels}
+          needsApproval={needsApproval}
+          initialFolder={folder && folder !== "none" ? folder : null}
+          initialFiles={dropped}
+          onDone={() => {
+            setDialog(null);
+            setDropped([]);
+          }}
+        />
       </Dialog>
 
       {/* Story */}
@@ -814,6 +1028,7 @@ function UploadForm({
   periodLabels,
   needsApproval,
   initialFolder,
+  initialFiles = [],
   onDone,
 }: {
   t: L;
@@ -824,19 +1039,13 @@ function UploadForm({
   periodLabels: PeriodLabels;
   needsApproval: boolean;
   initialFolder: string | null;
+  initialFiles?: File[];
   onDone: () => void;
 }) {
-  const [files, setFiles] = useState<Pending[]>([]);
-  const [problems, setProblems] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => () => files.forEach((f) => f.thumb && URL.revokeObjectURL(f.thumb)), [files]);
-
-  function add(list: FileList | null) {
+  const check = (list: File[]) => {
     const next: Pending[] = [];
     const bad: string[] = [];
-    for (const file of [...(list ?? [])]) {
+    for (const file of list) {
       if (!isImage(file) && !isPdf(file)) bad.push(`${t.badType} ${file.name}`);
       else if (file.size > MAX_FILE_BYTES) bad.push(`${t.tooBig} ${file.name}`);
       else
@@ -849,9 +1058,24 @@ function UploadForm({
           state: "waiting",
         });
     }
+    return { next, bad };
+  };
+  // Files dropped onto the archive come in already chosen.
+  const [first] = useState(() => check(initialFiles));
+  const [files, setFiles] = useState<Pending[]>(first.next);
+  const [problems, setProblems] = useState<string[]>(first.bad);
+  const [over, setOver] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => () => files.forEach((f) => f.thumb && URL.revokeObjectURL(f.thumb)), [files]);
+
+  function add(list: FileList | File[] | null) {
+    const { next, bad } = check([...(list ?? [])]);
     setProblems(bad);
     setFiles((f) => [...f, ...next]);
   }
+  const doneCount = files.filter((f) => f.state === "done").length;
 
   async function submit(form: FormData) {
     if (!files.length) return;
@@ -883,7 +1107,21 @@ function UploadForm({
       <DialogHead title={t.uploadTitle} onClose={onDone} closeLabel={t.close} />
       <div className="space-y-5 px-6 py-5">
         <input type="hidden" name="locale" value={locale} />
-        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-line bg-paper/60 px-6 py-8 text-center hover:border-sage has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep">
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOver(false);
+            if (!busy) add(e.dataTransfer.files);
+          }}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center hover:border-sage has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep ${over ? "border-olive bg-[#eef1e4]" : "border-line bg-paper/60"}`}
+        >
           <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} disabled={busy} />
           <span className="inline-flex min-h-11 items-center rounded-full bg-sage-deep px-5 font-semibold text-surface">+ {t.chooseFiles}</span>
           <span className="text-[0.95rem] text-ink-muted">{t.dropHint}</span>
@@ -961,7 +1199,7 @@ function UploadForm({
         )}
         <div className="flex flex-wrap items-center gap-4">
           <button type="submit" disabled={busy || !files.length} className="min-h-12 rounded-full bg-sage-deep px-7 text-[1.05rem] font-semibold text-surface hover:bg-ink disabled:opacity-50">
-            {busy ? `${t.uploading}…` : `${t.startUpload}${files.length ? ` (${files.length})` : ""}`}
+            {busy ? t.uploadedOf.replace("{done}", String(doneCount)).replace("{n}", String(files.length)) : `${t.startUpload}${files.length ? ` (${files.length})` : ""}`}
           </button>
           {needsApproval && <p className="text-[0.95rem] text-ink-muted">{t.approvalNote}</p>}
         </div>

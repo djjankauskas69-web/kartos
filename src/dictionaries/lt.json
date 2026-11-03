@@ -626,7 +626,8 @@
     "archives": "Jūsų archyvai",
     "newArchive": "Sukurti naują archyvą",
     "menu": "Meniu",
-    "renameFamily": "Pervadinti šią šeimą"
+    "renameFamily": "Pervadinti šią šeimą",
+    "uploadedPhotosBy": "{name} įkėlė nuotraukų:"
   },
   "archive": {
     "title": "Archyvas",
@@ -698,7 +699,7 @@
     "dropHint": "Nuotraukos (JPG, PNG) ir dokumentai (PDF), iki 25 MB kiekvienas. Galite pasirinkti kelis iš karto.",
     "fileTitle": "Pavadinimas",
     "asDocument": "Tai dokumentas (skenuotas laiškas, pažyma…)",
-    "commonInfo": "Informacija visiems pasirinktiems failams",
+    "commonInfo": "Kas šiose nuotraukose ir kada? (visiems failams)",
     "startUpload": "Įkelti",
     "uploading": "Įkeliama",
     "tooBig": "Per didelis failas (daugiau nei 25 MB):",
@@ -732,7 +733,24 @@
     "itemMenu": "Veiksmai",
     "moveTo": "Perkelti į aplanką",
     "editPhoto": "Redaguoti",
-    "deleteAsk": "Ištrinti šį failą visam laikui?"
+    "deleteAsk": "Ištrinti šį failą visam laikui?",
+    "dropHere": "Paleiskite failus čia",
+    "dropHereLead": "Nuotraukos ir PDF dokumentai bus įkelti į archyvą",
+    "uploadFirst": "Įkelti pirmas nuotraukas",
+    "uploadFirstHint": "Galite pasirinkti daug failų iš karto arba tiesiog nutempti juos į šį langą.",
+    "showEmptyFolders": "Rodyti tuščius aplankus ({n})",
+    "hideEmptyFolders": "Slėpti tuščius aplankus",
+    "select": "Pasirinkti",
+    "selectDone": "Baigti",
+    "selectedN": "Pasirinkta: {n}",
+    "bulkTag": "Pažymėti žmones",
+    "bulkTagTitle": "Kas šiuose failuose? ({n})",
+    "bulkDeleteTitle": "Ištrinti {n} failus?",
+    "bulkDeleteLead": "Failai bus ištrinti visam laikui – jų nebebus galima atkurti.",
+    "decades": "Dešimtmečiai",
+    "allYears": "Visi metai",
+    "decade": "{d}-ieji",
+    "uploadedOf": "Įkelta {done} iš {n}…"
   },
   "peopleList": {
     "title": "Žmonės",

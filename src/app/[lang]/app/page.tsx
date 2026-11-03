@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks } from "@/lib/data";
+import { fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks, profileNames } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
@@ -36,7 +36,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
-    supabase.from("media").select("id, storage_path, created_at").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").order("created_at", { ascending: false }).limit(30),
+    supabase.from("media").select("id, storage_path, created_at, uploader_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").order("created_at", { ascending: false }).limit(30),
     supabase.from("persons").select("id, created_at").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("burials").select("id, person_id, cemetery_name, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
     supabase.from("memories").select("id, person_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
@@ -67,15 +67,19 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     const person = byId.get(m.person_id);
     if (person) items.push({ at: m.created_at, kind: "memory", label: t.dash.addedMemory, strong: fullName(person), href: `${base}/people/${m.person_id}` });
   }
-  // Photos uploaded on the same day are one line.
-  const photoDays = new Map<string, { at: string; n: number; path: string }>();
+  // Photos one person uploaded on the same day are one line: "Ona uploaded 12 photos".
+  const photoDays = new Map<string, { at: string; n: number; path: string; who: string | null }>();
   for (const m of recentPhotos.data ?? []) {
-    const day = m.created_at.slice(0, 10);
+    const day = `${m.created_at.slice(0, 10)}:${m.uploader_id ?? ""}`;
     const e = photoDays.get(day);
     if (e) e.n += 1;
-    else photoDays.set(day, { at: m.created_at, n: 1, path: m.storage_path });
+    else photoDays.set(day, { at: m.created_at, n: 1, path: m.storage_path, who: (m.uploader_id as string | null) ?? null });
   }
-  for (const d of photoDays.values()) items.push({ at: d.at, kind: "photos", label: t.dash.addedPhotos, strong: String(d.n), href: `${base}/archive`, photoPath: d.path });
+  const uploaders = await profileNames(locale, [...photoDays.values()].flatMap((d) => (d.who ? [d.who] : [])));
+  for (const d of photoDays.values()) {
+    const who = d.who ? uploaders.get(d.who) : undefined;
+    items.push({ at: d.at, kind: "photos", label: who ? t.dash.uploadedPhotosBy.replace("{name}", who) : t.dash.addedPhotos, strong: String(d.n), href: `${base}/archive`, photoPath: d.path });
+  }
   items.sort((a, b) => b.at.localeCompare(a.at));
   const recentRaw = items.slice(0, 5);
 
