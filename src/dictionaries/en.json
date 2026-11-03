@@ -903,7 +903,21 @@
     "looseChip": "Not connected: {n}",
     "looseHint": "They're not in the tree yet – open them and connect.",
     "thisIsMe": "This is me",
-    "errorImpossible": "This person is already a close relative – they can't be linked like this."
+    "errorImpossible": "This person is already a close relative – they can't be linked like this.",
+    "exactDate": "exact date",
+    "month": "Month",
+    "day": "Day",
+    "warnChildYoung": "Check the years: the parent would have been {age}.",
+    "warnParentYoung": "Check the years: the parent would be only {age} years older.",
+    "warnPartnerGap": "Check the years: an age gap of {n} years.",
+    "marriage": "Marriage",
+    "marriedYear": "Year",
+    "statusMarried": "Married",
+    "statusDivorced": "Divorced",
+    "unknownParentsNote": "No parents yet – they'll be marked unknown; you can fill them in later.",
+    "cropHint": "Drag the photo so the face is in the circle, and zoom.",
+    "saveAgain": "Save and add another",
+    "saveAgainHint": "Save and right away add another to: {name}"
   },
   "landing": {
     "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",

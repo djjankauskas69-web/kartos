@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { cropToFile, initialCrop, PhotoCrop, type Crop } from "./PhotoCrop";
 import { Portrait } from "@/components/Portrait";
 import { cls } from "@/components/ui";
 import { IconCheck, IconImage, IconLink, IconSearch } from "@/components/icons";
@@ -91,6 +92,7 @@ function surnameFor(base: string | null, kind: Kind): string {
   return m;
 }
 type L = Record<string, string>;
+const MONTHS = (locale: string) => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "lt-LT", { month: "long" }).format(new Date(2000, i, 1)));
 
 const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 const prefixLen = (a: string, b: string) => {
@@ -153,7 +155,14 @@ export function AddPersonHost({
   const to = params.get("to");
   const open = kind !== null;
 
-  const close = (added?: AddState) => {
+  const [round, setRound] = useState(0);
+  const close = (added?: AddState, again = false) => {
+    if (again && added?.id) {
+      // Same person and relationship, empty form for the next one.
+      if (added.name) setToast({ id: added.id, name: added.name, linked: !!added.linked });
+      setRound((r) => r + 1);
+      return;
+    }
     const q = new URLSearchParams(params.toString());
     q.delete("add");
     q.delete("to");
@@ -168,7 +177,7 @@ export function AddPersonHost({
     <>
       {open && (
         <AddPersonPanel
-          key={`${kind}-${to}`}
+          key={`${kind}-${to}-${round}`}
           people={people}
           workspaceId={workspaceId}
           needsApproval={needsApproval}
@@ -181,7 +190,7 @@ export function AddPersonHost({
           meId={meId}
         />
       )}
-      {toast && !open && (
+      {toast && (
         <div role="status" className="fixed bottom-5 left-1/2 z-40 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink px-5 py-3.5 text-surface shadow-[var(--shadow-float)]">
           <IconCheck size={20} />
           <span className="min-w-0 flex-1">{(toast.linked ? t.linked : t.added).replace("{name}", toast.name)}</span>
@@ -293,7 +302,7 @@ function AddPersonPanel({
   initialAnchor: string | null;
   initialKind: Kind | null;
   locale: string;
-  onClose: (added?: AddState) => void;
+  onClose: (added?: AddState, again?: boolean) => void;
   t: L;
   errors: L;
 }) {
@@ -310,6 +319,11 @@ function AddPersonPanel({
   const [more, setMore] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
+  const [crop, setCrop] = useState<Crop | null>(null);
+  const [bornStr, setBornStr] = useState("");
+  const [exactBirth, setExactBirth] = useState(false);
+  const [exactDeath, setExactDeath] = useState(false);
+  const againRef = useRef(false);
   // Opened from a card's + menu: person and relationship are already known, so steps 1–2 fold into one line.
   const [locked, setLocked] = useState(!!initialAnchor && !!initialKind);
 
@@ -321,7 +335,6 @@ function AddPersonPanel({
     if ((k === "father" || k === "mother") && anchorP.parents >= 2) return t.twoParents;
     if (k === "father" && anchorP.hasFather) return t.hasFather;
     if (k === "mother" && anchorP.hasMother) return t.hasMother;
-    if ((k === "brother" || k === "sister") && anchorP.parents === 0) return t.noParentsNote;
     return null;
   };
   const effectiveKind = kind && !kindNote(kind) ? kind : null;
@@ -341,7 +354,7 @@ function AddPersonPanel({
       }
     }
     const result = await addPersonFromPanel(prev, form);
-    if (result.ok) onClose(result);
+    if (result.ok) onClose(result, againRef.current);
     return result;
   }, {});
 
@@ -353,11 +366,32 @@ function AddPersonPanel({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    againRef.current = submitter?.value === "again";
     const form = new FormData(e.currentTarget);
+    // The portrait as framed in the circle.
+    if (photo && crop) {
+      try {
+        form.set("photoFile", await cropToFile(photo.url, crop, photo.file.name));
+      } catch {
+        /* keep the original file */
+      }
+    }
     startTransition(() => dispatch(form));
   };
+
+  // Gentle checks on the years (they don't block saving).
+  const bornN = Number(bornStr);
+  const warning = (() => {
+    if (!anchorP?.born || !/^\d{4}$/.test(bornStr) || !effectiveKind) return null;
+    const gap = bornN - anchorP.born;
+    if ((effectiveKind === "son" || effectiveKind === "daughter") && gap < 13) return t.warnChildYoung.replace("{age}", String(Math.max(0, gap)));
+    if ((effectiveKind === "father" || effectiveKind === "mother") && -gap < 13) return t.warnParentYoung.replace("{age}", String(Math.max(0, -gap)));
+    if ((effectiveKind === "husband" || effectiveKind === "wife") && Math.abs(gap) > 30) return t.warnPartnerGap.replace("{n}", String(Math.abs(gap)));
+    return null;
+  })();
 
   const err = state.error ? (errors[state.error] ?? errors.save) : null;
   const ready = first || (anchorP && effectiveKind);
@@ -565,7 +599,22 @@ function AddPersonPanel({
                     <label htmlFor="add-born" className="mb-1.5 block text-[0.98rem]">
                       {t.birthYear}
                     </label>
-                    <input id="add-born" name="birthYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.birthPh} className={cls.input} />
+                    <input id="add-born" name="birthYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.birthPh} value={bornStr} onChange={(e) => setBornStr(e.target.value)} className={cls.input} />
+                    {exactBirth ? (
+                      <div className="mt-2 grid grid-cols-[1fr_5rem] gap-2">
+                        <select name="birthMonth" aria-label={t.month} defaultValue="" className={cls.input}>
+                          <option value="">{t.month}</option>
+                          {MONTHS(locale).map((m, i) => (
+                            <option key={i} value={i + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <input name="birthDay" inputMode="numeric" maxLength={2} placeholder={t.day} aria-label={t.day} className={cls.input} />
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setExactBirth(true)} className="mt-1.5 text-[0.9rem] font-semibold text-ink-muted hover:text-ink hover:underline">
+                        + {t.exactDate}
+                      </button>
+                    )}
                   </div>
                   {!living && (
                     <div>
@@ -573,9 +622,59 @@ function AddPersonPanel({
                         {t.deathYear}
                       </label>
                       <input id="add-died" name="deathYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.deathPh} className={cls.input} />
+                      {exactDeath ? (
+                        <div className="mt-2 grid grid-cols-[1fr_5rem] gap-2">
+                          <select name="deathMonth" aria-label={t.month} defaultValue="" className={cls.input}>
+                            <option value="">{t.month}</option>
+                            {MONTHS(locale).map((m, i) => (
+                              <option key={i} value={i + 1}>{m}</option>
+                            ))}
+                          </select>
+                          <input name="deathDay" inputMode="numeric" maxLength={2} placeholder={t.day} aria-label={t.day} className={cls.input} />
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => setExactDeath(true)} className="mt-1.5 text-[0.9rem] font-semibold text-ink-muted hover:text-ink hover:underline">
+                          + {t.exactDate}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
+                {!living && (
+                  <div>
+                    <label htmlFor="add-death-place" className={cls.label}>
+                      {t.deathPlace}
+                    </label>
+                    <input id="add-death-place" name="deathPlace" maxLength={200} className={cls.input} />
+                  </div>
+                )}
+                {warning && (
+                  <p role="status" className="rounded-xl bg-[#f6efdc] px-4 py-3 text-[0.95rem] leading-snug text-[#6b5315]">
+                    {warning}
+                  </p>
+                )}
+                {(effectiveKind === "husband" || effectiveKind === "wife") && (
+                  <fieldset className="rounded-xl border border-line p-4">
+                    <legend className="px-1 text-[0.98rem] font-semibold">{t.marriage}</legend>
+                    <div className="grid grid-cols-[7rem_1fr] items-end gap-3">
+                      <div>
+                        <label htmlFor="add-married" className="mb-1.5 block text-[0.92rem] text-ink-muted">{t.marriedYear}</label>
+                        <input id="add-married" name="marriedYear" inputMode="numeric" maxLength={4} placeholder="1985" className={cls.input} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["married", "divorced"] as const).map((st, i) => (
+                          <label key={st} className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-line text-[0.95rem] has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-white">
+                            <input type="radio" name="marriageStatus" value={st} defaultChecked={i === 0} className="sr-only" />
+                            {t[st === "married" ? "statusMarried" : "statusDivorced"]}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </fieldset>
+                )}
+                {(effectiveKind === "brother" || effectiveKind === "sister") && anchorP && anchorP.parents === 0 && (
+                  <p className="text-[0.92rem] text-ink-muted">{t.unknownParentsNote}</p>
+                )}
                 {first && (
                   <fieldset>
                     <legend className={cls.label}>{t.sex}</legend>
@@ -610,14 +709,6 @@ function AddPersonPanel({
                         </label>
                         <input id="add-birth-place" name="birthPlace" maxLength={200} className={cls.input} />
                       </div>
-                      {!living && (
-                        <div>
-                          <label htmlFor="add-death-place" className={cls.label}>
-                            {t.deathPlace}
-                          </label>
-                          <input id="add-death-place" name="deathPlace" maxLength={200} className={cls.input} />
-                        </div>
-                      )}
                     </div>
                     <div>
                       <label htmlFor="add-bio" className={cls.label}>
@@ -625,11 +716,9 @@ function AddPersonPanel({
                       </label>
                       <textarea id="add-bio" name="biography" rows={3} maxLength={20000} placeholder={t.biographyPh} className={cls.textarea} />
                     </div>
+                    {photo && crop && <PhotoCrop src={photo.url} value={crop} onChange={setCrop} label={t.cropHint} />}
                     <div className="flex items-center gap-4">
-                      {photo ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- local preview
-                        <img src={photo.url} alt="" className="h-16 w-16 rounded-full object-cover ring-1 ring-line" />
-                      ) : (
+                      {photo ? null : (
                         <span className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-line text-ink-muted">
                           <IconImage size={22} />
                         </span>
@@ -646,12 +735,16 @@ function AddPersonPanel({
                               e.preventDefault();
                               URL.revokeObjectURL(photo.url);
                               setPhoto(null);
+                              setCrop(null);
                               (e.currentTarget as HTMLInputElement).value = "";
                             }
                           }}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
-                            setPhoto(f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null);
+                            const next = f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null;
+                            setPhoto(next);
+                            setCrop(null);
+                            if (next) initialCrop(next.url).then(setCrop, () => setCrop(null));
                           }}
                         />
                       </label>
@@ -685,11 +778,16 @@ function AddPersonPanel({
             </p>
           )}
           {needsApproval && !existing && <p className="mb-3 text-[0.95rem] text-ink-muted">{t.approval}</p>}
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => onClose()} className={cls.secondary}>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => onClose()} className={`${cls.secondary} min-h-12`}>
               {t.cancel}
             </button>
-            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} ml-auto flex-1 sm:flex-none`}>
+            {anchorP && !first && (
+              <button type="submit" name="next" value="again" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.secondary} min-h-12`} title={t.saveAgainHint.replace("{name}", anchorP.name)}>
+                {t.saveAgain}
+              </button>
+            )}
+            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} ml-auto min-h-12 flex-1 sm:flex-none`}>
               {pending ? t.saving : existing ? t.submitLink : t.submit}
             </button>
           </div>

@@ -54,7 +54,7 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     rels = data ?? [];
     const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
     if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2) return { error: "twoParents" };
-    if (link!.rel === "sibling" && parents.length === 0) return { error: "noParents" };
+    // A brother or sister with no parents known yet: an "unknown parent" joins them (below).
     // An existing person can't become a partner, parent or child of their own close family.
     const existingId = mode === "existing" ? uuid(form, "existingId") : null;
     if (existingId) {
@@ -77,7 +77,8 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     if (!existing) return { error: "pick" };
     if (!anchor || !kind) return { error: "relation" };
     if (existing === anchor) return { error: "self" };
-    if (rels.some((r) => r.person_a === existing || r.person_b === existing)) return { error: "exists" };
+    // Already joined to this person directly?
+    if (rels.some((r) => (r.person_a === existing && r.person_b === anchor) || (r.person_a === anchor && r.person_b === existing))) return { error: "exists" };
     const { data: p } = await supabase.from("persons").select("given_names, surname").eq("id", existing).eq("workspace_id", workspace.id).maybeSingle();
     if (!p) return { error: "pick" };
     personId = existing;
@@ -89,6 +90,15 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     const died = living ? null : year(form, "deathYear");
     if (!given) return { error: "required" };
     if (born === "bad" || died === "bad" || (born && died && died < born)) return { error: "year" };
+    // Month and day are optional; a day needs a month.
+    const md = (k: string, max: number) => {
+      const n = Number(String(form.get(k) ?? "").trim());
+      return Number.isInteger(n) && n >= 1 && n <= max ? n : null;
+    };
+    const bMonth = born ? md("birthMonth", 12) : null;
+    const bDay = bMonth ? md("birthDay", 31) : null;
+    const dMonth = died ? md("deathMonth", 12) : null;
+    const dDay = dMonth ? md("deathDay", 31) : null;
     const sexRaw = String(form.get("sex") ?? "");
     const sex = link?.sex ?? (["female", "male"].includes(sexRaw) ? sexRaw : "unknown");
     personId = crypto.randomUUID();
@@ -127,7 +137,11 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       sex,
       is_living: living,
       birth_year: born,
+      birth_month: bMonth,
+      birth_day: bDay,
       death_year: died,
+      death_month: dMonth,
+      death_day: dDay,
       birth_place: text(form, "birthPlace", 200),
       death_place: living ? null : text(form, "deathPlace", 200),
       biography: text(form, "biography", 20000),
@@ -154,7 +168,20 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
         links.push({ person_a: other[0], person_b: personId, type: "partner", subtype: "married" });
       }
     } else if (link.rel === "sibling") {
-      for (const r of rels.filter((r) => r.type === "parent_child" && r.person_b === anchor)) {
+      const known = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
+      if (known.length === 0) {
+        // Parents not known yet: one "unknown parent" links the brothers/sisters; it can be
+        // filled in (renamed) later.
+        const unknownId = crypto.randomUUID();
+        const { error: pe } = await supabase.from("persons").insert({ id: unknownId, workspace_id: workspace.id, given_names: "?", sex: "unknown", is_living: false });
+        if (pe) {
+          console.error("addPersonFromPanel unknown parent", pe);
+          return { error: "save", id: personId, name };
+        }
+        links.push({ person_a: unknownId, person_b: anchor, type: "parent_child", subtype: "biological" });
+        links.push({ person_a: unknownId, person_b: personId, type: "parent_child", subtype: "biological" });
+      }
+      for (const r of known) {
         if (r.person_a !== personId) links.push({ person_a: r.person_a, person_b: personId, type: "parent_child", subtype: "biological" });
       }
     } else if (link.rel === "child") {
@@ -164,7 +191,10 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
         links.push({ person_a: otherParent, person_b: personId, type: "parent_child", subtype: "biological" });
       }
     } else {
-      links.push({ person_a: anchor, person_b: personId, type: "partner", subtype: "married" });
+      // Marriage: the year it began and whether they are still married (both optional).
+      const married = year(form, "marriedYear");
+      const status = String(form.get("marriageStatus") ?? "") === "divorced" ? "divorced" : "married";
+      links.push({ person_a: anchor, person_b: personId, type: "partner", subtype: status, start_year: typeof married === "number" ? married : null });
       // First partner: the children who have only this one parent get the new partner as their
       // other parent. With a second partner it's a different family, so nothing is assumed.
       if (partnersOf(anchor).filter((p) => p !== personId).length === 0) {

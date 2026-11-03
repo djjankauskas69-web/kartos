@@ -903,7 +903,21 @@
     "looseChip": "Nesusieti žmonės: {n}",
     "looseHint": "Jie dar neprijungti prie medžio – atidarykite ir susiekite.",
     "thisIsMe": "Tai aš",
-    "errorImpossible": "Šis žmogus jau yra artimas giminaitis – taip susieti negalima."
+    "errorImpossible": "Šis žmogus jau yra artimas giminaitis – taip susieti negalima.",
+    "exactDate": "tiksli data",
+    "month": "Mėnuo",
+    "day": "Diena",
+    "warnChildYoung": "Patikrinkite metus: tėvui ar mamai tada būtų {age} m.",
+    "warnParentYoung": "Patikrinkite metus: tėvas ar mama būtų tik {age} m. vyresni.",
+    "warnPartnerGap": "Patikrinkite metus: amžiaus skirtumas {n} m.",
+    "marriage": "Santuoka",
+    "marriedYear": "Metai",
+    "statusMarried": "Susituokę",
+    "statusDivorced": "Išsiskyrę",
+    "unknownParentsNote": "Tėvų dar nėra – jie bus pažymėti kaip nežinomi, vėliau galėsite juos įrašyti.",
+    "cropHint": "Pastumkite nuotrauką, kad veidas būtų apskritime, ir priartinkite.",
+    "saveAgain": "Išsaugoti ir pridėti dar",
+    "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",
