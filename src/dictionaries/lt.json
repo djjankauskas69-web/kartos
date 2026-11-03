@@ -405,6 +405,42 @@
       "partner": "Pridėti sutuoktinį",
       "child": "Pridėti vaiką",
       "sibling": "Pridėti brolį ar seserį"
+    },
+    "show": {
+      "button": "Rodyti",
+      "title": "Ką rodyti medyje",
+      "presets": {
+        "mine": "Mano šeima",
+        "close": "Artimieji",
+        "ancestors": "Protėviai",
+        "descendants": "Palikuonys",
+        "all": "Visa giminė"
+      },
+      "hints": {
+        "mine": "Tėvai, broliai ir seserys, sutuoktinis, vaikai",
+        "close": "Ir seneliai, dėdės, tetos, pusbroliai",
+        "ancestors": "Tiesioginė linija aukštyn",
+        "descendants": "Vaikai, anūkai ir toliau",
+        "all": "Visi žmonės"
+      },
+      "details": "Smulkiau",
+      "custom": "Pasirinkta",
+      "families": "Šeimos",
+      "noMe": "Pažymėkite save „Tai aš“, kad medį galėtumėte rodyti nuo savęs.",
+      "close": "Uždaryti",
+      "cats": {
+        "parents": "Tėvai",
+        "siblings": "Broliai ir seserys",
+        "partner": "Sutuoktinis",
+        "children": "Vaikai",
+        "grandparents": "Seneliai",
+        "greatGrand": "Proseneliai ir toliau",
+        "auntsUncles": "Dėdės ir tetos",
+        "cousins": "Pusbroliai ir pusseserės",
+        "nephews": "Sūnėnai ir dukterėčios",
+        "inLaws": "Sutuoktinio šeima",
+        "grandchildren": "Anūkai ir toliau"
+      }
     }
   },
   "family": {

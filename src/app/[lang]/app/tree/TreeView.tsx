@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { drawerState } from "./drawer-state";
+import { presetOf, SHOW_CATS, SHOW_COOKIE, SHOW_PRESETS, type ShowCat, type ShowPreset } from "./show-filter";
 
 /** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
 const BACKGROUNDS = [
@@ -48,6 +49,10 @@ function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { f
     return <a href={String(href)} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} />;
   }
   return <Link {...props} />;
+}
+
+function writeShowCookie(v: ShowCat[] | null) {
+  document.cookie = `${SHOW_COOKIE}=${v ? v.join(",") || "none" : "all"}; path=/; max-age=31536000; samesite=lax`;
 }
 
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add", maybe one kind only). */
@@ -133,6 +138,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
+  show: { button: string; title: string; presets: Record<ShowPreset, string>; hints: Record<ShowPreset, string>; details: string; custom: string; families: string; noMe: string; close: string; cats: Record<ShowCat, string> };
 };
 
 const MIN = 0.1;
@@ -164,6 +170,7 @@ export function TreeView({
   generations,
   branch,
   familyToggles = [],
+  show,
   labels,
 }: {
   cards: TreeCard[];
@@ -180,6 +187,8 @@ export function TreeView({
   branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
   /** Which families are shown together: this one, and the ones joined to it. */
   familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
+  /** What is shown, counted from you (null = everyone). */
+  show?: { value: ShowCat[] | null; hasMe: boolean };
   labels: Labels;
 }) {
   const router = useRouter();
@@ -189,7 +198,25 @@ export function TreeView({
   const [smooth, setSmooth] = useState(false);
   const [ready, setReady] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
-  const [activeGen, setActiveGen] = useState<number | null>(null);
+  const activeGen = null as number | null;
+  const [showOpen, setShowOpen] = useState(false);
+  const [showPending, startShow] = useTransition();
+  const [showLocal, setShowLocal] = useState<ShowCat[] | null | undefined>(undefined);
+  const showValue = showLocal !== undefined ? showLocal : (show?.value ?? null);
+  const setShow = (v: ShowCat[] | null) => {
+    setShowLocal(v);
+    writeShowCookie(v);
+    startShow(() => router.refresh());
+  };
+  const showPanel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showOpen) return;
+    const close = (e: PointerEvent) => {
+      if (!showPanel.current?.contains(e.target as Node)) setShowOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [showOpen]);
   const [menu, setMenu] = useState<MenuState>(null);
   const opening = useSyncExternalStore(drawerState.subscribe, drawerState.get, drawerState.getServer);
   // The person pointed at (or whose menu is open): their own links light up, the rest fade.
@@ -389,17 +416,6 @@ export function TreeView({
     }
   }
 
-  function pickGeneration(n: number | null) {
-    setActiveGen(n);
-    if (n === null) return;
-    const row = cards.filter((c) => c.gen === n).sort((a, b) => a.x - b.x);
-    if (!row.length) return;
-    const mid = (row[0].x + row[row.length - 1].x + cardW) / 2;
-    const { w } = size();
-    const v = viewRef.current;
-    go({ k: v.k, x: w / 2 - mid * v.k, y: TOP + 24 - row[0].y * v.k }, true);
-  }
-
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
   const lit = hover ?? menu?.key ?? opening ?? null;
   const near = useMemo(() => {
@@ -450,50 +466,111 @@ export function TreeView({
       {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className="flex flex-wrap items-center gap-2">
-          <details className="relative" data-menu>
-            <summary
-              aria-label={labels.depth}
-              title={labels.depth}
-              className={`flex h-9 cursor-pointer list-none items-center gap-2 px-3 text-[0.88rem] [&::-webkit-details-marker]:hidden ${pill} ${activeGen !== null ? "font-semibold" : ""}`}
+          <div ref={showPanel} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowOpen((o) => !o)}
+              aria-expanded={showOpen}
+              className={`flex h-9 items-center gap-2 px-3.5 text-[0.9rem] ${pill}`}
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-              {activeGen !== null && generations.find((g) => g.n === activeGen)?.label}
-            </summary>
-            <div className="absolute left-0 mt-2 w-52 rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-              {[{ n: null as number | null, label: labels.allGenerations, count: undefined as number | undefined }, ...generations.map((g) => ({ n: g.n as number | null, label: g.label, count: g.count as number | undefined }))].map((g) => (
-                <button
-                  key={g.n ?? "all"}
-                  type="button"
-                  onClick={(e) => {
-                    pickGeneration(g.n);
-                    (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
-                  }}
-                  className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-[0.95rem] hover:bg-paper ${activeGen === g.n ? "bg-paper font-semibold" : ""}`}
-                >
-                  <span className="flex-1">{g.label}</span>
-                  {g.count !== undefined && <span className="text-[0.85rem] text-ink-muted">{g.count}</span>}
-                  {activeGen === g.n && <span aria-hidden="true" className="text-olive-deep">✓</span>}
-                </button>
-              ))}
-            </div>
-          </details>
-          {familyToggles.length > 1 && (
-            <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`} role="group" aria-label={labels.families}>
-              {familyToggles.map((f) =>
-                f.href ? (
-                  <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} style={f.on ? { backgroundColor: familyColor.get(f.label)?.bg, color: familyColor.get(f.label)?.ink } : undefined} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.85rem] ${f.on ? "font-semibold" : "text-ink-muted hover:text-ink"}`}>
-                    <span aria-hidden="true" style={{ backgroundColor: f.on ? familyColor.get(f.label)?.ring : undefined, borderColor: familyColor.get(f.label)?.ring }} className="h-2.5 w-2.5 rounded-full border-2" />
-                    {f.label}
-                  </Link>
-                ) : (
-                  <span key={f.label} className="flex shrink-0 items-center gap-1.5 rounded-full bg-night px-3 py-1 text-[0.85rem] font-semibold text-surface">
-                    <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-surface" />
-                    {f.label}
-                  </span>
-                ),
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+              <span>
+                {labels.show.button}: <b className="font-semibold">{(() => { const pr = presetOf(showValue); return pr ? labels.show.presets[pr] : labels.show.custom; })()}</b>
+              </span>
+              {familyToggles.length > 1 && (
+                <span className="flex -space-x-1" aria-hidden="true">
+                  {familyToggles.filter((f) => f.on).map((f, i) => (
+                    <span key={f.label} style={{ backgroundColor: i === 0 ? "#1c1d1a" : familyColor.get(f.label)?.ring }} className="h-2.5 w-2.5 rounded-full ring-2 ring-surface" />
+                  ))}
+                </span>
               )}
-            </div>
-          )}
+              {showPending && <span className="h-3.5 w-3.5 rounded-full border-2 border-ink/20 border-t-ink animate-[ring-spin_0.8s_linear_infinite]" aria-hidden="true" />}
+            </button>
+            {showOpen && (
+              <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(36rem,calc(100dvh-14rem))] sm:w-[19.5rem]">
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <p className="font-semibold">{labels.show.title}</p>
+                  <button type="button" onClick={() => setShowOpen(false)} aria-label={labels.show.close} className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                  </button>
+                </div>
+                {!show?.hasMe && <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>}
+                <div className="space-y-1">
+                  {(["mine", "close", "ancestors", "descendants", "all"] as ShowPreset[]).map((pr) => {
+                    const active = presetOf(showValue) === pr;
+                    const disabled = pr !== "all" && !show?.hasMe;
+                    return (
+                      <button
+                        key={pr}
+                        type="button"
+                        disabled={disabled}
+                        aria-pressed={active}
+                        onClick={() => setShow(pr === "all" ? null : [...SHOW_PRESETS[pr]])}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left disabled:opacity-40 ${active ? "bg-sage-wash" : "hover:bg-paper"}`}
+                      >
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-ink" : "border-ink/25"}`} aria-hidden="true">
+                          {active && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[0.98rem] font-semibold">{labels.show.presets[pr]}</span>
+                          <span className="block text-[0.84rem] text-ink-muted">{labels.show.hints[pr]}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {show?.hasMe && (
+                  <div className="mt-3 border-t border-line pt-3">
+                    <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.details}</p>
+                    <div className="grid grid-cols-1 gap-0.5">
+                      {SHOW_CATS.map((c) => {
+                        const checked = showValue === null || showValue.includes(c);
+                        return (
+                          <label key={c} className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-[0.95rem] hover:bg-paper">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                const cur = showValue ?? [...SHOW_CATS];
+                                const next = checked ? cur.filter((x) => x !== c) : [...cur, c];
+                                setShow(next.length === SHOW_CATS.length ? null : next);
+                              }}
+                              className="h-4 w-4 accent-[#1c1d1a]"
+                            />
+                            {labels.show.cats[c]}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {familyToggles.length > 1 && (
+                  <div className="mt-3 border-t border-line pt-3">
+                    <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.families}</p>
+                    {familyToggles.map((f, i) => {
+                      const dot = i === 0 ? "#1c1d1a" : familyColor.get(f.label)?.ring;
+                      const body = (
+                        <>
+                          <span aria-hidden="true" style={{ backgroundColor: f.on ? dot : undefined, borderColor: dot }} className="h-3.5 w-3.5 shrink-0 rounded-full border-2" />
+                          <span className={`flex-1 ${f.on ? "font-semibold" : "text-ink-muted"}`}>{f.label}</span>
+                          {f.href && <span className={`relative h-5 w-9 rounded-full transition-colors ${f.on ? "bg-ink" : "bg-line"}`} aria-hidden="true"><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${f.on ? "left-[18px]" : "left-0.5"}`} /></span>}
+                        </>
+                      );
+                      return f.href ? (
+                        <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} className="flex min-h-10 items-center gap-2.5 rounded-lg px-2 text-[0.95rem] hover:bg-paper">
+                          {body}
+                        </Link>
+                      ) : (
+                        <span key={f.label} className="flex min-h-10 items-center gap-2.5 px-2 text-[0.95rem]">
+                          {body}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {branch && branch.options.length > 1 && (
