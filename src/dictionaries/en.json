@@ -898,7 +898,8 @@
     "myCardLead": "See how your profile looks to others.",
     "viewMyCard": "View my card",
     "yourRole": "Your role:",
-    "displayNameHint": "Shown with your memories and photos until you're marked in the tree; after that your name in the tree is used."
+    "displayNameHint": "Shown with your memories and photos until you're marked in the tree; after that your name in the tree is used.",
+    "fillMore": "Open my profile to fill in more"
   },
   "add": {
     "title": "Add a person",

@@ -898,7 +898,8 @@
     "myCardLead": "Peržiūrėkite, kaip jūsų profilis matomas kitiems.",
     "viewMyCard": "Peržiūrėti mano kortelę",
     "yourRole": "Jūsų rolė:",
-    "displayNameHint": "Rodomas prie jūsų prisiminimų ir nuotraukų, kol nesate pažymėtas medyje. Pažymėjus, naudojamas vardas iš medžio."
+    "displayNameHint": "Rodomas prie jūsų prisiminimų ir nuotraukų, kol nesate pažymėtas medyje. Pažymėjus, naudojamas vardas iš medžio.",
+    "fillMore": "Atidaryti mano profilį ir pildyti daugiau"
   },
   "add": {
     "title": "Pridėti žmogų",

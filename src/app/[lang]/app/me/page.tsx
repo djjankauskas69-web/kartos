@@ -93,7 +93,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
               <PortraitUpload locale={locale} workspaceId={current.id} otherWorkspaces={otherLinked} hasPhoto={!!photo} t={m} />
             </div>
             <div className="min-w-0 flex-1">
-              <MyDetailsForm locale={locale} person={me} t={m} errors={errors} />
+              <MyDetailsForm locale={locale} person={me} moreHref={`/${locale}/app/people/${me.id}`} t={m} errors={errors} />
             </div>
           </div>
         </section>

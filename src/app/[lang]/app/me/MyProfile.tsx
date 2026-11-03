@@ -139,7 +139,7 @@ export function ClaimMe({ locale, people, t, errors }: { locale: Locale; people:
 
 /* ---------- Linked: own details ---------- */
 
-export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; person: Person; t: T; errors: Errors }) {
+export function MyDetailsForm({ locale, person, moreHref, t, errors }: { locale: Locale; person: Person; moreHref: string; t: T; errors: Errors }) {
   const [state, action, pending] = useActionState(updateMe, {});
   return (
     <form action={action} className="space-y-4">
@@ -162,18 +162,13 @@ export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; p
             className={cls.input}
           />
         </Field>
-        <Field id="my-place" label={t.birthPlace}>
-          <input id="my-place" name="birthPlace" maxLength={200} defaultValue={person.birth_place ?? ""} className={cls.input} />
-        </Field>
-        {/* A maiden name mostly matters for women; men only see it when one is already given. */}
-        {person.sex !== "male" || person.birth_surname ? (
-          <Field id="my-birth-surname" label={t.birthSurname}>
-            <input id="my-birth-surname" name="birthSurname" maxLength={120} defaultValue={person.birth_surname ?? ""} className={cls.input} />
-          </Field>
-        ) : (
-          <input type="hidden" name="birthSurname" value="" />
-        )}
+        {/* The rest is filled in on your card in the tree; kept as it is here. */}
+        <input type="hidden" name="birthPlace" value={person.birth_place ?? ""} />
+        <input type="hidden" name="birthSurname" value={person.birth_surname ?? ""} />
       </div>
+      <a href={moreHref} className="inline-flex items-center gap-1.5 text-[0.98rem] font-semibold text-sage-deep underline-offset-2 hover:underline">
+        {t.fillMore} <span aria-hidden="true">→</span>
+      </a>
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-olive px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-70">
           <span aria-hidden="true">✓</span>
