@@ -69,7 +69,16 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const linkedIds = linkedPeople.map((l) => l.person);
   const isMe = links.links.get(current.id) === id;
   const person = byId.get(id);
-  if (!person) notFound();
+  if (!person) {
+    // Not in the archive that is open (e.g. another tab switched archives): find the family
+    // they belong to, among the user's own archives, and show them from there.
+    if (!other) {
+      const { data: row } = await supabase.from("persons").select("workspace_id").eq("id", id).maybeSingle();
+      const ws = row?.workspace_id as string | undefined;
+      if (ws && ws !== ctx.current.id && ctx.memberships.some((m) => m.id === ws)) return Profile({ t, locale, idPromise: Promise.resolve(id), compact, closeHref, wsId: ws });
+    }
+    notFound();
+  }
   const toMe = isMe ? undefined : kinship([...byId.values()], rels, links.links.get(current.id), locale).get(id);
 
   const role = current.role;
