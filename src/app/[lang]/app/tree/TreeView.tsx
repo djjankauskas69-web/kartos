@@ -1023,7 +1023,6 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
-        {whichBlock}
         {card.elsewhere && (
           <div className="mb-1.5 rounded-xl bg-[#eef4ea] px-3 py-2.5">
             <p className="text-[0.85rem] text-[#3d6a52]">{labels.elsewhere.has}</p>
