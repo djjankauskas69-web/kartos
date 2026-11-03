@@ -697,41 +697,17 @@ export function TreeView({
                     aria-label={`${labels.menuAdd}: ${c.name}`}
                     title={labels.menuAdd}
                     style={{ left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 14 }}
-                    className={`${quick} hidden [@media(hover:none)]:flex ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
+                    className={`${quick} ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 )}
-                {/* On a computer: "+" on each side — above a parent, beside a partner or sibling, below a child */}
-                {(
-                  [
-                    ["parent", { left: cardW / 2 - 16, top: -20 }],
-                    ["partner", { left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 16 }],
-                    ["sibling", { left: (cardW - PHOTO) / 2 - 38, top: PHOTO / 2 - 16 }],
-                    ["child", { left: cardW / 2 - 16, top: cardH - 10 }],
-                  ] as Array<[AddGroup, React.CSSProperties]>
-                ).map(([g, pos]) => {
-                  const opts = c.addOptions.filter((o) => o.group === g);
-                  if (!opts.length) return null;
-                  const open = menu?.key === c.key && menu.mode === "add" && menu.group === g;
-                  const cl = `${quick} [@media(hover:none)]:hidden ${open ? "!opacity-100 bg-ink text-white" : ""}`;
-                  const icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
-                  return opts.length === 1 ? (
-                    <Link key={g} href={opts[0].href} scroll={false} draggable={false} data-card aria-label={`${opts[0].label}: ${c.name}`} title={opts[0].label} style={pos} className={cl}>
-                      {icon}
-                    </Link>
-                  ) : (
-                    <button key={g} type="button" data-card onClick={() => setMenu(open ? null : { key: c.key, mode: "add", group: g })} aria-expanded={open} aria-haspopup="menu" aria-label={`${labels.addGroup[g]}: ${c.name}`} title={labels.addGroup[g]} style={pos} className={cl}>
-                      {icon}
-                    </button>
-                  );
-                })}
                 {c.moreAbove && (
                   <Link
                     href={c.showFromHref}
                     title={labels.moreAbove}
                     draggable={false}
-                    className="absolute -top-[26px] left-[calc(50%-40px)] -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    className="absolute -top-[26px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
                   >
                     ▲<span className="sr-only">{labels.moreAbove}</span>
                   </Link>
@@ -741,7 +717,7 @@ export function TreeView({
                     href={c.showFromHref}
                     title={labels.moreBelow}
                     draggable={false}
-                    className="absolute -bottom-[16px] left-[calc(50%-40px)] -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    className="absolute -bottom-[16px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
                   >
                     ▼<span className="sr-only">{labels.moreBelow}</span>
                   </Link>
