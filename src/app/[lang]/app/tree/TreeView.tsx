@@ -163,6 +163,7 @@ type Labels = {
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
   elsewhere: { has: string; ask: string; askAgain: string; pending: string; asking: string; hint: string };
+  sides: { mine: string; partner: string; other: string };
   show: { fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
 };
 
@@ -212,7 +213,7 @@ export function TreeView({
   generations: Array<{ n: number; label: string; count: number }>;
   branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
   /** Which families are shown together: this one, and the ones joined to it. */
-  familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
+  familyToggles?: Array<{ label: string; on: boolean; href?: string; side?: "mine" | "partner" | "other" }>;
   /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
   locale?: string;
   show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }>; people: Array<{ id: string; sex: "male" | "female" | "unknown" | null }>; lang: "lt" | "en" };
@@ -511,15 +512,21 @@ export function TreeView({
     for (const n of names) if (!m.has(n)) m.set(n, FAMILY_COLORS[m.size % FAMILY_COLORS.length]);
     return m;
   }, [familyToggles, cards]);
+  // A line within another family takes that family's colour.
+  const famOfKey = useMemo(() => new Map(cards.map((c) => [c.key, c.foreign])), [cards]);
+  const lineColor = (keys: string[]) => {
+    const f = famOfKey.get(keys[0]);
+    return f ? familyColor.get(f)?.ink : undefined;
+  };
   // One label per row on the left: "Parents", "Your generation"… (or "II generation" without you).
+  // Rows of the drawing are generations: named from your row ("Parents" one row up…), or numbered.
   const rows = useMemo(() => {
-    const meGen = cards.find((c) => c.me)?.gen;
-    const byY = new Map<number, number>();
-    for (const c of cards) if (!byY.has(c.y)) byY.set(c.y, c.gen);
-    return [...byY.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([rowY, gen]) => ({ y: rowY, label: meGen !== undefined ? (labels.genRel[String(gen - meGen)] ?? generations.find((g) => g.n === gen)?.label ?? "") : (generations.find((g) => g.n === gen)?.label ?? "") }))
-      .filter((r) => r.label);
+    const ys = [...new Set(cards.map((c) => c.y))].sort((a, b) => a - b);
+    const meY = cards.find((c) => c.me)?.y;
+    const meRow = meY === undefined ? -1 : ys.indexOf(meY);
+    const roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    const numbered = (i: number) => (generations[0]?.label ?? "").replace(/^\S+/, roman[i] ?? String(i + 1));
+    return ys.map((y, i) => ({ y, label: meRow >= 0 ? (labels.genRel[String(i - meRow)] ?? numbered(i)) : numbered(i) })).filter((r) => r.label);
   }, [cards, generations, labels.genRel]);
   const bg = useSyncExternalStore(bgStore.subscribe, bgStore.get, bgStore.getServer);
   const bgColor = BACKGROUNDS.find((b) => b.id === bg)?.color ?? BACKGROUNDS[0].color;
@@ -609,8 +616,12 @@ export function TreeView({
                 {familyToggles.length > 1 && (
                   <div className="mt-3 border-t border-line pt-3">
                     <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.families}</p>
-                    {familyToggles.slice(1).map((f, j) => {
+                    {familyToggles.slice(1).map((f, j, all) => {
                       const i = j + 1;
+                      // Grouped: your side (father's and mother's families), your partner's side, others.
+                      const groupHead = all.some((x) => x.side && x.side !== all[0].side) && (j === 0 || all[j - 1].side !== f.side) && f.side ? (
+                        <p className="mb-0.5 mt-2 px-2 text-[0.8rem] font-semibold uppercase tracking-wide text-ink-muted/80 first:mt-0">{labels.sides[f.side]}</p>
+                      ) : null;
                       const dot = i === 0 ? "#1c1d1a" : familyColor.get(f.label)?.ring;
                       const body = (
                         <>
@@ -619,14 +630,17 @@ export function TreeView({
                           {f.href && <span className={`relative h-5 w-9 rounded-full transition-colors ${f.on ? "bg-ink" : "bg-line"}`} aria-hidden="true"><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${f.on ? "left-[18px]" : "left-0.5"}`} /></span>}
                         </>
                       );
-                      return f.href ? (
-                        <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} className="flex min-h-10 items-center gap-2.5 rounded-lg px-2 text-[0.95rem] hover:bg-paper">
-                          {body}
-                        </Link>
-                      ) : (
-                        <span key={f.label} className="flex min-h-10 items-center gap-2.5 px-2 text-[0.95rem]">
-                          {body}
-                        </span>
+                      return (
+                        <div key={f.label}>
+                          {groupHead}
+                          {f.href ? (
+                            <Link href={f.href} scroll={false} aria-pressed={f.on} className="flex min-h-10 items-center gap-2.5 rounded-lg px-2 text-[0.95rem] hover:bg-paper">
+                              {body}
+                            </Link>
+                          ) : (
+                            <span className="flex min-h-10 items-center gap-2.5 px-2 text-[0.95rem]">{body}</span>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -739,14 +753,14 @@ export function TreeView({
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
                 const on = lit && lineOn(l.keys);
-                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8f8a7c"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={lineColor(l.keys) ?? (on ? "#4f4b41" : "#8f8a7c")} strokeOpacity={lineColor(l.keys) && !on ? 0.7 : 1} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
                 const on = lit && lineOn(l.keys);
-                return <path key={i} d={l.d} stroke={on ? "#3f3b33" : "#6f6b60"} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={lineColor(l.keys) ?? (on ? "#3f3b33" : "#6f6b60")} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">

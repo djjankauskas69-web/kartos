@@ -446,6 +446,11 @@
       "pending": "Request sent. Waiting for their answer.",
       "asking": "Sending…",
       "hint": "If they agree you'll see names, years, graves and what they share."
+    },
+    "sides": {
+      "mine": "My side",
+      "partner": "Partner's side",
+      "other": "Others"
     }
   },
   "family": {

@@ -446,6 +446,11 @@
       "pending": "Prašymas išsiųstas. Laukiama jų atsakymo.",
       "asking": "Siunčiama…",
       "hint": "Gavę leidimą matysite jų vardus, metus, kapavietes ir tai, kuo jie dalijasi."
+    },
+    "sides": {
+      "mine": "Mano pusė",
+      "partner": "Sutuoktinio pusė",
+      "other": "Kitos"
     }
   },
   "family": {

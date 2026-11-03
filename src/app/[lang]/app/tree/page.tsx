@@ -315,6 +315,24 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     }
   }
   const treeRelations = foreignPeople.length ? kinship(treePeople, [...rels, ...foreignRels], me, locale) : relations;
+  // Which side a joined family is on: yours (through you, your parents, grandparents…), your partner's, or other.
+  const sideOf = (joinId: string): "mine" | "partner" | "other" => {
+    if (!me) return "other";
+    const upFrom = (id: string) => {
+      const out = new Set<string>([id]);
+      for (const stack = [id]; stack.length; ) {
+        const x = stack.pop()!;
+        for (const r of rels) if (r.type === "parent_child" && r.person_b === x && !out.has(r.person_a)) {
+          out.add(r.person_a);
+          stack.push(r.person_a);
+        }
+      }
+      return out;
+    };
+    if (upFrom(me).has(joinId)) return "mine";
+    const mates = rels.filter((r) => r.type === "partner" && (r.person_a === me || r.person_b === me)).map((r) => (r.person_a === me ? r.person_b : r.person_a));
+    return mates.some((m) => upFrom(m).has(joinId)) ? "partner" : "other";
+  };
   const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
@@ -348,7 +366,13 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardH={tree.cardH}
         generations={tree.generationChips}
         show={{ rels: [...mainRels, ...sides.flat()].map((r) => ({ person_a: r.person_a, person_b: r.person_b, type: r.type })), people: treePeople.map((p) => ({ id: p.id, sex: p.sex })), lang: locale }}
-        familyToggles={[{ label: current.name, on: true }, ...openLinks.filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i).map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref }))]}
+        familyToggles={[
+          { label: current.name, on: true },
+          ...openLinks
+            .filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i)
+            .map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref, side: sideOf(l.mine) }))
+            .sort((a, b) => ["mine", "partner", "other"].indexOf(a.side) - ["mine", "partner", "other"].indexOf(b.side)),
+        ]}
         labels={{
           zoomIn: t.tree.zoomIn,
           zoomOut: t.tree.zoomOut,
@@ -388,6 +412,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           addGroup: t.tree.addGroup,
           show: t.tree.show,
           elsewhere: t.tree.elsewhere,
+          sides: t.tree.sides,
         }}
         locale={locale}
       />

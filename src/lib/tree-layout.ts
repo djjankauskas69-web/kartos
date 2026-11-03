@@ -39,6 +39,8 @@ export function layoutTree(
   size: TreeSize = DEFAULT_SIZE,
   /** Partners drawn on the left of the person (so their own family can sit on that side). */
   leftPartners: Set<string> = new Set(),
+  /** Partners whose own family is drawn beside this tree: their couple goes to that edge of the brothers and sisters. */
+  outward: Set<string> = new Set(),
 ) {
   const SLOT = size.cardW + size.gapX;
   const ROW = size.cardH + size.rowGap;
@@ -141,7 +143,13 @@ export function layoutTree(
   const placeChildren = (id: string, key: string, partnerKeys: Map<string, string>, partnerX: Map<string, number>, ownX: number, depth: number, center: number, seen: Set<string>) => {
     const otherOf = (c: string) => parentsOf(c).find((p) => p !== id && partnerKeys.has(p)) ?? "";
     const xOf = (c: string) => (otherOf(c) ? (partnerX.get(otherOf(c)) ?? ownX) : ownX);
-    const kids = (depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : []).sort((a, b) => xOf(a) - xOf(b) || born(a) - born(b));
+    // A child married to someone whose own family stands beside the tree goes to the edge facing it,
+    // so the line to that family doesn't cross the brothers and sisters.
+    const edge = (c: string) => {
+      const p = partnersOf(c).find((q) => outward.has(q));
+      return p ? (leftPartners.has(p) ? -1 : 1) : 0;
+    };
+    const kids = (depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : []).sort((a, b) => xOf(a) - xOf(b) || edge(a) - edge(b) || born(a) - born(b));
     if (kids.length === 0) return;
     const next = new Set(seen).add(id);
     const widths = kids.map((c) => descWidth(c, depth + 1, next));
@@ -229,6 +237,8 @@ export function edgePaths(
   boxPad = 0,
   /** Portrait cards: partners join at the photo's centre (y) and lines stop at its edge (r). */
   photo?: { y: number; r: number },
+  /** Moves the horizontal bar of a parents → children line up or down (px), so lines of different families don't merge. */
+  busShift?: (e: TreeEdge) => number,
 ) {
   const { cardW, cardH } = size;
   const at = new Map(nodes.map((n) => [n.key, n]));
@@ -255,7 +265,7 @@ export function edgePaths(
     const parentBottom = ps[0].y + cardH + (coupleBoxes ? boxPad : 0);
     const sy = ps.length === 2 && !coupleBoxes ? ps[0].y + (photo ? photo.y : cardH / 2) : parentBottom;
     const childTop = cs[0].y - (coupleBoxes ? boxPad : 0);
-    const busY = childTop - (childTop - parentBottom) / 2;
+    const busY = childTop - (childTop - parentBottom) / 2 + (busShift?.(e) ?? 0);
     const xs = cs.map((c) => c.x + cardW / 2);
     const left = Math.min(sx, ...xs);
     const right = Math.max(sx, ...xs);

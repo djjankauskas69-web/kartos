@@ -93,13 +93,17 @@ export function buildTree({
   if (!start) return null;
 
   const span = depth ? depth - 1 : 99;
-  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people, rels, 0, span, SIZE, left) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left));
+  // People here whose own parents come from another family drawn beside (a wife from another tree).
+  const hasParentHere = new Set(rels.filter((r) => r.type === "parent_child").map((r) => r.person_b));
+  const outward = new Set((sides ?? []).flat().filter((r) => r.type === "parent_child" && !hasParentHere.has(r.person_b) && inRels.has(r.person_b)).map((r) => r.person_b));
+  for (const id of people.map((p) => p.id)) if (foreign?.has(id) && rels.some((r) => r.type === "partner" && (r.person_a === id || r.person_b === id))) outward.add(id);
+  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people, rels, 0, span, SIZE, left, outward) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward));
   // With another family beside this one, try their people standing on the left of their partner
   // here as well, and keep whichever drawing has the shorter lines between the two families.
   const layout = (() => {
     if (!sides?.length) return lay();
     const a = withSides(lay(), sides, people);
-    const lefts = new Set(people.filter((p) => foreign?.has(p.id) && rels.some((r) => r.type === "partner" && (r.person_a === p.id || r.person_b === p.id))).map((p) => p.id));
+    const lefts = new Set([...outward].filter((id) => rels.some((r) => r.type === "partner" && (r.person_a === id || r.person_b === id))));
     if (!lefts.size) return a;
     const b = withSides(lay(lefts), sides, people);
     return b.cost < a.cost ? b : a;
@@ -195,8 +199,18 @@ export function buildTree({
     };
   });
 
+  // Lines of each other family sit at their own height, so two families' lines never merge.
+  const famIndex = new Map<string, number>();
+  for (const f of foreign?.values() ?? []) if (!famIndex.has(f.family)) famIndex.set(f.family, famIndex.size + 1);
+  const idOfKey = new Map(layout.nodes.map((n) => [n.key, n.id]));
+  const shift = (e: (typeof layout.edges)[number]) => {
+    if (e.kind !== "parents") return 0;
+    const fam = foreign?.get(idOfKey.get(e.parents[0]) ?? "")?.family;
+    const i = fam ? famIndex.get(fam) ?? 0 : 0;
+    return i ? ((i % 3) - 1) * 18 : 0;
+  };
   const lines = (es: typeof layout.edges) =>
-    es.map((e) => ({ d: edgePaths(layout.nodes, [e], SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }).join(" "), keys: e.kind === "partner" ? [e.a, e.b] : [...e.parents, ...e.children] }));
+    es.map((e) => ({ d: edgePaths(layout.nodes, [e], SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }, shift).join(" "), keys: e.kind === "partner" ? [e.a, e.b] : [...e.parents, ...e.children] }));
 
   /* Couples share one box: join runs of partner links. */
   const group = new Map<string, string>(layout.nodes.map((n) => [n.key, n.key]));
