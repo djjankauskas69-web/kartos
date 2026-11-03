@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { cropToFile, initialCrop, PhotoCrop, type Crop } from "./PhotoCrop";
 import { Portrait } from "@/components/Portrait";
 import { cls } from "@/components/ui";
-import { IconCheck, IconImage, IconLink, IconSearch } from "@/components/icons";
-import { isImage, uploadPhoto } from "@/lib/upload";
+import { IconCheck, IconLink, IconSearch } from "@/components/icons";
+import { uploadPhoto } from "@/lib/upload";
 import { addPersonFromPanel, type AddState } from "./add-actions";
 
 export type AddOption = {
@@ -53,11 +52,13 @@ function canBe(cand: AddOption, anchor: AddOption, kind: Kind, people: AddOption
   const descendants = walk(anchor.id, (p) => p.childIds);
   const siblings = new Set(anchor.parentIds.flatMap((pid) => byId.get(pid)?.childIds ?? []).filter((id) => id !== anchor.id));
   const partner = anchor.partners.some((x) => x.id === cand.id);
+  // Married into the family above or below (a grandson-in-law isn't a son).
+  const inLaw = people.some((p) => (ancestors.has(p.id) || descendants.has(p.id)) && p.partners.some((x) => x.id === cand.id));
   const parent = anchor.parentIds.includes(cand.id);
   const child = anchor.childIds.includes(cand.id);
   if (kind === "husband" || kind === "wife") return !partner && !ancestors.has(cand.id) && !descendants.has(cand.id) && !siblings.has(cand.id);
-  if (kind === "father" || kind === "mother") return !parent && !partner && !descendants.has(cand.id) && !siblings.has(cand.id);
-  if (kind === "son" || kind === "daughter") return !child && !partner && !ancestors.has(cand.id) && !siblings.has(cand.id);
+  if (kind === "father" || kind === "mother") return !parent && !partner && !inLaw && !descendants.has(cand.id) && !siblings.has(cand.id);
+  if (kind === "son" || kind === "daughter") return !child && !partner && !inLaw && !ancestors.has(cand.id) && !siblings.has(cand.id);
   return !siblings.has(cand.id) && !partner && !ancestors.has(cand.id) && !descendants.has(cand.id);
 }
 
@@ -316,10 +317,7 @@ function AddPersonPanel({
   const [surname, setSurname] = useState("");
   const [surnameTouched, setSurnameTouched] = useState(false);
   const [living, setLiving] = useState(true);
-  const [more, setMore] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
-  const [crop, setCrop] = useState<Crop | null>(null);
   const [bornStr, setBornStr] = useState("");
   const [exactBirth, setExactBirth] = useState(false);
   const [exactDeath, setExactDeath] = useState(false);
@@ -371,14 +369,7 @@ function AddPersonPanel({
     const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
     againRef.current = submitter?.value === "again";
     const form = new FormData(e.currentTarget);
-    // The portrait as framed in the circle.
-    if (photo && crop) {
-      try {
-        form.set("photoFile", await cropToFile(photo.url, crop, photo.file.name));
-      } catch {
-        /* keep the original file */
-      }
-    }
+    // Only the essentials here; photo, story and the rest are added on the profile afterwards.
     startTransition(() => dispatch(form));
   };
 
@@ -689,68 +680,6 @@ function AddPersonPanel({
                   </fieldset>
                 )}
 
-                <div className="rounded-xl border border-line">
-                  <button type="button" aria-expanded={more} onClick={() => setMore((v) => !v)} className="flex min-h-12 w-full items-center gap-2 px-4 text-left">
-                    <span className="font-semibold">{t.more}</span>
-                    <span className="text-[0.92rem] text-ink-muted">· {t.moreHint}</span>
-                    <span aria-hidden="true" className={`ml-auto text-ink-muted transition-transform ${more ? "rotate-180" : ""}`}>⌄</span>
-                  </button>
-                  <div hidden={!more} className="space-y-4 border-t border-line p-4">
-                    <div>
-                      <label htmlFor="add-birth-surname" className={cls.label}>
-                        {t.birthSurname}
-                      </label>
-                      <input id="add-birth-surname" name="birthSurname" maxLength={200} className={cls.input} />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor="add-birth-place" className={cls.label}>
-                          {t.birthPlace}
-                        </label>
-                        <input id="add-birth-place" name="birthPlace" maxLength={200} className={cls.input} />
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="add-bio" className={cls.label}>
-                        {t.biography}
-                      </label>
-                      <textarea id="add-bio" name="biography" rows={3} maxLength={20000} placeholder={t.biographyPh} className={cls.textarea} />
-                    </div>
-                    {photo && crop && <PhotoCrop src={photo.url} value={crop} onChange={setCrop} label={t.cropHint} />}
-                    <div className="flex items-center gap-4">
-                      {photo ? null : (
-                        <span className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-line text-ink-muted">
-                          <IconImage size={22} />
-                        </span>
-                      )}
-                      <label className={`${cls.secondary} cursor-pointer`}>
-                        {photo ? t.photoRemove : t.photoPick}
-                        <input
-                          type="file"
-                          name="photoFile"
-                          accept="image/*"
-                          className="sr-only"
-                          onClick={(e) => {
-                            if (photo) {
-                              e.preventDefault();
-                              URL.revokeObjectURL(photo.url);
-                              setPhoto(null);
-                              setCrop(null);
-                              (e.currentTarget as HTMLInputElement).value = "";
-                            }
-                          }}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            const next = f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null;
-                            setPhoto(next);
-                            setCrop(null);
-                            if (next) initialCrop(next.url).then(setCrop, () => setCrop(null));
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </section>
