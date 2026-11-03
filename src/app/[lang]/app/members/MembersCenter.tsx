@@ -155,10 +155,9 @@ export function MembersCenter({
         </div>
 
         <div className={cls.card}>
-          <div className="hidden grid-cols-[minmax(0,1fr)_10rem_8.5rem_2.75rem] gap-4 border-b border-line px-5 py-3 text-[0.92rem] font-semibold text-ink-muted md:grid">
+          <div className="hidden grid-cols-[minmax(0,1fr)_10rem_2.75rem] gap-4 border-b border-line px-5 py-3 text-[0.92rem] font-semibold text-ink-muted md:grid">
             <span>{t.colName}</span>
             <span>{t.colAccess}</span>
-            <span>{t.colLastSeen}</span>
             <span className="sr-only">{t.actions}</span>
           </div>
           {shown.length === 0 ? (
@@ -168,7 +167,7 @@ export function MembersCenter({
               {shown.map((m) => (
                 <li
                   key={m.id}
-                  className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-4 gap-y-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_10rem_8.5rem_2.75rem]"
+                  className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-4 gap-y-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_10rem_2.75rem]"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar name={m.name} src={m.portrait} />
@@ -188,10 +187,6 @@ export function MembersCenter({
                   <div className="col-start-1 row-start-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:col-start-auto md:row-start-auto md:contents">
                     <span className="pl-14 md:pl-0">
                       <RoleBadge role={m.role} label={t.role[m.role]} />
-                    </span>
-                    <span className="text-[0.95rem] text-ink-muted md:text-[1rem] md:text-ink">
-                      <span className="md:hidden">{t.colLastSeen}: </span>
-                      {m.lastSeen}
                     </span>
                   </div>
                   <div className="col-start-2 row-span-2 row-start-1 flex justify-end md:col-start-auto md:row-span-1 md:row-start-auto">
