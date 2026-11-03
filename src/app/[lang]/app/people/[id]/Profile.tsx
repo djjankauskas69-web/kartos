@@ -33,11 +33,17 @@ export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
  * the family tree.
  */
-async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t: Dictionary; locale: Locale; idPromise: Promise<string>; compact?: boolean; closeHref?: string }) {
+async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId: wsGiven, wsIdPromise }: { t: Dictionary; locale: Locale; idPromise: Promise<string>; compact?: boolean; closeHref?: string; wsId?: string; wsIdPromise?: Promise<string | undefined> }) {
   void closeHref;
   const id = await idPromise;
+  const wsId = wsGiven ?? (wsIdPromise ? await wsIdPromise : undefined);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { supabase, user, current } = await requireWorkspace(locale);
+  const ctx = await requireWorkspace(locale);
+  const { supabase, user } = ctx;
+  // Someone from a joined family (another archive you belong to) opens here too, to look at:
+  // their own archive's data, without switching archives and without editing.
+  const other = wsId && wsId !== ctx.current.id ? ctx.memberships.find((m) => m.id === wsId) : undefined;
+  const current = other ? { ...other, role: "viewer" as const } : ctx.current;
   // Everything about this person in one round; only what depends on it comes after.
   const [links, story, { byId, rels }, { data: burials }, { data: tagged }, { data: memories }, evRes] = await Promise.all([
     myPersonLinks(locale),
@@ -419,7 +425,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
     }
     if (person.birth_surname && person.birth_surname !== person.surname) years = [years, `${t.person.nee} ${person.birth_surname}`].filter(Boolean).join(" · ");
     const residence = [...personEvents].reverse().find((e) => e.kind === "residence")?.place ?? null;
-    const relHref = (rid: string) => `${base}/people/${rid}`;
+    const relHref = (rid: string) => `${base}/people/${rid}${other ? `?ws=${other.id}` : ""}`;
     const relItem = (rid: string) => {
       const r = byId.get(rid)!;
       return { id: rid, name: fullName(r), sub: lifeSpan(r, t.app.born.toLowerCase()), portrait: portraits.get(rid), initials: `${r.given_names[0] ?? ""}${r.surname?.[0] ?? ""}`.toUpperCase(), href: relHref(rid) };
@@ -462,7 +468,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref }: { t
           aliveLabel={person.sex === "female" ? mt.aliveF : mt.aliveM}
           residence={residence}
           family={famCard}
-          treeHref={`${base}/tree?p=${id}`}
+          treeHref={other ? `${base}/open?ws=${other.id}&p=${id}` : `${base}/tree?p=${id}`}
           meHref={isMe ? `${base}/me` : undefined}
           inDrawer={compact}
         />

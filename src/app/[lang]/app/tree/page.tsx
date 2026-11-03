@@ -80,10 +80,10 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         return { ...b, link: l, original: g.people };
       }),
   );
-  const foreign = new Map<string, { family: string; href: string }>();
+  const foreign = new Map<string, { family: string; href: string; profileHref?: string }>();
   const foreignPeople = branches.flatMap((b) => (b ? b.people : []));
   const foreignRels = branches.flatMap((b) => (b ? b.rels : []));
-  for (const b of branches) if (b) for (const [id, orig] of b.originalId) foreign.set(id, { family: b.link.other.name, href: `${base}/open?ws=${b.link.other.id}&p=${orig}` });
+  for (const b of branches) if (b) for (const [id, orig] of b.originalId) foreign.set(id, { family: b.link.other.name, href: `${base}/open?ws=${b.link.other.id}&p=${orig}`, profileHref: `${base}/people/${orig}?ws=${b.link.other.id}` });
   const canAdd = can.add(current.role);
   // You in this tree ("Tai aš"): relationships in words and your branches.
   const me = mine.links.get(current.id);

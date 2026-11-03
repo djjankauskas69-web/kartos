@@ -71,7 +71,7 @@ export function buildTree({
   /** Where clicking a person goes (the tree opens the profile in a side panel). */
   profileHrefFor?: (id: string) => string;
   /** People shown from a linked family: which family, and where they open. */
-  foreign?: Map<string, { family: string; href: string }>;
+  foreign?: Map<string, { family: string; href: string; profileHref?: string }>;
   /** Other families drawn as their own tree beside this one, joined where people are the same. */
   sides?: BuildRel[][];
 }) {
@@ -146,7 +146,8 @@ export function buildTree({
         start: n.role === "focus",
         highlight: false,
         relation: relations?.get(n.id),
-        profileHref: far.href,
+        // Their profile opens here, over this tree; 'show from' goes to their family's tree.
+        profileHref: far.profileHref ?? far.href,
         showFromHref: far.href,
         addOptions: [],
         families: [],

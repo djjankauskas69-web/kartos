@@ -574,7 +574,7 @@ export function TreeView({
           <ul>
             {cards.map((c) => (
               <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}>
-                <CardLink foreign={!!c.foreign} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.foreign && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
+                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
@@ -750,7 +750,7 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
-        <CardLink foreign={!!card.foreign} href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
+        <CardLink foreign={card.profileHref.includes("/open?")} href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
           {labels.menuProfile}
         </CardLink>

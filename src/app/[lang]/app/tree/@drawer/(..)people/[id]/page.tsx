@@ -8,19 +8,23 @@ import { DelayedShell, ProfileDrawer } from "../../../ProfileDrawer";
  * The panel opens once the profile is ready; if that takes more than a moment, it opens
  * first with the kartos mark.
  */
-export default function DrawerProfile({ params }: { params: Promise<{ lang: string; id: string }> }) {
+type Props = { params: Promise<{ lang: string; id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default function DrawerProfile({ params, searchParams }: Props) {
   return (
     <Suspense fallback={<DelayedShell />}>
-      <Panel params={params} />
+      <Panel params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Panel({ params }: { params: Promise<{ lang: string; id: string }> }) {
-  const [{ lang, id }, t, locale] = await Promise.all([params, getDictionary(), getLocale()]);
+async function Panel({ params, searchParams }: Props) {
+  const [{ lang, id }, sp, t, locale] = await Promise.all([params, searchParams, getDictionary(), getLocale()]);
+  // ?ws= : someone from a joined family, shown from their own archive.
+  const ws = typeof sp.ws === "string" ? sp.ws : undefined;
   return (
-    <ProfileDrawer key={id} fullHref={`/${lang}/app/people/${id}`}>
-      <Profile t={t} locale={locale} idPromise={Promise.resolve(id)} compact />
+    <ProfileDrawer key={`${ws ?? ""}${id}`} fullHref={`/${lang}/app/people/${id}${ws ? `?ws=${ws}` : ""}`}>
+      <Profile t={t} locale={locale} idPromise={Promise.resolve(id)} compact wsId={ws} />
     </ProfileDrawer>
   );
 }
