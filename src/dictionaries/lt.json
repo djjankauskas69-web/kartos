@@ -1243,5 +1243,25 @@
     "pending": "Laukia patvirtinimo",
     "goToTree": "Rodyti medyje",
     "linkFamily": "Susieti su kitos šeimos medžiu"
+  },
+  "shared": {
+    "title": "Kas matys?",
+    "onlyUs": "Tik mūsų šeimai",
+    "alsoLinked": "Ir susietoms šeimoms",
+    "from": "Pasidalino: {name}",
+    "isShared": "Matoma ir susietoms šeimoms",
+    "share": "Dalintis su susietomis šeimomis",
+    "unshare": "Nebesidalinti",
+    "diffTitle": "Kitos šeimos įraše kai kas skiriasi",
+    "diffLead": "Niekas nepakeičiama be jūsų sutikimo.",
+    "ours": "mūsų",
+    "adopt": "Perimti jų versiją",
+    "empty": "nenurodyta",
+    "fields": {
+      "birth_year": "Gimimo metai",
+      "death_year": "Mirties metai",
+      "birth_place": "Gimimo vieta",
+      "death_place": "Mirties vieta"
+    }
   }
 }

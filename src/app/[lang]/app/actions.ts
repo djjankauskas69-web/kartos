@@ -433,7 +433,13 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
   }
 
   const row: Record<string, unknown> = { workspace_id: workspace.id, person_id: personId, author_id: user.id, body };
+  if (form.get("shared") === "1") row.shared = true;
   let { error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row);
+  // Before database update 0012 there is no sharing; the memory stays with this family.
+  if (error && /shared/.test(error.message)) {
+    delete row.shared;
+    ({ error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row));
+  }
   // Before database update 0010 a memory can't point at its photo, so it is saved without it.
   if (error && mediaId && /media_id/.test(error.message)) ({ error } = await supabase.from("memories").insert(row));
   if (error) {
@@ -442,6 +448,37 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
   }
   refresh();
   return { ok: true };
+}
+
+/** Share a memory or photo with the linked families, or stop sharing it (database update 0012). */
+export async function setShared(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale);
+  const id = uuid(form, "id");
+  const table = form.get("kind") === "media" ? "media" : "memories";
+  if (id) {
+    const { error } = await supabase.from(table).update({ shared: form.get("shared") === "1" }).eq("id", id).eq("workspace_id", workspace.id);
+    if (error) console.error("setShared", error);
+  }
+  refresh();
+}
+
+const LINKED_FIELDS = ["birth_year", "death_year", "birth_place", "death_place"] as const;
+
+/** Take the linked family's value for one fact — only a value their record really has. */
+export async function adoptLinkedFact(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const personId = uuid(form, "personId");
+  const field = LINKED_FIELDS.find((f) => f === form.get("field"));
+  const value = String(form.get("value") ?? "");
+  if (!personId || !field) return;
+  const { data } = await supabase.rpc("linked_facts", { mine: personId });
+  const theirs = ((data ?? []) as Array<Record<string, unknown>>).map((r) => r[field]).find((v) => v != null && String(v) === value);
+  if (theirs == null) return;
+  const { error } = await supabase.from("persons").update({ [field]: theirs }).eq("id", personId).eq("workspace_id", workspace.id);
+  if (error) console.error("adoptLinkedFact", error);
+  refresh();
 }
 
 export async function deleteMemory(form: FormData) {

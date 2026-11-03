@@ -8,7 +8,10 @@ import { addMemory, type FormState } from "../../actions";
 type L = { title: string; lead: string; placeholder: string; addPhoto: string; removePhoto: string; submit: string; saving: string; pending: string; empty: string; error: string; photoError: string };
 
 /** A roomy box for a story about the person, with a photo button in its corner. */
-export function MemoryComposer({ locale, workspaceId, personId, needsApproval, labels }: { locale: string; workspaceId: string; personId: string; needsApproval: boolean; labels: L }) {
+type Share = { title: string; onlyUs: string; alsoLinked: string };
+
+export function MemoryComposer({ locale, workspaceId, personId, needsApproval, labels, share }: { locale: string; workspaceId: string; personId: string; needsApproval: boolean; labels: L; share?: Share }) {
+  const [shared, setShared] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
@@ -24,6 +27,7 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
     const result = await addMemory(prev, form);
     if (result.ok) {
       formRef.current?.reset();
+      setShared(false);
       if (photo) URL.revokeObjectURL(photo.url);
       setPhoto(null);
     }
@@ -89,6 +93,28 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
           )}
         </div>
       </div>
+      {share && (
+        <fieldset className="mt-4">
+          <legend className="mb-2 text-[0.95rem] font-semibold">{share.title}</legend>
+          <input type="hidden" name="shared" value={shared ? "1" : "0"} />
+          <div className="inline-flex rounded-full border border-line bg-paper p-1">
+            {[
+              [false, share.onlyUs],
+              [true, share.alsoLinked],
+            ].map(([v, label]) => (
+              <button
+                key={String(v)}
+                type="button"
+                aria-pressed={shared === v}
+                onClick={() => setShared(v as boolean)}
+                className={`min-h-10 rounded-full px-4 text-[0.95rem] font-semibold ${shared === v ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}
+              >
+                {label as string}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {err && <p className="mt-3 font-semibold text-danger">{err}</p>}
       {state.ok && needsApproval && <p className="mt-3 text-[0.95rem] text-ink-muted">{labels.pending}</p>}
       <button type="submit" disabled={pending} className={`${cls.primary} mt-4 w-full`}>

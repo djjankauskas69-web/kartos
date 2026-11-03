@@ -1243,5 +1243,25 @@
     "pending": "Waiting for approval",
     "goToTree": "Show in tree",
     "linkFamily": "Link with another family's tree"
+  },
+  "shared": {
+    "title": "Who will see it?",
+    "onlyUs": "Only our family",
+    "alsoLinked": "Linked families too",
+    "from": "Shared by: {name}",
+    "isShared": "Visible to linked families",
+    "share": "Share with linked families",
+    "unshare": "Stop sharing",
+    "diffTitle": "The other family's record differs",
+    "diffLead": "Nothing changes without your consent.",
+    "ours": "ours",
+    "adopt": "Use their version",
+    "empty": "not given",
+    "fields": {
+      "birth_year": "Birth year",
+      "death_year": "Death year",
+      "birth_place": "Birthplace",
+      "death_place": "Place of death"
+    }
   }
 }

@@ -20,7 +20,7 @@ import {
 import { Portrait } from "@/components/Portrait";
 import { cls, PendingBadge } from "@/components/ui";
 import { periodLabel } from "@/lib/archive";
-import { deleteMemory, deletePhoto, removeRelationship, setPortrait } from "../../actions";
+import { adoptLinkedFact, deleteMemory, deletePhoto, removeRelationship, setPortrait, setShared } from "../../actions";
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
@@ -45,7 +45,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const other = wsId && wsId !== ctx.current.id ? ctx.memberships.find((m) => m.id === wsId) : undefined;
   const current = other ? { ...other, role: "viewer" as const } : ctx.current;
   // Everything about this person in one round; only what depends on it comes after.
-  const [links, story, { byId, rels }, { data: burials }, { data: tagged }, { data: memories }, evRes] = await Promise.all([
+  const [links, story, { byId, rels }, { data: burials }, { data: tagged }, { data: memories }, evRes, linkedRes] = await Promise.all([
     myPersonLinks(locale),
     getLifeStory(locale, id),
     getFamilyGraph(locale, current.id),
@@ -62,7 +62,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     loadMemories(supabase, id),
     // Life events and places (database update 0011); missing table → none, and the forms say so.
     supabase.from("person_events").select("id, kind, year, year_to, title, place, lat, lng, status, created_by").eq("person_id", id).neq("status", "rejected").order("year", { ascending: true, nullsFirst: false }),
+    // The same person in a linked family's archive (database update 0012; missing → none).
+    supabase.rpc("linked_people", { mine: id }),
   ]);
+  const linkedPeople = (linkedRes.error ? [] : (linkedRes.data ?? [])) as Array<{ person: string; workspace_name: string }>;
+  const linkedIds = linkedPeople.map((l) => l.person);
   const isMe = links.links.get(current.id) === id;
   const person = byId.get(id);
   if (!person) notFound();
@@ -95,9 +99,33 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const photos = linked.filter((m): m is MediaRow & { storage_path: string } => m.kind === "photo" && !!m.storage_path);
   const papers = linked.filter((m) => m.kind !== "photo");
 
+  // What the linked families share about this person, their differing facts, and which of ours are shared.
+  type SharedMemory = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null };
+  const [sharedMemRes, sharedTagRes, factsRes, ownFlags] = linkedIds.length
+    ? await Promise.all([
+        supabase.from("memories").select("id, body, author_id, created_at, person_id, media_id").in("person_id", linkedIds).eq("shared", true).eq("status", "approved").order("created_at", { ascending: false }),
+        supabase.from("media_persons").select("person_id, media:media(id, kind, storage_path, status, shared, deleted_at, created_at)").in("person_id", linkedIds),
+        supabase.rpc("linked_facts", { mine: id }),
+        photos.length ? supabase.from("media").select("id, shared").in("id", photos.map((p) => p.id)) : Promise.resolve({ data: [] as Array<{ id: string; shared: boolean }> }),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+  const familyOf = new Map(linkedPeople.map((l) => [l.person, l.workspace_name]));
+  const sharedMemories = (sharedMemRes.data ?? []) as SharedMemory[];
+  type SharedMedia = { id: string; kind: string; storage_path: string | null; status: Status; shared: boolean; deleted_at: string | null; created_at: string };
+  const seenShared = new Set<string>();
+  const sharedPhotos = ((sharedTagRes.data ?? []) as Array<{ person_id: string; media: unknown }>).flatMap((r) => {
+    const m = r.media as SharedMedia | null;
+    if (!m || !m.shared || m.status !== "approved" || m.deleted_at || m.kind !== "photo" || !m.storage_path || seenShared.has(m.id)) return [];
+    seenShared.add(m.id);
+    return [{ id: m.id, storage_path: m.storage_path, family: familyOf.get(r.person_id) ?? "" }];
+  });
+  const sharedPhotoIds = new Set(((ownFlags.data ?? []) as Array<{ id: string; shared: boolean }>).filter((m) => m.shared).map((m) => m.id));
+  type Facts = { workspace_name: string; birth_year: number | null; death_year: number | null; birth_place: string | null; death_place: string | null };
+  const FACT_FIELDS = ["birth_year", "death_year", "birth_place", "death_place"] as const;
+
   const burial = burials?.[0] ?? null;
   // The grave photo and the photos that belong to memories (kept with them, not among the person's photos), together.
-  const memoryMediaIds = (memories ?? []).flatMap((m) => (m.media_id ? [m.media_id] : []));
+  const memoryMediaIds = [...(memories ?? []), ...sharedMemories].flatMap((m) => (m.media_id ? [m.media_id] : []));
   const extraIds = [...memoryMediaIds, ...(burial?.photo_id ? [burial.photo_id as string] : [])];
   const { data: extraMedia } = extraIds.length ? await supabase.from("media").select("id, storage_path").in("id", extraIds) : { data: [] };
   const gravePhoto = burial?.photo_id ? ((extraMedia ?? []).find((m) => m.id === burial.photo_id) ?? null) : null;
@@ -105,9 +133,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const memoryPath = new Map((memoryMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
   const [urls, portraits, authors] = await Promise.all([
-    signedUrls(locale, [...photos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
+    signedUrls(locale, [...photos.map((p) => p.storage_path), ...sharedPhotos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
     portraitUrls(locale, [person, ...relativeIds.map((r) => byId.get(r)!).filter(Boolean)]),
-    profileNames(locale, (memories ?? []).map((m) => m.author_id as string)),
+    profileNames(locale, [...(memories ?? []), ...sharedMemories].map((m) => m.author_id as string)),
   ]);
 
   const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
@@ -172,15 +200,33 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 workspaceId={current.id}
                 personId={id}
                 needsApproval={can.needsApproval(role)}
+                share={linkedIds.length && !other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked } : undefined}
                 labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
+  );
+  const shareToggle = (kind: "memory" | "media", itemId: string, isShared: boolean) => (
+    <form action={setShared}>
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="id" value={itemId} />
+      <input type="hidden" name="shared" value={isShared ? "0" : "1"} />
+      <PendingButton label={isShared ? t.shared.unshare : t.shared.share} busyLabel="…" className="rounded-full px-2 py-1 text-ink-muted hover:text-ink" />
+    </form>
+  );
+  const sharedChip = (label: string) => (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-wash px-2.5 py-1 text-[0.85rem] font-semibold">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+      </svg>
+      {label}
+    </span>
   );
   const memoriesNode = (
     <>
       {/* Stories and memories */}
       <section id="memories" className="scroll-mt-24">
         <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
-        {(memories ?? []).length === 0 ? (
+        {(memories ?? []).length === 0 && sharedMemories.length === 0 ? (
           <p className="mt-3 text-ink-muted">{t.memories.empty}</p>
         ) : (
           <ul className="mt-4 space-y-4">
@@ -200,17 +246,41 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     <span className="font-semibold">{author}</span>
                     <span className="text-ink-muted">· {dateFmt.format(new Date(m.created_at))}</span>
                     {m.status === "pending" && <PendingBadge label={t.app.pending} />}
+                    {m.shared && sharedChip(t.shared.isShared)}
                   </div>
                   <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
-                  {(can.edit(role) || m.author_id === user.id) && (
-                    <form action={deleteMemory} className="clear-both mt-3 text-right text-[0.92rem] text-ink-muted">
-                      <input type="hidden" name="locale" value={locale} />
-                      <input type="hidden" name="id" value={m.id} />
-                      <button type="submit" className="hover:text-danger">
-                        {t.memories.delete}
-                      </button>
-                    </form>
+                  {(can.edit(role) || m.author_id === user.id) && !other && (
+                    <div className="clear-both mt-3 flex items-center justify-end gap-3 text-[0.92rem] text-ink-muted">
+                      {linkedIds.length > 0 && m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
+                      <form action={deleteMemory}>
+                        <input type="hidden" name="locale" value={locale} />
+                        <input type="hidden" name="id" value={m.id} />
+                        <button type="submit" className="hover:text-danger">
+                          {t.memories.delete}
+                        </button>
+                      </form>
+                    </div>
                   )}
+                </li>
+              );
+            })}
+            {sharedMemories.map((m) => {
+              const path = m.media_id ? memoryPath.get(m.media_id) : undefined;
+              const phUrl = path ? urls.get(path) : undefined;
+              const author = authors.get(m.author_id as string) ?? "";
+              return (
+                <li key={m.id} className={`border-dashed p-5 sm:p-6 ${cls.card}`}>
+                  {phUrl && (
+                    <div className="float-right mb-3 ml-4">
+                      <MemoryPhoto src={phUrl} label={t.memories.openPhoto} close={t.add.close} />
+                    </div>
+                  )}
+                  <div className="mb-3 flex flex-wrap items-center gap-3 text-[0.95rem]">
+                    {sharedChip(t.shared.from.replace("{name}", familyOf.get(m.person_id) ?? ""))}
+                    {author && <span className="font-semibold">{author}</span>}
+                    <span className="text-ink-muted">· {dateFmt.format(new Date(m.created_at))}</span>
+                  </div>
+                  <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
                 </li>
               );
             })}
@@ -229,7 +299,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
             <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} />
           )}
         </div>
-        {photos.length === 0 ? (
+        {photos.length === 0 && sharedPhotos.length === 0 ? (
           <p className="mt-3 text-ink-muted">{t.photos.empty}</p>
         ) : (
           <ul className={`mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 ${compact ? "" : "lg:grid-cols-4"}`}>
@@ -246,6 +316,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                   )}
                   <div className="flex flex-wrap items-center gap-1 px-2 py-2 text-[0.88rem]">
                     {ph.status === "pending" && <PendingBadge label={t.app.pending} />}
+                    {sharedPhotoIds.has(ph.id) && sharedChip(t.shared.isShared)}
                     {isPortrait && <span className="inline-flex items-center gap-1 rounded-full bg-sage-wash px-2.5 py-1 font-semibold">✓ {t.photos.portrait}</span>}
                     {can.edit(role) && !isPortrait && ph.status === "approved" && (
                       <form action={setPortrait}>
@@ -255,6 +326,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                         <PendingButton label={t.photos.setPortrait} busyLabel={t.photos.settingPortrait} className="rounded-full border border-line px-2.5 py-1 font-semibold hover:bg-linen" />
                       </form>
                     )}
+                    {can.edit(role) && linkedIds.length > 0 && ph.status === "approved" && shareToggle("media", ph.id, sharedPhotoIds.has(ph.id))}
                     {can.edit(role) && (
                       <form action={deletePhoto} className="ml-auto">
                         <input type="hidden" name="locale" value={locale} />
@@ -263,6 +335,20 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                       </form>
                     )}
                   </div>
+                </li>
+              );
+            })}
+            {sharedPhotos.map((ph) => {
+              const url = urls.get(ph.storage_path);
+              return (
+                <li key={ph.id} className={`overflow-hidden border-dashed ${cls.card}`}>
+                  {url && (
+                    <a href={url} target="_blank" rel="noreferrer" className="block aspect-square bg-linen">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+                      <img src={url} alt={fullName(person)} loading="lazy" className="h-full w-full object-cover" />
+                    </a>
+                  )}
+                  <div className="px-2 py-2">{sharedChip(t.shared.from.replace("{name}", ph.family))}</div>
                 </li>
               );
             })}
@@ -424,6 +510,14 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       years = `${born} (${mt.ageYears.replace("{n}", String(age))})`;
     }
     if (person.birth_surname && person.birth_surname !== person.surname) years = [years, `${t.person.nee} ${person.birth_surname}`].filter(Boolean).join(" · ");
+    const diffs = ((factsRes.data ?? []) as Facts[]).flatMap((f) =>
+      FACT_FIELDS.flatMap((field) => {
+        const theirs = f[field];
+        const ours = person[field] as string | number | null;
+        if (theirs == null || theirs === "" || String(theirs).trim().toLowerCase() === String(ours ?? "").trim().toLowerCase()) return [];
+        return [{ field, ours, theirs, family: f.workspace_name }];
+      }),
+    );
     const residence = [...personEvents].reverse().find((e) => e.kind === "residence")?.place ?? null;
     const relHref = (rid: string) => `${base}/people/${rid}${other ? `?ws=${other.id}` : ""}`;
     const relItem = (rid: string) => {
@@ -441,6 +535,30 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           </Link>
         )}
         {person.status === "pending" && <PendingBadge label={t.app.pending} />}
+        {diffs.length > 0 && (
+          <section className="rounded-2xl border border-bronze/30 bg-[#f7f0e2] p-4 sm:p-5">
+            <h2 className="font-semibold">{t.shared.diffTitle}</h2>
+            <p className="mt-0.5 text-[0.92rem] text-ink-muted">{t.shared.diffLead}</p>
+            <ul className="mt-3 space-y-2">
+              {diffs.map((d) => (
+                <li key={`${d.field}-${d.family}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.97rem]">
+                  <span>
+                    <span className="font-semibold">{t.shared.fields[d.field]}:</span> {t.shared.ours} <b>{d.ours ?? t.shared.empty}</b>, {d.family} – <b>{d.theirs}</b>
+                  </span>
+                  {can.edit(role) && !other && (
+                    <form action={adoptLinkedFact}>
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="personId" value={id} />
+                      <input type="hidden" name="field" value={d.field} />
+                      <input type="hidden" name="value" value={String(d.theirs)} />
+                      <PendingButton label={t.shared.adopt} busyLabel="…" className="rounded-full border border-line bg-surface px-3 py-1 text-[0.9rem] font-semibold hover:border-ink/40" />
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <MemorialProfile
           t={t}
           locale={locale}
@@ -457,8 +575,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           linkHref={can.admin(role) ? `${base}/people/${id}/link` : undefined}
           storyText={storyText}
           canAdd={can.add(role)}
-          photos={photos.flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
-          photoCount={photos.length}
+          photos={[...photos, ...sharedPhotos].flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
+          photoCount={photos.length + sharedPhotos.length}
           docs={papers.map((d) => ({ id: d.id, title: d.title || d.file_name || t.archive.kind[d.kind as "document" | "story"], sub: periodLabel(t, d.taken_year, d.year_qualifier, d.year_to) ?? "", href: `${base}/archive?item=${d.id}` }))}
           events={ev}
           places={pl}
@@ -477,11 +595,13 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   }
 }
 
-type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null };
+type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null; shared?: boolean };
 
 /** Memories, newest first, with the photo that goes with each (media_id comes with database update 0010). */
 async function loadMemories(supabase: Awaited<ReturnType<typeof requireWorkspace>>["supabase"], id: string): Promise<{ data: MemoryRow[] | null }> {
   const q = (cols: string) => supabase.from("memories").select(cols).eq("person_id", id).neq("status", "rejected").order("created_at", { ascending: false });
+  const withShared = await q("id, body, author_id, created_at, status, media_id, shared");
+  if (!withShared.error) return { data: withShared.data as unknown as MemoryRow[] };
   const first = await q("id, body, author_id, created_at, status, media_id");
   if (!first.error) return { data: first.data as unknown as MemoryRow[] };
   const plain = await q("id, body, author_id, created_at, status");
