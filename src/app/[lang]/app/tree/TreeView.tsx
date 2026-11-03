@@ -1067,27 +1067,6 @@ function CardMenu({
             {labels.menuGrave}
           </Link>
         )}
-        {card.families.map((f) => (
-          <div key={f.href}>
-            <a href={f.href} role="menuitem" onClick={onLeave} className={`${item} py-2`}>
-              <svg {...ICON}><circle cx="6" cy="6" r="2.2" /><circle cx="6" cy="18" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M8 7l8 4M8 17l8-4" /></svg>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{f.label}</span>
-                <span className="block text-[0.85rem] text-ink-muted">{labels.menuOpenFamily} →</span>
-              </span>
-            </a>
-            {f.branchHref && (
-              <Link href={f.branchHref} scroll={false} role="menuitem" onClick={onLeave} className={`${item} min-h-10 pl-[2.75rem] text-[0.95rem] text-ink-muted`}>
-                {f.branchOn ? labels.menuHideBranch : labels.menuShowBranch}
-              </Link>
-            )}
-            {f.compareHref && (
-              <Link href={f.compareHref} role="menuitem" onClick={onLeave} className={`${item} min-h-10 pl-[2.75rem] text-[0.95rem] text-ink-muted`}>
-                {labels.menuCompare}
-              </Link>
-            )}
-          </div>
-        ))}
         {nav.length > 0 && (
           <div>
             <button type="button" role="menuitem" aria-expanded={showNav} onClick={() => setShowNav((v) => !v)} className={item}>
