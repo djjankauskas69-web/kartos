@@ -325,7 +325,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardW={tree.cardW}
         cardH={tree.cardH}
         generations={tree.generationChips}
-        show={{ rels: [...mainRels, ...sides.flat()].map((r) => ({ person_a: r.person_a, person_b: r.person_b, type: r.type })) }}
+        show={{ rels: [...mainRels, ...sides.flat()].map((r) => ({ person_a: r.person_a, person_b: r.person_b, type: r.type })), people: treePeople.map((p) => ({ id: p.id, sex: p.sex })), lang: locale }}
         familyToggles={[{ label: current.name, on: true }, ...openLinks.filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i).map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref }))]}
         labels={{
           zoomIn: t.tree.zoomIn,

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
+import { kinship } from "@/lib/kinship";
 
 /** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
 const BACKGROUNDS = [
@@ -139,7 +140,7 @@ type Labels = {
 
 const MIN = 0.1;
 /** Below this names no longer read: the first view doesn't go smaller (the "whole tree" button still can). */
-const READABLE = 0.75;
+const READABLE = 0.85;
 const MAX = 2;
 const TOP = 96; // room for the generation chips above the tree
 const BOTTOM = 84; // room for the zoom toolbar below it
@@ -184,7 +185,7 @@ export function TreeView({
   /** Which families are shown together: this one, and the ones joined to it. */
   familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
   /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
-  show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }> };
+  show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }>; people: Array<{ id: string; sex: "male" | "female" | "unknown" | null }>; lang: "lt" | "en" };
   labels: Labels;
 }) {
   const router = useRouter();
@@ -202,6 +203,8 @@ export function TreeView({
   const [fromId, setFromId] = useState<string | null>(null);
   const from = fromId ?? meCard?.id ?? null;
   const kin = useMemo(() => (from && show ? kinGroups(from, show.rels) : ({} as ReturnType<typeof kinGroups>)), [from, show]);
+  // "Who is this to me" under each name — counted from you, or from whoever is chosen above.
+  const relationTo = useMemo(() => (from && show && from !== meCard?.id ? kinship(show.people, show.rels, from, show.lang) : null), [from, show, meCard?.id]);
   const people = useMemo(() => [...new Map(cards.map((c) => [c.id, c.name])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [cards]);
   // Who is lit up: the chosen kinds of relatives (and you); those joining them to you stay half lit.
   const focusFor = useCallback((picked: ShowCat[]) => {
@@ -311,7 +314,7 @@ export function TreeView({
       const whole = Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height);
       if (whole >= READABLE) go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
       else if (start) {
-        const k = 0.9;
+        const k = READABLE;
         const cx = w / 2 - (start.x + cardW / 2) * k;
         const cy = TOP + (h - TOP - BOTTOM) / 2 - (start.y + cardH / 2) * k;
         // Don't leave empty space beyond the tree's edges when it can be avoided.
@@ -442,7 +445,7 @@ export function TreeView({
   const glide = smooth ? "transition-transform duration-300 ease-out" : "";
   const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
   const tool =
-    "flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
+    "flex h-12 w-12 items-center justify-center rounded-full text-ink hover:bg-linen focus-visible:outline-offset-[-3px] disabled:opacity-35";
   const { x, y, k } = view;
   // Quick actions on a person: shown on hover (always on touch screens).
   const quick =
@@ -620,7 +623,7 @@ export function TreeView({
         <button type="button" onClick={() => (() => { const { w, h } = size(); zoomAt(w / 2, h / 2, k / 1.2, true); })()} disabled={k <= MIN} className={tool} aria-label={labels.zoomOut} title={labels.zoomOut}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
-        <span className="w-12 text-center text-[0.9rem] tabular-nums text-ink-muted" aria-live="polite">
+        <span className="w-14 text-center text-[1rem] tabular-nums text-ink/80" aria-live="polite">
           {Math.round(k * 100)}%
         </span>
         <button type="button" onClick={() => (() => { const { w, h } = size(); zoomAt(w / 2, h / 2, k * 1.2, true); })()} disabled={k >= MAX} className={tool} aria-label={labels.zoomIn} title={labels.zoomIn}>
@@ -661,7 +664,7 @@ export function TreeView({
           const top = (r.y + PHOTO / 2) * k + y;
           if (top < TOP - 10 || top > area.h - BOTTOM + 30) return null;
           return (
-            <span key={r.y} style={{ top }} className={`absolute left-3 -translate-y-1/2 whitespace-nowrap rounded-full bg-surface/85 px-2.5 py-1 text-[0.8rem] font-semibold text-ink-muted shadow-[0_2px_8px_-4px_rgb(28_29_26/0.3)] backdrop-blur ${glide ? "transition-[top] duration-300 ease-out" : ""}`}>
+            <span key={r.y} style={{ top }} className={`absolute left-3 -translate-y-1/2 whitespace-nowrap rounded-full bg-surface/85 px-3 py-1 text-[0.95rem] font-semibold text-ink/80 shadow-[0_2px_8px_-4px_rgb(28_29_26/0.3)] backdrop-blur ${glide ? "transition-[top] duration-300 ease-out" : ""}`}>
               {r.label}
             </span>
           );
@@ -691,20 +694,20 @@ export function TreeView({
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8f8a7c"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#3f3b33" : "#6f6b60"} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
               {laterPartnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#6f6b60" : "#9d998d"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
           </svg>
@@ -730,7 +733,7 @@ export function TreeView({
                 style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
+                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
               >
                 <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
@@ -744,25 +747,29 @@ export function TreeView({
                         alt=""
                         draggable={false}
                         style={{ width: PHOTO, height: PHOTO, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign ?? "")?.ring }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.93]"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
                       />
                     ) : (
                       <span
                         aria-hidden="true"
                         style={{ width: PHOTO, height: PHOTO, ...(c.foreign ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign)?.ring } : {}) }}
-                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
+                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-[#ebe6da] text-ink/85"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
                       >
                         {c.initials}
                       </span>
                     )}
                     {c.me && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full border-2 border-white bg-night px-2.5 py-0.5 text-[0.85rem] font-semibold text-surface">{labels.me}</span>}
                   </span>
-                  <span title={c.foreign} className={`mt-3.5 line-clamp-2 text-[1.15rem] font-semibold leading-[1.3] group-hover:underline ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[1rem] tabular-nums text-ink-muted">
+                  <span title={c.foreign} className="mt-3.5 line-clamp-2 text-[1.32rem] font-semibold leading-[1.25] text-ink group-hover:underline">{c.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[1.08rem] tabular-nums text-ink/70">
                     {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
+                  {(() => {
+                    const rel = relationTo ? relationTo.get(c.id) : c.me ? undefined : c.relation;
+                    return rel ? <span className="mt-1 line-clamp-2 text-[0.98rem] font-semibold leading-tight text-olive-deep first-letter:uppercase">{rel}</span> : null;
+                  })()}
                 </CardLink>
                 {(
                   <button
