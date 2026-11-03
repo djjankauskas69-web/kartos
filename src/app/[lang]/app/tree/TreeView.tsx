@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
-import { presetOf, SHOW_CATS, SHOW_COOKIE, SHOW_PRESETS, type ShowCat, type ShowPreset } from "./show-filter";
+import { SHOW_CATS, type ShowCat } from "./show-filter";
 
 /** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
 const BACKGROUNDS = [
@@ -49,10 +49,6 @@ function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { f
     return <a href={String(href)} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} />;
   }
   return <Link {...props} />;
-}
-
-function writeShowCookie(v: ShowCat[] | null) {
-  document.cookie = `${SHOW_COOKIE}=${v ? v.join(",") || "none" : "all"}; path=/; max-age=31536000; samesite=lax`;
 }
 
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add", maybe one kind only). */
@@ -138,7 +134,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
-  show: { button: string; title: string; presets: Record<ShowPreset, string>; hints: Record<ShowPreset, string>; details: string; custom: string; families: string; noMe: string; close: string; cats: Record<ShowCat, string> };
+  show: { button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; cats: Record<ShowCat, string> };
 };
 
 const MIN = 0.1;
@@ -187,8 +183,8 @@ export function TreeView({
   branch?: { value: string; options: Array<{ value: string; label: string; href: string }> };
   /** Which families are shown together: this one, and the ones joined to it. */
   familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
-  /** What is shown, counted from you (null = everyone). */
-  show?: { value: ShowCat[] | null; hasMe: boolean };
+  /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
+  show?: { kin: Partial<Record<ShowCat, { hit: string[]; via: string[] }>>; hasMe: boolean };
   labels: Labels;
 }) {
   const router = useRouter();
@@ -200,14 +196,22 @@ export function TreeView({
   const [grabbing, setGrabbing] = useState(false);
   const activeGen = null as number | null;
   const [showOpen, setShowOpen] = useState(false);
-  const [showPending, startShow] = useTransition();
-  const [showLocal, setShowLocal] = useState<ShowCat[] | null | undefined>(undefined);
-  const showValue = showLocal !== undefined ? showLocal : (show?.value ?? null);
-  const setShow = (v: ShowCat[] | null) => {
-    setShowLocal(v);
-    writeShowCookie(v);
-    startShow(() => router.refresh());
-  };
+  const [picked, setPicked] = useState<ShowCat[]>([]);
+  // Who is lit up: the chosen kinds of relatives (and you); those joining them to you stay half lit.
+  const focusFor = useCallback((picked: ShowCat[]) => {
+    if (!picked.length || !show) return null;
+    const hit = new Set<string>(cards.filter((c) => c.me).map((c) => c.id));
+    const via = new Set<string>();
+    for (const cat of picked) {
+      show.kin[cat]?.hit.forEach((id) => hit.add(id));
+      show.kin[cat]?.via.forEach((id) => via.add(id));
+    }
+    hit.forEach((id) => via.delete(id));
+    const keyId = new Map(cards.map((c) => [c.key, c.id]));
+    const onLine = (keys: string[]) => keys.filter((k) => hit.has(keyId.get(k)!) || via.has(keyId.get(k)!)).length >= 2;
+    return { hit, via, onLine };
+  }, [show, cards]);
+  const focus = useMemo(() => focusFor(picked), [focusFor, picked]);
   const showPanel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!showOpen) return;
@@ -416,6 +420,25 @@ export function TreeView({
     }
   }
 
+  // Bring the lit-up people into view.
+  const bringIntoView = (focus: ReturnType<typeof focusFor>) => {
+    if (!focus) return;
+    const lit = cards.filter((c) => focus.hit.has(c.id) || focus.via.has(c.id));
+    if (!lit.length) return;
+    const { w, h } = size();
+    const x0 = Math.min(...lit.map((c) => c.x));
+    const x1 = Math.max(...lit.map((c) => c.x)) + cardW;
+    const y0 = Math.min(...lit.map((c) => c.y));
+    const y1 = Math.max(...lit.map((c) => c.y)) + cardH;
+    const k = clampK(Math.min(1, (w - 120) / (x1 - x0), (h - TOP - BOTTOM) / (y1 - y0)));
+    go({ k, x: w / 2 - ((x0 + x1) / 2) * k, y: TOP + (h - TOP - BOTTOM) / 2 - ((y0 + y1) / 2) * k }, true);
+  };
+  const togglePick = (c: ShowCat) => {
+    const next = picked.includes(c) ? picked.filter((x) => x !== c) : [...picked, c];
+    setPicked(next);
+    bringIntoView(focusFor(next));
+  };
+
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
   const lit = hover ?? menu?.key ?? opening ?? null;
   const near = useMemo(() => {
@@ -475,7 +498,12 @@ export function TreeView({
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
               <span>
-                {labels.show.button}: <b className="font-semibold">{(() => { const pr = presetOf(showValue); return pr ? labels.show.presets[pr] : labels.show.custom; })()}</b>
+                {labels.show.button}
+                {picked.length > 0 && (
+                  <>
+                    : <b className="font-semibold">{labels.show.cats[picked[0]]}{picked.length > 1 ? ` ${labels.show.more.replace("{n}", String(picked.length - 1))}` : ""}</b>
+                  </>
+                )}
               </span>
               {familyToggles.length > 1 && (
                 <span className="flex -space-x-1" aria-hidden="true">
@@ -484,7 +512,6 @@ export function TreeView({
                   ))}
                 </span>
               )}
-              {showPending && <span className="h-3.5 w-3.5 rounded-full border-2 border-ink/20 border-t-ink animate-[ring-spin_0.8s_linear_infinite]" aria-hidden="true" />}
             </button>
             {showOpen && (
               <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(36rem,calc(100dvh-14rem))] sm:w-[19.5rem]">
@@ -494,55 +521,34 @@ export function TreeView({
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
-                {!show?.hasMe && <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>}
-                <div className="space-y-1">
-                  {(["mine", "close", "ancestors", "descendants", "all"] as ShowPreset[]).map((pr) => {
-                    const active = presetOf(showValue) === pr;
-                    const disabled = pr !== "all" && !show?.hasMe;
-                    return (
-                      <button
-                        key={pr}
-                        type="button"
-                        disabled={disabled}
-                        aria-pressed={active}
-                        onClick={() => setShow(pr === "all" ? null : [...SHOW_PRESETS[pr]])}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left disabled:opacity-40 ${active ? "bg-sage-wash" : "hover:bg-paper"}`}
-                      >
-                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-ink" : "border-ink/25"}`} aria-hidden="true">
-                          {active && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[0.98rem] font-semibold">{labels.show.presets[pr]}</span>
-                          <span className="block text-[0.84rem] text-ink-muted">{labels.show.hints[pr]}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {show?.hasMe && (
-                  <div className="mt-3 border-t border-line pt-3">
-                    <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.details}</p>
-                    <div className="grid grid-cols-1 gap-0.5">
-                      {SHOW_CATS.map((c) => {
-                        const checked = showValue === null || showValue.includes(c);
+                {!show?.hasMe ? (
+                  <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>
+                ) : (
+                  <>
+                    <p className="mb-3 px-1 text-[0.88rem] text-ink-muted">{labels.show.lead}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SHOW_CATS.filter((c) => show.kin[c]).map((c) => {
+                        const on = picked.includes(c);
                         return (
-                          <label key={c} className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-[0.95rem] hover:bg-paper">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                const cur = showValue ?? [...SHOW_CATS];
-                                const next = checked ? cur.filter((x) => x !== c) : [...cur, c];
-                                setShow(next.length === SHOW_CATS.length ? null : next);
-                              }}
-                              className="h-4 w-4 accent-[#1c1d1a]"
-                            />
+                          <button
+                            key={c}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => togglePick(c)}
+                            className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.92rem] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-line bg-surface hover:border-ink/40"}`}
+                          >
+                            {on && <span aria-hidden="true">✓</span>}
                             {labels.show.cats[c]}
-                          </label>
+                          </button>
                         );
                       })}
                     </div>
-                  </div>
+                    {picked.length > 0 && (
+                      <button type="button" onClick={() => setPicked([])} className="mt-3 px-1 text-[0.9rem] font-semibold text-ink-muted underline-offset-2 hover:text-ink hover:underline">
+                        {labels.show.clear}
+                      </button>
+                    )}
+                  </>
                 )}
                 {familyToggles.length > 1 && (
                   <div className="mt-3 border-t border-line pt-3">
@@ -676,20 +682,20 @@ export function TreeView({
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
               {laterPartnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
           </svg>
@@ -701,7 +707,7 @@ export function TreeView({
                 key={`${b.key}-${i}`}
                 aria-hidden="true"
                 style={{ left: j.x, top: j.y }}
-                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit && !j.keys?.includes(lit) ? "opacity-25" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
+                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit ? (!j.keys?.includes(lit) ? "opacity-25" : "") : focus && !focus.onLine(j.keys ?? []) ? "opacity-[.18]" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
               >
                 ∞
               </span>
@@ -715,7 +721,7 @@ export function TreeView({
                 style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? "opacity-30" : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
+                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? "opacity-30" : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
               >
                 <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">

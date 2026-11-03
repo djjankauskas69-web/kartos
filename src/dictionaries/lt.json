@@ -407,27 +407,15 @@
       "sibling": "Pridėti brolį ar seserį"
     },
     "show": {
-      "button": "Rodyti",
-      "title": "Ką rodyti medyje",
-      "presets": {
-        "mine": "Mano šeima",
-        "close": "Artimieji",
-        "ancestors": "Protėviai",
-        "descendants": "Palikuonys",
-        "all": "Visa giminė"
-      },
-      "hints": {
-        "mine": "Tėvai, broliai ir seserys, sutuoktinis, vaikai",
-        "close": "Ir seneliai, dėdės, tetos, pusbroliai",
-        "ancestors": "Tiesioginė linija aukštyn",
-        "descendants": "Vaikai, anūkai ir toliau",
-        "all": "Visi žmonės"
-      },
-      "details": "Smulkiau",
-      "custom": "Pasirinkta",
+      "button": "Paryškinti",
+      "none": "nieko",
+      "title": "Ką paryškinti medyje",
+      "lead": "Pažymėkite, ką norite matyti. Visas medis lieka, kiti tik priblėsta.",
+      "clear": "Išvalyti",
       "families": "Šeimos",
-      "noMe": "Pažymėkite save „Tai aš“, kad medį galėtumėte rodyti nuo savęs.",
+      "noMe": "Pažymėkite save „Tai aš“, kad galėtumėte paryškinti giminaičius.",
       "close": "Uždaryti",
+      "more": "ir dar {n}",
       "cats": {
         "parents": "Tėvai",
         "siblings": "Broliai ir seserys",

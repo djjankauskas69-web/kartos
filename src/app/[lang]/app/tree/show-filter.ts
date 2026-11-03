@@ -1,29 +1,6 @@
-/** Which relatives the tree shows, counted from you. Kept per person in a cookie. */
-export const SHOW_COOKIE = "kartos_show";
+/** Kinds of relatives the tree can light up, counted from you. */
 export const SHOW_CATS = ["parents", "siblings", "partner", "children", "grandparents", "greatGrand", "auntsUncles", "cousins", "nephews", "inLaws", "grandchildren"] as const;
 export type ShowCat = (typeof SHOW_CATS)[number];
-
-export const SHOW_PRESETS = {
-  mine: ["parents", "siblings", "partner", "children"],
-  close: ["parents", "siblings", "partner", "children", "grandparents", "auntsUncles", "cousins", "nephews", "grandchildren"],
-  ancestors: ["parents", "grandparents", "greatGrand"],
-  descendants: ["partner", "children", "grandchildren"],
-} satisfies Record<string, ShowCat[]>;
-export type ShowPreset = keyof typeof SHOW_PRESETS | "all";
-
-/** null = everyone. */
-export function parseShow(v: string | undefined): ShowCat[] | null {
-  if (!v || v === "all") return null;
-  const cats = v.split(",").filter((c): c is ShowCat => (SHOW_CATS as readonly string[]).includes(c));
-  return cats;
-}
-
-export function presetOf(cats: ShowCat[] | null): ShowPreset | null {
-  if (!cats) return "all";
-  const key = [...cats].sort().join(",");
-  for (const [name, list] of Object.entries(SHOW_PRESETS)) if ([...list].sort().join(",") === key) return name as ShowPreset;
-  return null;
-}
 
 type Rel = { person_a: string; person_b: string; type: "parent_child" | "partner" };
 
@@ -87,6 +64,61 @@ export function selectPeople(me: string, rels: Rel[], cats: ShowCat[]) {
       add([...level, ...partnersOf(level)]);
       if (!fresh.size) break;
     }
+  }
+  return out;
+}
+
+/** For each kind: who it is ("hit") and who joins them to you ("via"), to light them up. */
+export function kinGroups(me: string, rels: Rel[]) {
+  const up = new Map<string, string[]>();
+  const down = new Map<string, string[]>();
+  const mates = new Map<string, string[]>();
+  const push = (m: Map<string, string[]>, k: string, v: string) => m.set(k, [...(m.get(k) ?? []), v]);
+  for (const r of rels) {
+    if (r.type === "parent_child") {
+      push(up, r.person_b, r.person_a);
+      push(down, r.person_a, r.person_b);
+    } else {
+      push(mates, r.person_a, r.person_b);
+      push(mates, r.person_b, r.person_a);
+    }
+  }
+  const P = (ids: Iterable<string>) => new Set([...ids].flatMap((id) => up.get(id) ?? []));
+  const C = (ids: Iterable<string>) => new Set([...ids].flatMap((id) => down.get(id) ?? []));
+  const M = (ids: Iterable<string>) => new Set([...ids].flatMap((id) => mates.get(id) ?? []));
+  const not = (a: Set<string>, ...b: Iterable<string>[]) => {
+    const drop = new Set(b.flatMap((x) => [...x]));
+    return new Set([...a].filter((x) => !drop.has(x)));
+  };
+  const parents = P([me]);
+  const siblings = not(C(parents), [me]);
+  const partners = M([me]);
+  const children = C([me]);
+  const grand = P(parents);
+  const great = new Set<string>();
+  for (let l = P(grand); l.size; l = P(l)) {
+    const fresh = not(l, great);
+    if (!fresh.size) break;
+    fresh.forEach((x) => great.add(x));
+  }
+  const aunts = not(C(grand), parents);
+  const cousins = C(aunts);
+  const nephews = C(siblings);
+  const theirParents = P(partners);
+  const inLaws = new Set([...theirParents, ...not(C(theirParents), partners, [me])]);
+  const grandkids = new Set<string>();
+  for (let l = C(children); l.size; l = C(l)) {
+    const fresh = not(l, grandkids);
+    if (!fresh.size) break;
+    fresh.forEach((x) => grandkids.add(x));
+  }
+  const hits: Record<ShowCat, Set<string>> = { parents, siblings, partner: partners, children, grandparents: grand, greatGrand: great, auntsUncles: aunts, cousins, nephews, inLaws, grandchildren: grandkids };
+  const out = {} as Record<ShowCat, { hit: string[]; via: string[] }>;
+  for (const cat of SHOW_CATS) {
+    const hit = hits[cat];
+    if (!hit.size) continue;
+    const via = not(selectPeople(me, rels, [cat]), hit);
+    out[cat] = { hit: [...hit], via: [...via] };
   }
   return out;
 }

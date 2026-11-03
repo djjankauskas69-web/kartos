@@ -407,27 +407,15 @@
       "sibling": "Add a sibling"
     },
     "show": {
-      "button": "Show",
-      "title": "What the tree shows",
-      "presets": {
-        "mine": "My family",
-        "close": "Close relatives",
-        "ancestors": "Ancestors",
-        "descendants": "Descendants",
-        "all": "Whole family"
-      },
-      "hints": {
-        "mine": "Parents, siblings, partner, children",
-        "close": "Plus grandparents, aunts, uncles, cousins",
-        "ancestors": "Your direct line upwards",
-        "descendants": "Children, grandchildren and on",
-        "all": "Everyone"
-      },
-      "details": "In detail",
-      "custom": "Custom",
+      "button": "Highlight",
+      "none": "nothing",
+      "title": "What to highlight",
+      "lead": "Pick who you want to see. The whole tree stays; the rest just fades.",
+      "clear": "Clear",
       "families": "Families",
-      "noMe": "Mark yourself as “This is me” to show the tree from you.",
+      "noMe": "Mark yourself as “This is me” to highlight relatives.",
       "close": "Close",
+      "more": "+{n} more",
       "cats": {
         "parents": "Parents",
         "siblings": "Siblings",

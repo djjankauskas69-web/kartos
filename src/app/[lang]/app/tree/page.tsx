@@ -20,8 +20,7 @@ import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { PageLoading } from "@/components/PageLoading";
-import { cookies } from "next/headers";
-import { parseShow, selectPeople, SHOW_COOKIE } from "./show-filter";
+import { kinGroups } from "./show-filter";
 
 type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
 
@@ -314,21 +313,9 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     }
   }
   const treeRelations = foreignPeople.length ? kinship(treePeople, [...rels, ...foreignRels], me, locale) : relations;
-  // Which relatives to show, counted from you (the viewer's own choice, kept in a cookie).
-  const showCats = parseShow((await cookies()).get(SHOW_COOKIE)?.value);
-  let drawPeople = treePeople;
-  let drawRels = mainRels;
-  let drawSides = sides;
-  if (showCats && me) {
-    const keep = selectPeople(me, [...mainRels, ...sides.flat()], showCats);
-    const both = (r: BuildRelLike) => keep.has(r.person_a) && keep.has(r.person_b);
-    drawPeople = treePeople.filter((p) => keep.has(p.id));
-    drawRels = mainRels.filter(both);
-    drawSides = sides.map((sr) => sr.filter(both)).filter((sr) => sr.length);
-    // Nothing of the base left (e.g. only their family's side): draw what's left as the base.
-    if (!drawRels.length && drawSides.length) drawRels = drawSides.shift()!;
-  }
-  const tree = buildTree({ t, people: drawPeople, rels: drawRels, sides: drawSides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  // Kinds of relatives the viewer can light up, counted from them.
+  const kin = me ? kinGroups(me, [...mainRels, ...sides.flat()]) : {};
+  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
 
@@ -361,7 +348,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardH={tree.cardH}
         generations={tree.generationChips}
         branch={branch}
-        show={{ value: showCats, hasMe: !!me }}
+        show={{ kin, hasMe: !!me }}
         familyToggles={[{ label: current.name, on: true }, ...openLinks.filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i).map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref }))]}
         labels={{
           zoomIn: t.tree.zoomIn,
