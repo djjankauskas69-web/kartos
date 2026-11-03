@@ -1,20 +1,23 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, listPeople, requireWorkspace, type Role } from "@/lib/data";
+import { can, fullName, getFamilyGraph, lifeSpan, myPersonLinks, requireWorkspace, type Role } from "@/lib/data";
+import { IconPlus } from "@/components/icons";
+import { AddPersonHost } from "../people/AddPersonPanel";
+import { addPanelProps } from "../people/add-data";
 import { portraitUrls } from "../portraits";
 import { cls } from "@/components/ui";
-import { IconUserPlus } from "@/components/icons";
 import { RenameWorkspaceForm } from "../forms";
 import { MembersCenter, type MemberRow } from "./MembersCenter";
 import { PageLoading } from "@/components/PageLoading";
 import { decideTreeAccess, setDiscoverable } from "../tree-access-actions";
 
-export default async function MembersPage() {
+export default async function MembersPage({ searchParams }: PageProps<"/[lang]/app/members">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<PageLoading />}>
-      <Members t={t} locale={locale} />
+      <Members t={t} locale={locale} filterPromise={searchParams.then((s) => String(s.f ?? ""))} />
     </Suspense>
   );
 }
@@ -39,11 +42,11 @@ function lastSeenLabel(t: Dictionary, locale: Locale, iso: string | null | undef
   }).format(then);
 }
 
-async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const { supabase, user, current } = await requireWorkspace(locale);
+async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Locale; filterPromise: Promise<string> }) {
+  const [{ supabase, user, current }, initialFilter] = await Promise.all([requireWorkspace(locale), filterPromise]);
   const isAdmin = can.admin(current.role);
 
-  const [{ data: rows }, seen, invites, links, people] = await Promise.all([
+  const [{ data: rows }, seen, invites, links, { people, rels }, mine] = await Promise.all([
     supabase
       .from("workspace_members")
       .select("user_id, role, joined_at")
@@ -62,13 +65,21 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
       : Promise.resolve({ data: [] }),
     // Needs SQL 0005; until then nobody is linked.
     supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id),
-    listPeople(locale, current.id),
+    getFamilyGraph(locale, current.id),
+    myPersonLinks(locale),
   ]);
   const linkReady = !links.error;
   const personOf = new Map(((links.data ?? []) as { user_id: string; person_id: string | null }[]).filter((r) => r.person_id).map((r) => [r.user_id, r.person_id as string]));
   const personById = new Map(people.map((p) => [p.id, p]));
-  const linkedPeople = [...personOf.values()].map((id) => personById.get(id)).filter((p) => !!p);
-  const photos = await portraitUrls(locale, linkedPeople);
+  const photos = await portraitUrls(locale, people);
+  // Not joined to anyone yet (they don't show in the tree).
+  const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
+  const born = t.app.born.toLowerCase();
+  const persons = people
+    .filter((p) => p.status !== "rejected")
+    .map((p) => ({ id: p.id, name: fullName(p), years: lifeSpan(p, born), living: p.is_living, portrait: photos.get(p.id), loose: people.length > 1 && !connected.has(p.id), pending: p.status === "pending" }));
+  const canAdd = can.add(current.role);
+  const panel = canAdd ? addPanelProps(t, locale, people, rels, photos) : null;
 
   const ids = (rows ?? []).map((r) => r.user_id as string);
   const { data: profiles } = ids.length
@@ -119,16 +130,20 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
           <h1 className={cls.h1}>{m.title}</h1>
           <p className="mt-1 text-[1.1rem] text-ink-muted">{m.subtitle.replace("{name}", current.name)}</p>
         </div>
-        {isAdmin && (
-          <a href="#invite" className={`${cls.primary} gap-2`}>
-            <IconUserPlus size={20} />
-            {m.inviteButton}
-          </a>
+        {canAdd && (
+          <Link href="?add=1" scroll={false} className={`${cls.primary} gap-2`}>
+            <IconPlus size={20} />
+            {t.members.newPerson}
+          </Link>
         )}
       </div>
 
+      {panel && <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={mine.links.get(current.id)} />}
       <MembersCenter
         locale={locale}
+        persons={persons}
+        canAdd={canAdd}
+        initialFilter={initialFilter}
         members={members}
         isAdmin={isAdmin}
         activeInvites={((invites.data ?? []) as Array<{ id: string; email: string | null; role: Role; person_id: string | null; expires_at: string; use_count: number }>).map((i) => ({

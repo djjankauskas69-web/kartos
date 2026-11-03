@@ -298,7 +298,18 @@
     "inviteUntil": "galioja iki {date}",
     "inviteUsed": "panaudota {n} k.",
     "inviteRevoke": "Atšaukti",
-    "showEmail": "Rodyti el. paštą"
+    "showEmail": "Rodyti el. paštą",
+    "newPerson": "Naujas žmogus",
+    "filterMembers": "Prisijungę",
+    "filterInvite": "Galima pakviesti",
+    "filterLoose": "Neprijungti prie medžio",
+    "search": "Ieškoti pagal vardą ar pavardę",
+    "stLoose": "Neprijungtas prie medžio",
+    "stNotJoined": "Neprisijungęs",
+    "stNoPerson": "Nepriskirtas žmogui medyje",
+    "connect": "Prijungti",
+    "invite": "Pakviesti",
+    "inviteCopied": "Nuoroda nukopijuota"
   },
   "review": {
     "title": "Laukia patvirtinimo",
@@ -902,7 +913,7 @@
     "fillMore": "Atidaryti mano profilį ir pildyti daugiau"
   },
   "add": {
-    "title": "Pridėti žmogų",
+    "title": "Naujas žmogus",
     "lead": "Įtraukite žmogų į savo šeimos istoriją.",
     "close": "Uždaryti",
     "tabMain": "Pagrindinė informacija",
@@ -957,7 +968,7 @@
     "photoRemove": "Pašalinti nuotrauką",
     "approval": "Žmogus bus matomas po administratoriaus patvirtinimo.",
     "cancel": "Atšaukti",
-    "addAnother": "Pridėti ir dar vieną",
+    "addAnother": "Pridėti dar vieną",
     "submit": "Pridėti žmogų",
     "submitLink": "Susieti",
     "saving": "Saugoma…",
@@ -975,10 +986,10 @@
     "inArchive": "žmonių archyve",
     "errorRelation": "Pasirinkite, kas šis žmogus yra pasirinktam šeimos nariui.",
     "addingFor": "Pridedamas giminaitis",
-    "step1": "Kieno giminaitis?",
+    "step1": "Kam jis giminė?",
     "step1Ph": "Ieškokite žmogaus medyje",
     "step2": "Kas jis jam?",
-    "step3": "Apie žmogų",
+    "step3": "Vardas ir metai",
     "k_father": "Tėvas",
     "k_mother": "Mama",
     "k_son": "Sūnus",
@@ -1013,7 +1024,8 @@
     "unknownParentsNote": "Tėvų dar nėra – jie bus pažymėti kaip nežinomi, vėliau galėsite juos įrašyti.",
     "cropHint": "Pastumkite nuotrauką, kad veidas būtų apskritime, ir priartinkite.",
     "saveAgain": "Išsaugoti ir dar",
-    "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}"
+    "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}",
+    "titleLink": "Prijungti prie medžio"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",

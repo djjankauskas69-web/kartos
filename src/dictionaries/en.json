@@ -298,7 +298,18 @@
     "inviteUntil": "valid until {date}",
     "inviteUsed": "used {n}×",
     "inviteRevoke": "Revoke",
-    "showEmail": "Show email"
+    "showEmail": "Show email",
+    "newPerson": "New person",
+    "filterMembers": "Signed up",
+    "filterInvite": "Can be invited",
+    "filterLoose": "Not in the tree yet",
+    "search": "Search by name",
+    "stLoose": "Not joined to the tree",
+    "stNotJoined": "Not signed up",
+    "stNoPerson": "Not matched to anyone in the tree",
+    "connect": "Join to tree",
+    "invite": "Invite",
+    "inviteCopied": "Link copied"
   },
   "review": {
     "title": "Awaiting approval",
@@ -902,7 +913,7 @@
     "fillMore": "Open my profile to fill in more"
   },
   "add": {
-    "title": "Add a person",
+    "title": "New person",
     "lead": "Bring someone into your family's story.",
     "close": "Close",
     "tabMain": "Main details",
@@ -957,7 +968,7 @@
     "photoRemove": "Remove photo",
     "approval": "The person will appear once the administrator approves.",
     "cancel": "Cancel",
-    "addAnother": "Add and add another",
+    "addAnother": "Add another",
     "submit": "Add person",
     "submitLink": "Connect",
     "saving": "Saving…",
@@ -977,8 +988,8 @@
     "addingFor": "Adding a relative",
     "step1": "Whose relative?",
     "step1Ph": "Search the tree",
-    "step2": "Who are they to them?",
-    "step3": "About the person",
+    "step2": "What are they to them?",
+    "step3": "Name and years",
     "k_father": "Father",
     "k_mother": "Mother",
     "k_son": "Son",
@@ -1013,7 +1024,8 @@
     "unknownParentsNote": "No parents yet – they'll be marked unknown; you can fill them in later.",
     "cropHint": "Drag the photo so the face is in the circle, and zoom.",
     "saveAgain": "Save + another",
-    "saveAgainHint": "Save and right away add another to: {name}"
+    "saveAgainHint": "Save and right away add another to: {name}",
+    "titleLink": "Join to the tree"
   },
   "landing": {
     "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",

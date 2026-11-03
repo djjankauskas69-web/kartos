@@ -154,6 +154,8 @@ export function AddPersonHost({
   const [toast, setToast] = useState<{ id: string; name: string; linked: boolean } | null>(null);
   const kind = params.get("add");
   const to = params.get("to");
+  // "Join to tree" from the people list: someone already in the archive, to connect.
+  const existingParam = params.get("existing");
   const open = kind !== null;
 
   const [round, setRound] = useState(0);
@@ -168,6 +170,7 @@ export function AddPersonHost({
     q.delete("add");
     q.delete("to");
     q.delete("new");
+    q.delete("existing");
     if (added?.id && after === "people") q.set("new", added.id);
     const s = q.toString();
     router.replace(`${pathname}${s ? `?${s}` : ""}`, { scroll: false });
@@ -178,11 +181,12 @@ export function AddPersonHost({
     <>
       {open && (
         <AddPersonPanel
-          key={`${kind}-${to}-${round}`}
+          key={`${kind}-${to}-${existingParam}-${round}`}
           people={people}
           workspaceId={workspaceId}
           needsApproval={needsApproval}
           initialAnchor={to && people.some((p) => p.id === to) ? to : null}
+          initialExisting={existingParam && people.some((p) => p.id === existingParam) ? existingParam : null}
           initialKind={initialKindFor(kind, people.find((p) => p.id === to))}
           locale={pathname.split("/")[1] ?? "lt"}
           onClose={close}
@@ -289,6 +293,7 @@ function AddPersonPanel({
   workspaceId,
   needsApproval,
   initialAnchor,
+  initialExisting = null,
   initialKind,
   locale,
   onClose,
@@ -301,6 +306,7 @@ function AddPersonPanel({
   workspaceId: string;
   needsApproval: boolean;
   initialAnchor: string | null;
+  initialExisting?: string | null;
   initialKind: Kind | null;
   locale: string;
   onClose: (added?: AddState, again?: boolean) => void;
@@ -309,10 +315,11 @@ function AddPersonPanel({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const first = people.length === 0;
-  const [anchor, setAnchor] = useState<string | null>(initialAnchor);
+  // Starts from you: most people add their own relatives.
+  const [anchor, setAnchor] = useState<string | null>(initialAnchor ?? (meId && meId !== initialExisting && people.some((p) => p.id === meId) ? meId : null));
   const [kind, setKind] = useState<Kind | null>(initialKind);
-  const [existing, setExisting] = useState<string | null>(null);
-  const [pickExisting, setPickExisting] = useState(false);
+  const [existing, setExisting] = useState<string | null>(initialExisting);
+  const [again, setAgain] = useState(false);
   const [given, setGiven] = useState("");
   const [surname, setSurname] = useState("");
   const [surnameTouched, setSurnameTouched] = useState(false);
@@ -366,8 +373,7 @@ function AddPersonPanel({
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    againRef.current = submitter?.value === "again";
+    againRef.current = again;
     const form = new FormData(e.currentTarget);
     // Only the essentials here; photo, story and the rest are added on the profile afterwards.
     startTransition(() => dispatch(form));
@@ -387,12 +393,7 @@ function AddPersonPanel({
   const err = state.error ? (errors[state.error] ?? errors.save) : null;
   const ready = first || (anchorP && effectiveKind);
   const newName = existingP ? existingP.name : [given, shownSurname].filter(Boolean).join(" ");
-  const step = (n: number, title: string, done: boolean) => (
-    <h3 className="mb-3 flex items-center gap-3 text-[1.12rem] font-semibold">
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.9rem] ${done ? "bg-ink text-white" : "border border-line text-ink-muted"}`}>{done ? <IconCheck size={15} /> : n}</span>
-      {title}
-    </h3>
-  );
+  const step = (title: string) => <h3 className="mb-2.5 text-[1.08rem] font-semibold">{title}</h3>;
   const tile = (on: boolean) => `min-h-12 rounded-xl border px-2 text-[1rem] disabled:cursor-not-allowed disabled:opacity-40 ${on ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface hover:border-ink/40"}`;
 
   return (
@@ -408,7 +409,7 @@ function AddPersonPanel({
 
         <header className="flex items-start gap-3 border-b border-line px-5 pb-4 pt-5 sm:px-7 sm:pt-7">
           <h2 id="add-title" className="min-w-0 flex-1 text-[1.7rem] font-semibold leading-tight">
-            {t.title}
+            {existingP ? t.titleLink : t.title}
           </h2>
           <button type="button" onClick={() => onClose()} aria-label={t.close} className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.6rem] leading-none text-ink-muted hover:bg-linen hover:text-ink">
             ×
@@ -450,21 +451,19 @@ function AddPersonPanel({
           ) : (
             <>
               <section>
-                {step(1, t.step1, !!anchorP)}
+                {step(t.step1)}
                 <PersonSearch id="add-anchor" options={people.filter((p) => p.id !== existing)} value={anchor} onChange={setAnchor} placeholder={t.step1Ph} t={t} />
               </section>
 
               <section inert={!anchorP} className={anchorP ? "" : "opacity-40"}>
-                {step(2, t.step2, !!effectiveKind)}
+                {step(t.step2)}
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {KINDS.map((k) => {
-                    const note = kindNote(k);
-                    return (
-                      <button key={k} type="button" disabled={!!note} title={note ?? undefined} aria-pressed={kind === k} onClick={() => setKind(k)} className={tile(kind === k && !note)}>
-                        {t[`k_${k}`]}
-                      </button>
-                    );
-                  })}
+                  {/* Only the relationships still possible (no third parent…). */}
+                  {KINDS.filter((k) => !kindNote(k)).map((k) => (
+                    <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={tile(kind === k)}>
+                      {t[`k_${k}`]}
+                    </button>
+                  ))}
                 </div>
                 {anchorP && kind && kindNote(kind) && <p className="mt-2 text-[0.92rem] text-ink-muted">{t[`k_${kind}`]}: {kindNote(kind)}</p>}
                 {(effectiveKind === "son" || effectiveKind === "daughter") && anchorP && anchorP.partners.length > 0 && (
@@ -487,7 +486,7 @@ function AddPersonPanel({
           )}
 
           <section inert={!ready} className={ready ? "" : "opacity-40"}>
-            {!first && !locked && step(3, t.step3, !!(existingP || given.trim()))}
+            {!first && !locked && step(t.step3)}
             {existingP ? (
               <div className="flex items-center gap-3 rounded-xl border border-ink px-3 py-2.5">
                 <Portrait given={existingP.given} surname={existingP.surname} src={existingP.portrait} size="sm" />
@@ -501,33 +500,6 @@ function AddPersonPanel({
               </div>
             ) : (
               <div className="space-y-5">
-                {/* Someone already in the archive (you, or a person not joined to anyone yet). */}
-                {!first && (
-                  <div className="flex flex-wrap gap-2">
-                    {meId && people.some((p) => p.id === meId && fits(p)) && (
-                      <button type="button" onClick={() => setExisting(meId)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-olive/40 bg-[#eef1e4] px-4 font-semibold text-olive-deep hover:border-olive">
-                        <Portrait given={people.find((p) => p.id === meId)!.given} surname={people.find((p) => p.id === meId)!.surname} src={people.find((p) => p.id === meId)!.portrait} size="sm" />
-                        {t.thisIsMe}
-                      </button>
-                    )}
-                    <button type="button" onClick={() => setPickExisting((v) => !v)} aria-expanded={pickExisting} className="inline-flex min-h-10 items-center rounded-full border border-line px-4 font-semibold hover:border-ink/40">
-                      {t.pickExisting}
-                    </button>
-                  </div>
-                )}
-                {pickExisting && (
-                  <PersonSearch
-                    id="add-existing"
-                    options={people.filter(fits)}
-                    value={null}
-                    onChange={(pid) => {
-                      if (pid) setExisting(pid);
-                      setPickExisting(false);
-                    }}
-                    placeholder={t.step1Ph}
-                    t={t}
-                  />
-                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="add-given" className={cls.label}>
@@ -578,13 +550,10 @@ function AddPersonPanel({
                   </section>
                 )}
 
-                <div className="grid grid-cols-2 gap-2">
-                  {[true, false].map((v) => (
-                    <button key={String(v)} type="button" aria-pressed={living === v} onClick={() => setLiving(v)} className={tile(living === v)}>
-                      {v ? t.living : t.deceased}
-                    </button>
-                  ))}
-                </div>
+                <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-[1rem]">
+                  <input type="checkbox" checked={!living} onChange={(e) => setLiving(!e.target.checked)} className="h-5 w-5 accent-[#1c1d1a]" />
+                  {t.deceased}
+                </label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="add-born" className="mb-1.5 block text-[0.98rem]">
@@ -711,12 +680,13 @@ function AddPersonPanel({
             <button type="button" onClick={() => onClose()} className="min-h-12 rounded-full px-3 font-semibold text-ink-muted hover:text-ink">
               {t.cancel}
             </button>
-            {anchorP && !first && (
-              <button type="submit" name="next" value="again" disabled={pending || !ready || (!existing && !given.trim())} className="ml-auto min-h-12 rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40 disabled:opacity-50" title={t.saveAgainHint.replace("{name}", anchorP.name)}>
-                {t.saveAgain}
-              </button>
+            {anchorP && !first && !existing && (
+              <label className="ml-auto flex cursor-pointer items-center gap-2 text-[0.95rem] text-ink-muted" title={t.saveAgainHint.replace("{name}", anchorP.name)}>
+                <input type="checkbox" checked={again} onChange={(e) => setAgain(e.target.checked)} className="h-4 w-4 accent-[#1c1d1a]" />
+                {t.addAnother}
+              </label>
             )}
-            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} min-h-12 ${anchorP && !first ? "" : "ml-auto"}`}>
+            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} min-h-12 ${anchorP && !first && !existing ? "" : "ml-auto"}`}>
               {pending ? t.saving : existing ? t.submitLink : t.submit}
             </button>
           </div>

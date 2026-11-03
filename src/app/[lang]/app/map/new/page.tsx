@@ -45,7 +45,7 @@ async function MarkGrave({ t, locale }: { t: Dictionary; locale: Locale }) {
       {deceased.length === 0 ? (
         <div className={`p-6 ${cls.card}`}>
           <p className="text-ink-muted">{t.map.noDeceased}</p>
-          <Link href={`${base}/people#add`} className={`mt-4 ${cls.primary}`}>
+          <Link href={`${base}/members?add=1`} className={`mt-4 ${cls.primary}`}>
             {t.app.addPerson}
           </Link>
         </div>
@@ -67,7 +67,7 @@ async function MarkGrave({ t, locale }: { t: Dictionary; locale: Locale }) {
           />
           <p className="mt-8 text-[0.98rem] text-ink-muted">
             {t.map.addPersonFirst}{" "}
-            <Link href={`${base}/people#add`} className="font-semibold text-sage-deep hover:underline">
+            <Link href={`${base}/members?add=1`} className="font-semibold text-sage-deep hover:underline">
               {t.app.addPerson}
             </Link>
           </p>

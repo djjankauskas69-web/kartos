@@ -9,7 +9,6 @@ type BuildRelLike = { id: string; person_a: string; person_b: string; type: "par
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
-import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { kinship } from "@/lib/kinship";
@@ -132,7 +131,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
   const loose = people.length > 1 ? people.filter((p) => !connected.has(p.id)).length : 0;
   const looseChip = loose > 0 && (
-    <Link href={`${base}/people?f=loose`} title={t.add.looseHint} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.88rem] font-semibold hover:border-ink/40">
+    <Link href={`${base}/members?f=loose`} title={t.add.looseHint} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.88rem] font-semibold hover:border-ink/40">
       <span className="h-2 w-2 rounded-full bg-[#b8892e]" aria-hidden="true" />
       {t.add.looseChip.replace("{n}", String(loose))} →
     </Link>
@@ -162,12 +161,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
               {t.tree.viewList}
             </Link>
           </nav>
-          {canAdd && (
-            <Link href={addHref({ add: "1" })} scroll={false} className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
-              <IconPlus size={18} />
-              {t.app.addPerson}
-            </Link>
-          )}
         </div>
       </div>
     );

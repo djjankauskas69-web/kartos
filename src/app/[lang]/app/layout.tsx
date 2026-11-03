@@ -201,7 +201,7 @@ async function AccountBar({ t, locale, side = false }: { t: Dictionary; locale: 
         </div>
       </details>
       {current && !side && (
-        <Link href={`${base}/people`} className={icon} aria-label={t.dash.search} title={t.dash.search}>
+        <Link href={`${base}/members`} className={icon} aria-label={t.dash.search} title={t.dash.search}>
           <IconSearch size={20} />
         </Link>
       )}

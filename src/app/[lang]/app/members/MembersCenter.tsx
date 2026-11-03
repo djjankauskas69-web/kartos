@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Role } from "@/lib/data";
 import { cls } from "@/components/ui";
@@ -32,16 +33,15 @@ export type MemberRow = {
 
 export type LinkOption = { id: string; name: string; years: string };
 
+/** Everyone in the tree, for the one list of people and members. */
+export type PersonRow = { id: string; name: string; years: string; living: boolean; portrait?: string; loose: boolean; pending: boolean };
+
+const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
 type Labels = Record<string, string> & { role: Record<string, string>; me: Record<string, string> };
 type Errors = Record<string, string>;
 
 const ROLES: Role[] = ["owner", "editor", "contributor", "viewer"];
-const FILTER_KEY: Record<Role, string> = {
-  owner: "filterOwner",
-  editor: "filterEditor",
-  contributor: "filterContributor",
-  viewer: "filterViewer",
-};
 
 export function RoleIcon({ role, size = 18 }: { role: Role; size?: number }) {
   if (role === "owner") return <IconShield size={size} />;
@@ -111,10 +111,16 @@ export function MembersCenter({
   linkReady,
   people,
   inviteFor,
+  persons,
+  canAdd,
+  initialFilter = "all",
   t,
   errors,
 }: {
   locale: Locale;
+  persons: PersonRow[];
+  canAdd: boolean;
+  initialFilter?: string;
   members: MemberRow[];
   isAdmin: boolean;
   activeInvites: ActiveInvite[];
@@ -124,17 +130,36 @@ export function MembersCenter({
   t: Labels;
   errors: Errors;
 }) {
-  const [filter, setFilter] = useState<Role | "all">("all");
+  type Status = "member" | "account" | "loose" | "invite" | "deceased";
+  type Entry = { key: string; status: Status; person?: PersonRow; member?: MemberRow; name: string };
+  const entries = useMemo(() => {
+    const out: Entry[] = persons.map((p) => {
+      const member = members.find((m) => m.personId === p.id);
+      const status: Status = member ? "member" : p.loose ? "loose" : p.living ? "invite" : "deceased";
+      return { key: p.id, status, person: p, member, name: p.name };
+    });
+    for (const m of members) if (!m.personId || !persons.some((p) => p.id === m.personId)) out.push({ key: `u:${m.id}`, status: "account", member: m, name: m.name });
+    const order: Record<Status, number> = { member: 0, account: 1, loose: 2, invite: 3, deceased: 4 };
+    return out.sort((a, b) => (b.member?.isSelf ? 1 : 0) - (a.member?.isSelf ? 1 : 0) || order[a.status] - order[b.status] || a.name.localeCompare(b.name, locale));
+  }, [persons, members, locale]);
+  const FILTERS = ["all", "members", "invite", "loose"] as const;
+  type F = (typeof FILTERS)[number];
+  const [filter, setFilter] = useState<F>((FILTERS as readonly string[]).includes(initialFilter) ? (initialFilter as F) : "all");
+  const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
-  const counts = Object.fromEntries(ROLES.map((r) => [r, members.filter((m) => m.role === r).length])) as Record<Role, number>;
-  const shown = filter === "all" ? members : members.filter((m) => m.role === filter);
+  const inFilter = (e: Entry, f: F) => f === "all" || (f === "members" ? e.status === "member" || e.status === "account" : e.status === f);
+  const terms = fold(q).split(/\s+/).filter(Boolean);
+  const shown = entries.filter((e) => inFilter(e, filter) && terms.every((term) => fold(e.name).includes(term)));
+  const filterLabel: Record<F, string> = { all: t.filterAll, members: t.filterMembers, invite: t.filterInvite, loose: t.filterLoose };
+  const base = `/${locale}/app`;
+  const chip = (text: string, tone: string) => <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[0.85rem] font-semibold ${tone}`}>{text}</span>;
 
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
       <section>
-        <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={t.colAccess}>
-          {(["all", ...ROLES] as const).map((f) => {
-            const count = f === "all" ? members.length : counts[f];
+        <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={t.colAccess}>
+          {FILTERS.map((f) => {
+            const count = entries.filter((e) => inFilter(e, f)).length;
             if (f !== "all" && count === 0) return null;
             const active = filter === f;
             return (
@@ -147,66 +172,74 @@ export function MembersCenter({
                   active ? "border-sage-deep bg-sage-deep text-surface" : "border-line bg-surface text-ink hover:border-ink-muted"
                 }`}
               >
-                {f === "all" ? t.filterAll : t[FILTER_KEY[f]]}
+                {filterLabel[f]}
                 <span className={`rounded-full px-2 text-[0.9rem] ${active ? "bg-surface/20" : "bg-linen text-ink-muted"}`}>{count}</span>
               </button>
             );
           })}
         </div>
+        <label className="sr-only" htmlFor="people-search">{t.search}</label>
+        <input id="people-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} className={`${cls.input} mb-3`} autoComplete="off" />
 
         <div className={cls.card}>
-          <div className="hidden grid-cols-[minmax(0,1fr)_10rem_2.75rem] gap-4 border-b border-line px-5 py-3 text-[0.92rem] font-semibold text-ink-muted md:grid">
-            <span>{t.colName}</span>
-            <span>{t.colAccess}</span>
-            <span className="sr-only">{t.actions}</span>
-          </div>
           {shown.length === 0 ? (
             <p className="px-5 py-8 text-ink-muted">{t.empty}</p>
           ) : (
             <ul className="divide-y divide-line">
-              {shown.map((m) => (
-                <li
-                  key={m.id}
-                  className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-4 gap-y-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_10rem_2.75rem]"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar name={m.name} src={m.portrait} />
-                    <div className="min-w-0">
-                      <p className="truncate text-[1.08rem] font-semibold">
-                        {m.name}
-                        {m.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
-                      </p>
-                      {m.email && (m.isSelf ? <p className="truncate text-[0.95rem] text-ink-muted">{m.email}</p> : isAdmin && <FoggyEmail email={m.email} label={t.showEmail} />)}
-                      {m.personName && (
-                        <p className="truncate text-[0.92rem] text-ink-muted">
-                          {t.me.inTree} <span className="text-ink">{m.personName}</span>
-                        </p>
+              {shown.map((e) => {
+                const m = e.member;
+                const p = e.person;
+                return (
+                  <li key={e.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <Avatar name={e.name} src={p?.portrait ?? m?.portrait} />
+                      <div className="min-w-0">
+                        {p ? (
+                          <Link href={`${base}/people/${p.id}`} className="block truncate text-[1.08rem] font-semibold hover:underline">
+                            {e.name}
+                            {m?.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
+                          </Link>
+                        ) : (
+                          <p className="truncate text-[1.08rem] font-semibold">
+                            {e.name}
+                            {m?.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
+                          </p>
+                        )}
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.92rem] text-ink-muted">
+                          {p?.years && <span>{!p.living && "✝ "}{p.years}</span>}
+                          {e.status === "loose" && chip(t.stLoose, "bg-[#fbf0d9] text-[#8a6413]")}
+                          {e.status === "invite" && chip(t.stNotJoined, "bg-linen text-ink-muted")}
+                          {e.status === "account" && chip(t.stNoPerson, "bg-[#fbf0d9] text-[#8a6413]")}
+                          {m && m.email && !m.isSelf && isAdmin && <FoggyEmail email={m.email} label={t.showEmail} />}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {m && <RoleBadge role={m.role} label={t.role[m.role]} />}
+                      {e.status === "invite" && isAdmin && p && <InviteButton locale={locale} personId={p.id} t={t} />}
+                      {e.status === "loose" && canAdd && p && (
+                        <Link href={`?add=1&existing=${p.id}`} scroll={false} className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
+                          {t.connect}
+                        </Link>
+                      )}
+                      {m && (isAdmin || m.isSelf) && (
+                        <MemberMenu
+                          key={`${m.id}-${m.role}`}
+                          locale={locale}
+                          member={m}
+                          isAdmin={isAdmin}
+                          linkReady={linkReady}
+                          people={people.filter((x) => x.id === m.personId || !members.some((o) => o.personId === x.id))}
+                          open={openId === m.id}
+                          onOpen={(o) => setOpenId(o ? m.id : null)}
+                          t={t}
+                          errors={errors}
+                        />
                       )}
                     </div>
-                  </div>
-                  <div className="col-start-1 row-start-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:col-start-auto md:row-start-auto md:contents">
-                    <span className="pl-14 md:pl-0">
-                      <RoleBadge role={m.role} label={t.role[m.role]} />
-                    </span>
-                  </div>
-                  <div className="col-start-2 row-span-2 row-start-1 flex justify-end md:col-start-auto md:row-span-1 md:row-start-auto">
-                    {(isAdmin || m.isSelf) && (
-                      <MemberMenu
-                        key={`${m.id}-${m.role}`}
-                        locale={locale}
-                        member={m}
-                        isAdmin={isAdmin}
-                        linkReady={linkReady}
-                        people={people.filter((p) => p.id === m.personId || !members.some((o) => o.personId === p.id))}
-                        open={openId === m.id}
-                        onOpen={(o) => setOpenId(o ? m.id : null)}
-                        t={t}
-                        errors={errors}
-                      />
-                    )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -233,6 +266,36 @@ export function MembersCenter({
         </section>
       </aside>
     </div>
+  );
+}
+
+/** "Invite": a link made for this person, copied right away. */
+function InviteButton({ locale, personId, t }: { locale: Locale; personId: string; t: Labels }) {
+  const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
+  const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
+    const result = await createInvite(prev, form);
+    if (result.link) {
+      try {
+        await navigator.clipboard.writeText(result.link);
+        setDone("copied");
+      } catch {
+        setDone("manual");
+      }
+    }
+    return result;
+  }, {});
+  return (
+    <form action={action} className="flex items-center gap-2">
+      <Hidden values={{ locale, personId, role: "contributor" }} />
+      {done === "manual" && state.link ? (
+        <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()} aria-label={t.copyFallback} className="w-44 rounded-lg border border-line px-2 py-1.5 text-[0.85rem]" />
+      ) : (
+        <button type="submit" disabled={pending} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-line hover:border-ink/40"}`}>
+          {done === "copied" ? <IconCheck size={16} /> : <IconLink size={16} />}
+          {pending ? "…" : done === "copied" ? t.inviteCopied : t.invite}
+        </button>
+      )}
+    </form>
   );
 }
 

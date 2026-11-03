@@ -45,7 +45,7 @@ const card = "rounded-[12px] border border-line/70 bg-surface shadow-[0_1px_2px_
 export function DashboardView({ t, locale, name, role, counts, head, partner, shownKids, moreKids, grave, welcomeHref, welcomeJoin, accessRequests, portraits, latestPhotos, recent }: DashboardData) {
   const base = `/${locale}/app`;
   const stats = [
-    { icon: <IconPeople size={24} />, n: counts.people, label: t.dash.statPeople, href: `${base}/people` },
+    { icon: <IconPeople size={24} />, n: counts.people, label: t.dash.statPeople, href: `${base}/members` },
     { icon: <IconTree size={24} />, n: counts.generations, label: t.dash.statGenerations, href: `${base}/tree` },
     { icon: <IconPin size={24} />, n: counts.graves, label: t.dash.statGraves, href: `${base}/map` },
     { icon: <IconImage size={24} />, n: counts.photos, label: t.dash.statPhotos, href: `${base}/archive` },
@@ -81,7 +81,7 @@ export function DashboardView({ t, locale, name, role, counts, head, partner, sh
           ))}
         </ul>
         {can.add(role) && (
-          <Link href={`${base}/people#add`} className="inline-flex min-h-13 justify-self-start items-center gap-2 rounded-full bg-sage-deep px-7 text-[1.08rem] font-semibold text-surface shadow-[0_6px_16px_-8px_rgb(63_86_67/0.8)] transition-colors hover:bg-ink">
+          <Link href={`${base}/members?add=1`} className="inline-flex min-h-13 justify-self-start items-center gap-2 rounded-full bg-sage-deep px-7 text-[1.08rem] font-semibold text-surface shadow-[0_6px_16px_-8px_rgb(63_86_67/0.8)] transition-colors hover:bg-ink">
             <IconPlus size={20} />
             {t.app.addPerson}
           </Link>
