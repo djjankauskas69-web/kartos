@@ -691,20 +691,20 @@ export function TreeView({
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
               {laterPartnerPaths.map((l, i) => {
                 const on = lit && l.keys.includes(lit);
-                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit ? (on ? 1 : 0.22) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
           </svg>
@@ -730,7 +730,7 @@ export function TreeView({
                 style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? "opacity-30" : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
+                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
               >
                 <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
@@ -773,25 +773,10 @@ export function TreeView({
                     aria-haspopup="menu"
                     aria-label={`${labels.menuMore}: ${c.name}`}
                     title={labels.menuMore}
-                    style={{ left: (cardW + PHOTO) / 2 - 24, top: -2 }}
+                    style={{ left: (cardW + PHOTO) / 2 - 22, top: 0 }}
                     className={`${quick} ${menu?.key === c.key && menu.mode === "card" ? "!opacity-100 bg-ink text-white" : ""}`}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18.5" cy="12" r="2" /></svg>
-                  </button>
-                )}
-                {c.addOptions.length > 0 && (
-                  <button
-                    type="button"
-                    data-card
-                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" && !menu.group ? null : { key: c.key, mode: "add" })}
-                    aria-expanded={menu?.key === c.key && menu.mode === "add"}
-                    aria-haspopup="menu"
-                    aria-label={`${labels.menuAdd}: ${c.name}`}
-                    title={labels.menuAdd}
-                    style={{ left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 14 }}
-                    className={`${quick} ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 )}
                 {c.moreAbove && (
@@ -863,7 +848,7 @@ function CardMenu({
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
-  const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.02rem] hover:bg-linen focus-visible:bg-linen";
+  const item = "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.97rem] hover:bg-linen focus-visible:bg-linen";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
     ? [
@@ -907,6 +892,20 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
+        {card.addOptions.length > 0 && (
+          <div className="border-b border-line px-3 pb-3 pt-1.5">
+            <p className="mb-2 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {card.addOptions.map((o) => (
+                <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line px-2.5 text-[0.9rem] font-semibold hover:border-ink/40 hover:bg-linen">
+                  <span aria-hidden="true" className="text-ink-muted">+</span>
+                  <span className="first-letter:uppercase">{o.label.replace(/^(Pridėti|Add( a| an)?)\s+/i, "")}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="pt-1.5" />
         <CardLink foreign={card.profileHref.includes("/open?")} href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
           {labels.menuProfile}
@@ -959,12 +958,6 @@ function CardMenu({
             </div>
             )}
           </div>
-        )}
-        {card.linkHref && (
-          <Link href={card.linkHref} role="menuitem" onClick={onLeave} className={`${item} text-ink-muted`}>
-            <svg {...ICON}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>
-            {labels.menuLink}
-          </Link>
         )}
       </div>
       )}
