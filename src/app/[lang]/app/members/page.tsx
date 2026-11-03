@@ -128,7 +128,6 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className={cls.h1}>{m.title}</h1>
-          <p className="mt-1 text-[1.1rem] text-ink-muted">{m.subtitle.replace("{name}", current.name)}</p>
         </div>
         {canAdd && (
           <Link href="?add=1" scroll={false} className={`${cls.primary} gap-2`}>
