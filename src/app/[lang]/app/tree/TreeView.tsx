@@ -530,7 +530,7 @@ export function TreeView({
                     className="min-h-9 min-w-0 flex-1 rounded-full border border-line bg-surface px-3 font-semibold"
                   >
                     {!from && <option value="">—</option>}
-                    {meCard && <option value={meCard.id}>{labels.show.you} ({meCard.name})</option>}
+                    {meCard && <option value={meCard.id}>{meCard.name}</option>}
                     {people.filter(([id]) => id !== meCard?.id).map(([id, name]) => (
                       <option key={id} value={id}>
                         {name}
