@@ -388,7 +388,24 @@
     "drawerClose": "Uždaryti",
     "drawerFull": "Atidaryti visą profilį",
     "background": "Fono spalva",
-    "familiesShown": "Rodomos šeimos"
+    "familiesShown": "Rodomos šeimos",
+    "me": "Tu",
+    "genRel": {
+      "-4": "Proproseneliai",
+      "-3": "Proseneliai",
+      "-2": "Seneliai",
+      "-1": "Tėvai",
+      "0": "Jūsų karta",
+      "1": "Vaikai",
+      "2": "Anūkai",
+      "3": "Proanūkiai"
+    },
+    "addGroup": {
+      "parent": "Pridėti tėvą ar motiną",
+      "partner": "Pridėti sutuoktinį",
+      "child": "Pridėti vaiką",
+      "sibling": "Pridėti brolį ar seserį"
+    }
   },
   "family": {
     "title": "Šeima",

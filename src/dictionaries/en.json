@@ -388,7 +388,24 @@
     "drawerClose": "Close",
     "drawerFull": "Open full profile",
     "background": "Background colour",
-    "familiesShown": "Families shown"
+    "familiesShown": "Families shown",
+    "me": "You",
+    "genRel": {
+      "-4": "Great-great-grandparents",
+      "-3": "Great-grandparents",
+      "-2": "Grandparents",
+      "-1": "Parents",
+      "0": "Your generation",
+      "1": "Children",
+      "2": "Grandchildren",
+      "3": "Great-grandchildren"
+    },
+    "addGroup": {
+      "parent": "Add a parent",
+      "partner": "Add a partner",
+      "child": "Add a child",
+      "sibling": "Add a sibling"
+    }
   },
   "family": {
     "title": "Family",

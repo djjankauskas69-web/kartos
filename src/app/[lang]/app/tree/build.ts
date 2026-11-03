@@ -15,7 +15,9 @@ export type BuildPerson = {
 };
 export type BuildRel = { person_a: string; person_b: string; type: "parent_child" | "partner" };
 
-export const SIZE: TreeSize = { cardW: 164, cardH: 178, gapX: 48, rowGap: 100, pad: 32 };
+type AddOption = { label: string; href: string; group: "parent" | "partner" | "child" | "sibling" };
+
+export const SIZE: TreeSize = { cardW: 164, cardH: 196, gapX: 48, rowGap: 100, pad: 32 };
 /** Round portrait at the top of each card (radius) — partners join at its centre. */
 export const PHOTO_R = 48;
 const BOX = 8; // padding of the box around a person or a couple
@@ -44,6 +46,7 @@ export function buildTree({
   linkHref,
   relations,
   highlightId,
+  meId,
   profileHrefFor,
   foreign,
   sides,
@@ -68,6 +71,8 @@ export function buildTree({
   relations?: Map<string, string>;
   /** Mark this person (e.g. you) instead of the start person. */
   highlightId?: string;
+  /** You (marked "you" in the tree). */
+  meId?: string;
   /** Where clicking a person goes (the tree opens the profile in a side panel). */
   profileHrefFor?: (id: string) => string;
   /** People shown from a linked family: which family, and where they open. */
@@ -116,15 +121,16 @@ export function buildTree({
     const rel = (kind: string) => (addHref ? addHref(kind, id) : `${base}/people/${id}/relative?kind=${kind}`);
     const self = byId.get(id);
     // Each item is one exact relationship, so the panel does not ask again.
-    const partner = self?.sex === "male" ? [{ label: t.family.addWife, href: rel("wife") }] : self?.sex === "female" ? [{ label: t.family.addHusband, href: rel("husband") }] : [{ label: t.family.addWife, href: rel("wife") }, { label: t.family.addHusband, href: rel("husband") }];
-    return [
-      { label: t.family.addSon, href: rel("son") },
-      { label: t.family.addDaughter, href: rel("daughter") },
+    const partner: AddOption[] = self?.sex === "male" ? [{ label: t.family.addWife, href: rel("wife"), group: "partner" }] : self?.sex === "female" ? [{ label: t.family.addHusband, href: rel("husband"), group: "partner" }] : [{ label: t.family.addWife, href: rel("wife"), group: "partner" }, { label: t.family.addHusband, href: rel("husband"), group: "partner" }];
+    const out: AddOption[] = [
+      { label: t.family.addSon, href: rel("son"), group: "child" },
+      { label: t.family.addDaughter, href: rel("daughter"), group: "child" },
       ...partner,
-      ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father") }] : []),
-      ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother") }] : []),
-      ...(parentCount > 0 ? [{ label: t.family.addBrother, href: rel("brother") }, { label: t.family.addSister, href: rel("sister") }] : []),
+      ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father"), group: "parent" as const }] : []),
+      ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother"), group: "parent" as const }] : []),
+      ...(parentCount > 0 ? [{ label: t.family.addBrother, href: rel("brother"), group: "sibling" as const }, { label: t.family.addSister, href: rel("sister"), group: "sibling" as const }] : []),
     ];
+    return out;
   };
   const cards: TreeCard[] = layout.nodes.map((n) => {
     const p = byId.get(n.id)!;
@@ -170,6 +176,7 @@ export function buildTree({
       gen: gens.get(n.id) ?? 1,
       start: n.role === "focus",
       highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
+      me: n.id === meId,
       relation: relations?.get(n.id),
       profileHref: profileHrefFor ? profileHrefFor(n.id) : `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),
@@ -310,9 +317,25 @@ function withSides(main: ReturnType<typeof layoutTree>, sides: BuildRel[][], peo
       const ps = e.parents.map((k) => side.nodes.find((n) => n.key === k)!).filter((n) => !here.has(n.id));
       return ps.length && kids.length ? kids.map((kid) => ({ from: ps[0], to: here.get(kid.id)!, pair: ps[1] })) : [];
     });
+    // Rows (by height) of what's drawn so far, so the other family can come as close as the rows allow.
+    const rowMin = new Map<number, number>();
+    const rowMax = new Map<number, number>();
+    for (const n of nodes) {
+      rowMin.set(n.y, Math.min(rowMin.get(n.y) ?? Infinity, n.x));
+      rowMax.set(n.y, Math.max(rowMax.get(n.y) ?? -Infinity, n.x));
+    }
     const options = [false, true].flatMap((mirror) => {
       const xOf = (x: number) => (mirror ? minX + maxX - x : x);
-      return [right - minX, left - gapX * 3 - cardW - maxX].map((dx) => ({
+      let toRight = -Infinity;
+      let toLeft = Infinity;
+      for (const n of own) {
+        const y = n.y + dy;
+        if (rowMax.has(y)) toRight = Math.max(toRight, rowMax.get(y)! + cardW + gapX * 2 - xOf(n.x));
+        if (rowMin.has(y)) toLeft = Math.min(toLeft, rowMin.get(y)! - cardW - gapX * 2 - xOf(n.x));
+      }
+      const dxRight = Number.isFinite(toRight) ? toRight : right - minX;
+      const dxLeft = Number.isFinite(toLeft) ? toLeft : left - gapX * 3 - cardW - maxX;
+      return [dxRight, dxLeft].map((dx) => ({
         mirror,
         dx,
         cost: joins.reduce((sum, j) => {

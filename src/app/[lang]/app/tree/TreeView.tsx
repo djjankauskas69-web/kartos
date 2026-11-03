@@ -50,8 +50,17 @@ function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { f
   return <Link {...props} />;
 }
 
-/** Open menu: a card's menu ("card") or its "add a relative" menu ("add"). */
-type MenuState = { key: string; mode: "card" | "add" } | null;
+/** Open menu: a card's menu ("card") or its "add a relative" menu ("add", maybe one kind only). */
+type AddGroup = "parent" | "partner" | "child" | "sibling";
+type MenuState = { key: string; mode: "card" | "add"; group?: AddGroup } | null;
+
+/** Each linked family gets its own soft colour (the same as its dot above the tree). */
+const FAMILY_COLORS = [
+  { bg: "#e3ebf3", ink: "#3e566e", ring: "#8fa5bb" },
+  { bg: "#f3e5dc", ink: "#7a4a33", ring: "#c99c84" },
+  { bg: "#ebe5f3", ink: "#54457a", ring: "#a597c4" },
+  { bg: "#f2ecd6", ink: "#6b5a24", ring: "#c4b177" },
+];
 
 export type TreeCard = {
   key: string;
@@ -72,7 +81,9 @@ export type TreeCard = {
   showFromHref: string;
   grave?: { lat: number; lng: number };
   mapHref?: string;
-  addOptions: Array<{ label: string; href: string }>;
+  addOptions: Array<{ label: string; href: string; group: AddGroup }>;
+  /** You. */
+  me?: boolean;
   families: Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>;
   linkHref?: string;
   /** Shown from a linked family (its name). */
@@ -119,9 +130,14 @@ type Labels = {
   branch: string;
   legendLiving: string;
   legendDeceased: string;
+  me: string;
+  genRel: Record<string, string>;
+  addGroup: Record<AddGroup, string>;
 };
 
-const MIN = 0.1; // far enough out that the dots are gone, like Recraft
+const MIN = 0.1;
+/** Below this names no longer read: the first view doesn't go smaller (the "whole tree" button still can). */
+const READABLE = 0.75;
 const MAX = 2;
 const TOP = 96; // room for the generation chips above the tree
 const BOTTOM = 84; // room for the zoom toolbar below it
@@ -197,7 +213,7 @@ export function TreeView({
     return () => document.removeEventListener("pointerdown", close);
   }, [menu]);
   const [full, setFull] = useState(false);
-  const start = cards.find((c) => c.start) ?? cards[0];
+  const start = cards.find((c) => c.me) ?? cards.find((c) => c.start) ?? cards[0];
   const viewRef = useRef(view);
   useEffect(() => {
     viewRef.current = view;
@@ -224,11 +240,6 @@ export function TreeView({
     [go],
   );
 
-  const centreOn = (c: TreeCard | undefined, k: number, glide: boolean) => {
-    if (!c) return;
-    const { w } = size();
-    go({ k, x: w / 2 - (c.x + cardW / 2) * k, y: TOP + 16 - c.y * k }, glide);
-  };
 
   /** Vertical position that puts the tree in the middle, below the controls; tall trees start at the top. */
   const middleY = (h: number, k: number) => TOP + Math.max(0, (h - TOP - BOTTOM - height * k) / 2);
@@ -259,11 +270,17 @@ export function TreeView({
     if (fitH === null) return;
     const id = requestAnimationFrame(() => {
       const { w, h } = size();
-      // Whole tree when it still reads (≥ 30 %); big trees start at the top person instead.
+      // The whole tree when it still reads; bigger trees start around you, at a size that reads.
       const whole = Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height);
-      const k = whole >= 0.3 ? whole : Math.max(0.6, Math.min(1, (w - 80) / width));
-      if (whole >= 0.3) go({ k, x: (w - width * k) / 2, y: middleY(h, k) });
-      else centreOn(start, k, false);
+      if (whole >= READABLE) go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
+      else if (start) {
+        const k = 0.9;
+        const cx = w / 2 - (start.x + cardW / 2) * k;
+        const cy = TOP + (h - TOP - BOTTOM) / 2 - (start.y + cardH / 2) * k;
+        // Don't leave empty space beyond the tree's edges when it can be avoided.
+        const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
+        go({ k, x: clamp(cx, w - 40 - width * k, 40), y: clamp(cy, h - BOTTOM - height * k, TOP) });
+      }
       requestAnimationFrame(() => setReady(true));
     });
     return () => cancelAnimationFrame(id);
@@ -409,6 +426,22 @@ export function TreeView({
     const top = Math.min(Math.max(8, c.y * k + y), Math.max(8, h - 480));
     return { left, top };
   };
+  const familyColor = useMemo(() => {
+    const names = [...familyToggles.slice(1).map((f) => f.label), ...cards.flatMap((c) => (c.foreign ? [c.foreign] : []))];
+    const m = new Map<string, (typeof FAMILY_COLORS)[number]>();
+    for (const n of names) if (!m.has(n)) m.set(n, FAMILY_COLORS[m.size % FAMILY_COLORS.length]);
+    return m;
+  }, [familyToggles, cards]);
+  // One label per row on the left: "Parents", "Your generation"… (or "II generation" without you).
+  const rows = useMemo(() => {
+    const meGen = cards.find((c) => c.me)?.gen;
+    const byY = new Map<number, number>();
+    for (const c of cards) if (!byY.has(c.y)) byY.set(c.y, c.gen);
+    return [...byY.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([rowY, gen]) => ({ y: rowY, label: meGen !== undefined ? (labels.genRel[String(gen - meGen)] ?? generations.find((g) => g.n === gen)?.label ?? "") : (generations.find((g) => g.n === gen)?.label ?? "") }))
+      .filter((r) => r.label);
+  }, [cards, generations, labels.genRel]);
   const bg = useSyncExternalStore(bgStore.subscribe, bgStore.get, bgStore.getServer);
   const bgColor = BACKGROUNDS.find((b) => b.id === bg)?.color ?? BACKGROUNDS[0].color;
 
@@ -448,8 +481,8 @@ export function TreeView({
             <div className={`flex max-w-full gap-0.5 overflow-x-auto p-0.5 [scrollbar-width:none] ${pill}`} role="group" aria-label={labels.families}>
               {familyToggles.map((f) =>
                 f.href ? (
-                  <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.85rem] ${f.on ? "bg-[#e2e9f1] font-semibold text-[#3e566e]" : "text-ink-muted hover:text-ink"}`}>
-                    <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full border ${f.on ? "border-[#3e566e] bg-[#3e566e]" : "border-ink-muted/60"}`} />
+                  <Link key={f.label} href={f.href} scroll={false} aria-pressed={f.on} style={f.on ? { backgroundColor: familyColor.get(f.label)?.bg, color: familyColor.get(f.label)?.ink } : undefined} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.85rem] ${f.on ? "font-semibold" : "text-ink-muted hover:text-ink"}`}>
+                    <span aria-hidden="true" style={{ backgroundColor: f.on ? familyColor.get(f.label)?.ring : undefined, borderColor: familyColor.get(f.label)?.ring }} className="h-2.5 w-2.5 rounded-full border-2" />
                     {f.label}
                   </Link>
                 ) : (
@@ -530,6 +563,19 @@ export function TreeView({
         </button>
       </div>
 
+      {/* Generation labels at the left edge, following the rows as the tree moves */}
+      <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-0 sm:block ${ready ? "" : "opacity-0"}`}>
+        {rows.map((r) => {
+          const top = (r.y + PHOTO / 2) * k + y;
+          if (top < TOP - 10 || top > area.h - BOTTOM + 30) return null;
+          return (
+            <span key={r.y} style={{ top }} className={`absolute left-3 -translate-y-1/2 whitespace-nowrap rounded-full bg-surface/85 px-2.5 py-1 text-[0.8rem] font-semibold text-ink-muted shadow-[0_2px_8px_-4px_rgb(28_29_26/0.3)] backdrop-blur ${glide ? "transition-[top] duration-300 ease-out" : ""}`}>
+              {r.label}
+            </span>
+          );
+        })}
+      </div>
+
       {/* The canvas */}
       <div
         ref={canvas}
@@ -605,27 +651,23 @@ export function TreeView({
                         src={c.portrait}
                         alt=""
                         draggable={false}
-                        style={{ width: PHOTO, height: PHOTO }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : c.foreign ? "outline-dashed outline-2 outline-offset-2 outline-[#8fa5bb]" : ""}`}
+                        style={{ width: PHOTO, height: PHOTO, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign ?? "")?.ring }}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.86]"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
                       />
                     ) : (
                       <span
                         aria-hidden="true"
-                        style={{ width: PHOTO, height: PHOTO }}
-                        className={`flex items-center justify-center rounded-full text-[1.45rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "bg-[#e9eef4] text-[#3e566e]" : c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"} ${c.highlight ? "outline outline-2 outline-offset-4 outline-night" : c.foreign ? "outline-dashed outline-2 outline-offset-2 outline-[#8fa5bb]" : ""}`}
+                        style={{ width: PHOTO, height: PHOTO, ...(c.foreign ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: c.me || c.highlight ? undefined : familyColor.get(c.foreign)?.ring } : {}) }}
+                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-linen text-ink-muted"} ${c.me || c.highlight ? "outline outline-[3px] outline-offset-2 outline-night" : c.foreign ? "outline outline-[3px] outline-offset-0" : ""}`}
                       >
                         {c.initials}
                       </span>
                     )}
-                    {c.living && <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[3px] border-white bg-[#6f8a4f]" aria-hidden="true" />}
-                    {c.foreign && (
-                      <span title={c.foreign} className="absolute -bottom-2 left-1/2 max-w-[9.5rem] -translate-x-1/2 truncate whitespace-nowrap rounded-full border border-white bg-[#e2e9f1] px-2 py-0.5 text-[0.72rem] font-semibold text-[#3e566e]">
-                        {c.foreign}
-                      </span>
-                    )}
+                    {c.me && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full border-2 border-white bg-night px-2.5 py-0.5 text-[0.85rem] font-semibold text-surface">{labels.me}</span>}
                   </span>
-                  <span className={`mt-3 line-clamp-2 text-[1.12rem] font-semibold leading-tight group-hover:underline ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[0.92rem] tabular-nums text-ink-muted">
+                  <span title={c.foreign} className={`mt-3.5 line-clamp-2 text-[1.15rem] font-semibold leading-[1.3] group-hover:underline ${c.living ? "text-ink" : "text-ink/85"}`}>{c.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[1rem] tabular-nums text-ink-muted">
+                    {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
@@ -649,23 +691,47 @@ export function TreeView({
                   <button
                     type="button"
                     data-card
-                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" ? null : { key: c.key, mode: "add" })}
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "add" && !menu.group ? null : { key: c.key, mode: "add" })}
                     aria-expanded={menu?.key === c.key && menu.mode === "add"}
                     aria-haspopup="menu"
                     aria-label={`${labels.menuAdd}: ${c.name}`}
                     title={labels.menuAdd}
                     style={{ left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 14 }}
-                    className={`${quick} ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
+                    className={`${quick} hidden [@media(hover:none)]:flex ${menu?.key === c.key && menu.mode === "add" ? "!opacity-100 bg-ink text-white" : ""}`}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 )}
+                {/* On a computer: "+" on each side — above a parent, beside a partner or sibling, below a child */}
+                {(
+                  [
+                    ["parent", { left: cardW / 2 - 16, top: -20 }],
+                    ["partner", { left: (cardW + PHOTO) / 2 + 6, top: PHOTO / 2 - 16 }],
+                    ["sibling", { left: (cardW - PHOTO) / 2 - 38, top: PHOTO / 2 - 16 }],
+                    ["child", { left: cardW / 2 - 16, top: cardH - 10 }],
+                  ] as Array<[AddGroup, React.CSSProperties]>
+                ).map(([g, pos]) => {
+                  const opts = c.addOptions.filter((o) => o.group === g);
+                  if (!opts.length) return null;
+                  const open = menu?.key === c.key && menu.mode === "add" && menu.group === g;
+                  const cl = `${quick} [@media(hover:none)]:hidden ${open ? "!opacity-100 bg-ink text-white" : ""}`;
+                  const icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
+                  return opts.length === 1 ? (
+                    <Link key={g} href={opts[0].href} scroll={false} draggable={false} data-card aria-label={`${opts[0].label}: ${c.name}`} title={opts[0].label} style={pos} className={cl}>
+                      {icon}
+                    </Link>
+                  ) : (
+                    <button key={g} type="button" data-card onClick={() => setMenu(open ? null : { key: c.key, mode: "add", group: g })} aria-expanded={open} aria-haspopup="menu" aria-label={`${labels.addGroup[g]}: ${c.name}`} title={labels.addGroup[g]} style={pos} className={cl}>
+                      {icon}
+                    </button>
+                  );
+                })}
                 {c.moreAbove && (
                   <Link
                     href={c.showFromHref}
                     title={labels.moreAbove}
                     draggable={false}
-                    className="absolute -top-[26px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    className="absolute -top-[26px] left-[calc(50%-40px)] -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
                   >
                     ▲<span className="sr-only">{labels.moreAbove}</span>
                   </Link>
@@ -675,7 +741,7 @@ export function TreeView({
                     href={c.showFromHref}
                     title={labels.moreBelow}
                     draggable={false}
-                    className="absolute -bottom-[16px] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
+                    className="absolute -bottom-[16px] left-[calc(50%-40px)] -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 text-[0.75rem] leading-5 text-ink-muted hover:text-ink"
                   >
                     ▼<span className="sr-only">{labels.moreBelow}</span>
                   </Link>
@@ -687,10 +753,11 @@ export function TreeView({
         </div>
         {openCard && (
           <CardMenu
-            key={`${menu!.key}-${menu!.mode}`}
+            key={`${menu!.key}-${menu!.mode}-${menu!.group ?? ""}`}
             ref={menuRef}
             card={openCard}
             mode={menu!.mode}
+            group={menu!.group}
             labels={labels}
             pos={menuPos(openCard)}
             onClose={() => setMenu(null)}
@@ -712,6 +779,7 @@ function CardMenu({
   ref,
   card,
   mode,
+  group,
   labels,
   pos,
   onClose,
@@ -720,6 +788,7 @@ function CardMenu({
   ref: React.Ref<HTMLDivElement>;
   card: TreeCard;
   mode: "card" | "add";
+  group?: AddGroup;
   labels: Labels;
   pos: { left: number; top: number };
   onClose: () => void;
@@ -760,8 +829,8 @@ function CardMenu({
       </div>
       {mode === "add" ? (
         <div className="border-t border-line pt-1.5">
-          <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{labels.menuAdd}</p>
-          {card.addOptions.map((o) => (
+          <p className="px-3 pb-1 pt-1 text-[0.85rem] text-ink-muted">{group ? labels.addGroup[group] : labels.menuAdd}</p>
+          {card.addOptions.filter((o) => !group || o.group === group).map((o) => (
             <Link key={o.href} href={o.href} scroll={false} role="menuitem" onClick={onLeave} className={item}>
               <svg {...ICON}><path d="M12 5v14M5 12h14" /></svg>
               <span className="first-letter:uppercase">{o.label.replace(/^(Pridėti|Add)\s+/i, "")}</span>
