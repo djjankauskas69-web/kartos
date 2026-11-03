@@ -1057,10 +1057,6 @@ function CardMenu({
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
           {labels.menuProfile}
         </CardLink>
-        <Link href={card.showFromHref} role="menuitem" onClick={onClose} className={item}>
-          <svg {...ICON}><circle cx="6" cy="5.5" r="2.2" /><circle cx="6" cy="18.5" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 7.7v8.6M6 12h4.5a3 3 0 0 0 3-3V9M13.5 12h2.3" /></svg>
-          {labels.showFrom}
-        </Link>
         {card.mapHref && (
           <Link href={card.mapHref} role="menuitem" onClick={onLeave} className={item}>
             <svg {...ICON}><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
