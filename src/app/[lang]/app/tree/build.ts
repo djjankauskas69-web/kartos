@@ -183,6 +183,9 @@ export function buildTree({
     };
   });
 
+  const lines = (es: typeof layout.edges) =>
+    es.map((e) => ({ d: edgePaths(layout.nodes, [e], SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }).join(" "), keys: e.kind === "partner" ? [e.a, e.b] : [...e.parents, ...e.children] }));
+
   /* Couples share one box: join runs of partner links. */
   const group = new Map<string, string>(layout.nodes.map((n) => [n.key, n.key]));
   const find = (k: string): string => (group.get(k) === k ? k : find(group.get(k)!));
@@ -210,7 +213,7 @@ export function buildTree({
         .filter((j) => keys.includes(j.a))
         .map((j) => {
           const l = Math.min(at.get(j.a)!.x, at.get(j.b)!.x);
-          return { x: l + cardW + gapX / 2, y: ns[0].y + PHOTO_R, later: !!j.later };
+          return { x: l + cardW + gapX / 2, y: ns[0].y + PHOTO_R, later: !!j.later, keys: [j.a, j.b] };
         }),
     };
     keys.forEach((k) => boxOf.set(k, box));
@@ -253,10 +256,11 @@ export function buildTree({
     boxes,
     pluses,
     // Partners and parent→child lines are drawn differently, so couples read at a glance.
-    partnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner" && !e.later), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    // Each line knows whom it joins, so choosing a person can light up their own links.
+    partnerPaths: lines(layout.edges.filter((e) => e.kind === "partner" && !e.later)),
     // A second (later) marriage is drawn lighter and dashed.
-    laterPartnerPaths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind === "partner" && e.later), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
-    paths: edgePaths(layout.nodes, layout.edges.filter((e) => e.kind !== "partner"), SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }),
+    laterPartnerPaths: lines(layout.edges.filter((e) => e.kind === "partner" && e.later)),
+    paths: lines(layout.edges.filter((e) => e.kind !== "partner")),
     width: layout.width,
     height: layout.height + 16,
     cardW,

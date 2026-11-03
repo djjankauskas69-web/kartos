@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 
 /** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
@@ -80,7 +80,9 @@ export type TreeCard = {
   moreAbove: boolean;
   moreBelow: boolean;
 };
-export type TreeBox = { key: string; x: number; y: number; w: number; h: number; gen: number; joins: Array<{ x: number; y: number; later?: boolean }> };
+export type TreeBox = { key: string; x: number; y: number; w: number; h: number; gen: number; joins: Array<{ x: number; y: number; later?: boolean; keys?: string[] }> };
+/** A line on the tree and the cards it joins. */
+export type TreeLine = { d: string; keys: string[] };
 export type TreePlus = { key: string; x: number; y: number; gen: number; options: Array<{ label: string; href: string }> };
 
 type Labels = {
@@ -151,9 +153,9 @@ export function TreeView({
   cards: TreeCard[];
   boxes: TreeBox[];
   pluses?: TreePlus[];
-  paths: string[];
-  partnerPaths?: string[];
-  laterPartnerPaths?: string[];
+  paths: TreeLine[];
+  partnerPaths?: TreeLine[];
+  laterPartnerPaths?: TreeLine[];
   width: number;
   height: number;
   cardW: number;
@@ -174,6 +176,8 @@ export function TreeView({
   const [activeGen, setActiveGen] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const opening = useSyncExternalStore(drawerState.subscribe, drawerState.get, drawerState.getServer);
+  // The person pointed at (or whose menu is open): their own links light up, the rest fade.
+  const [hover, setHover] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
   useEffect(() => {
@@ -380,6 +384,13 @@ export function TreeView({
   }
 
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
+  const lit = hover ?? menu?.key ?? opening ?? null;
+  const near = useMemo(() => {
+    const out = new Set<string>();
+    if (!lit) return out;
+    for (const l of [...paths, ...partnerPaths, ...laterPartnerPaths]) if (l.keys.includes(lit)) l.keys.forEach((k) => out.add(k));
+    return out;
+  }, [lit, paths, partnerPaths, laterPartnerPaths]);
   const glide = smooth ? "transition-transform duration-300 ease-out" : "";
   const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
   const tool =
@@ -538,22 +549,25 @@ export function TreeView({
       >
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
           <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
-            {/* parents → children: light */}
-            <g fill="none" stroke="#c4c1b6" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
-              {paths.map((d, i) => (
-                <path key={i} d={d} />
-              ))}
+            {/* parents → children: clear vertical joins; the chosen person's own links stand out */}
+            <g fill="none" strokeLinejoin="round" strokeLinecap="round">
+              {paths.map((l, i) => {
+                const on = lit && l.keys.includes(lit);
+                return <path key={i} d={l.d} stroke={on ? "#5f5b50" : "#aeaa9c"} strokeWidth={on ? 2.8 : 2} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+              })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
-            <g fill="none" stroke="#8d897c" strokeWidth="2.6" strokeLinecap="round">
-              {partnerPaths.map((d, i) => (
-                <path key={i} d={d} />
-              ))}
+            <g fill="none" strokeLinecap="round">
+              {partnerPaths.map((l, i) => {
+                const on = lit && l.keys.includes(lit);
+                return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8d897c"} strokeWidth={on ? 3.4 : 2.8} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+              })}
             </g>
-            <g fill="none" stroke="#b3afa3" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="5 6">
-              {laterPartnerPaths.map((d, i) => (
-                <path key={i} d={d} />
-              ))}
+            <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
+              {laterPartnerPaths.map((l, i) => {
+                const on = lit && l.keys.includes(lit);
+                return <path key={i} d={l.d} stroke={on ? "#7d7a6f" : "#b3afa3"} strokeWidth={on ? 2.8 : 2.2} opacity={lit && !on ? 0.22 : 1} className="transition-opacity duration-200" />;
+              })}
             </g>
           </svg>
 
@@ -564,7 +578,7 @@ export function TreeView({
                 key={`${b.key}-${i}`}
                 aria-hidden="true"
                 style={{ left: j.x, top: j.y }}
-                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
+                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit && !j.keys?.includes(lit) ? "opacity-25" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
               >
                 ∞
               </span>
@@ -573,7 +587,13 @@ export function TreeView({
 
           <ul>
             {cards.map((c) => (
-              <li key={c.key} style={{ left: c.x, top: c.y, width: cardW, height: cardH }} className={`group absolute ${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}>
+              <li
+                key={c.key}
+                style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
+                onMouseEnter={() => setHover(c.key)}
+                onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
+                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? "opacity-30" : `${dim(c.gen)} ${c.foreign ? "opacity-75 hover:opacity-100" : ""}`}`}
+              >
                 <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
