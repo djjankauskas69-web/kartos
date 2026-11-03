@@ -139,6 +139,21 @@ export function buildTree({
     ];
     return out;
   };
+  // One parent known, and that parent has several partners: ask which one is the other parent.
+  const missingParent = (id: string): TreeCard["missingParent"] => {
+    if (!canAdd) return undefined;
+    const ps = rels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a).filter((p) => byId.has(p));
+    if (ps.length !== 1) return undefined;
+    const allRels = [...rels, ...(sides ?? []).flat()];
+    const mates = [...new Set(allRels.filter((r) => r.type === "partner" && (r.person_a === ps[0] || r.person_b === ps[0])).map((r) => (r.person_a === ps[0] ? r.person_b : r.person_a)))].filter((m) => byId.has(m));
+    if (mates.length < 2) return undefined;
+    const kind = byId.get(ps[0])?.sex === "female" ? "father" : "mother";
+    // The parent is in another family's archive: it is answered there.
+    const far = foreign?.get(ps[0]);
+    if (far) return far.href.includes("/open?") ? { kind, options: [], openHref: far.href, family: far.family } : undefined;
+    if (mates.some((m) => foreign?.has(m))) return undefined;
+    return { kind, options: mates.map((m) => ({ id: m, name: [byId.get(m)!.given_names, byId.get(m)!.surname].filter(Boolean).join(" ") })) };
+  };
   const cards: TreeCard[] = layout.nodes.map((n) => {
     const p = byId.get(n.id)!;
     const far = foreign?.get(n.id);
@@ -186,6 +201,7 @@ export function buildTree({
       highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
       me: n.id === meId,
       elsewhere: elsewhere?.get(n.id),
+      missingParent: missingParent(n.id),
       relation: relations?.get(n.id),
       profileHref: profileHrefFor ? profileHrefFor(n.id) : `${base}/people/${n.id}`,
       showFromHref: treeHref(n.id),

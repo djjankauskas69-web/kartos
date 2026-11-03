@@ -645,3 +645,18 @@ export async function deleteGrave(form: FormData) {
   if (id) await supabase.from("burials").delete().eq("id", id).eq("workspace_id", workspace.id);
   redirect(`/${locale}/app/people/${personId ?? ""}`);
 }
+
+/** "Which one is the mother/father?": the other parent of a child, chosen among their parent's partners. */
+export async function setOtherParent(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const childId = uuid(form, "childId");
+  const parentId = uuid(form, "parentId");
+  if (!childId || !parentId || childId === parentId) return;
+  const { data: existing } = await supabase.from("relationships").select("person_a").eq("workspace_id", workspace.id).eq("type", "parent_child").eq("person_b", childId).neq("status", "rejected");
+  const parents = (existing ?? []).map((r) => r.person_a as string);
+  if (parents.includes(parentId) || parents.length >= 2) return;
+  const { error } = await supabase.from("relationships").insert({ workspace_id: workspace.id, person_a: parentId, person_b: childId, type: "parent_child", subtype: "biological" });
+  if (error) console.error("setOtherParent", error);
+  refresh();
+}

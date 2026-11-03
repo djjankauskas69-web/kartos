@@ -413,6 +413,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           show: t.tree.show,
           elsewhere: t.tree.elsewhere,
           sides: t.tree.sides,
+          which: t.tree.which,
         }}
         locale={locale}
       />

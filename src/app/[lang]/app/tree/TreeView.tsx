@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 import { requestTreeAccess } from "../tree-access-actions";
+import { setOtherParent } from "../actions";
 import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
 import { kinship } from "@/lib/kinship";
 
@@ -111,6 +112,8 @@ export type TreeCard = {
   addOptions: Array<{ label: string; href: string; group: AddGroup }>;
   /** You. */
   me?: boolean;
+  /** Only one parent known, who has several partners: which one is the other parent? */
+  missingParent?: { kind: "mother" | "father"; options: Array<{ id: string; name: string }>; openHref?: string; family?: string };
   /** Has their own family tree in an archive you are not in. */
   elsewhere?: { family: string; ws: string; status: string | null };
   families: Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>;
@@ -162,6 +165,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
+  which: { mother: string; father: string; unknown: string; hint: string; missing: string; there: string; open: string };
   elsewhere: { has: string; ask: string; askAgain: string; pending: string; asking: string; hint: string };
   sides: { mine: string; partner: string; other: string };
   show: { fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
@@ -817,6 +821,11 @@ export function TreeView({
                         {c.initials}
                       </span>
                     )}
+                    {c.missingParent && !c.elsewhere && (
+                      <span title={labels.which.missing} className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#fbf0d9] text-[1rem] font-bold text-[#8a6413] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)]">
+                        ?<span className="sr-only">{labels.which.missing}</span>
+                      </span>
+                    )}
                     {c.elsewhere && (
                       <span title={`${labels.elsewhere.has}: ${c.elsewhere.family}`} className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#e6efe2] text-[#3d6a52] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)]">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21v-7M12 14l-4-3M12 12l4-3M12 3a6 6 0 0 1 6 6c0 2.5-2 4-4 4.5M12 3a6 6 0 0 0-6 6c0 2.5 2 4 4 4.5" /></svg>
@@ -981,6 +990,27 @@ function CardMenu({
         </div>
       ) : (
       <div className="border-t border-line pt-1.5">
+        {card.missingParent && (
+          <div className="mb-1.5 rounded-xl bg-[#fbf3e2] px-3 py-2.5">
+            <p className="font-semibold">{card.missingParent.kind === "mother" ? labels.which.mother : labels.which.father}</p>
+            <p className="mb-2 text-[0.82rem] leading-snug text-ink-muted">{card.missingParent.openHref ? labels.which.there.replace("{family}", card.missingParent.family ?? "") : labels.which.hint}</p>
+            {card.missingParent.openHref && (
+              <a href={card.missingParent.openHref} onClick={onLeave} className="inline-flex min-h-9 items-center rounded-full bg-ink px-3.5 text-[0.9rem] font-semibold text-surface hover:bg-olive-deep">
+                {labels.which.open.replace("{family}", card.missingParent.family ?? "")}
+              </a>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {card.missingParent.options.map((o) => (
+                <form key={o.id} action={setOtherParent}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="childId" value={card.id} />
+                  <input type="hidden" name="parentId" value={o.id} />
+                  <AskButton label={o.name} busy="…" />
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
         {card.elsewhere && (
           <div className="mb-1.5 rounded-xl bg-[#eef4ea] px-3 py-2.5">
             <p className="text-[0.85rem] text-[#3d6a52]">{labels.elsewhere.has}</p>

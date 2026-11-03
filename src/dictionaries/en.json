@@ -451,6 +451,15 @@
       "mine": "My side",
       "partner": "Partner's side",
       "other": "Others"
+    },
+    "which": {
+      "mother": "Which one is the mother?",
+      "father": "Which one is the father?",
+      "unknown": "Unknown",
+      "hint": "Only one parent is recorded, and they have several partners.",
+      "missing": "One parent not given",
+      "there": "The parents are recorded in “{family}”, so it's marked there.",
+      "open": "Open “{family}”"
     }
   },
   "family": {

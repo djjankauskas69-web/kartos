@@ -451,6 +451,15 @@
       "mine": "Mano pusė",
       "partner": "Sutuoktinio pusė",
       "other": "Kitos"
+    },
+    "which": {
+      "mother": "Kuri yra mama?",
+      "father": "Kuris yra tėtis?",
+      "unknown": "Nežinoma",
+      "hint": "Įrašytas tik vienas iš tėvų, o jis turi kelis sutuoktinius.",
+      "missing": "Nenurodytas vienas iš tėvų",
+      "there": "Tėvai įrašyti „{family}“ medyje, todėl pažymima ten.",
+      "open": "Atidaryti „{family}“"
     }
   },
   "family": {
