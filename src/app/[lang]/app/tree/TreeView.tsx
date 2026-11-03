@@ -551,7 +551,7 @@ export function TreeView({
                           {on && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
                         </span>
                         <span className="flex-1">{labels.show.cats[c]}</span>
-                        <span className="whitespace-nowrap text-[0.85rem] tabular-nums text-ink-muted">{n ? n : labels.show.empty}</span>
+                        <span className="whitespace-nowrap text-[0.85rem] tabular-nums text-ink-muted">{n}</span>
                       </button>
                     );
                   })}
@@ -564,7 +564,8 @@ export function TreeView({
                 {familyToggles.length > 1 && (
                   <div className="mt-3 border-t border-line pt-3">
                     <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.families}</p>
-                    {familyToggles.map((f, i) => {
+                    {familyToggles.slice(1).map((f, j) => {
+                      const i = j + 1;
                       const dot = i === 0 ? "#1c1d1a" : familyColor.get(f.label)?.ring;
                       const body = (
                         <>
