@@ -309,7 +309,9 @@
     "stNoPerson": "Nepriskirtas žmogui medyje",
     "connect": "Prijungti",
     "invite": "Pakviesti",
-    "inviteCopied": "Nuoroda nukopijuota"
+    "inviteCopied": "Nuoroda nukopijuota",
+    "inviteGeneral": "Bendra kvietimo nuoroda",
+    "inviteGeneralLead": "Tiems, kurių dar nėra medyje: prisijungę jie patys pasirinks, kas yra."
   },
   "review": {
     "title": "Laukia patvirtinimo",

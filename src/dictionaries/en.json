@@ -309,7 +309,9 @@
     "stNoPerson": "Not matched to anyone in the tree",
     "connect": "Join to tree",
     "invite": "Invite",
-    "inviteCopied": "Link copied"
+    "inviteCopied": "Link copied",
+    "inviteGeneral": "General invitation link",
+    "inviteGeneralLead": "For people not in the tree yet: after joining they choose who they are."
   },
   "review": {
     "title": "Awaiting approval",

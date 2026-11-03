@@ -110,7 +110,6 @@ export function MembersCenter({
   activeInvites,
   linkReady,
   people,
-  inviteFor,
   persons,
   canAdd,
   initialFilter = "all",
@@ -126,7 +125,6 @@ export function MembersCenter({
   activeInvites: ActiveInvite[];
   linkReady: boolean;
   people: LinkOption[];
-  inviteFor: LinkOption[];
   t: Labels;
   errors: Errors;
 }) {
@@ -182,9 +180,8 @@ export function MembersCenter({
         <input id="people-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} className={`${cls.input} mb-3`} autoComplete="off" />
 
         <div className={cls.card}>
-          {shown.length === 0 ? (
-            <p className="px-5 py-8 text-ink-muted">{t.empty}</p>
-          ) : (
+          {shown.length === 0 && <p className="border-b border-line px-5 py-8 text-ink-muted">{t.empty}</p>}
+          {(
             <ul className="divide-y divide-line">
               {shown.map((e) => {
                 const m = e.member;
@@ -240,13 +237,21 @@ export function MembersCenter({
                   </li>
                 );
               })}
+              {canAdd && (
+                <li>
+                  <Link href="?add=1" scroll={false} className="flex items-center gap-3 px-5 py-3.5 text-[1.08rem] font-semibold hover:bg-paper">
+                    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-ink/25 text-[1.4rem] font-normal text-ink-muted">+</span>
+                    {t.newPerson}
+                  </Link>
+                </li>
+              )}
             </ul>
           )}
         </div>
       </section>
 
       <aside className="space-y-6">
-        {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} people={inviteFor} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
+        {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
 
         <section className={`p-5 ${cls.card}`}>
           <h2 className="mb-3 text-[1.25rem]">{t.levelsTitle}</h2>
@@ -303,7 +308,7 @@ function InviteButton({ locale, personId, t }: { locale: Locale; personId: strin
 
 export type ActiveInvite = { id: string; who: string | null; role: Role; expires: string; uses: number };
 
-function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Locale; activeInvites: ActiveInvite[]; people: LinkOption[]; t: Labels; errors: Errors }) {
+function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; activeInvites: ActiveInvite[]; t: Labels; errors: Errors }) {
   const [listOpen, setListOpen] = useState(false);
   const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
@@ -323,26 +328,10 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
 
   return (
     <section id="invite" className={`scroll-mt-24 p-5 ${cls.card}`}>
-      <h2 className="text-[1.35rem]">{t.inviteCardTitle}</h2>
-      <p className="mb-4 mt-1 text-[0.98rem] text-ink-muted">{t.inviteCardLead}</p>
+      <h2 className="text-[1.2rem]">{t.inviteGeneral}</h2>
+      <p className="mb-3 mt-1 text-[0.92rem] text-ink-muted">{t.inviteGeneralLead}</p>
       <form action={action} className="space-y-3" onSubmit={() => setCopy("idle")}>
         <Hidden values={{ locale }} />
-        {people.length > 0 && (
-          <div>
-            <label htmlFor="invite-person" className={cls.label}>
-              {t.inviteFor}
-            </label>
-            <select id="invite-person" name="personId" defaultValue="" className={cls.input}>
-              <option value="">{t.inviteForAnyone}</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.years ? `, ${p.years}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         {/* Rights default to "member"; changing them is one tap away. */}
         {roleOpen ? (
           <div>

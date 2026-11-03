@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, lifeSpan, myPersonLinks, requireWorkspace, type Role } from "@/lib/data";
-import { IconPlus } from "@/components/icons";
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { portraitUrls } from "../portraits";
@@ -129,12 +127,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
         <div className="min-w-0">
           <h1 className={cls.h1}>{m.title}</h1>
         </div>
-        {canAdd && (
-          <Link href="?add=1" scroll={false} className={`${cls.primary} gap-2`}>
-            <IconPlus size={20} />
-            {t.members.newPerson}
-          </Link>
-        )}
+
       </div>
 
       {panel && <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={mine.links.get(current.id)} />}
@@ -157,14 +150,6 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
           isAdmin
             ? people
                 .filter((p) => p.status !== "rejected")
-                .map((p) => ({ id: p.id, name: fullName(p), years: p.birth_year ? String(p.birth_year) : "" }))
-                .sort((a, b) => a.name.localeCompare(b.name, locale))
-            : []
-        }
-        inviteFor={
-          isAdmin
-            ? people
-                .filter((p) => p.status !== "rejected" && p.is_living && ![...personOf.values()].includes(p.id))
                 .map((p) => ({ id: p.id, name: fullName(p), years: p.birth_year ? String(p.birth_year) : "" }))
                 .sort((a, b) => a.name.localeCompare(b.name, locale))
             : []
