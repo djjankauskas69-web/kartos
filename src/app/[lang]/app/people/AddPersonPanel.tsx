@@ -22,7 +22,43 @@ export type AddOption = {
   hasFather: boolean;
   hasMother: boolean;
   partners: { id: string; name: string }[];
+  parentIds: string[];
+  childIds: string[];
 };
+
+/**
+ * Could this existing person be the anchor's new relative of this kind? Rules out what can't
+ * be true: the wrong sex, someone already the anchor's parent, child, brother/sister or partner
+ * in another way, or an ancestor becoming a child (and the other way round).
+ */
+function canBe(cand: AddOption, anchor: AddOption, kind: Kind, people: AddOption[]): boolean {
+  if (cand.id === anchor.id) return false;
+  const female = kind === "mother" || kind === "daughter" || kind === "wife" || kind === "sister";
+  if (cand.sex === (female ? "male" : "female")) return false;
+  const byId = new Map(people.map((p) => [p.id, p]));
+  const walk = (start: string, next: (p: AddOption) => string[]) => {
+    const out = new Set<string>();
+    for (const stack = [start]; stack.length; ) {
+      const p = byId.get(stack.pop()!);
+      for (const n of p ? next(p) : []) {
+        if (out.has(n)) continue;
+        out.add(n);
+        stack.push(n);
+      }
+    }
+    return out;
+  };
+  const ancestors = walk(anchor.id, (p) => p.parentIds);
+  const descendants = walk(anchor.id, (p) => p.childIds);
+  const siblings = new Set(anchor.parentIds.flatMap((pid) => byId.get(pid)?.childIds ?? []).filter((id) => id !== anchor.id));
+  const partner = anchor.partners.some((x) => x.id === cand.id);
+  const parent = anchor.parentIds.includes(cand.id);
+  const child = anchor.childIds.includes(cand.id);
+  if (kind === "husband" || kind === "wife") return !partner && !ancestors.has(cand.id) && !descendants.has(cand.id) && !siblings.has(cand.id);
+  if (kind === "father" || kind === "mother") return !parent && !partner && !descendants.has(cand.id) && !siblings.has(cand.id);
+  if (kind === "son" || kind === "daughter") return !child && !partner && !ancestors.has(cand.id) && !siblings.has(cand.id);
+  return !siblings.has(cand.id) && !partner && !ancestors.has(cand.id) && !descendants.has(cand.id);
+}
 
 /** What the new person is to the chosen one. The sex comes with the choice. */
 type Kind = "father" | "mother" | "son" | "daughter" | "husband" | "wife" | "brother" | "sister";
@@ -290,7 +326,9 @@ function AddPersonPanel({
   };
   const effectiveKind = kind && !kindNote(kind) ? kind : null;
   const shownSurname = surnameTouched ? surname : effectiveKind && anchorP ? surnameFor(anchorP.surname, effectiveKind) : surname;
-  const suggestions = existing ? [] : lookAlikes(people, given, shownSurname).filter((p) => !dismissed.includes(p.id) && p.id !== anchor);
+  // Only people who could really be this relative (no father as his own son's husband…).
+  const fits = (p: AddOption) => p.id !== anchor && (!anchorP || !effectiveKind || canBe(p, anchorP, effectiveKind, people));
+  const suggestions = existing ? [] : lookAlikes(people, given, shownSurname).filter((p) => !dismissed.includes(p.id) && fits(p));
 
   const [state, dispatch, pending] = useActionState(async (prev: AddState, form: FormData): Promise<AddState> => {
     const file = form.get("photoFile");
@@ -441,7 +479,7 @@ function AddPersonPanel({
                 {/* Someone already in the archive (you, or a person not joined to anyone yet). */}
                 {!first && (
                   <div className="flex flex-wrap gap-2">
-                    {meId && meId !== anchor && people.some((p) => p.id === meId) && (
+                    {meId && people.some((p) => p.id === meId && fits(p)) && (
                       <button type="button" onClick={() => setExisting(meId)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-olive/40 bg-[#eef1e4] px-4 font-semibold text-olive-deep hover:border-olive">
                         <Portrait given={people.find((p) => p.id === meId)!.given} surname={people.find((p) => p.id === meId)!.surname} src={people.find((p) => p.id === meId)!.portrait} size="sm" />
                         {t.thisIsMe}
@@ -455,7 +493,7 @@ function AddPersonPanel({
                 {pickExisting && (
                   <PersonSearch
                     id="add-existing"
-                    options={people.filter((p) => p.id !== anchor)}
+                    options={people.filter(fits)}
                     value={null}
                     onChange={(pid) => {
                       if (pid) setExisting(pid);

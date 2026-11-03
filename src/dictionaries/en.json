@@ -902,7 +902,8 @@
     "errorNoParents": "This person has no parents yet – add them first.",
     "looseChip": "Not connected: {n}",
     "looseHint": "They're not in the tree yet – open them and connect.",
-    "thisIsMe": "This is me"
+    "thisIsMe": "This is me",
+    "errorImpossible": "This person is already a close relative – they can't be linked like this."
   },
   "landing": {
     "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",

@@ -55,6 +55,19 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
     if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2) return { error: "twoParents" };
     if (link!.rel === "sibling" && parents.length === 0) return { error: "noParents" };
+    // An existing person can't become a partner, parent or child of their own close family.
+    const existingId = mode === "existing" ? uuid(form, "existingId") : null;
+    if (existingId) {
+      const isParent = parents.some((r) => r.person_a === existingId);
+      const isChild = rels.some((r) => r.type === "parent_child" && r.person_a === anchor && r.person_b === existingId);
+      const isPartner = rels.some((r) => r.type === "partner" && ((r.person_a === anchor && r.person_b === existingId) || (r.person_b === anchor && r.person_a === existingId)));
+      const bad =
+        (link!.rel === "partner" && (isParent || isChild)) ||
+        ((link!.rel === "father" || link!.rel === "mother") && (isChild || isPartner)) ||
+        (link!.rel === "child" && (isParent || isPartner)) ||
+        (link!.rel === "sibling" && (isParent || isChild || isPartner));
+      if (bad) return { error: "impossible" };
+    }
   }
 
   let personId: string;

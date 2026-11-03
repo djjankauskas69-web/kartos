@@ -902,7 +902,8 @@
     "errorNoParents": "Šiam žmogui dar nepridėti tėvai – pirma pridėkite juos.",
     "looseChip": "Nesusieti žmonės: {n}",
     "looseHint": "Jie dar neprijungti prie medžio – atidarykite ir susiekite.",
-    "thisIsMe": "Tai aš"
+    "thisIsMe": "Tai aš",
+    "errorImpossible": "Šis žmogus jau yra artimas giminaitis – taip susieti negalima."
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",

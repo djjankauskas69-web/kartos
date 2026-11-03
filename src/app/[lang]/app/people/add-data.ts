@@ -29,6 +29,8 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
         hasFather: parents.some((x) => x.sex === "male"),
         hasMother: parents.some((x) => x.sex === "female"),
         partners: partners.map((x) => ({ id: x.id, name: fullName(x) })),
+        parentIds: parents.map((x) => x.id),
+        childIds: rels.filter((r) => r.type === "parent_child" && r.person_a === p.id).map((r) => r.person_b),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, locale));
@@ -45,6 +47,7 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
     save: t.app.errorSave,
     needAnchor: t.add.errorNeedAnchor,
     noParents: t.add.errorNoParents,
+    impossible: t.add.errorImpossible,
   };
   const labels = { ...t.add, female: t.add.female, male: t.add.male, unknown: t.add.unknown } as Record<string, string>;
   return { people: options, errors, t: labels };
