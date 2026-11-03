@@ -426,23 +426,9 @@ export function TreeView({
     }
   }
 
-  // Bring the lit-up people into view.
-  const bringIntoView = (focus: ReturnType<typeof focusFor>) => {
-    if (!focus) return;
-    const lit = cards.filter((c) => focus.hit.has(c.id) || focus.via.has(c.id));
-    if (!lit.length) return;
-    const { w, h } = size();
-    const x0 = Math.min(...lit.map((c) => c.x));
-    const x1 = Math.max(...lit.map((c) => c.x)) + cardW;
-    const y0 = Math.min(...lit.map((c) => c.y));
-    const y1 = Math.max(...lit.map((c) => c.y)) + cardH;
-    const k = clampK(Math.min(1, (w - 120) / (x1 - x0), (h - TOP - BOTTOM) / (y1 - y0)));
-    go({ k, x: w / 2 - ((x0 + x1) / 2) * k, y: TOP + (h - TOP - BOTTOM) / 2 - ((y0 + y1) / 2) * k }, true);
-  };
   const togglePick = (c: ShowCat) => {
     const next = picked.includes(c) ? picked.filter((x) => x !== c) : [...picked, c];
     setPicked(next);
-    bringIntoView(focusFor(next));
   };
 
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
