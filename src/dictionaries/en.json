@@ -297,7 +297,8 @@
     "inviteAnyone": "Anyone with the link",
     "inviteUntil": "valid until {date}",
     "inviteUsed": "used {n}×",
-    "inviteRevoke": "Revoke"
+    "inviteRevoke": "Revoke",
+    "showEmail": "Show email"
   },
   "review": {
     "title": "Awaiting approval",

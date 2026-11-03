@@ -176,7 +176,7 @@ export function MembersCenter({
                         {m.name}
                         {m.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
                       </p>
-                      {m.email && <p className="truncate text-[0.95rem] text-ink-muted">{m.email}</p>}
+                      {m.email && (m.isSelf ? <p className="truncate text-[0.95rem] text-ink-muted">{m.email}</p> : isAdmin && <FoggyEmail email={m.email} label={t.showEmail} />)}
                       {m.personName && (
                         <p className="truncate text-[0.92rem] text-ink-muted">
                           {t.me.inTree} <span className="text-ink">{m.personName}</span>
@@ -372,6 +372,22 @@ function InviteCard({ locale, activeInvites, people, t, errors }: { locale: Loca
         </div>
       )}
     </section>
+  );
+}
+
+/** Someone else's email, blurred until pointed at or tapped. */
+function FoggyEmail({ email, label }: { email: string; label: string }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => setShown((v) => !v)}
+      aria-label={shown ? email : label}
+      title={shown ? undefined : label}
+      className={`group/mail block max-w-full truncate text-left text-[0.95rem] text-ink-muted transition-[filter] duration-200 ${shown ? "" : "select-none blur-[5px] hover:blur-0 focus-visible:blur-0"}`}
+    >
+      {email}
+    </button>
   );
 }
 

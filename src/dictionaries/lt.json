@@ -297,7 +297,8 @@
     "inviteAnyone": "Bet kam su nuoroda",
     "inviteUntil": "galioja iki {date}",
     "inviteUsed": "panaudota {n} k.",
-    "inviteRevoke": "Atšaukti"
+    "inviteRevoke": "Atšaukti",
+    "showEmail": "Rodyti el. paštą"
   },
   "review": {
     "title": "Laukia patvirtinimo",

@@ -83,7 +83,8 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
     .map((m) => {
       const id = m.user_id as string;
       const p = profile.get(id);
-      const email = (p?.email as string | null) ?? (id === user.id ? (user.email ?? "") : "");
+      // Others' emails only reach administrators.
+      const email = id === user.id ? (user.email ?? (p?.email as string | null) ?? "") : isAdmin ? ((p?.email as string | null) ?? "") : "";
       const displayName = (p?.display_name as string | null) ?? "";
       return {
         id,
