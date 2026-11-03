@@ -54,6 +54,29 @@ function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { f
   return <Link {...props} />;
 }
 
+/** Someone, all their ancestors and descendants, and their partners. */
+function directLine(start: string, rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }>) {
+  const ids = new Set<string>([start]);
+  const walk = (up: boolean) => {
+    const stack = [start];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const r of rels) {
+        if (r.type !== "parent_child") continue;
+        const n = up ? (r.person_b === id ? r.person_a : null) : r.person_a === id ? r.person_b : null;
+        if (n && !ids.has(n)) {
+          ids.add(n);
+          stack.push(n);
+        }
+      }
+    }
+  };
+  walk(true);
+  walk(false);
+  for (const r of rels) if (r.type === "partner" && (r.person_a === start || r.person_b === start)) ids.add(r.person_a === start ? r.person_b : r.person_a);
+  return ids;
+}
+
 /** Open menu: a card's menu ("card") or its "add a relative" menu ("add", maybe one kind only). */
 type AddGroup = "parent" | "partner" | "child" | "sibling";
 type MenuState = { key: string; mode: "card" | "add"; group?: AddGroup } | null;
@@ -448,12 +471,22 @@ export function TreeView({
 
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
   const lit = hover ?? menu?.key ?? opening ?? null;
+  // Pointing at someone lights up their whole direct line: parents, grandparents and on up,
+  // children, grandchildren and on down, and their partner.
   const near = useMemo(() => {
     const out = new Set<string>();
     if (!lit) return out;
-    for (const l of [...paths, ...partnerPaths, ...laterPartnerPaths]) if (l.keys.includes(lit)) l.keys.forEach((k) => out.add(k));
+    const keyId = new Map(cards.map((c) => [c.key, c.id]));
+    const start = keyId.get(lit);
+    if (!show || !start) {
+      for (const l of [...paths, ...partnerPaths, ...laterPartnerPaths]) if (l.keys.includes(lit)) l.keys.forEach((k) => out.add(k));
+      return out;
+    }
+    const ids = directLine(start, show.rels);
+    for (const c of cards) if (ids.has(c.id)) out.add(c.key);
     return out;
-  }, [lit, paths, partnerPaths, laterPartnerPaths]);
+  }, [lit, cards, show, paths, partnerPaths, laterPartnerPaths]);
+  const lineOn = (keys: string[]) => keys.filter((k) => near.has(k)).length >= 2;
   const glide = smooth ? "transition-transform duration-300 ease-out" : "";
   const pill = "rounded-full border border-line/80 bg-surface/95 shadow-[0_6px_20px_-12px_rgb(28_29_26/0.35)] backdrop-blur";
   const tool =
@@ -705,20 +738,20 @@ export function TreeView({
             {/* parents → children: clear vertical joins; the chosen person's own links stand out */}
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
-                const on = lit && l.keys.includes(lit);
+                const on = lit && lineOn(l.keys);
                 return <path key={i} d={l.d} stroke={on ? "#4f4b41" : "#8f8a7c"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
-                const on = lit && l.keys.includes(lit);
+                const on = lit && lineOn(l.keys);
                 return <path key={i} d={l.d} stroke={on ? "#3f3b33" : "#6f6b60"} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
               {laterPartnerPaths.map((l, i) => {
-                const on = lit && l.keys.includes(lit);
+                const on = lit && lineOn(l.keys);
                 return <path key={i} d={l.d} stroke={on ? "#6f6b60" : "#9d998d"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
@@ -731,7 +764,7 @@ export function TreeView({
                 key={`${b.key}-${i}`}
                 aria-hidden="true"
                 style={{ left: j.x, top: j.y }}
-                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit ? (!j.keys?.includes(lit) ? "opacity-25" : "") : focus && !focus.onLine(j.keys ?? []) ? "opacity-[.18]" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
+                className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit ? (!lineOn(j.keys ?? []) ? "opacity-25" : "") : focus && !focus.onLine(j.keys ?? []) ? "opacity-[.18]" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
               >
                 ∞
               </span>
