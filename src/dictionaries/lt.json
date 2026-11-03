@@ -413,7 +413,7 @@
       "lead": "Pažymėkite, ką norite matyti. Visas medis lieka, kiti tik priblėsta.",
       "clear": "Išvalyti",
       "families": "Šeimos",
-      "noMe": "Pažymėkite save „Tai aš“, kad galėtumėte paryškinti giminaičius.",
+      "noMe": "Pasirinkite, nuo kurio žmogaus skaičiuoti.",
       "close": "Uždaryti",
       "more": "ir dar {n}",
       "cats": {
@@ -428,7 +428,10 @@
         "nephews": "Sūnėnai ir dukterėčios",
         "inLaws": "Sutuoktinio šeima",
         "grandchildren": "Anūkai ir toliau"
-      }
+      },
+      "from": "Nuo:",
+      "you": "Tavęs",
+      "empty": "nėra medyje"
     }
   },
   "family": {

@@ -413,7 +413,7 @@
       "lead": "Pick who you want to see. The whole tree stays; the rest just fades.",
       "clear": "Clear",
       "families": "Families",
-      "noMe": "Mark yourself as “This is me” to highlight relatives.",
+      "noMe": "Choose whom to count from.",
       "close": "Close",
       "more": "+{n} more",
       "cats": {
@@ -428,7 +428,10 @@
         "nephews": "Nephews and nieces",
         "inLaws": "Partner's family",
         "grandchildren": "Grandchildren and on"
-      }
+      },
+      "from": "From:",
+      "you": "You",
+      "empty": "none yet"
     }
   },
   "family": {

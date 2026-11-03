@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
-import { SHOW_CATS, type ShowCat } from "./show-filter";
+import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
 
 /** Soft canvas colours the viewer can pick; the choice is remembered in this browser. */
 const BACKGROUNDS = [
@@ -134,7 +134,7 @@ type Labels = {
   me: string;
   genRel: Record<string, string>;
   addGroup: Record<AddGroup, string>;
-  show: { button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; cats: Record<ShowCat, string> };
+  show: { button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
 };
 
 const MIN = 0.1;
@@ -184,7 +184,7 @@ export function TreeView({
   /** Which families are shown together: this one, and the ones joined to it. */
   familyToggles?: Array<{ label: string; on: boolean; href?: string }>;
   /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
-  show?: { kin: Partial<Record<ShowCat, { hit: string[]; via: string[] }>>; hasMe: boolean };
+  show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }> };
   labels: Labels;
 }) {
   const router = useRouter();
@@ -197,20 +197,26 @@ export function TreeView({
   const activeGen = null as number | null;
   const [showOpen, setShowOpen] = useState(false);
   const [picked, setPicked] = useState<ShowCat[]>([]);
+  // Counted from you, or from someone else picked in the panel.
+  const meCard = cards.find((c) => c.me);
+  const [fromId, setFromId] = useState<string | null>(null);
+  const from = fromId ?? meCard?.id ?? null;
+  const kin = useMemo(() => (from && show ? kinGroups(from, show.rels) : ({} as ReturnType<typeof kinGroups>)), [from, show]);
+  const people = useMemo(() => [...new Map(cards.map((c) => [c.id, c.name])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [cards]);
   // Who is lit up: the chosen kinds of relatives (and you); those joining them to you stay half lit.
   const focusFor = useCallback((picked: ShowCat[]) => {
-    if (!picked.length || !show) return null;
-    const hit = new Set<string>(cards.filter((c) => c.me).map((c) => c.id));
+    if (!picked.length || !from) return null;
+    const hit = new Set<string>([from]);
     const via = new Set<string>();
     for (const cat of picked) {
-      show.kin[cat]?.hit.forEach((id) => hit.add(id));
-      show.kin[cat]?.via.forEach((id) => via.add(id));
+      kin[cat]?.hit.forEach((id) => hit.add(id));
+      kin[cat]?.via.forEach((id) => via.add(id));
     }
     hit.forEach((id) => via.delete(id));
     const keyId = new Map(cards.map((c) => [c.key, c.id]));
     const onLine = (keys: string[]) => keys.filter((k) => hit.has(keyId.get(k)!) || via.has(keyId.get(k)!)).length >= 2;
     return { hit, via, onLine };
-  }, [show, cards]);
+  }, [from, kin, cards]);
   const focus = useMemo(() => focusFor(picked), [focusFor, picked]);
   const showPanel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -514,41 +520,60 @@ export function TreeView({
               )}
             </button>
             {showOpen && (
-              <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(36rem,calc(100dvh-14rem))] sm:w-[19.5rem]">
+              <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(40rem,calc(100dvh-12rem))] sm:w-[23rem]">
                 <div className="mb-2 flex items-center justify-between px-1">
                   <p className="font-semibold">{labels.show.title}</p>
                   <button type="button" onClick={() => setShowOpen(false)} aria-label={labels.show.close} className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
-                {!show?.hasMe ? (
-                  <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>
-                ) : (
-                  <>
-                    <p className="mb-3 px-1 text-[0.88rem] text-ink-muted">{labels.show.lead}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {SHOW_CATS.filter((c) => show.kin[c]).map((c) => {
-                        const on = picked.includes(c);
-                        return (
-                          <button
-                            key={c}
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => togglePick(c)}
-                            className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.92rem] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-line bg-surface hover:border-ink/40"}`}
-                          >
-                            {on && <span aria-hidden="true">✓</span>}
-                            {labels.show.cats[c]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {picked.length > 0 && (
-                      <button type="button" onClick={() => setPicked([])} className="mt-3 px-1 text-[0.9rem] font-semibold text-ink-muted underline-offset-2 hover:text-ink hover:underline">
-                        {labels.show.clear}
+                <p className="mb-3 px-1 text-[0.88rem] text-ink-muted">{labels.show.lead}</p>
+                <label className="mb-3 flex items-center gap-2 px-1 text-[0.92rem]">
+                  <span className="shrink-0 text-ink-muted">{labels.show.from}</span>
+                  <select
+                    value={from ?? ""}
+                    onChange={(e) => {
+                      setFromId(e.target.value || null);
+                      setPicked([]);
+                    }}
+                    className="min-h-9 min-w-0 flex-1 rounded-full border border-line bg-surface px-3 font-semibold"
+                  >
+                    {!from && <option value="">—</option>}
+                    {meCard && <option value={meCard.id}>{labels.show.you} ({meCard.name})</option>}
+                    {people.filter(([id]) => id !== meCard?.id).map(([id, name]) => (
+                      <option key={id} value={id}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!from && <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>}
+                <div className="space-y-0.5">
+                  {SHOW_CATS.map((c) => {
+                    const on = picked.includes(c);
+                    const n = kin[c]?.hit.length ?? 0;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-pressed={on}
+                        disabled={!n}
+                        onClick={() => togglePick(c)}
+                        className={`flex min-h-10 w-full items-center gap-3 rounded-xl px-2.5 text-left text-[0.95rem] disabled:cursor-default ${on ? "bg-sage-wash font-semibold" : n ? "hover:bg-paper" : "text-ink-muted/60"}`}
+                      >
+                        <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${on ? "border-ink" : n ? "border-ink/30" : "border-ink/15"}`}>
+                          {on && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
+                        </span>
+                        <span className="flex-1">{labels.show.cats[c]}</span>
+                        <span className="whitespace-nowrap text-[0.85rem] tabular-nums text-ink-muted">{n ? n : labels.show.empty}</span>
                       </button>
-                    )}
-                  </>
+                    );
+                  })}
+                </div>
+                {picked.length > 0 && (
+                  <button type="button" onClick={() => setPicked([])} className="mt-2 px-2.5 text-[0.9rem] font-semibold text-ink-muted underline-offset-2 hover:text-ink hover:underline">
+                    {labels.show.clear}
+                  </button>
                 )}
                 {familyToggles.length > 1 && (
                   <div className="mt-3 border-t border-line pt-3">

@@ -20,7 +20,6 @@ import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { PageLoading } from "@/components/PageLoading";
-import { kinGroups } from "./show-filter";
 
 type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
 
@@ -313,8 +312,6 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     }
   }
   const treeRelations = foreignPeople.length ? kinship(treePeople, [...rels, ...foreignRels], me, locale) : relations;
-  // Kinds of relatives the viewer can light up, counted from them.
-  const kin = me ? kinGroups(me, [...mainRels, ...sides.flat()]) : {};
   const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
 
@@ -348,7 +345,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         cardH={tree.cardH}
         generations={tree.generationChips}
         branch={branch}
-        show={{ kin, hasMe: !!me }}
+        show={{ rels: [...mainRels, ...sides.flat()].map((r) => ({ person_a: r.person_a, person_b: r.person_b, type: r.type })) }}
         familyToggles={[{ label: current.name, on: true }, ...openLinks.filter((l, i, all) => all.findIndex((x) => x.other.id === l.other.id) === i).map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref }))]}
         labels={{
           zoomIn: t.tree.zoomIn,
