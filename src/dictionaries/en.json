@@ -916,7 +916,7 @@
     "statusDivorced": "Divorced",
     "unknownParentsNote": "No parents yet – they'll be marked unknown; you can fill them in later.",
     "cropHint": "Drag the photo so the face is in the circle, and zoom.",
-    "saveAgain": "Save and add another",
+    "saveAgain": "Save + another",
     "saveAgainHint": "Save and right away add another to: {name}"
   },
   "landing": {

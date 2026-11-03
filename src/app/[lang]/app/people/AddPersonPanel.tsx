@@ -778,16 +778,16 @@ function AddPersonPanel({
             </p>
           )}
           {needsApproval && !existing && <p className="mb-3 text-[0.95rem] text-ink-muted">{t.approval}</p>}
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => onClose()} className={`${cls.secondary} min-h-12`}>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => onClose()} className="min-h-12 rounded-full px-3 font-semibold text-ink-muted hover:text-ink">
               {t.cancel}
             </button>
             {anchorP && !first && (
-              <button type="submit" name="next" value="again" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.secondary} min-h-12`} title={t.saveAgainHint.replace("{name}", anchorP.name)}>
+              <button type="submit" name="next" value="again" disabled={pending || !ready || (!existing && !given.trim())} className="ml-auto min-h-12 rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40 disabled:opacity-50" title={t.saveAgainHint.replace("{name}", anchorP.name)}>
                 {t.saveAgain}
               </button>
             )}
-            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} ml-auto min-h-12 flex-1 sm:flex-none`}>
+            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} min-h-12 ${anchorP && !first ? "" : "ml-auto"}`}>
               {pending ? t.saving : existing ? t.submitLink : t.submit}
             </button>
           </div>

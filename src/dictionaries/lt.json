@@ -916,7 +916,7 @@
     "statusDivorced": "Išsiskyrę",
     "unknownParentsNote": "Tėvų dar nėra – jie bus pažymėti kaip nežinomi, vėliau galėsite juos įrašyti.",
     "cropHint": "Pastumkite nuotrauką, kad veidas būtų apskritime, ir priartinkite.",
-    "saveAgain": "Išsaugoti ir pridėti dar",
+    "saveAgain": "Išsaugoti ir dar",
     "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}"
   },
   "landing": {
