@@ -821,11 +821,6 @@ export function TreeView({
                         {c.initials}
                       </span>
                     )}
-                    {c.missingParent && !c.elsewhere && (
-                      <span title={labels.which.missing} className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#fbf0d9] text-[1rem] font-bold text-[#8a6413] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)]">
-                        ?<span className="sr-only">{labels.which.missing}</span>
-                      </span>
-                    )}
                     {c.elsewhere && (
                       <span title={`${labels.elsewhere.has}: ${c.elsewhere.family}`} className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#e6efe2] text-[#3d6a52] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)]">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21v-7M12 14l-4-3M12 12l4-3M12 3a6 6 0 0 1 6 6c0 2.5-2 4-4 4.5M12 3a6 6 0 0 0-6 6c0 2.5 2 4 4 4.5" /></svg>
@@ -863,6 +858,19 @@ export function TreeView({
                     className={`${quick} ${menu?.key === c.key && menu.mode === "card" ? "!opacity-100 bg-ink text-white" : ""}`}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18.5" cy="12" r="2" /></svg>
+                  </button>
+                )}
+                {c.missingParent && !c.elsewhere && (
+                  <button
+                    type="button"
+                    data-card
+                    onClick={() => setMenu(menu?.key === c.key && menu.mode === "card" ? null : { key: c.key, mode: "card" })}
+                    aria-label={`${labels.which.missing}: ${c.name}`}
+                    title={c.missingParent.kind === "mother" ? labels.which.mother : labels.which.father}
+                    style={{ left: (cardW - PHOTO) / 2 - 4, top: -4 }}
+                    className="absolute flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#fbf0d9] text-[1rem] font-bold text-[#8a6413] shadow-[0_3px_8px_-4px_rgb(28_29_26/0.5)] hover:bg-[#f5e1b5]"
+                  >
+                    ?
                   </button>
                 )}
                 {c.moreAbove && (
