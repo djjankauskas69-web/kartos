@@ -869,7 +869,7 @@
     "unlinkWarning": "Jūsų duomenys medyje liks, tik nebegalėsite jų redaguoti patys.",
     "unlinkConfirm": "Taip, atsieti",
     "account": "Paskyra",
-    "displayName": "Rodomas vardas",
+    "displayName": "Kaip jus vadinti?",
     "email": "El. paštas",
     "errorTaken": "Šis žmogus jau susietas su kitu nariu. Paprašykite administratoriaus pagalbos.",
     "errorSetup": "Šiai funkcijai reikia duomenų bazės atnaujinimo 0005.",
@@ -898,7 +898,7 @@
     "myCardLead": "Peržiūrėkite, kaip jūsų profilis matomas kitiems.",
     "viewMyCard": "Peržiūrėti mano kortelę",
     "yourRole": "Jūsų rolė:",
-    "displayNameHint": "Matomas prie jūsų prisiminimų ir narių sąraše. Vardas medyje keičiamas kairėje."
+    "displayNameHint": "Rodomas prie jūsų prisiminimų ir nuotraukų, kol nesate pažymėtas medyje. Pažymėjus, naudojamas vardas iš medžio."
   },
   "add": {
     "title": "Pridėti žmogų",

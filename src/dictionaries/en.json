@@ -869,7 +869,7 @@
     "unlinkWarning": "Your details stay in the tree; you just won't be able to edit them yourself.",
     "unlinkConfirm": "Yes, unlink",
     "account": "Account",
-    "displayName": "Display name",
+    "displayName": "What should we call you?",
     "email": "Email",
     "errorTaken": "This person is already linked to another member. Ask the administrator for help.",
     "errorSetup": "This needs database update 0005.",
@@ -898,7 +898,7 @@
     "myCardLead": "See how your profile looks to others.",
     "viewMyCard": "View my card",
     "yourRole": "Your role:",
-    "displayNameHint": "Shown next to your memories and in the members list. Your name in the tree is changed on the left."
+    "displayNameHint": "Shown with your memories and photos until you're marked in the tree; after that your name in the tree is used."
   },
   "add": {
     "title": "Add a person",

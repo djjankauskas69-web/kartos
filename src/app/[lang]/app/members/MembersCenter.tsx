@@ -480,7 +480,7 @@ function MemberMenu({
                   </button>
                 </li>
               )}
-              {self && (
+              {self && !member.personName && (
                 <li>
                   <button type="button" onClick={() => setView("rename")}>
                     {t.renameSelf}

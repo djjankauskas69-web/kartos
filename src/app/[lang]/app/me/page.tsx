@@ -133,7 +133,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
         <aside className="space-y-5">
           <section className={card}>
             {head(<svg {...I}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>, m.account, m.accountLead)}
-            <AccountRows locale={locale} name={(profile?.display_name as string | null) ?? ""} email={user.email ?? ""} t={m} errors={errors} />
+            <AccountRows locale={locale} linked={!!me} name={(profile?.display_name as string | null) ?? ""} email={user.email ?? ""} t={m} errors={errors} />
             {/* Language of the app */}
             <div className="mt-3 flex items-center gap-3.5 border-t border-line pt-3">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">

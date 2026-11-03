@@ -88,7 +88,8 @@ async function Members({ t, locale }: { t: Dictionary; locale: Locale }) {
       const displayName = (p?.display_name as string | null) ?? "";
       return {
         id,
-        name: displayName || email.split("@")[0] || "—",
+        // Your name in the tree when you're in it; otherwise the name you gave.
+        name: (personOf.has(id) && personById.get(personOf.get(id)!) ? fullName(personById.get(personOf.get(id)!)!) : "") || displayName || email.split("@")[0] || "—",
         displayName,
         email,
         role: m.role as Role,

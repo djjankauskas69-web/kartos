@@ -65,10 +65,14 @@ end $$;
 create or replace function tree_access_list(ws uuid)
 returns table (id uuid, requester_name text, requested_by_name text, status text, created_at timestamptz)
 language sql stable security definer set search_path = public as $$
-  select ta.id, w.name, coalesce(pr.display_name, pr.email, ''), ta.status, ta.created_at
+  select ta.id, w.name,
+    coalesce(nullif(concat_ws(' ', tp.given_names, tp.surname), ''), pr.display_name, split_part(pr.email, '@', 1), ''),
+    ta.status, ta.created_at
   from tree_access ta
   join workspaces w on w.id = ta.requester_ws
   left join profiles pr on pr.id = ta.requested_by
+  left join workspace_members wm on wm.workspace_id = ta.requester_ws and wm.user_id = ta.requested_by
+  left join persons tp on tp.id = wm.person_id and tp.deleted_at is null
   where ta.owner_ws = ws and has_role(ws, '{owner}') and ta.status in ('pending', 'approved')
   order by ta.status desc, ta.created_at desc;
 $$;

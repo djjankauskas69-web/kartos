@@ -193,8 +193,22 @@ export async function profileNames(locale: Locale, ids: string[]) {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return new Map<string, string>();
   const { supabase } = await requireUser(locale);
-  const { data } = await supabase.from("profiles").select("id, display_name, email").in("id", unique);
-  return new Map((data ?? []).map((p) => [p.id as string, (p.display_name as string) || (p.email as string) || ""]));
+  const [{ data }, { data: links }] = await Promise.all([
+    supabase.from("profiles").select("id, display_name, email").in("id", unique),
+    // Someone who is "this is me" in a tree you can see goes by their name there.
+    supabase.from("workspace_members").select("user_id, person_id").in("user_id", unique).not("person_id", "is", null),
+  ]);
+  const personIds = [...new Set((links ?? []).map((l) => l.person_id as string))];
+  const { data: persons } = personIds.length ? await supabase.from("persons").select("id, given_names, surname").in("id", personIds).is("deleted_at", null) : { data: [] };
+  const personName = new Map((persons ?? []).map((p) => [p.id as string, [p.given_names, p.surname].filter(Boolean).join(" ")]));
+  const treeName = new Map<string, string>();
+  for (const l of links ?? []) {
+    const n = personName.get(l.person_id as string);
+    if (n && !treeName.has(l.user_id as string)) treeName.set(l.user_id as string, n);
+  }
+  return new Map(
+    (data ?? []).map((p) => [p.id as string, treeName.get(p.id as string) || (p.display_name as string) || ((p.email as string) ?? "").split("@")[0] || ""]),
+  );
 }
 
 /** Longest parent-to-child line in the archive, counted in people (= number of generations). */

@@ -282,7 +282,7 @@ function Row({ icon, label, value, hint, onEdit, editLabel, children }: { icon: 
   );
 }
 
-export function AccountRows({ locale, name, email, t, errors }: { locale: Locale; name: string; email: string; t: T; errors: Errors }) {
+export function AccountRows({ locale, name, email, linked, t, errors }: { locale: Locale; name: string; email: string; linked: boolean; t: T; errors: Errors }) {
   const [edit, setEdit] = useState<"name" | "password" | null>(null);
   const [nameState, nameAction, namePending] = useActionState<FormState, FormData>(async (prev, form) => {
     const r = await renameSelf(prev, form);
@@ -298,6 +298,8 @@ export function AccountRows({ locale, name, email, t, errors }: { locale: Locale
   const small = "min-h-10 rounded-xl px-4 font-semibold";
   return (
     <div className="divide-y divide-line">
+      {/* Only until you're in the tree: then your name there is used everywhere. */}
+      {!linked && (
       <Row icon={<svg {...I}><circle cx="12" cy="12" r="4" /><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1" /></svg>} label={t.displayName} value={name || "—"} hint={t.displayNameHint} onEdit={() => setEdit(edit === "name" ? null : "name")} editLabel={t.edit}>
         {edit === "name" && (
           <form action={nameAction} className="mt-3 flex flex-wrap gap-2">
@@ -308,6 +310,7 @@ export function AccountRows({ locale, name, email, t, errors }: { locale: Locale
           </form>
         )}
       </Row>
+      )}
       <Row icon={<svg {...I}><rect x="3.5" y="5.5" width="17" height="13" rx="2" /><path d="m4 7 8 6 8-6" /></svg>} label={t.email} value={<span className="break-all">{email}</span>} />
       <Row icon={<svg {...I}><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /><circle cx="12" cy="15.5" r="1.2" /></svg>} label={t.password} value={pwState.ok ? t.passwordChanged : "••••••••"} onEdit={() => setEdit(edit === "password" ? null : "password")} editLabel={t.changePassword}>
         {edit === "password" && (
