@@ -119,14 +119,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <div>
-      <header className="relative mb-6 flex items-center gap-5 overflow-hidden">
-        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#eef1e4] text-olive-deep">
-          <svg {...I} width={34} height={34}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
-        </span>
-        <div className="min-w-0">
-          <h1 className={cls.h1}>{m.title}</h1>
-        </div>
-      </header>
+      <h1 className="sr-only">{m.title}</h1>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem] [&>*]:min-w-0">
         <div>{main}</div>
         <aside className="space-y-5">
