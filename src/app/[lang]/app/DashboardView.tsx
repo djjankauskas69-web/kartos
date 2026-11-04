@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, lifeSpan, type Person, type Role } from "@/lib/data";
-import { MapView, type MapMarker } from "@/components/map/Map";
+import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
@@ -35,7 +35,7 @@ export type DashboardData = {
   elders: Person[];
   shownKids: Person[];
   moreKids: number;
-  graves: MapMarker[];
+  graves?: MapMarker[];
   welcomeHref?: string;
   welcomeJoin?: string;
   accessRequests?: { n: number; href: string };
@@ -52,7 +52,7 @@ const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
 export function DashboardView(props: DashboardData) {
-  const { t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, graves, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined } = props;
+  const { t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined } = props;
   const base = `/${locale}/app`;
   const d = t.dash;
   const born = t.app.born.toLowerCase();
@@ -175,22 +175,27 @@ export function DashboardView(props: DashboardData) {
           </Link>
         </div>
 
-        <Link href={`${base}/map`} className={`group flex flex-col overflow-hidden ${card}`}>
-          <div className="p-6 pb-4 sm:p-7 sm:pb-4">
-            <CardHead icon={<IconPin size={26} />} title={t.appNav.map} lead={graves.length ? d.gravesCount.replace("{n}", String(counts.graves)) : d.gravesLead} arrow={d.open} />
-          </div>
-          {/* Their marked graves on a real map (nothing to drag here: the card opens the full map). */}
-          <div className="pointer-events-none relative min-h-[15rem] flex-1 border-t border-line/70">
-            {graves.length ? (
-              <MapView markers={graves} className="absolute inset-0 h-full w-full" />
+        {/* Bring the others in: the family photo, and how many relatives have not joined yet */}
+        <div className="relative flex min-h-[20rem] overflow-hidden rounded-[20px] bg-olive-deep text-surface">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+          <img src="/landing/story-family.jpg" alt="" aria-hidden="true" className="absolute inset-y-0 right-0 h-full w-[62%] object-cover opacity-80" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-olive-deep from-40% via-olive-deep/70 to-olive-deep/10" />
+          <div className="relative flex max-w-sm flex-col justify-center p-6 sm:p-8">
+            <h2 className="flex items-center gap-3 text-[1.55rem] leading-tight text-surface">
+              <IconPeople size={24} />
+              {d.inviteTitle}
+            </h2>
+            <p className="mt-3 text-[1.02rem] text-surface/80">{notJoined > 0 ? d.inviteNotJoined.replace("{n}", String(notJoined)) : d.inviteLead}</p>
+            {can.admin(role) ? (
+              <Link href={`${base}/members`} className="mt-6 inline-flex min-h-12 w-fit items-center gap-2 rounded-full bg-surface px-6 font-semibold text-ink transition-colors hover:bg-linen">
+                <IconUserPlus size={20} />
+                {d.inviteButton}
+              </Link>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#f3f1ea] px-6 text-center text-ink-muted">
-                <IconPin size={28} />
-                <p className="max-w-[28ch]">{d.gravesEmpty}</p>
-              </div>
+              <p className="mt-6 text-[0.98rem] text-surface/90">{d.inviteAsk}</p>
             )}
           </div>
-        </Link>
+        </div>
       </section>
 
       {/* Family moments: the latest photos, upload and slideshow right here */}
@@ -310,22 +315,6 @@ export function DashboardView(props: DashboardData) {
             )}
           </div>
 
-          {/* Bring the others in – smaller, but always there */}
-          <div className="relative overflow-hidden rounded-[20px] bg-olive-deep p-6 text-surface">
-            <h2 className="flex items-center gap-3 text-[1.25rem] leading-tight text-surface">
-              <IconPeople size={22} />
-              {d.inviteTitle}
-            </h2>
-            <p className="mt-2 text-[0.98rem] text-surface/80">{notJoined > 0 ? d.inviteNotJoined.replace("{n}", String(notJoined)) : d.inviteLead}</p>
-            {can.admin(role) ? (
-              <Link href={`${base}/members`} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-surface px-5 font-semibold text-ink transition-colors hover:bg-linen">
-                <IconUserPlus size={18} />
-                {d.inviteButton}
-              </Link>
-            ) : (
-              <p className="mt-3 text-[0.95rem] text-surface/90">{d.inviteAsk}</p>
-            )}
-          </div>
         </div>
       </section>
     </div>
