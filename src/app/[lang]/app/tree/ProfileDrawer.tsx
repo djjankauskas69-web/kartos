@@ -68,15 +68,14 @@ export function ProfileDrawer({ closeHref, labels, shell = false, children }: { 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
       <button type="button" data-drawer-close aria-label={l.close} tabIndex={-1} className={`absolute inset-0 cursor-default bg-ink/15 backdrop-blur-[1px] ${slide ? "animate-[fade-in_200ms_ease-out_both]" : ""}`} />
-      <div className={`relative flex h-dvh w-full flex-col bg-paper ${slide ? "animate-[drawer-in_260ms_cubic-bezier(0.2,0.7,0.2,1)_both]" : ""} shadow-[-24px_0_60px_-30px_rgb(28_29_26/0.5)] sm:w-[min(calc(100vw-2rem),max(44rem,68vw))] sm:rounded-l-[22px]`}>
-        <div className="flex items-center justify-end gap-3 border-b border-line bg-surface/90 px-5 py-3 backdrop-blur sm:rounded-tl-[22px]">
-          <button type="button" data-drawer-close aria-label={l.close} title={l.close} className="flex h-11 w-11 items-center justify-center rounded-full text-[1.6rem] leading-none text-ink hover:bg-linen">
-            ×
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 pb-5 sm:px-6">
-          {/* No top padding on the scroller itself, so the sticky tabs meet the header without a gap. */}
-          <div className="pt-5">{children}</div>
+      <div className={`relative flex h-dvh w-full flex-col bg-paper ${slide ? "animate-[drawer-in_260ms_cubic-bezier(0.2,0.7,0.2,1)_both]" : ""} shadow-[-24px_0_60px_-30px_rgb(28_29_26/0.5)] sm:w-[min(calc(100vw-5.5rem),max(44rem,68vw))] sm:rounded-l-[22px]`}>
+        {/* Close sits just outside the panel's left edge (inside it on a phone), so no bar takes room at the top. */}
+        <button type="button" data-drawer-close aria-label={l.close} title={l.close} className="absolute left-3 top-3 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-surface text-[1.7rem] leading-none text-ink shadow-[var(--shadow-float)] hover:bg-linen sm:-left-[4.25rem] sm:top-5 sm:h-13 sm:w-13">
+          ×
+        </button>
+        <div className="flex-1 overflow-y-auto px-4 pb-5 sm:rounded-l-[22px] sm:px-6">
+          {/* No top padding on the scroller itself, so the sticky tabs stay flush with the top. */}
+          <div className="pt-[4.5rem] sm:pt-6">{children}</div>
         </div>
       </div>
     </div>
