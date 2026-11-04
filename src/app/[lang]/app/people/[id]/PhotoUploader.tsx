@@ -9,7 +9,7 @@ import { recordPhotos } from "../../actions";
 import { Modal } from "./Modal";
 
 type Picked = { file: File; url: string };
-const LIMIT = 12;
+const LIMIT = 8;
 
 /** Choose photos, see them, say who sees them, then publish. */
 export function PhotoUploader({
@@ -124,7 +124,7 @@ export function PhotoUploader({
             )}
           </div>
           {/* Two rows at most; the rest are counted on the last square, which shows them all. */}
-          <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          <ul className="grid grid-cols-4 gap-2">
             {(all || picked.length <= LIMIT ? picked : picked.slice(0, LIMIT - 1)).map((x) => (
               <li key={x.url} className="relative aspect-square overflow-hidden rounded-lg bg-linen">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
