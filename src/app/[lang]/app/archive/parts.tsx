@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
+import { ShareChoice } from "@/components/ShareChoice";
 import { createStory, deleteItem, recordFiles, setAlbumCover, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
@@ -120,19 +121,7 @@ export function Dialog({ open, onClose, title, children, wide = false }: { open:
 /** "Who sees it?" – only this family (the default) or everyone. Sends a hidden "shared" input. */
 export function Visibility({ initial = false, t, disabled = false }: { initial?: boolean; t: L; disabled?: boolean }) {
   const [shared, setShared] = useState(initial);
-  return (
-    <fieldset>
-      <legend className="mb-2 font-semibold">{t.whoSees}</legend>
-      <input type="hidden" name="shared" value={shared ? "1" : "0"} />
-      <div className="inline-flex rounded-full border border-line bg-paper p-1">
-        {([[false, t.onlyFamily], [true, t.everyone]] as const).map(([v, label]) => (
-          <button key={String(v)} type="button" disabled={disabled} aria-pressed={shared === v} onClick={() => setShared(v)} className={`min-h-11 rounded-full px-5 font-semibold ${shared === v ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
+  return <ShareChoice value={shared} onChange={setShared} name="shared" disabled={disabled} labels={{ title: t.whoSees, onlyUs: t.onlyFamily, alsoLinked: t.everyone, onlyUsHint: t.onlyFamilyHint, alsoLinkedHint: t.everyoneHint }} />;
 }
 
 export type PeriodLabels = { date: string; exact: string; about: string; between: string; year: string; from: string; to: string; placeholder: string };

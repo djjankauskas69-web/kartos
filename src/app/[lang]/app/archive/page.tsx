@@ -31,21 +31,23 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
       .or("storage_path.is.null,storage_path.not.like.*/memories/*")
       .order("created_at", { ascending: false })
       .limit(2000);
+  const memQuery = (cols: string) => supabase.from("memories").select(cols).eq("workspace_id", current.id).neq("status", "rejected").order("created_at", { ascending: false }).limit(500);
   const folderQuery = (cols: string) => supabase.from("media_folders").select(cols).eq("workspace_id", current.id).order("sort").order("created_at");
 
   const [{ people }, mediaRes, folderRes, memRes, params] = await Promise.all([
     getFamilyGraph(locale, current.id),
     mediaQuery(`${MEDIA}, shared`).then(async (r) => (r.error ? mediaQuery(MEDIA) : r)),
     folderQuery("id, preset, name, sort, description, year, cover_id, people, shared, created_by").then(async (r) => (r.error ? folderQuery("id, preset, name, sort, created_by") : r)),
-    supabase.from("memories").select("id, body, author_id, created_at, person_id, media_id, shared, status").eq("workspace_id", current.id).neq("status", "rejected").order("created_at", { ascending: false }).limit(500),
+    memQuery("id, body, author_id, created_at, person_id, media_id, media_ids, shared, status").then(async (r) => (r.error ? memQuery("id, body, author_id, created_at, person_id, media_id, shared, status") : r)),
     paramsPromise,
   ]);
 
   type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string }[] | null };
   const rows = (mediaRes.data ?? []) as unknown as Row[];
-  type Mem = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null; shared: boolean; status: string };
-  const mems = (memRes.data ?? []) as Mem[];
-  const memMediaIds = mems.flatMap((m) => (m.media_id ? [m.media_id] : []));
+  type Mem = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null; media_ids?: string[] | null; shared: boolean; status: string };
+  const mems = (memRes.data ?? []) as unknown as Mem[];
+  const idsOf = (m: Mem) => (m.media_ids?.length ? m.media_ids : m.media_id ? [m.media_id] : []);
+  const memMediaIds = mems.flatMap(idsOf);
   const { data: memMedia } = memMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memMediaIds) : { data: [] };
   const memPath = new Map((memMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
@@ -104,7 +106,11 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const memories: MemoryStory[] = mems
     .filter((m) => byId.has(m.person_id))
     .map((m) => {
-      const path = m.media_id ? memPath.get(m.media_id) : undefined;
+      const photos = idsOf(m).flatMap((id) => {
+        const path = memPath.get(id);
+        const u = path ? urls.get(path) : undefined;
+        return u ? [u] : [];
+      });
       return {
         id: m.id,
         body: m.body,
@@ -113,7 +119,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
         createdAt: m.created_at,
         personId: m.person_id,
         personName: fullName(byId.get(m.person_id)!),
-        photo: path ? urls.get(path) : undefined,
+        photos,
         shared: !!m.shared,
       };
     });

@@ -11,7 +11,7 @@ import { Slideshow, type Slide } from "./Slideshow";
 import { isImage, uploadPhoto } from "@/lib/upload";
 
 export type Album = { id: string; preset: string | null; name: string; description: string | null; year: number | null; coverId: string | null; people: string[]; shared: boolean; createdBy: string | null };
-export type MemoryStory = { id: string; body: string; author: string; date: string; createdAt: string; personId: string; personName: string; photo?: string; shared: boolean };
+export type MemoryStory = { id: string; body: string; author: string; date: string; createdAt: string; personId: string; personName: string; photos: string[]; shared: boolean };
 
 type Tab = "albums" | "photos" | "stories" | "documents";
 
@@ -420,7 +420,7 @@ export function ArchiveHome({
                 author={m.author}
                 date={m.date}
                 body={m.body}
-                photo={m.photo}
+                photos={m.photos}
                 labels={{ read: t.read, close: t.close, enlarge: t.openFile }}
                 badges={<span className="rounded-full bg-sage-wash px-2.5 py-0.5 text-[0.85rem] font-semibold">{t.memoryOf.replace("{name}", m.personName)}</span>}
                 actions={<Link href={`/${locale}/app/people/${m.personId}`} className="rounded-full px-3 py-1 font-semibold hover:text-ink">{t.openPerson} →</Link>}

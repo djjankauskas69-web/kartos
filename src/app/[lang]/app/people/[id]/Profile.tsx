@@ -136,7 +136,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
 
   const burial = burials?.[0] ?? null;
   // The grave photo and the photos that belong to memories (kept with them, not among the person's photos), together.
-  const memoryMediaIds = [...(memories ?? []), ...sharedMemories].flatMap((m) => (m.media_id ? [m.media_id] : []));
+  const photoIdsOf = (m: { media_id?: string | null; media_ids?: string[] | null }) => (m.media_ids?.length ? m.media_ids : m.media_id ? [m.media_id] : []);
+  const memoryMediaIds = [...(memories ?? []), ...sharedMemories].flatMap(photoIdsOf);
   const extraIds = [...memoryMediaIds, ...(burial?.photo_id ? [burial.photo_id as string] : [])];
   const { data: extraMedia } = extraIds.length ? await supabase.from("media").select("id, storage_path").in("id", extraIds) : { data: [] };
   const gravePhoto = burial?.photo_id ? ((extraMedia ?? []).find((m) => m.id === burial.photo_id) ?? null) : null;
@@ -211,7 +212,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 workspaceId={current.id}
                 personId={id}
                 needsApproval={can.needsApproval(role)}
-                share={!other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked } : undefined}
+                share={!other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked, onlyUsHint: t.shared.onlyUsHint, alsoLinkedHint: t.shared.alsoLinkedHint } : undefined}
                 labels={{ button: t.memories.addButton, close: t.add.close, title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
   );
@@ -248,8 +249,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
         ) : (
           <ul className="mt-5 grid items-stretch gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {(memories ?? []).map((m) => {
-              const path = m.media_id ? (memoryPath.get(m.media_id) ?? photos.find((p) => p.id === m.media_id)?.storage_path) : undefined;
-              const phUrl = path ? urls.get(path) : undefined;
+              const phUrls = photoIdsOf(m).flatMap((mid) => {
+                const path = memoryPath.get(mid) ?? photos.find((p) => p.id === mid)?.storage_path;
+                const u = path ? urls.get(path) : undefined;
+                return u ? [u] : [];
+              });
               const mine = (can.edit(role) || m.author_id === user.id) && !other;
               return (
                 <MemoryCard
@@ -257,7 +261,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                   author={authors.get(m.author_id as string) ?? ""}
                   date={dateFmt.format(new Date(m.created_at))}
                   body={m.body}
-                  photo={phUrl}
+                  photos={phUrls}
                   labels={cardLabels}
                   badges={
                     <>
@@ -307,7 +311,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cls.h2}>{t.photos.title}</h2>
           {can.add(role) && (
-            <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} share={{ title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked }} />
+            <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} share={{ title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked, onlyUsHint: t.shared.onlyUsHint, alsoLinkedHint: t.shared.alsoLinkedHint }} />
           )}
         </div>
         {photos.length === 0 && sharedPhotos.length === 0 ? (
@@ -624,11 +628,13 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   }
 }
 
-type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null; shared?: boolean };
+type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null; media_ids?: string[] | null; shared?: boolean };
 
 /** Memories, newest first, with the photo that goes with each (media_id comes with database update 0010). */
 async function loadMemories(supabase: Awaited<ReturnType<typeof requireWorkspace>>["supabase"], id: string): Promise<{ data: MemoryRow[] | null }> {
   const q = (cols: string) => supabase.from("memories").select(cols).eq("person_id", id).neq("status", "rejected").order("created_at", { ascending: false });
+  const withMany = await q("id, body, author_id, created_at, status, media_id, media_ids, shared");
+  if (!withMany.error) return { data: withMany.data as unknown as MemoryRow[] };
   const withShared = await q("id, body, author_id, created_at, status, media_id, shared");
   if (!withShared.error) return { data: withShared.data as unknown as MemoryRow[] };
   const first = await q("id, body, author_id, created_at, status, media_id");

@@ -913,7 +913,9 @@
     "slideFull": "Visas ekranas",
     "slideAll": "Visos nuotraukos",
     "chosenN": "Pasirinkta: {n}",
-    "more": "Dar"
+    "more": "Dar",
+    "onlyFamilyHint": "Matys tik jūsų šeimos archyvo nariai.",
+    "everyoneHint": "Matys ir kitos šeimos, su kuriomis susieti jūsų medžiai."
   },
   "peopleList": {
     "title": "Žmonės",
@@ -1435,7 +1437,9 @@
       "death_year": "Mirties metai",
       "birth_place": "Gimimo vieta",
       "death_place": "Mirties vieta"
-    }
+    },
+    "onlyUsHint": "Matys tik jūsų šeimos archyvo nariai.",
+    "alsoLinkedHint": "Matys ir kitos šeimos, kurių medžiuose yra šis žmogus."
   },
   "sharedTree": {
     "readOnly": "Tai {family} medis. Jie leido jums matyti vardus, metus, kapavietes ir tai, kuo dalijasi. Keisti nieko negalima.",

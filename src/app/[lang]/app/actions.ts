@@ -409,34 +409,44 @@ export async function addMemory(_: FormState, form: FormData): Promise<FormState
   if (!personId) return { error: "save" };
   if (!body) return { error: "empty" };
 
-  // The photo that belongs to this story only (uploaded to <workspace>/memories/ just before).
-  // It stays with the memory: not tagged with the person and not shown in the archive.
-  let mediaId: string | null = null;
+  // The photos that belong to this story only (uploaded to <workspace>/memories/ just before), up to three.
+  // They stay with the memory: not tagged with the person and not shown in the archive.
+  type Up = { path?: string; width?: number; height?: number };
+  let ups: Up[] = [];
   try {
-    const photo = JSON.parse(String(form.get("photo") ?? "null")) as { path?: string; width?: number; height?: number } | null;
-    if (photo?.path && photo.path.startsWith(`${workspace.id}/memories/`)) {
-      mediaId = crypto.randomUUID();
-      const { error } = await supabase.from("media").insert({
-        id: mediaId,
-        workspace_id: workspace.id,
-        storage_path: photo.path,
-        kind: "photo",
-        width: photo.width ?? null,
-        height: photo.height ?? null,
-        mime_type: "image/jpeg",
-      });
-      if (error) {
-        console.error("addMemory photo", error);
-        mediaId = null;
-      }
-    }
+    const many = JSON.parse(String(form.get("photos") ?? "null")) as Up[] | null;
+    const one = JSON.parse(String(form.get("photo") ?? "null")) as Up | null;
+    ups = (Array.isArray(many) ? many : one ? [one] : []).filter((p) => p?.path && p.path.startsWith(`${workspace.id}/memories/`)).slice(0, 3);
   } catch {
-    mediaId = null;
+    ups = [];
   }
+  const mediaIds: string[] = [];
+  for (const photo of ups) {
+    const id = crypto.randomUUID();
+    const { error } = await supabase.from("media").insert({
+      id,
+      workspace_id: workspace.id,
+      storage_path: photo.path,
+      kind: "photo",
+      width: photo.width ?? null,
+      height: photo.height ?? null,
+      mime_type: "image/jpeg",
+    });
+    if (error) console.error("addMemory photo", error);
+    else mediaIds.push(id);
+  }
+  const mediaId = mediaIds[0] ?? null;
 
   const row: Record<string, unknown> = { workspace_id: workspace.id, person_id: personId, author_id: user.id, body };
   if (form.get("shared") === "1") row.shared = true;
+  if (mediaIds.length > 1) row.media_ids = mediaIds;
+  else if (mediaId) row.media_ids = [mediaId];
   let { error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row);
+  // Before database update 0016 a memory keeps only its first photo.
+  if (error && /media_ids/.test(error.message)) {
+    delete row.media_ids;
+    ({ error } = await supabase.from("memories").insert(mediaId ? { ...row, media_id: mediaId } : row));
+  }
   // Before database update 0012 there is no sharing; the memory stays with this family.
   if (error && /shared/.test(error.message)) {
     delete row.shared;

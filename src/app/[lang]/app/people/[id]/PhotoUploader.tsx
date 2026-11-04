@@ -7,6 +7,7 @@ import { isImage, uploadPhoto } from "@/lib/upload";
 import { cls, ErrorText } from "@/components/ui";
 import { recordPhotos } from "../../actions";
 import { Modal } from "./Modal";
+import { ShareChoice } from "@/components/ShareChoice";
 
 type Picked = { file: File; url: string };
 const LIMIT = 8;
@@ -25,7 +26,7 @@ export function PhotoUploader({
   workspaceId: string;
   personId: string;
   needsApproval: boolean;
-  share?: { title: string; onlyUs: string; alsoLinked: string };
+  share?: { title: string; onlyUs: string; alsoLinked: string; onlyUsHint?: string; alsoLinkedHint?: string };
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked[]>([]);
@@ -153,18 +154,7 @@ export function PhotoUploader({
             )}
           </ul>
 
-          {share && (
-            <fieldset>
-              <legend className="mb-2 text-[1rem] font-semibold">{share.title}</legend>
-              <div className="inline-flex rounded-full border border-line bg-paper p-1">
-                {([[false, share.onlyUs], [true, share.alsoLinked]] as const).map(([v, label]) => (
-                  <button key={String(v)} type="button" disabled={busy} aria-pressed={shared === v} onClick={() => setShared(v)} className={`min-h-11 rounded-full px-5 text-[1rem] font-semibold ${shared === v ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
+          {share && <ShareChoice value={shared} onChange={setShared} labels={share} disabled={busy} />}
 
           <ErrorText message={error} />
           <button type="button" onClick={publish} disabled={busy} className={`${cls.primary} w-full`}>

@@ -913,7 +913,9 @@
     "slideFull": "Full screen",
     "slideAll": "All photos",
     "chosenN": "Chosen: {n}",
-    "more": "More"
+    "more": "More",
+    "onlyFamilyHint": "Only members of your family archive will see it.",
+    "everyoneHint": "Families linked to your tree will see it too."
   },
   "peopleList": {
     "title": "People",
@@ -1435,7 +1437,9 @@
       "death_year": "Death year",
       "birth_place": "Birthplace",
       "death_place": "Place of death"
-    }
+    },
+    "onlyUsHint": "Only members of your family archive will see it.",
+    "alsoLinkedHint": "Other families who have this person in their tree will see it too."
   },
   "sharedTree": {
     "readOnly": "This is {family}'s tree. They let you see names, years, graves and what they share. Nothing can be changed.",

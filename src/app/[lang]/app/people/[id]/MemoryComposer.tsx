@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useRef, useState } from "react";
 import { Modal } from "./Modal";
+import { ShareChoice } from "@/components/ShareChoice";
 import { cls } from "@/components/ui";
 import { isImage, uploadPhoto } from "@/lib/upload";
 import { addMemory, type FormState } from "../../actions";
@@ -9,7 +10,8 @@ import { addMemory, type FormState } from "../../actions";
 type L = { button: string; close: string; title: string; lead: string; placeholder: string; addPhoto: string; removePhoto: string; submit: string; saving: string; pending: string; empty: string; error: string; photoError: string };
 
 /** A roomy box for a story about the person, with a photo button in its corner. */
-type Share = { title: string; onlyUs: string; alsoLinked: string };
+type Share = { title: string; onlyUs: string; alsoLinked: string; onlyUsHint?: string; alsoLinkedHint?: string };
+const MAX_PHOTOS = 3;
 
 export function MemoryComposer({ locale, workspaceId, personId, needsApproval, labels, share }: { locale: string; workspaceId: string; personId: string; needsApproval: boolean; labels: L; share?: Share }) {
   const [shared, setShared] = useState(false);
@@ -17,12 +19,14 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
   const close = useCallback(() => setOpen(false), []);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
+  const [photos, setPhotos] = useState<Array<{ url: string; file: File }>>([]);
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData): Promise<FormState> => {
     form.delete("photoFile");
-    if (photo) {
+    if (photos.length) {
       try {
-        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, photo.file, "memories")));
+        const up = [];
+        for (const ph of photos) up.push(await uploadPhoto(workspaceId, ph.file, "memories"));
+        form.set("photos", JSON.stringify(up));
       } catch {
         return { error: "photo" };
       }
@@ -31,8 +35,8 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
     if (result.ok) {
       formRef.current?.reset();
       setShared(false);
-      if (photo) URL.revokeObjectURL(photo.url);
-      setPhoto(null);
+      photos.forEach((ph) => URL.revokeObjectURL(ph.url));
+      setPhotos([]);
       if (!needsApproval) setOpen(false);
     }
     return result;
@@ -64,40 +68,45 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
           placeholder={labels.placeholder}
           className="block min-h-48 w-full resize-y rounded-xl bg-transparent px-4 pb-16 pt-3.5 text-[1.08rem] leading-relaxed text-ink placeholder:text-ink-muted/60 focus:outline-none"
         />
-        <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          {photo ? (
-            <span className="flex items-center gap-2 rounded-full bg-linen py-1 pl-1 pr-3">
+        {/* Up to three photos go with the memory. */}
+        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-2">
+          {photos.map((ph) => (
+            <span key={ph.url} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-              <img src={photo.url} alt="" className="h-9 w-9 rounded-full object-cover" />
+              <img src={ph.url} alt="" className="h-12 w-12 rounded-lg object-cover" />
               <button
                 type="button"
+                aria-label={labels.removePhoto}
+                title={labels.removePhoto}
                 onClick={() => {
-                  URL.revokeObjectURL(photo.url);
-                  setPhoto(null);
-                  if (fileRef.current) fileRef.current.value = "";
+                  URL.revokeObjectURL(ph.url);
+                  setPhotos((list) => list.filter((x) => x.url !== ph.url));
                 }}
-                className="text-[0.9rem] font-semibold text-ink-muted hover:text-ink"
+                className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[0.9rem] leading-none text-surface shadow"
               >
-                {labels.removePhoto}
+                ×
               </button>
             </span>
-          ) : (
+          ))}
+          {photos.length < MAX_PHOTOS && (
             <label className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 text-[0.95rem] font-semibold hover:border-ink/40" title={labels.addPhoto}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="14" rx="2.5" />
                 <circle cx="9" cy="10.5" r="1.8" />
                 <path d="m21 16-5.2-5.2L8 18.5" />
               </svg>
-              {labels.addPhoto}
+              {photos.length ? `${labels.addPhoto} (${photos.length}/${MAX_PHOTOS})` : labels.addPhoto}
               <input
                 ref={fileRef}
                 type="file"
                 name="photoFile"
                 accept="image/*"
+                multiple
                 className="sr-only"
                 onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  setPhoto(f && isImage(f) ? { url: URL.createObjectURL(f), file: f } : null);
+                  const files = [...(e.target.files ?? [])].filter(isImage);
+                  setPhotos((list) => [...list, ...files.map((f) => ({ url: URL.createObjectURL(f), file: f }))].slice(0, MAX_PHOTOS));
+                  e.target.value = "";
                 }}
               />
             </label>
@@ -105,26 +114,9 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
         </div>
       </div>
       {share && (
-        <fieldset className="mt-4">
-          <legend className="mb-2 text-[0.95rem] font-semibold">{share.title}</legend>
-          <input type="hidden" name="shared" value={shared ? "1" : "0"} />
-          <div className="inline-flex rounded-full border border-line bg-paper p-1">
-            {[
-              [false, share.onlyUs],
-              [true, share.alsoLinked],
-            ].map(([v, label]) => (
-              <button
-                key={String(v)}
-                type="button"
-                aria-pressed={shared === v}
-                onClick={() => setShared(v as boolean)}
-                className={`min-h-10 rounded-full px-4 text-[0.95rem] font-semibold ${shared === v ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}
-              >
-                {label as string}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <div className="mt-4">
+          <ShareChoice value={shared} onChange={setShared} labels={share} name="shared" />
+        </div>
       )}
       {err && <p className="mt-3 font-semibold text-danger">{err}</p>}
       {state.ok && needsApproval && <p className="mt-3 text-[0.95rem] text-ink-muted">{labels.pending}</p>}
