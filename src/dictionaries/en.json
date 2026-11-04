@@ -558,7 +558,10 @@
     "portraitUploading": "Uploading…",
     "portraitError": "Couldn't upload. Try another photo.",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "publish": "Publish",
+    "more": "More",
+    "remove": "Remove"
   },
   "memories": {
     "title": "Memories",

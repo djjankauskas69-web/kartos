@@ -558,7 +558,10 @@
     "portraitUploading": "Įkeliama…",
     "portraitError": "Nepavyko įkelti. Bandykite kitą nuotrauką.",
     "prev": "Ankstesnė",
-    "next": "Kita"
+    "next": "Kita",
+    "publish": "Paskelbti",
+    "more": "Dar",
+    "remove": "Pašalinti"
   },
   "memories": {
     "title": "Prisiminimai",
