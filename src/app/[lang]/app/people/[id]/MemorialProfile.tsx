@@ -3,7 +3,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { MapView, type MapMarker } from "@/components/map/Map";
 import { deletePersonEvent } from "./event-actions";
 import { EventForm } from "./EventForm";
-import { FocusPlaceButton, PlaceForm } from "./PlaceForm";
+import { PlaceForm } from "./PlaceForm";
 import { placeIcons, type PlaceKind } from "./place-icons";
 import { AboutEditor } from "./AboutEditor";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
@@ -333,7 +333,6 @@ export function MemorialProfile({
             </h2>
             <p className="mt-1 text-ink-muted">{m.placesLead}</p>
           </div>
-          {canAdd && eventsReady && <FocusPlaceButton label={m.addPlace} />}
         </div>
 
         <div className="@container">
