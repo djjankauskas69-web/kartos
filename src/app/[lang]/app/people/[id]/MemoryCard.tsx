@@ -43,14 +43,19 @@ export function MemoryCard({
         onClick={() => setOpen(true)}
         className={`group flex h-full w-full flex-col overflow-hidden rounded-[18px] border bg-surface text-left shadow-[0_10px_30px_-24px_rgb(28_29_26/0.6)] transition hover:-translate-y-0.5 hover:border-ink/30 hover:shadow-[0_16px_36px_-22px_rgb(28_29_26/0.55)] ${dashed ? "border-dashed border-line" : "border-line/80"}`}
       >
-        {photo && (
-          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-          <img src={photo} alt="" loading="lazy" className="h-48 w-full object-cover" />
-        )}
         <span className="flex flex-1 flex-col gap-3 p-5">
           {head}
           <span className="line-clamp-5 whitespace-pre-line text-[1.05rem] leading-relaxed">{body}</span>
-          <span className="mt-auto pt-1 text-[0.95rem] font-semibold text-olive-deep group-hover:underline">{labels.read} →</span>
+          <span className="mt-auto flex items-end justify-between gap-3 pt-1">
+            <span className="text-[0.95rem] font-semibold text-olive-deep group-hover:underline">{labels.read} →</span>
+            {photo && (
+              <span className="relative shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+                <img src={photo} alt="" loading="lazy" className="h-14 w-14 rounded-lg object-cover ring-2 ring-white shadow-[0_6px_14px_-8px_rgb(28_29_26/0.6)]" />
+                <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[0.9rem] font-semibold leading-none text-surface">+</span>
+              </span>
+            )}
+          </span>
         </span>
       </button>
 
