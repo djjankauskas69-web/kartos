@@ -111,7 +111,7 @@ export function PhotoUploader({
         </p>
       )}
 
-      <Modal open={picked.length > 0} onClose={() => !busy && clear()} label={t.photos.add} closeLabel={t.photos.close} wide>
+      <Modal open={picked.length > 0} onClose={() => !busy && clear()} label={t.photos.add} closeLabel={t.photos.close}>
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-3 pr-12">
             <h2 className="text-[1.4rem] font-semibold">
