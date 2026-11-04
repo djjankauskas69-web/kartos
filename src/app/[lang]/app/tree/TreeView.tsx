@@ -621,7 +621,8 @@ export function TreeView({
                 </label>
                 {!from && <p className="mb-2 rounded-xl bg-linen px-3 py-2 text-[0.9rem] text-ink-muted">{labels.show.noMe}</p>}
                 <div className="space-y-0.5">
-                  {SHOW_CATS.map((c) => {
+                  {/* Only the kinds of relatives this person actually has. */}
+                  {SHOW_CATS.filter((c) => (kin[c]?.hit.length ?? 0) > 0 || picked.includes(c)).map((c) => {
                     const on = picked.includes(c);
                     const n = kin[c]?.hit.length ?? 0;
                     return (
