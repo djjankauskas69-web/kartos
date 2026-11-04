@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { MemoryCard } from "../people/[id]/MemoryCard";
 import { createAlbum, deleteFolder, deleteItems, moveItems, setAlbumCover, tagItems, updateAlbum } from "./actions";
@@ -31,8 +31,14 @@ export function ArchiveHome({
   needsApproval,
   initialItem,
   initialTab,
+  initialAlbum = null,
+  initialUpload = false,
+  autoplay = false,
   t,
 }: {
+  initialAlbum?: string | null;
+  initialUpload?: boolean;
+  autoplay?: boolean;
   items: ArchiveItem[];
   albums: Album[];
   memories: MemoryStory[];
@@ -48,9 +54,9 @@ export function ArchiveHome({
   t: L;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [albumId, setAlbumId] = useState<string | null>(null);
+  const [albumId, setAlbumId] = useState<string | null>(initialAlbum);
   const [openId, setOpenId] = useState<string | null>(initialItem);
-  const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum">(null);
+  const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum">(initialUpload ? "upload" : null);
   const [dropped, setDropped] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [show, setShow] = useState<{ slides: Slide[]; start: number } | null>(null);
@@ -111,6 +117,16 @@ export function ArchiveHome({
     const slides = slidesOf(list);
     if (slides.length) setShow({ slides, start });
   };
+  // Opened from the overview's "Slideshow": start once the page is on screen.
+  useEffect(() => {
+    if (!autoplay) return;
+    const id = requestAnimationFrame(() => {
+      const slides = photos.filter((p) => p.url).map((i) => ({ id: i.id, url: i.url!, title: i.title, date: i.dateLabel, description: i.description }));
+      if (slides.length) setShow({ slides, start: 0 });
+    });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const stopSelecting = () => {
     setSelecting(false);

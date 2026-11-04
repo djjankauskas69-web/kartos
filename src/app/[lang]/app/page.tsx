@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, generationCount, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks, profileNames } from "@/lib/data";
+import { folderLabel, type FolderRow } from "@/lib/archive";
 import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
-import { DashboardView, type RecentItem } from "./DashboardView";
+import { DashboardView, type Activity, type FamilyDate } from "./DashboardView";
 import { PageLoading } from "@/components/PageLoading";
 
 export default async function Overview() {
@@ -17,8 +18,10 @@ export default async function Overview() {
   );
 }
 
+const DAY = (iso: string) => iso.slice(0, 10);
+
 async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const { supabase, current, memberships: ctxMemberships = [] } = await getContext(locale);
+  const { supabase, user, current, memberships: ctxMemberships = [] } = await getContext(locale);
 
   if (!current) {
     return (
@@ -32,92 +35,194 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   const ws = current.id;
   const base = `/${locale}/app`;
-  const [{ people, byId, rels }, graves, photosCount, recentPhotos, recentPeople, recentGraves, recentMemories, gravePoint, mine] = await Promise.all([
+  const d = t.dash;
+  const photoMedia = () => supabase.from("media").select("id, storage_path, created_at, uploader_id, folder_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%");
+  const [graph, graves, photosCount, recentPhotos, recentPeople, recentMemories, folders, events, members, coverRes, mine] = await Promise.all([
     getFamilyGraph(locale, ws),
-    supabase.from("burials").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
+    supabase.from("burials").select("id, person_id, cemetery_name, lat, lng, created_at, created_by").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(300),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
-    supabase.from("media").select("id, storage_path, created_at, uploader_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").order("created_at", { ascending: false }).limit(30),
-    supabase.from("persons").select("id, created_at").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
-    supabase.from("burials").select("id, person_id, cemetery_name, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
-    supabase.from("memories").select("id, person_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(6),
-    supabase.from("burials").select("lat, lng").eq("workspace_id", ws).neq("status", "rejected").not("lat", "is", null).order("created_at", { ascending: false }).limit(1),
+    photoMedia().order("created_at", { ascending: false }).limit(60),
+    supabase.from("persons").select("id, created_at, updated_at, created_by").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("updated_at", { ascending: false }).limit(40),
+    supabase.from("memories").select("id, person_id, created_at, author_id").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(40),
+    supabase.from("media_folders").select("id, preset, name, sort, created_at, created_by").eq("workspace_id", ws),
+    supabase.from("person_events").select("id, person_id, year, title, kind").eq("workspace_id", ws).eq("kind", "event").not("year", "is", null).limit(200),
+    supabase.from("workspace_members").select("person_id").eq("workspace_id", ws),
+    supabase.from("workspaces").select("cover_path").eq("id", ws).maybeSingle(),
     myPersonLinks(locale),
   ]);
-  // Administrator: other families asking to see this tree (database update 0013).
+  const { people, byId, rels } = graph;
   const { data: accessList } = can.admin(current.role) ? await supabase.rpc("tree_access_list", { ws }) : { data: null };
   const pendingAccess = ((accessList ?? []) as Array<{ status: string }>).filter((r) => r.status === "pending").length;
-  // Not yet "this is me" here, but in another archive you are: say that marking yourself joins the trees.
   const meElsewhere = ctxMemberships.find((m) => m.id !== ws && mine.links.get(m.id));
 
-  /* ---- Mini tree: the couple with the most children, and their children ---- */
+  /* ---- The family's story begins: the earliest year anyone in the tree was born ---- */
+  const since = people.reduce<number | null>((min, p) => (p.birth_year && (min === null || p.birth_year < min) ? p.birth_year : min), null);
+
+  /* ---- Mini tree: three generations around the couple with the most children ---- */
   const childCount = (id: string) => relativesOf(id, rels).children.length;
   const head = [...people].sort((a, b) => childCount(b.id) - childCount(a.id) || (a.birth_year ?? 9999) - (b.birth_year ?? 9999))[0];
   const headFam = head ? relativesOf(head.id, rels) : null;
   const partner = headFam?.partners.map((p) => byId.get(p)!).find(Boolean);
-  const kids = headFam ? headFam.children.map((c) => byId.get(c)!).sort((a, b) => (a.birth_year ?? 9999) - (b.birth_year ?? 9999)) : [];
+  const elders = headFam ? headFam.parents.map((p) => byId.get(p)!).filter(Boolean).slice(0, 2) : [];
+  const kids = headFam ? headFam.children.map((c) => byId.get(c)!).filter(Boolean).sort((a, b) => (a.birth_year ?? 9999) - (b.birth_year ?? 9999)) : [];
   const shownKids = kids.slice(0, 4);
 
-  /* ---- Recent additions ---- */
-  const initials = (p: Person) => `${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase();
-  const items: Array<RecentItem & { photoPath?: string; personId?: string }> = [];
-  for (const p of recentPeople.data ?? []) {
-    const person = byId.get(p.id);
-    if (person) items.push({ at: p.created_at, kind: "person", label: t.dash.addedPerson, strong: fullName(person), href: `${base}/people/${p.id}`, personId: p.id, initials: initials(person) });
-  }
-  for (const g of recentGraves.data ?? []) {
-    const person = byId.get(g.person_id);
-    if (person) items.push({ at: g.created_at, kind: "grave", label: t.dash.markedGrave, strong: g.cemetery_name || fullName(person), href: `${base}/people/${g.person_id}` });
-  }
-  for (const m of recentMemories.data ?? []) {
-    const person = byId.get(m.person_id);
-    if (person) items.push({ at: m.created_at, kind: "memory", label: t.dash.addedMemory, strong: fullName(person), href: `${base}/people/${m.person_id}` });
-  }
-  // Photos one person uploaded on the same day are one line: "Ona uploaded 12 photos".
-  const photoDays = new Map<string, { at: string; n: number; path: string; who: string | null }>();
-  for (const m of recentPhotos.data ?? []) {
-    const day = `${m.created_at.slice(0, 10)}:${m.uploader_id ?? ""}`;
-    const e = photoDays.get(day);
-    if (e) e.n += 1;
-    else photoDays.set(day, { at: m.created_at, n: 1, path: m.storage_path, who: (m.uploader_id as string | null) ?? null });
-  }
-  const uploaders = await profileNames(locale, [...photoDays.values()].flatMap((d) => (d.who ? [d.who] : [])));
-  for (const d of photoDays.values()) {
-    const who = d.who ? uploaders.get(d.who) : undefined;
-    items.push({ at: d.at, kind: "photos", label: who ? t.dash.uploadedPhotosBy.replace("{name}", who) : t.dash.addedPhotos, strong: String(d.n), href: `${base}/archive`, photoPath: d.path });
-  }
-  items.sort((a, b) => b.at.localeCompare(a.at));
-  const recentRaw = items.slice(0, 5);
+  /* ---- Family moments: the latest photos, with their album ---- */
+  const folderRows = (folders.data ?? []) as Array<FolderRow & { created_at: string; created_by: string | null }>;
+  const albumName = new Map(folderRows.map((f) => [f.id, folderLabel(t, f)]));
+  const photos = recentPhotos.data ?? [];
+  const moments = photos.slice(0, 7);
 
-  const latest = (recentPhotos.data ?? []).slice(0, 2);
-  // The three picture lookups don't depend on each other.
-  const [portraits, urls, recentPortraits] = await Promise.all([
-    portraitUrls(locale, [head, partner, ...shownKids].filter(Boolean) as Person[]),
-    signedUrls(locale, [...latest.map((m) => m.storage_path), ...recentRaw.flatMap((i) => (i.photoPath ? [i.photoPath] : []))]),
-    portraitUrls(locale, recentRaw.flatMap((i) => (i.personId ? [byId.get(i.personId)!] : []))),
+  /* ---- What the family did lately, similar things joined into one line ---- */
+  type Raw = Omit<Activity, "thumb" | "who"> & { photoPath?: string; personId?: string; whoId?: string | null };
+  const acts: Raw[] = [];
+  const nameOf = (id: string) => (byId.get(id) ? fullName(byId.get(id)!) : "");
+
+  // Photos: one line per person, day and album.
+  const photoGroups = new Map<string, { at: string; n: number; path: string; who: string | null; folder: string | null }>();
+  for (const m of photos) {
+    const k = `${DAY(m.created_at)}:${m.uploader_id ?? ""}:${m.folder_id ?? ""}`;
+    const g = photoGroups.get(k);
+    if (g) g.n += 1;
+    else photoGroups.set(k, { at: m.created_at, n: 1, path: m.storage_path as string, who: m.uploader_id as string | null, folder: m.folder_id as string | null });
+  }
+  for (const g of photoGroups.values()) {
+    const album = g.folder ? albumName.get(g.folder) : undefined;
+    acts.push({
+      at: g.at,
+      kind: "photos",
+      text: (album ? d.actPhotosAlbum : d.actPhotos).replace("{n}", String(g.n)).replace("{album}", album ?? ""),
+      href: g.folder ? `${base}/archive?album=${g.folder}` : `${base}/archive?tab=photos`,
+      photoPath: g.path,
+      whoId: g.who,
+      count: g.n,
+    });
+  }
+  // Memories: one line per person they are about.
+  const memGroups = new Map<string, { at: string; n: number; who: string | null }>();
+  for (const m of recentMemories.data ?? []) {
+    if (!byId.has(m.person_id)) continue;
+    const g = memGroups.get(m.person_id);
+    if (g) g.n += 1;
+    else memGroups.set(m.person_id, { at: m.created_at, n: 1, who: m.author_id as string | null });
+  }
+  for (const [pid, g] of memGroups) {
+    acts.push({
+      at: g.at,
+      kind: "memory",
+      text: (g.n === 1 ? d.actMemory : d.actMemories).replace("{n}", String(g.n)).replace("{name}", nameOf(pid)),
+      href: `${base}/people/${pid}`,
+      personId: pid,
+      whoId: g.n === 1 ? g.who : null,
+      count: g.n,
+    });
+  }
+  // People added to the tree: one line per person who added them and day; and profiles filled in later.
+  const addGroups = new Map<string, { at: string; ids: string[]; who: string | null }>();
+  for (const p of recentPeople.data ?? []) {
+    if (!byId.has(p.id)) continue;
+    const created = new Date(p.created_at).getTime();
+    const updated = new Date(p.updated_at).getTime();
+    if (updated - created > 5 * 60 * 1000)
+      acts.push({ at: p.updated_at, kind: "profile", text: d.actProfile.replace("{name}", nameOf(p.id)), href: `${base}/people/${p.id}`, personId: p.id });
+    const k = `${DAY(p.created_at)}:${p.created_by ?? ""}`;
+    const g = addGroups.get(k);
+    if (g) g.ids.push(p.id);
+    else addGroups.set(k, { at: p.created_at, ids: [p.id], who: (p.created_by as string | null) ?? null });
+  }
+  for (const g of addGroups.values()) {
+    const names = g.ids.slice(0, 2).map(nameOf).join(", ") + (g.ids.length > 2 ? "…" : "");
+    acts.push({
+      at: g.at,
+      kind: "person",
+      text: g.ids.length === 1 ? d.actPerson.replace("{name}", nameOf(g.ids[0])) : d.actPeople.replace("{n}", String(g.ids.length)).replace("{names}", names),
+      href: g.ids.length === 1 ? `${base}/people/${g.ids[0]}` : `${base}/tree`,
+      personId: g.ids[0],
+      whoId: g.who,
+      count: g.ids.length,
+    });
+  }
+  for (const b of (graves.data ?? []).slice(0, 10)) {
+    if (!byId.has(b.person_id)) continue;
+    acts.push({ at: b.created_at, kind: "grave", text: d.actGrave.replace("{name}", nameOf(b.person_id)), sub: b.cemetery_name ?? undefined, href: `${base}/map?person=${b.person_id}`, whoId: (b.created_by as string | null) ?? null });
+  }
+  for (const f of folderRows) {
+    if (f.preset) continue;
+    acts.push({ at: f.created_at, kind: "album", text: d.actAlbum.replace("{album}", albumName.get(f.id) ?? ""), href: `${base}/archive?album=${f.id}`, whoId: f.created_by });
+  }
+  acts.sort((a, b) => b.at.localeCompare(a.at));
+  const recentRaw = acts.slice(0, 7);
+
+  /* ---- Important family dates: this year's round anniversaries, then the story in order ---- */
+  const year = new Date().getFullYear();
+  const dates: FamilyDate[] = [];
+  const jubilees: FamilyDate[] = [];
+  for (const p of people) {
+    if (!p.birth_year) continue;
+    const age = year - p.birth_year;
+    if (age > 0 && age <= 150 && (age % 10 === 0 || age === 25 || age === 75))
+      jubilees.push({ key: `j-${p.id}`, year, kind: "jubilee", text: (p.is_living ? d.dateJubileeLiving : d.dateJubileePast).replace("{name}", fullName(p)).replace("{n}", String(age)), href: `${base}/people/${p.id}`, personId: p.id });
+    dates.push({ key: `b-${p.id}`, year: p.birth_year, kind: "birth", text: d.dateBorn.replace("{name}", fullName(p)), href: `${base}/people/${p.id}`, personId: p.id });
+    if (!p.is_living && p.death_year) dates.push({ key: `d-${p.id}`, year: p.death_year, kind: "death", text: d.dateDied.replace("{name}", fullName(p)), href: `${base}/people/${p.id}`, personId: p.id });
+  }
+  type RelRow = { id: string; person_a: string; person_b: string; type: string; start_year?: number | null };
+  for (const r of rels as RelRow[]) {
+    if (r.type !== "partner" || !r.start_year || !byId.has(r.person_a) || !byId.has(r.person_b)) continue;
+    dates.push({ key: `m-${r.id}`, year: r.start_year, kind: "marriage", text: d.dateMarried.replace("{a}", nameOf(r.person_a)).replace("{b}", nameOf(r.person_b)), href: `${base}/people/${r.person_a}`, personId: r.person_a });
+  }
+  for (const e of events.data ?? []) {
+    if (!byId.has(e.person_id) || !e.year) continue;
+    dates.push({ key: `e-${e.id}`, year: e.year, kind: "event", text: `${e.title ?? ""} – ${nameOf(e.person_id)}`, href: `${base}/people/${e.person_id}`, personId: e.person_id });
+  }
+  dates.sort((a, b) => a.year - b.year || a.kind.localeCompare(b.kind));
+
+  /* ---- Living people in the tree who are not members yet ---- */
+  const linked = new Set(((members.data ?? []) as Array<{ person_id: string | null }>).flatMap((m) => (m.person_id ? [m.person_id] : [])));
+  const notJoined = people.filter((p) => p.is_living && !linked.has(p.id)).length;
+
+  /* ---- Pictures ---- */
+  const coverPath = (coverRes.data as { cover_path?: string | null } | null)?.cover_path ?? null;
+  const portraitPeople = [head, partner, ...elders, ...shownKids, ...recentRaw.flatMap((a) => (a.personId ? [byId.get(a.personId)!] : [])), ...dates.slice(0, 40).flatMap((x) => (x.personId ? [byId.get(x.personId)!] : []))].filter(Boolean) as Person[];
+  const [portraits, urls, who] = await Promise.all([
+    portraitUrls(locale, [...new Map(portraitPeople.map((p) => [p.id, p])).values()]),
+    signedUrls(locale, [...moments.map((m) => m.storage_path as string), ...recentRaw.flatMap((a) => (a.photoPath ? [a.photoPath] : [])), ...(coverPath ? [coverPath] : [])]),
+    profileNames(locale, recentRaw.flatMap((a) => (a.whoId ? [a.whoId] : []))),
   ]);
-  const recent: RecentItem[] = recentRaw.map(({ photoPath, personId, ...r }) => ({
-    ...r,
-    thumb: photoPath ? urls.get(photoPath) : personId ? recentPortraits.get(personId) : undefined,
+  const recent: Activity[] = recentRaw.map(({ photoPath, personId, whoId, ...a }) => ({
+    ...a,
+    who: whoId ? (whoId === user?.id ? d.you : who.get(whoId)) : undefined,
+    thumb: photoPath ? urls.get(photoPath) : personId ? portraits.get(personId) : undefined,
   }));
+  const withThumb = (x: FamilyDate) => ({ ...x, thumb: x.personId ? portraits.get(x.personId) : undefined });
 
   return (
     <DashboardView
       t={t}
       locale={locale}
+      workspaceId={ws}
       name={current.name}
       role={current.role}
-      counts={{ people: people.length, generations: generationCount(people, rels), graves: graves.count ?? 0, photos: photosCount.count ?? 0 }}
+      since={since}
+      cover={coverPath ? urls.get(coverPath) : undefined}
+      counts={{ people: people.length, generations: generationCount(people, rels), graves: graves.data?.length ?? 0, photos: photosCount.count ?? 0 }}
       head={head}
       partner={partner}
+      elders={elders}
       shownKids={shownKids}
       moreKids={kids.length - shownKids.length}
-      grave={gravePoint.data?.[0]?.lat != null && gravePoint.data[0].lng != null ? { lat: gravePoint.data[0].lat, lng: gravePoint.data[0].lng } : undefined}
+      graves={(graves.data ?? []).flatMap((g) => (g.lat != null && g.lng != null && byId.has(g.person_id) ? [{ id: g.id, lat: g.lat, lng: g.lng, title: nameOf(g.person_id), lines: g.cemetery_name ? [g.cemetery_name] : [] }] : []))}
       welcomeHref={mine.ready && !mine.links.get(ws) && people.length > 0 ? `${base}/welcome` : undefined}
       welcomeJoin={meElsewhere?.name}
       accessRequests={pendingAccess ? { n: pendingAccess, href: `${base}/members#other-families` } : undefined}
       portraits={Object.fromEntries(portraits)}
-      latestPhotos={latest.map((m) => urls.get(m.storage_path) ?? "").filter(Boolean)}
+      moments={moments.flatMap((m) => {
+        const u = urls.get(m.storage_path as string);
+        return u ? [{ id: m.id, url: u, album: m.folder_id ? albumName.get(m.folder_id) : undefined }] : [];
+      })}
       recent={recent}
+      jubilees={jubilees.map(withThumb)}
+      dates={dates.map(withThumb)}
+      notJoined={notJoined}
     />
   );
 }

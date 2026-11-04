@@ -38,6 +38,7 @@ export type Relationship = {
   type: "parent_child" | "partner";
   subtype: string | null;
   status: Status;
+  start_year?: number | null;
 };
 
 export type Workspace = { id: string; name: string };
@@ -127,7 +128,7 @@ export async function listRelationships(locale: Locale, workspaceId: string): Pr
   const { supabase } = await requireUser(locale);
   const { data } = await supabase
     .from("relationships")
-    .select("id, person_a, person_b, type, subtype, status")
+    .select("id, person_a, person_b, type, subtype, status, start_year")
     .eq("workspace_id", workspaceId)
     .neq("status", "rejected");
   return (data ?? []) as Relationship[];

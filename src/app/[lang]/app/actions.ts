@@ -54,6 +54,21 @@ export async function renameWorkspace(_: FormState, form: FormData): Promise<For
   return { ok: true };
 }
 
+/** The family's own cover photo on the overview (uploaded by the browser just before); empty puts back the default. */
+export async function setFamilyCover(form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.admin);
+  const path = String(form.get("path") ?? "");
+  if (path && !path.startsWith(`${workspace.id}/`)) return { error: "save" };
+  const { error } = await supabase.from("workspaces").update({ cover_path: path || null }).eq("id", workspace.id);
+  if (error) {
+    console.error("setFamilyCover", error);
+    return { error: /cover_path/.test(error.message) ? "setup" : "save" };
+  }
+  refresh();
+  return { ok: true };
+}
+
 export async function signOut(form: FormData) {
   const locale = formLocale(form);
   const supabase = await createClient();

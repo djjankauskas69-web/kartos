@@ -12,14 +12,14 @@ export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/a
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<PageLoading />}>
-      <Archive t={t} locale={locale} paramsPromise={searchParams.then((s) => ({ item: String(s.item ?? ""), tab: String(s.tab ?? "") }))} />
+      <Archive t={t} locale={locale} paramsPromise={searchParams.then((s) => ({ item: String(s.item ?? ""), tab: String(s.tab ?? ""), album: String(s.album ?? ""), upload: s.upload === "1", play: s.play === "1" }))} />
     </Suspense>
   );
 }
 
 const MEDIA = "id, kind, title, description, place, taken_year, year_qualifier, year_to, folder_id, storage_path, mime_type, uploader_id, status, created_at, file_name, width, height, media_persons(person_id)";
 
-async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Locale; paramsPromise: Promise<{ item: string; tab: string }> }) {
+async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Locale; paramsPromise: Promise<{ item: string; tab: string; album: string; upload: boolean; play: boolean }> }) {
   const { supabase, user, current } = await requireWorkspace(locale);
   const mediaQuery = (cols: string) =>
     supabase
@@ -158,6 +158,9 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
         needsApproval={can.needsApproval(current.role)}
         initialItem={item ? item.id : null}
         initialTab={item ? (item.kind === "document" ? "documents" : item.kind === "story" ? "stories" : "photos") : tab}
+        initialAlbum={albums.some((x) => x.id === params.album) ? params.album : null}
+        initialUpload={params.upload && can.add(current.role)}
+        autoplay={params.play}
         t={labels}
       />
     </div>

@@ -138,3 +138,9 @@ export const IconFilter = (p: P) => (
     <path d="M4 7h16M7 12h10M10 17h4" />
   </svg>
 );
+export const IconCalendar = (p: P) => (
+  <svg {...s(p)}>
+    <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+    <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+  </svg>
+);
