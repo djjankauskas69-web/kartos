@@ -755,7 +755,7 @@ export function TreeView({
           </div>
         </details>
         <button type="button" onClick={fit} className={`${tool} w-auto gap-1.5 px-3 text-[0.88rem] font-semibold`} aria-label={labels.fit} title={labels.fit}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.4" /><circle cx="5.5" cy="18.5" r="2.4" /><circle cx="18.5" cy="18.5" r="2.4" /><path d="M12 7.4V12M5.5 16.1V14a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2.1" /></svg>
           <span className="hidden sm:inline">{labels.fitShort}</span>
         </button>
       </div>
