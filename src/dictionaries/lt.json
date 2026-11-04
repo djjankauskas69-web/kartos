@@ -1338,7 +1338,13 @@
     "error": "Nepavyko išsaugoti.",
     "pending": "Laukia patvirtinimo",
     "goToTree": "Rodyti medyje",
-    "linkFamily": "Susieti su kitos šeimos medžiu"
+    "linkFamily": "Susieti su kitos šeimos medžiu",
+    "clickToEdit": "Spustelėkite, kad pakeistumėte",
+    "addYears": "+ Gyvenimo metai",
+    "addBirthPlace": "Gimimo vieta",
+    "allDetails": "Visi duomenys",
+    "yearError": "Patikrinkite metus.",
+    "nameRequired": "Įrašykite vardą."
   },
   "shared": {
     "title": "Kas matys?",

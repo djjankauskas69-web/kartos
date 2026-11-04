@@ -6,6 +6,7 @@ import { EventForm } from "./EventForm";
 import { PlaceForm } from "./PlaceForm";
 import { placeIcons, type PlaceKind } from "./place-icons";
 import { AboutEditor } from "./AboutEditor";
+import { InlineEdit } from "./InlineEdit";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
 export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; pending?: boolean };
@@ -56,6 +57,7 @@ export function MemorialProfile({
   treeHref,
   meHref,
   inDrawer = false,
+  inline,
 }: {
   t: Dictionary;
   locale: string;
@@ -87,8 +89,11 @@ export function MemorialProfile({
   meHref?: string;
   /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
   inDrawer?: boolean;
+  /** The administrator changes name, years and birth place right here by clicking them. */
+  inline?: { givenNames: string; surname: string; birthSurname: string; birthYear: string; deathYear: string; birthPlace: string; withBirthSurname: boolean };
 }) {
   const m = t.memorial;
+  const ie = { locale, personId, hint: m.clickToEdit, labels: { save: m.save, cancel: m.cancel, error: m.saveError, year: m.yearError, required: m.nameRequired } };
   const card = "rounded-[18px] border border-line/80 bg-surface p-5 sm:p-6";
   const head = (icon: React.ReactNode, title: string, count?: number, tab?: string) => (
     <div className="mb-4 flex items-center gap-3">
@@ -432,9 +437,37 @@ export function MemorialProfile({
               {initials}
             </span>
           )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
-            {years && <p className="mt-2 text-[1.25rem] tabular-nums text-ink-muted">{years}</p>}
+          <div className={`min-w-0 flex-1 ${inline ? "sm:pr-14" : ""}`}>
+            {inline ? (
+              <InlineEdit
+                {...ie}
+                fields={[
+                  { name: "givenNames", label: t.app.givenNames, value: inline.givenNames },
+                  { name: "surname", label: t.app.surname, value: inline.surname },
+                  ...(inline.withBirthSurname ? [{ name: "birthSurname", label: t.person.birthSurname, value: inline.birthSurname }] : []),
+                ]}
+              >
+                <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
+              </InlineEdit>
+            ) : (
+              <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
+            )}
+            {inline ? (
+              <div className="mt-2">
+                <InlineEdit
+                  {...ie}
+                  hidden={{ prevBirthYear: inline.birthYear }}
+                  fields={[
+                    { name: "birthYear", label: t.app.birthYear, value: inline.birthYear, kind: "year" },
+                    ...(living ? [] : [{ name: "deathYear", label: t.app.deathYear, value: inline.deathYear, kind: "year" as const }]),
+                  ]}
+                >
+                  <span className={`block text-[1.25rem] tabular-nums ${years ? "text-ink-muted" : "text-ink-muted/80"}`}>{years || m.addYears}</span>
+                </InlineEdit>
+              </div>
+            ) : (
+              years && <p className="mt-2 text-[1.25rem] tabular-nums text-ink-muted">{years}</p>
+            )}
             {(toMe || (living && aliveLabel)) && (
               <p className="mt-3 flex flex-wrap gap-2">
                 {living && aliveLabel && (
@@ -446,11 +479,17 @@ export function MemorialProfile({
                 {toMe && <span className="inline-flex items-center rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep first-letter:uppercase">{toMe}</span>}
               </p>
             )}
-            {((living ? residence || birthPlace : birthPlace) || occupation) && (
-              <p className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.98rem]">
-                {(living ? residence || birthPlace : birthPlace) && <span className="flex items-center gap-1.5">{icons.pin}{living ? residence || birthPlace : birthPlace}</span>}
+            {((living ? residence || birthPlace : birthPlace) || occupation || inline) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.98rem]">
+                {inline && !(living && residence) ? (
+                  <InlineEdit {...ie} fields={[{ name: "birthPlace", label: t.person.birthPlace, value: inline.birthPlace, wide: true }]}>
+                    <span className={`flex min-h-9 items-center gap-1.5 ${birthPlace ? "" : "text-ink-muted"}`}>{icons.pin}{birthPlace || m.addBirthPlace}</span>
+                  </InlineEdit>
+                ) : (
+                  (living ? residence || birthPlace : birthPlace) && <span className="flex items-center gap-1.5">{icons.pin}{living ? residence || birthPlace : birthPlace}</span>
+                )}
                 {occupation && <span className="flex items-center gap-1.5">{icons.work}{occupation}</span>}
-              </p>
+              </div>
             )}
           </div>
           <div className="flex gap-2 self-start sm:absolute sm:right-5 sm:top-5">
@@ -459,7 +498,7 @@ export function MemorialProfile({
                 {m.editMine}
               </Link>
             )}
-            {editHref && (
+            {editHref && !inline && (
               <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
                 ✎ {m.edit}
               </Link>
@@ -471,6 +510,7 @@ export function MemorialProfile({
               <div className="absolute right-0 z-20 mt-2 w-60 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
                 <Link href={treeHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.goToTree}</Link>
                 {linkHref && <Link href={linkHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.linkFamily}</Link>}
+                {editHref && inline && <Link href={editHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.allDetails}</Link>}
               </div>
             </details>
           </div>

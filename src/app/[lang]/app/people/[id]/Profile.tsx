@@ -606,6 +606,19 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           treeHref={other ? `${base}/open?ws=${other.id}&p=${id}` : `${base}/tree?p=${id}`}
           meHref={isMe ? `${base}/me` : undefined}
           inDrawer={compact}
+          inline={
+            can.edit(role) && !other
+              ? {
+                  givenNames: person.given_names ?? "",
+                  surname: person.surname ?? "",
+                  birthSurname: person.birth_surname ?? "",
+                  birthYear: person.birth_year ? String(person.birth_year) : "",
+                  deathYear: person.death_year ? String(person.death_year) : "",
+                  birthPlace: person.birth_place ?? "",
+                  withBirthSurname: person.sex === "female" || !!person.birth_surname,
+                }
+              : undefined
+          }
         />
       </div>
     );

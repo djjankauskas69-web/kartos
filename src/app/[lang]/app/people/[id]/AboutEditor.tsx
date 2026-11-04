@@ -61,12 +61,18 @@ export function AboutEditor({
   }
 
   return text ? (
-    <>
+    // Clicking the text itself opens it for writing ("Read more" still just expands it).
+    <div
+      title={labels.edit}
+      className="-m-2 cursor-text rounded-xl p-2 hover:bg-paper"
+      onClick={(e) => {
+        if ((e.target as Element).closest("button, a")) return;
+        if (window.getSelection()?.toString()) return;
+        setEditing(true);
+      }}
+    >
       <ExpandText text={text} more={labels.more} less={labels.less} />
-      <button type="button" onClick={() => setEditing(true)} className={`${button} mt-4`}>
-        ✎ {labels.edit}
-      </button>
-    </>
+    </div>
   ) : (
     <div>
       <p className="text-ink-muted">{labels.empty}</p>
