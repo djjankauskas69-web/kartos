@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Modal } from "./Modal";
+import { PhotoLightbox } from "./PhotoLightbox";
 
 /** A memory as a card: the photo on top (if there is one), the start of the text; opens to read it all. */
 export function MemoryCard({
@@ -21,7 +22,7 @@ export function MemoryCard({
   badges?: React.ReactNode;
   actions?: React.ReactNode;
   dashed?: boolean;
-  labels: { read: string; close: string };
+  labels: { read: string; close: string; enlarge: string };
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -68,8 +69,15 @@ export function MemoryCard({
           </div>
           {photo && (
             <div className="md:order-last md:pt-10">
-              {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img src={photo} alt="" className="w-full rounded-xl bg-linen object-contain md:sticky md:top-0 md:max-h-[75dvh]" />
+              <PhotoLightbox photos={[{ url: photo, alt: author }]} labels={{ close: labels.close, prev: "", next: "" }}>
+                <button type="button" data-lb="0" aria-label={labels.enlarge} title={labels.enlarge} className="group relative block w-full cursor-zoom-in md:sticky md:top-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+                  <img src={photo} alt="" className="w-full rounded-xl bg-linen object-contain md:max-h-[75dvh]" />
+                  <span aria-hidden="true" className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow transition group-hover:scale-110">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></svg>
+                  </span>
+                </button>
+              </PhotoLightbox>
             </div>
           )}
         </div>

@@ -234,7 +234,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       {label}
     </span>
   );
-  const cardLabels = { read: t.memories.read, close: t.add.close };
+  const cardLabels = { read: t.memories.read, close: t.add.close, enlarge: t.memories.openPhoto };
   const memoriesNode = (
     <>
       {/* Stories and memories: a button opens the writing window; each memory is a card that opens to read. */}

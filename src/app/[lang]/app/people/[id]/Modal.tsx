@@ -8,7 +8,8 @@ export function Modal({ open, onClose, label, closeLabel, children, wide = false
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      // A photo opened large over this window closes first.
+      if (e.key !== "Escape" || document.querySelector("[data-lightbox]")) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       onClose();

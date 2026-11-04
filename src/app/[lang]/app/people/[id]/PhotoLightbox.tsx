@@ -55,7 +55,8 @@ export function PhotoLightbox({ photos, labels, children }: { photos: Photo[]; l
           role="dialog"
           aria-modal="true"
           aria-label={photo.alt}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90"
+          data-lightbox
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90"
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(null);
           }}
