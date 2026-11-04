@@ -455,7 +455,8 @@
       "you": "You",
       "empty": "none yet",
       "fromHim": "From him",
-      "fromHer": "From her"
+      "fromHer": "From her",
+      "relations": "Show who they are to me"
     },
     "elsewhere": {
       "has": "Has their own family tree",

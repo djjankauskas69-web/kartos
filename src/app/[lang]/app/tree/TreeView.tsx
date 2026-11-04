@@ -42,6 +42,30 @@ const bgStore = {
   },
 };
 
+/** Whether "who is this to me" is written under each name; off unless chosen, remembered here. */
+const REL_KEY = "kartos.treeRelations";
+const relListeners = new Set<() => void>();
+const relStore = {
+  subscribe(l: () => void) {
+    relListeners.add(l);
+    return () => relListeners.delete(l);
+  },
+  get() {
+    try {
+      return localStorage.getItem(REL_KEY) === "1";
+    } catch {
+      return false;
+    }
+  },
+  getServer: () => false,
+  set(on: boolean) {
+    try {
+      localStorage.setItem(REL_KEY, on ? "1" : "0");
+    } catch {}
+    relListeners.forEach((l) => l());
+  },
+};
+
 /** People from another family open in that family's archive: a full page load, so the whole
  * screen (header included) switches to that archive. */
 function CardLink({ foreign, ...props }: React.ComponentProps<typeof Link> & { foreign: boolean }) {
@@ -168,7 +192,7 @@ type Labels = {
   which: { mother: string; father: string; unknown: string; hint: string; missing: string; there: string; open: string };
   elsewhere: { has: string; ask: string; askAgain: string; pending: string; asking: string; hint: string };
   sides: { mine: string; partner: string; other: string };
-  show: { fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
+  show: { relations: string; fromHim: string; fromHer: string; button: string; none: string; title: string; lead: string; clear: string; families: string; noMe: string; close: string; more: string; from: string; you: string; empty: string; cats: Record<ShowCat, string> };
 };
 
 const MIN = 0.1;
@@ -533,6 +557,7 @@ export function TreeView({
     return ys.map((y, i) => ({ y, label: meRow >= 0 ? (labels.genRel[String(i - meRow)] ?? numbered(i)) : numbered(i) })).filter((r) => r.label);
   }, [cards, generations, labels.genRel]);
   const bg = useSyncExternalStore(bgStore.subscribe, bgStore.get, bgStore.getServer);
+  const showRelations = useSyncExternalStore(relStore.subscribe, relStore.get, relStore.getServer);
   const bgColor = BACKGROUNDS.find((b) => b.id === bg)?.color ?? BACKGROUNDS[0].color;
 
   return (
@@ -569,6 +594,13 @@ export function TreeView({
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
+                <label className="mb-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-paper px-3 py-2.5">
+                  <span className="text-[0.95rem] font-semibold">{labels.show.relations}</span>
+                  <input type="checkbox" className="peer sr-only" checked={showRelations} onChange={(e) => relStore.set(e.target.checked)} />
+                  <span aria-hidden="true" className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${showRelations ? "bg-ink" : "bg-line"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${showRelations ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                </label>
                 <p className="mb-3 px-1 text-[0.88rem] text-ink-muted">{labels.show.lead}</p>
                 <label className="mb-3 flex items-center gap-2 px-1 text-[0.92rem]">
                   <span className="shrink-0 text-ink-muted">{labels.show.from}</span>
@@ -841,7 +873,7 @@ export function TreeView({
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                   {(() => {
-                    const rel = relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
+                    const rel = !showRelations ? undefined : relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
                     return rel ? <span className="mt-1 line-clamp-2 text-[0.98rem] font-semibold leading-tight text-olive-deep first-letter:uppercase">{rel}</span> : null;
                   })()}
                 </CardLink>
