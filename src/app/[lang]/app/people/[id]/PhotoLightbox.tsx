@@ -16,16 +16,19 @@ export function PhotoLightbox({ photos, labels, children }: { photos: Photo[]; l
 
   useEffect(() => {
     if (open === null) return;
+    // Caught first and kept here, so Esc closes only the photo, not the profile panel behind it.
     const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
       if (e.key === "Escape") setOpen(null);
-      else if (e.key === "ArrowRight") go(1);
-      else if (e.key === "ArrowLeft") go(-1);
+      else go(e.key === "ArrowRight" ? 1 : -1);
     };
-    document.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = overflow;
     };
   }, [open, go]);
