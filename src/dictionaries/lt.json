@@ -344,7 +344,9 @@
     "otherAccount": "Šis kvietimas skirtas {email}, o jūs prisijungę kaip {me}.",
     "otherAccountLead": "Jei turite paskyrą su tuo el. paštu, prisijunkite ja – tada viskas susies su ta paskyra ir matysite visus savo medžius kartu.",
     "switchAccount": "Prisijungti kita paskyra",
-    "meantFor": "Kvietimas skirtas {email}. Prisijunkite šiuo el. paštu, kad viskas susietų su jūsų paskyra."
+    "meantFor": "Kvietimas skirtas {email}. Prisijunkite šiuo el. paštu, kad viskas susietų su jūsų paskyra.",
+    "hello": "Sveiki, {name}!",
+    "youAre": "Medyje jūs esate"
   },
   "tree": {
     "title": "Giminės medis",

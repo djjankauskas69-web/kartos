@@ -344,7 +344,9 @@
     "otherAccount": "This invitation is for {email}, but you are signed in as {me}.",
     "otherAccountLead": "If you have an account with that email, sign in with it – then everything links to it and you'll see all your trees together.",
     "switchAccount": "Sign in with another account",
-    "meantFor": "This invitation is for {email}. Sign in with that email so it links to your account."
+    "meantFor": "This invitation is for {email}. Sign in with that email so it links to your account.",
+    "hello": "Hello, {name}!",
+    "youAre": "In the tree you are"
   },
   "tree": {
     "title": "Family tree",

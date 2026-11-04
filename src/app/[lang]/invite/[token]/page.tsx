@@ -45,17 +45,29 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
   // Meant for one email: signing in with another would make a second account that joins nothing.
   const { data: meantFor } = supabase ? await supabase.rpc("invitation_email", { p_token: token }) : { data: null };
   const forEmail = typeof meantFor === "string" && meantFor.trim() ? meantFor.trim() : null;
+  // Whom the invitation is for (their place in the tree) and the inviter's name there (needs update 0015).
+  const { data: details } = supabase ? await supabase.rpc("invitation_details", { p_token: token }) : { data: null };
+  const d = (details as Array<{ person_name: string | null; inviter_name: string | null }> | null)?.[0];
+  const personName = d?.person_name?.trim() || null;
+  const inviterName = d?.inviter_name?.trim() || invite.inviter_name;
   const otherAccount = !!(user && forEmail && user.email && user.email.toLowerCase() !== forEmail.toLowerCase());
 
   return (
     <div>
-      <p className="text-ink-muted">{t.invite.title}</p>
+      {personName && <p className="text-[1.3rem] font-semibold">{t.invite.hello.replace("{name}", personName.split(" ")[0])}</p>}
+      <p className={personName ? "mt-1 text-ink-muted" : "text-ink-muted"}>{t.invite.title}</p>
       <h1 className={`mt-1 ${cls.h1}`}>{invite.workspace_name}</h1>
       <dl className={`mt-6 divide-y divide-line ${cls.card}`}>
-        {invite.inviter_name && (
+        {personName && (
+          <div className="flex items-center justify-between gap-4 bg-[#eef1e4] px-5 py-4 first:rounded-t-[inherit]">
+            <dt className="text-ink-muted">{t.invite.youAre}</dt>
+            <dd className="text-right text-[1.15rem] font-semibold">{personName}</dd>
+          </div>
+        )}
+        {inviterName && (
           <div className="flex justify-between gap-4 px-5 py-3">
             <dt className="text-ink-muted">{t.invite.invitedBy}</dt>
-            <dd className="font-semibold">{invite.inviter_name}</dd>
+            <dd className="font-semibold">{inviterName}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4 px-5 py-3">
