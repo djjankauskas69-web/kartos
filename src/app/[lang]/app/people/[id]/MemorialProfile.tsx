@@ -54,7 +54,6 @@ export function MemorialProfile({
   aliveLabel,
   residence,
   family,
-  treeHref,
   meHref,
   inDrawer = false,
   inline,
@@ -85,7 +84,7 @@ export function MemorialProfile({
   aliveLabel?: string;
   residence?: string | null;
   family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[] };
-  treeHref: string;
+  treeHref?: string;
   meHref?: string;
   /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
   inDrawer?: boolean;
@@ -437,7 +436,7 @@ export function MemorialProfile({
               {initials}
             </span>
           )}
-          <div className={`min-w-0 flex-1 ${inline ? "sm:pr-14" : ""}`}>
+          <div className="min-w-0 flex-1">
             {inline ? (
               <InlineEdit
                 {...ie}
@@ -503,16 +502,6 @@ export function MemorialProfile({
                 ✎ {m.edit}
               </Link>
             )}
-            <details className="relative" data-menu>
-              <summary aria-label={m.more} title={m.more} className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface/95 [&::-webkit-details-marker]:hidden">
-                ⋯
-              </summary>
-              <div className="absolute right-0 z-20 mt-2 w-60 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-                <Link href={treeHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.goToTree}</Link>
-                {linkHref && <Link href={linkHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.linkFamily}</Link>}
-                {editHref && inline && <Link href={editHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{m.allDetails}</Link>}
-              </div>
-            </details>
           </div>
         </div>
       </header>
@@ -529,6 +518,14 @@ export function MemorialProfile({
         ]}
         panels={panels}
       />
+
+      {/* Rarely needed, so quiet links at the very end rather than a menu in the header. */}
+      {((editHref && inline) || linkHref) && (
+        <p className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 text-[0.95rem]">
+          {editHref && inline && <Link href={editHref} className="font-semibold text-ink-muted hover:text-ink hover:underline">{m.allDetails}</Link>}
+          {linkHref && <Link href={linkHref} className="font-semibold text-ink-muted hover:text-ink hover:underline">{m.linkFamily}</Link>}
+        </p>
+      )}
     </div>
   );
 }
