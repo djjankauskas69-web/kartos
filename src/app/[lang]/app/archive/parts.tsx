@@ -258,7 +258,7 @@ export function Detail({
 
   return (
     <div>
-      <DialogHead title={item.title} onClose={onClose} closeLabel={t.close} />
+      <DialogHead title={item.title || t.kind[item.kind]} onClose={onClose} closeLabel={t.close} />
       <div className="grid gap-6 p-6 md:grid-cols-[1.3fr_1fr]">
         <div className={`overflow-hidden rounded-xl ring-1 ring-line ${item.kind === "story" ? "" : "bg-[#efe8d8]"} ${item.kind === "story" ? "max-h-[60vh] overflow-y-auto" : "flex max-h-[60vh] min-h-64 items-center justify-center"}`}>
           {item.kind === "story" && item.url && (
@@ -376,7 +376,8 @@ export function UploadForm({
         next.push({
           key: crypto.randomUUID(),
           file,
-          title: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "),
+          // Photos need no name (camera file names mean nothing); documents keep theirs.
+          title: isImage(file) && !initialAsDocument ? "" : file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "),
           asDocument: isPdf(file) || initialAsDocument,
           thumb: isImage(file) ? URL.createObjectURL(file) : undefined,
           state: "waiting",
@@ -389,6 +390,7 @@ export function UploadForm({
   const [files, setFiles] = useState<Pending[]>(first.next);
   const [problems, setProblems] = useState<string[]>(first.bad);
   const [over, setOver] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -431,70 +433,85 @@ export function UploadForm({
       <DialogHead title={t.uploadTitle} onClose={onDone} closeLabel={t.close} />
       <div className="space-y-5 px-6 py-5">
         <input type="hidden" name="locale" value={locale} />
-        <label
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOver(true);
-          }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOver(false);
-            if (!busy) add(e.dataTransfer.files);
-          }}
-          className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center hover:border-sage has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep ${over ? "border-olive bg-[#eef1e4]" : "border-line bg-paper/60"}`}
-        >
-          <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} disabled={busy} />
-          <span className="inline-flex min-h-11 items-center rounded-full bg-sage-deep px-5 font-semibold text-surface">+ {t.chooseFiles}</span>
-          <span className="text-[0.95rem] text-ink-muted">{t.dropHint}</span>
-        </label>
+        {/* Chosen files as a calm grid of pictures: two rows, the rest counted on the last square. */}
+        {files.length === 0 ? (
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOver(true);
+            }}
+            onDragLeave={() => setOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOver(false);
+              if (!busy) add(e.dataTransfer.files);
+            }}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center hover:border-olive has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep ${over ? "border-olive bg-[#eef1e4]" : "border-line bg-paper/60"}`}
+          >
+            <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} disabled={busy} />
+            <span className="inline-flex min-h-12 items-center rounded-full bg-ink px-6 font-semibold text-surface">+ {t.chooseFiles}</span>
+            <span className="text-[0.95rem] text-ink-muted">{t.dropHint}</span>
+          </label>
+        ) : (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!busy) add(e.dataTransfer.files);
+            }}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <p className="font-semibold">
+                {t.chosenN.replace("{n}", String(files.length))}
+                {busy && <span className="ml-2 font-normal text-ink-muted">{t.uploadedOf.replace("{done}", String(doneCount)).replace("{n}", String(files.length))}</span>}
+              </p>
+              {!busy && (
+                <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+                  <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} />+ {t.more}
+                </label>
+              )}
+            </div>
+            <ul className="grid grid-cols-4 gap-2">
+              {(showAll || files.length <= 8 ? files : files.slice(0, 7)).map((f) => (
+                <li key={f.key} className="relative aspect-square overflow-hidden rounded-xl bg-[#efe8d8]">
+                  {f.thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local preview
+                    <img src={f.thumb} alt="" className={`h-full w-full object-cover ${f.state === "uploading" ? "opacity-60" : ""}`} />
+                  ) : (
+                    <span className="flex h-full items-center justify-center text-[0.85rem] font-semibold text-[#8a4b3c]">PDF</span>
+                  )}
+                  {f.state === "done" && <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-black/25 text-[1.6rem] font-bold text-white">✓</span>}
+                  {f.state === "error" && <span title={t.uploadError} className="absolute inset-0 flex items-center justify-center bg-danger/40 text-[1.6rem] font-bold text-white">!</span>}
+                  {!busy && f.state === "waiting" && (
+                    <button type="button" onClick={() => setFiles((all) => all.filter((x) => x.key !== f.key))} aria-label={`${t.remove}: ${f.title}`} className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[1.1rem] leading-none text-ink shadow">
+                      ×
+                    </button>
+                  )}
+                </li>
+              ))}
+              {!showAll && files.length > 8 && (
+                <li>
+                  <button type="button" onClick={() => setShowAll(true)} className="flex aspect-square w-full items-center justify-center rounded-xl bg-linen text-[1.4rem] font-semibold hover:bg-line">
+                    +{files.length - 7}
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
         {problems.map((p) => (
           <p key={p} role="alert" className="text-[0.95rem] text-danger">
             {p}
           </p>
         ))}
 
-        {files.length > 0 && (
-          <ul className="space-y-2">
-            {files.map((f) => (
-              <li key={f.key} className="flex items-center gap-3 rounded-xl border border-line p-2">
-                <span className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-[#efe8d8]">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-                  {f.thumb ? <img src={f.thumb} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center text-[0.75rem] font-semibold text-[#8a4b3c]">PDF</span>}
-                </span>
-                <div className="min-w-0 flex-1 space-y-1">
-                  <label className="sr-only" htmlFor={`title-${f.key}`}>
-                    {t.fileTitle}
-                  </label>
-                  <input
-                    id={`title-${f.key}`}
-                    value={f.title}
-                    onChange={(e) => setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, title: e.target.value } : x)))}
-                    disabled={busy}
-                    className="block min-h-10 w-full rounded-lg border border-line bg-surface px-3"
-                  />
-                  {!isPdf(f.file) && (
-                    <label className="flex items-center gap-2 text-[0.88rem] text-ink-muted">
-                      <input type="checkbox" checked={f.asDocument} disabled={busy} onChange={(e) => setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, asDocument: e.target.checked } : x)))} className="accent-[var(--color-sage-deep)]" />
-                      {t.asDocument}
-                    </label>
-                  )}
-                </div>
-                <span className="w-8 shrink-0 text-center" aria-live="polite">
-                  {f.state === "uploading" ? "…" : f.state === "done" ? "✓" : f.state === "error" ? <span className="text-danger" title={t.uploadError}>!</span> : (
-                    <button type="button" disabled={busy} onClick={() => setFiles((all) => all.filter((x) => x.key !== f.key))} aria-label={`${t.remove}: ${f.title}`} className="h-8 w-8 rounded-full hover:bg-paper">
-                      ×
-                    </button>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <fieldset className="space-y-4 rounded-2xl bg-paper/70 p-4">
+        <fieldset className="space-y-4">
           <legend className="sr-only">{t.commonInfo}</legend>
           <p className="font-semibold">{t.commonInfo}</p>
           <PeoplePicker idPrefix="up" people={people} label={t.linkPeople} hint={t.linkHint} placeholder={t.searchPeople} removeLabel={t.remove} />

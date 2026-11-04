@@ -62,7 +62,8 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
     return {
       id: m.id,
       kind,
-      title: m.title || m.file_name || kinds[kind],
+      // Uploaded photos often carry camera file names; those are not shown as titles.
+      title: (kind === "photo" && m.title === (m.file_name ?? "").replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ") ? "" : m.title) || (kind === "photo" ? "" : m.file_name || kinds[kind]),
       description: m.description,
       place: m.place,
       year: m.taken_year,

@@ -909,7 +909,9 @@
     "slideNext": "Next",
     "slideShuffle": "Shuffle",
     "slideFull": "Full screen",
-    "slideAll": "All photos"
+    "slideAll": "All photos",
+    "chosenN": "Chosen: {n}",
+    "more": "More"
   },
   "peopleList": {
     "title": "People",

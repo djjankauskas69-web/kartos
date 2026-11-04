@@ -909,7 +909,9 @@
     "slideNext": "Kita",
     "slideShuffle": "Atsitiktine tvarka",
     "slideFull": "Visas ekranas",
-    "slideAll": "Visos nuotraukos"
+    "slideAll": "Visos nuotraukos",
+    "chosenN": "Pasirinkta: {n}",
+    "more": "Dar"
   },
   "peopleList": {
     "title": "Žmonės",
