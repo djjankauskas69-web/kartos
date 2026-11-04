@@ -169,6 +169,9 @@ export function Detail({
 }) {
   const [editing, setEditing] = useState(startEditing);
   const [covered, setCovered] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  // Bumped by "Comment": the box below gets the cursor.
+  const [commentKey, setCommentKey] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;
@@ -227,109 +230,141 @@ export function Detail({
       </form>
     );
 
+  // Only what is known: empty details are left out instead of showing dashes.
   const rows: Array<[string, React.ReactNode]> = [
-    [t.type, t.kind[item.kind]],
-    [t.date, item.dateLabel || "—"],
-    [t.place, item.place || "—"],
-    [t.folder, item.folderId ? folderName.get(item.folderId) : t.noFolder],
+    [t.date, item.dateLabel],
+    [t.place, item.place],
+    [t.folder, item.folderId ? folderName.get(item.folderId) : null],
     [
       t.people,
       item.people.length ? (
         <span className="flex flex-wrap gap-1.5">
           {item.people.map((p) => (
-            <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.95rem] hover:underline">
+            <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.95rem] font-semibold hover:underline">
               {personName.get(p) ?? "—"}
             </Link>
           ))}
         </span>
-      ) : (
-        "—"
-      ),
+      ) : null,
     ],
-    [t.uploadedBy, item.uploader || "—"],
+    [t.uploadedBy, item.uploader],
     [t.whoSees, item.shared ? t.everyone : t.onlyFamily],
-  ];
+  ].filter(([, v]) => v) as Array<[string, React.ReactNode]>;
+
+  async function download() {
+    if (!item.url) return;
+    setDownloading(true);
+    try {
+      const blob = await fetch(item.url).then((r) => r.blob());
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(item.title || "kartos").replace(/[\\/:*?"<>|]+/g, " ").trim()}.${blob.type.includes("pdf") ? "pdf" : "jpg"}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    } catch {
+      window.open(item.url, "_blank", "noopener");
+    }
+    setDownloading(false);
+  }
+
+  const action = "flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border border-line bg-surface px-3 py-2 text-[0.95rem] font-semibold transition hover:border-ink/40 hover:bg-paper";
+  const I = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 
   return (
     <div>
       <DialogHead title={item.title || t.kind[item.kind]} onClose={onClose} closeLabel={t.close} />
-      <div className="grid gap-6 p-6 md:grid-cols-[1.3fr_1fr]">
-        <div className={`overflow-hidden rounded-xl ring-1 ring-line ${item.kind === "story" ? "" : "bg-[#efe8d8]"} ${item.kind === "story" ? "max-h-[60vh] overflow-y-auto" : "flex max-h-[60vh] min-h-64 items-center justify-center"}`}>
+      <div className="grid gap-6 p-6 md:grid-cols-[1.45fr_1fr]">
+        <div className={`overflow-hidden rounded-2xl ${item.kind === "story" ? "max-h-[70vh] overflow-y-auto ring-1 ring-line" : "flex max-h-[70vh] min-h-64 items-center justify-center bg-[#efe8d8]"}`}>
           {item.kind === "story" && item.url && (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
             <img src={item.url} alt="" className="max-h-80 w-full object-cover" />
           )}
           <Preview item={item} large />
         </div>
-        <div className="min-w-0">
-          {item.pending && <p className="mb-3 inline-block rounded-full bg-[#f3ead8] px-3 py-1 text-[0.9rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
-          <dl className="space-y-3">
-            {rows.map(([k, v]) => (
-              <div key={k}>
-                <dt className="text-[0.88rem] text-ink-muted">{k}</dt>
-                <dd className="mt-0.5">{v}</dd>
+        <div className="flex min-w-0 flex-col gap-5">
+          {item.pending && <p className="w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.9rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
+
+          {/* The three things people do with a photo: keep it, say something about it, or remove it. */}
+          {confirm ? (
+            <form
+              action={async (form) => {
+                const r = await deleteItem(form);
+                if (r.ok) onClose();
+              }}
+              className="rounded-2xl border border-danger/30 bg-danger/5 p-4"
+            >
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="id" value={item.id} />
+              <p className="font-semibold">{t.deleteAsk}</p>
+              <div className="mt-3 flex gap-2">
+                <button type="submit" className="min-h-11 flex-1 rounded-full bg-danger px-4 font-semibold text-surface">{t.deleteConfirm}</button>
+                <button type="button" onClick={() => setConfirm(false)} className="min-h-11 flex-1 rounded-full border border-line bg-surface px-4 font-semibold">{t.cancel}</button>
               </div>
-            ))}
-          </dl>
-          {item.kind !== "story" && item.description && (
-            <div className="mt-4">
-              <p className="text-[0.88rem] text-ink-muted">{t.description}</p>
-              <p className="mt-1 whitespace-pre-line font-serif text-[1.05rem] leading-relaxed">{item.description}</p>
-            </div>
-          )}
-          <div className="mt-6 flex flex-wrap gap-2">
-            {item.url && (
-              <a href={item.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 font-semibold hover:border-ink-muted">
-                {t.openFile} ↗
-              </a>
-            )}
-            {item.kind === "photo" && item.folderId && canCover && (
-              <form
-                action={async (form) => {
-                  await setAlbumCover(form);
-                  setCovered(true);
-                }}
-              >
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="id" value={item.folderId} />
-                <input type="hidden" name="mediaId" value={item.id} />
-                <button type="submit" disabled={covered} className="min-h-11 rounded-full border border-line px-4 font-semibold hover:border-ink-muted disabled:opacity-60">
-                  {covered ? `✓ ${t.isCover}` : t.makeCover}
+            </form>
+          ) : (
+            <div className="flex gap-2">
+              {item.url && (
+                <button type="button" onClick={download} disabled={downloading} className={`${action} disabled:opacity-60`}>
+                  <svg {...I}><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" /></svg>
+                  {downloading ? "…" : t.download}
                 </button>
-              </form>
-            )}
-            {item.canEdit && (
-              <button type="button" onClick={() => setEditing(true)} className="min-h-11 rounded-full border border-line px-4 font-semibold hover:border-ink-muted">
-                {t.edit}
-              </button>
-            )}
-            {item.canDelete &&
-              (confirm ? (
-                <form
-                  action={async (form) => {
-                    const r = await deleteItem(form);
-                    if (r.ok) onClose();
-                  }}
-                  className="flex gap-2"
-                >
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="min-h-11 rounded-full bg-danger px-4 font-semibold text-surface">
-                    {t.deleteConfirm}
-                  </button>
-                  <button type="button" onClick={() => setConfirm(false)} className="min-h-11 rounded-full px-3 font-semibold text-sage-deep">
-                    {t.cancel}
-                  </button>
-                </form>
-              ) : (
-                <button type="button" onClick={() => setConfirm(true)} className="min-h-11 rounded-full px-4 font-semibold text-danger hover:bg-danger/5">
+              )}
+              {canComment && (
+                <button type="button" onClick={() => setCommentKey((k) => k + 1)} className={action}>
+                  <svg {...I}><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" /></svg>
+                  {t.comment}
+                </button>
+              )}
+              {item.canDelete && (
+                <button type="button" onClick={() => setConfirm(true)} className={`${action} text-danger hover:border-danger/40 hover:bg-danger/5`}>
+                  <svg {...I}><path d="M4.5 7h15M10 11v5M14 11v5M6 7l1 12a1.5 1.5 0 0 0 1.5 1.4h7A1.5 1.5 0 0 0 17 19l1-12M9.5 7V4.5h5V7" /></svg>
                   {t.delete}
                 </button>
+              )}
+            </div>
+          )}
+
+          {rows.length > 0 && (
+            <dl className="divide-y divide-line rounded-2xl border border-line">
+              {rows.map(([k, v]) => (
+                <div key={k} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
+                  <dt className="text-[0.92rem] text-ink-muted">{k}</dt>
+                  <dd className="text-right font-semibold">{v}</dd>
+                </div>
               ))}
-          </div>
+            </dl>
+          )}
+          {item.kind !== "story" && item.description && <p className="whitespace-pre-line font-serif text-[1.08rem] leading-relaxed">{item.description}</p>}
+          {(item.canEdit || canCover) && (
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[0.95rem]">
+              {item.canEdit && (
+                <button type="button" onClick={() => setEditing(true)} className="font-semibold text-ink-muted hover:text-ink hover:underline">
+                  {t.edit}
+                </button>
+              )}
+              {item.kind === "photo" && item.folderId && canCover && (
+                <form
+                  action={async (form) => {
+                    await setAlbumCover(form);
+                    setCovered(true);
+                  }}
+                >
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={item.folderId} />
+                  <input type="hidden" name="mediaId" value={item.id} />
+                  <button type="submit" disabled={covered} className="font-semibold text-ink-muted hover:text-ink hover:underline disabled:no-underline">
+                    {covered ? `✓ ${t.isCover}` : t.makeCover}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          <Comments key={commentKey} item={item} t={t} locale={locale} canAdd={canComment} autoFocus={startComment || commentKey > 0} />
         </div>
       </div>
-      <Comments item={item} t={t} locale={locale} canAdd={canComment} autoFocus={startComment} />
     </div>
   );
 }
@@ -347,8 +382,8 @@ function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t
   const list = item.comments ?? [];
   if (!canAdd && list.length === 0) return null;
   return (
-    <section className="border-t border-line px-6 pb-6 pt-5">
-      <h3 className="text-[1.2rem] font-semibold">
+    <section>
+      <h3 className="text-[1.15rem] font-semibold">
         {t.comments} {list.length > 0 && <span className="font-normal text-ink-muted">({list.length})</span>}
       </h3>
       {list.length > 0 && (
@@ -358,7 +393,7 @@ function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t
               <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{c.author.slice(0, 1).toUpperCase() || "·"}</span>
               <div className="min-w-0 flex-1 rounded-2xl bg-paper px-4 py-2.5">
                 <p className="text-[0.9rem]">
-                  <span className="font-semibold">{c.author}</span> <span className="text-ink-muted">· {new Date(c.at).toLocaleDateString(locale)}</span>
+                  <span className="font-semibold">{c.author}</span> <span className="text-ink-muted">· {new Date(c.at).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" })}</span>
                 </p>
                 <p className="mt-0.5 whitespace-pre-line leading-relaxed">{c.body}</p>
               </div>
@@ -375,7 +410,7 @@ function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t
       )}
       {canAdd && (
         <form
-          className="mt-4 flex items-end gap-2"
+          className="mt-3 flex flex-col gap-2"
           action={async (form) => {
             setBusy(true);
             setError(null);
@@ -389,8 +424,8 @@ function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="mediaId" value={item.id} />
           <label htmlFor={`c-${item.id}`} className="sr-only">{t.addComment}</label>
-          <textarea id={`c-${item.id}`} ref={box} name="body" rows={2} maxLength={2000} required placeholder={t.commentPh} className={`${fieldCls} min-h-12 flex-1 resize-y py-3`} />
-          <button type="submit" disabled={busy} className="min-h-12 shrink-0 rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
+          <textarea id={`c-${item.id}`} ref={box} name="body" rows={2} maxLength={2000} required placeholder={t.commentPh} className={`${fieldCls} min-h-20 resize-y py-3`} />
+          <button type="submit" disabled={busy} className="min-h-11 self-end rounded-full bg-ink px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
             {busy ? "…" : t.send}
           </button>
         </form>

@@ -960,7 +960,8 @@
     "commentPh": "Write what you remember about this photo…",
     "send": "Send",
     "commentsSetup": "Comments need database update 0018.",
-    "editInfo": "Who is in it, and when?"
+    "editInfo": "Who is in it, and when?",
+    "comment": "Comment"
   },
   "peopleList": {
     "title": "People",

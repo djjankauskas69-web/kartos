@@ -960,7 +960,8 @@
     "commentPh": "Parašykite, ką prisimenate apie šią nuotrauką…",
     "send": "Siųsti",
     "commentsSetup": "Komentarams reikia atnaujinti duomenų bazę (0018).",
-    "editInfo": "Kas nuotraukoje ir kada?"
+    "editInfo": "Kas nuotraukoje ir kada?",
+    "comment": "Komentuoti"
   },
   "peopleList": {
     "title": "Žmonės",
