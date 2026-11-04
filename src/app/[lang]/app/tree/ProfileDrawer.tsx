@@ -82,7 +82,10 @@ export function ProfileDrawer({ closeHref, fullHref, labels, shell = false, chil
             ×
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 pb-5 sm:px-6">
+          {/* No top padding on the scroller itself, so the sticky tabs meet the header without a gap. */}
+          <div className="pt-5">{children}</div>
+        </div>
       </div>
     </div>
   );
