@@ -557,7 +557,9 @@
     "addPortrait": "Add a portrait",
     "changePortrait": "Change portrait",
     "portraitUploading": "Uploading…",
-    "portraitError": "Couldn't upload. Try another photo."
+    "portraitError": "Couldn't upload. Try another photo.",
+    "prev": "Previous",
+    "next": "Next"
   },
   "memories": {
     "title": "Memories",

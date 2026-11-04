@@ -25,6 +25,7 @@ import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
 import { MemoryPhoto } from "./MemoryPhoto";
+import { PhotoLightbox } from "./PhotoLightbox";
 import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./MemorialProfile";
 import { GraveView } from "./GraveView";
 import { PendingButton } from "./PortraitControls";
@@ -213,6 +214,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
   );
+  // Where each photo sits in the large view (own photos first, then what linked families share).
+  const lbIndex = new Map([...photos, ...sharedPhotos].filter((ph) => urls.get(ph.storage_path)).map((ph, i) => [ph.id, i]));
   const shareToggle = (kind: "memory" | "media", itemId: string, isShared: boolean) => (
     <form action={setShared}>
       <input type="hidden" name="locale" value={locale} />
@@ -311,6 +314,10 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
         {photos.length === 0 && sharedPhotos.length === 0 ? (
           <p className="mt-3 text-ink-muted">{t.photos.empty}</p>
         ) : (
+          <PhotoLightbox
+            photos={[...photos, ...sharedPhotos].flatMap((ph) => (urls.get(ph.storage_path) ? [{ url: urls.get(ph.storage_path)!, alt: fullName(person) }] : []))}
+            labels={{ close: t.add.close, prev: t.photos.prev, next: t.photos.next }}
+          >
           <ul className={`mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 ${compact ? "" : "lg:grid-cols-4"}`}>
             {photos.map((ph) => {
               const url = urls.get(ph.storage_path);
@@ -318,7 +325,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               return (
                 <li key={ph.id} className={`overflow-hidden ${cls.card}`}>
                   {url && (
-                    <a href={url} target="_blank" rel="noreferrer" className="block aspect-square bg-linen">
+                    <a href={url} target="_blank" rel="noreferrer" data-lb={lbIndex.get(ph.id)} className="block aspect-square cursor-zoom-in bg-linen">
                       {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                       <img src={url} alt={fullName(person)} loading="lazy" className="h-full w-full object-cover" />
                     </a>
@@ -352,7 +359,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               return (
                 <li key={ph.id} className={`overflow-hidden border-dashed ${cls.card}`}>
                   {url && (
-                    <a href={url} target="_blank" rel="noreferrer" className="block aspect-square bg-linen">
+                    <a href={url} target="_blank" rel="noreferrer" data-lb={lbIndex.get(ph.id)} className="block aspect-square cursor-zoom-in bg-linen">
                       {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                       <img src={url} alt={fullName(person)} loading="lazy" className="h-full w-full object-cover" />
                     </a>
@@ -362,6 +369,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               );
             })}
           </ul>
+          </PhotoLightbox>
         )}
       </section>
     </>

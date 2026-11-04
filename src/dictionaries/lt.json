@@ -557,7 +557,9 @@
     "addPortrait": "Pridėti portretą",
     "changePortrait": "Pakeisti portretą",
     "portraitUploading": "Įkeliama…",
-    "portraitError": "Nepavyko įkelti. Bandykite kitą nuotrauką."
+    "portraitError": "Nepavyko įkelti. Bandykite kitą nuotrauką.",
+    "prev": "Ankstesnė",
+    "next": "Kita"
   },
   "memories": {
     "title": "Prisiminimai",
