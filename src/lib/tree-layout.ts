@@ -239,6 +239,8 @@ export function edgePaths(
   photo?: { y: number; r: number },
   /** Moves the horizontal bar of a parents → children line up or down (px), so lines of different families don't merge. */
   busShift?: (e: TreeEdge) => number,
+  /** Soft curves from parents to each child instead of square elbows. */
+  curved = false,
 ) {
   const { cardW, cardH } = size;
   const at = new Map(nodes.map((n) => [n.key, n]));
@@ -266,6 +268,18 @@ export function edgePaths(
     const sy = ps.length === 2 && !coupleBoxes ? ps[0].y + (photo ? photo.y : cardH / 2) : parentBottom;
     const childTop = cs[0].y - (coupleBoxes ? boxPad : 0);
     const busY = childTop - (childTop - parentBottom) / 2 + (busShift?.(e) ?? 0);
+    if (curved) {
+      // Down from the parents, then one gentle S-curve to each child.
+      const bend = Math.min(34, Math.max(12, (childTop - parentBottom) / 2 - 4));
+      const y0 = Math.max(sy, busY - bend);
+      const y1 = busY + bend;
+      for (const c of cs) {
+        const cx = c.x + cardW / 2;
+        if (Math.abs(cx - sx) < 1) paths.push(`M${sx} ${sy}V${c.y}`);
+        else paths.push(`M${sx} ${sy}V${y0}C${sx} ${busY} ${cx} ${busY} ${cx} ${y1}V${c.y - (coupleBoxes ? boxPad : 0)}`);
+      }
+      continue;
+    }
     const xs = cs.map((c) => c.x + cardW / 2);
     const left = Math.min(sx, ...xs);
     const right = Math.max(sx, ...xs);

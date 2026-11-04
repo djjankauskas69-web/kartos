@@ -106,6 +106,22 @@ function directLine(start: string, rels: Array<{ person_a: string; person_b: str
 type AddGroup = "parent" | "partner" | "child" | "sibling";
 type MenuState = { key: string; mode: "card" | "add" | "which"; group?: AddGroup } | null;
 
+/** People of this family: a soft warm tone per surname, so branches read even without photos. */
+const SURNAME_TONES = [
+  { bg: "#efe7d6", ink: "#5e4a2b" },
+  { bg: "#e5ecdf", ink: "#3f5634" },
+  { bg: "#f0e2dc", ink: "#6e3f31" },
+  { bg: "#f3e6d3", ink: "#6b4a22" },
+  { bg: "#e9e6d8", ink: "#4d4a33" },
+  { bg: "#f1ead2", ink: "#5f5420" },
+];
+const surnameTone = (name: string) => {
+  const sur = (name.trim().split(/\s+/).pop() ?? "").toLowerCase().replace(/(ienė|aitė|ytė|utė|ūtė|is|as|us|ys|ė|a)$/u, "");
+  let h = 0;
+  for (const ch of sur) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SURNAME_TONES[h % SURNAME_TONES.length];
+};
+
 /** Each linked family gets its own soft colour (the same as its dot above the tree). */
 const FAMILY_COLORS = [
   { bg: "#e3ebf3", ink: "#3e566e", ring: "#8fa5bb" },
@@ -561,7 +577,14 @@ export function TreeView({
   const bgColor = BACKGROUNDS.find((b) => b.id === bg)?.color ?? BACKGROUNDS[0].color;
 
   return (
-    <div ref={frame} style={{ backgroundColor: bgColor }} className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "h-screen" : "rounded-[18px]"}`}>
+    <div
+      ref={frame}
+      style={{
+        backgroundColor: bgColor,
+        // A faint paper grain, like a family album page.
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .22 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+      }}
+      className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "h-screen" : "rounded-[18px]"}`}>
       {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -784,6 +807,10 @@ export function TreeView({
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : fitH === null ? "h-[calc(100dvh-14rem)] min-h-[26rem]" : ""} ${ready ? "" : "opacity-0"}`}
       >
         <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
+          {/* Every other generation sits on a faint band, so a row reads as one generation. */}
+          {rows.map((r, i) =>
+            i % 2 === 1 ? <div key={r.y} aria-hidden="true" style={{ top: r.y - 34, height: cardH + 68, left: -4000, width: width + 8000 }} className="pointer-events-none absolute bg-[#8a7a5c]/[0.045]" /> : null,
+          )}
           <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
             {/* parents → children: clear vertical joins; the chosen person's own links stand out */}
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
@@ -816,7 +843,7 @@ export function TreeView({
                 style={{ left: j.x, top: j.y }}
                 className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white text-[1rem] leading-none transition-opacity duration-200 ${lit ? (!lineOn(j.keys ?? []) ? "opacity-25" : "") : focus && !focus.onLine(j.keys ?? []) ? "opacity-[.18]" : ""} ${j.later ? "border-dashed border-[#b3afa3] text-ink-muted" : "border-[#8d897c] text-ink"} ${dim(b.gen)}`}
               >
-                ∞
+                <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="6" cy="6" r="4.2" /><circle cx="12" cy="6" r="4.2" /></svg>
               </span>
             )),
           )}
@@ -830,6 +857,12 @@ export function TreeView({
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
                 className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
               >
+                {/* The card under the portrait: the medallion sits on its top edge. */}
+                <span
+                  aria-hidden="true"
+                  style={{ top: PHOTO / 2 }}
+                  className={`pointer-events-none absolute inset-x-1.5 bottom-1 rounded-[18px] border shadow-[0_10px_24px_-18px_rgb(60_45_30/0.55)] transition-shadow group-hover:shadow-[0_14px_30px_-16px_rgb(60_45_30/0.6)] ${c.living ? "border-[#e6e1d6] bg-white/95" : "border-[#e3d8c4] bg-[#f8f2e7]/95"}`}
+                />
                 <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-1 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
@@ -842,13 +875,19 @@ export function TreeView({
                         alt=""
                         draggable={false}
                         style={{ width: PHOTO, height: PHOTO, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign ?? "")?.ring }}
-                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "brightness-[.93]"} ${ringOf(c)}`}
+                        className={`rounded-full object-cover ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.55)] ${c.living ? "" : "sepia-[.45] brightness-[.97]"} ${ringOf(c)}`}
                       />
                     ) : (
                       <span
                         aria-hidden="true"
-                        style={{ width: PHOTO, height: PHOTO, ...(c.foreign ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign)?.ring } : {}) }}
-                        className={`flex items-center justify-center rounded-full text-[1.6rem] font-semibold ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.foreign ? "" : c.living ? "bg-sage-wash text-ink" : "bg-[#ebe6da] text-ink/85"} ${ringOf(c)}`}
+                        style={{
+                          width: PHOTO,
+                          height: PHOTO,
+                          ...(c.foreign
+                            ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign)?.ring }
+                            : { backgroundColor: surnameTone(c.name).bg, color: surnameTone(c.name).ink }),
+                        }}
+                        className={`flex items-center justify-center rounded-full font-serif text-[1.7rem] ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.living ? "" : "sepia-[.35]"} ${ringOf(c)}`}
                       >
                         {c.initials}
                       </span>
@@ -866,15 +905,15 @@ export function TreeView({
                       </span>
                     )}
                   </span>
-                  <span title={c.foreign} className="mt-3.5 line-clamp-2 text-[1.32rem] font-semibold leading-[1.25] text-ink group-hover:underline">{c.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[1.08rem] tabular-nums text-ink/70">
+                  <span title={c.foreign} className="relative mt-3.5 line-clamp-2 text-[1.32rem] font-semibold leading-[1.25] text-ink group-hover:underline">{c.name}</span>
+                  <span className="relative mt-0.5 flex items-center gap-1.5 text-[1.08rem] tabular-nums text-ink/70">
                     {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                   {(() => {
                     const rel = !showRelations ? undefined : relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
-                    return rel ? <span className="mt-1 line-clamp-2 text-[0.98rem] font-semibold leading-tight text-olive-deep first-letter:uppercase">{rel}</span> : null;
+                    return rel ? <span className="relative mt-1 line-clamp-1 text-[0.98rem] font-semibold leading-tight text-olive-deep first-letter:uppercase">{rel}</span> : null;
                   })()}
                 </CardLink>
                 {(
