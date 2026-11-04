@@ -577,7 +577,9 @@
     "photoError": "Nepavyko įkelti nuotraukos.",
     "about": "Apie",
     "storiesTitle": "Istorijos ir prisiminimai",
-    "openPhoto": "Atidaryti nuotrauką"
+    "openPhoto": "Atidaryti nuotrauką",
+    "addButton": "Pridėti prisiminimą",
+    "read": "Skaityti"
   },
   "grave": {
     "title": "Kapo vieta",

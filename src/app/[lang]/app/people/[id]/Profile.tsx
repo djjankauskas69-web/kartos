@@ -24,7 +24,7 @@ import { adoptLinkedFact, deleteMemory, deletePhoto, removeRelationship, setPort
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
-import { MemoryPhoto } from "./MemoryPhoto";
+import { MemoryCard } from "./MemoryCard";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./MemorialProfile";
 import { GraveView } from "./GraveView";
@@ -212,7 +212,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 personId={id}
                 needsApproval={can.needsApproval(role)}
                 share={!other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked } : undefined}
-                labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
+                labels={{ button: t.memories.addButton, close: t.add.close, title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
   );
   // Where each photo sits in the large view (own photos first, then what linked families share).
@@ -234,67 +234,65 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       {label}
     </span>
   );
+  const cardLabels = { read: t.memories.read, close: t.add.close };
   const memoriesNode = (
     <>
-      {/* Stories and memories */}
+      {/* Stories and memories: a button opens the writing window; each memory is a card that opens to read. */}
       <section id="memories" className="scroll-mt-24">
-        <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
+          {can.add(role) && composerNode}
+        </div>
         {(memories ?? []).length === 0 && sharedMemories.length === 0 ? (
           <p className="mt-3 text-ink-muted">{t.memories.empty}</p>
         ) : (
-          <ul className="mt-4 space-y-4">
+          <ul className="mt-5 grid items-stretch gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {(memories ?? []).map((m) => {
               const path = m.media_id ? (memoryPath.get(m.media_id) ?? photos.find((p) => p.id === m.media_id)?.storage_path) : undefined;
               const phUrl = path ? urls.get(path) : undefined;
-              const author = authors.get(m.author_id as string) ?? "";
+              const mine = (can.edit(role) || m.author_id === user.id) && !other;
               return (
-                <li key={m.id} className={`p-5 sm:p-6 ${cls.card}`}>
-                  {phUrl && (
-                    <div className="float-right mb-3 ml-4">
-                      <MemoryPhoto src={phUrl} label={t.memories.openPhoto} close={t.add.close} />
-                    </div>
-                  )}
-                  <div className="mb-3 flex flex-wrap items-center gap-3 text-[0.95rem]">
-                    <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{author.slice(0, 1).toUpperCase()}</span>
-                    <span className="font-semibold">{author}</span>
-                    <span className="text-ink-muted">· {dateFmt.format(new Date(m.created_at))}</span>
-                    {m.status === "pending" && <PendingBadge label={t.app.pending} />}
-                    {m.shared && sharedChip(t.shared.isShared)}
-                  </div>
-                  <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
-                  {(can.edit(role) || m.author_id === user.id) && !other && (
-                    <div className="clear-both mt-3 flex items-center justify-end gap-3 text-[0.92rem] text-ink-muted">
-                      {!other && m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
-                      <form action={deleteMemory}>
-                        <input type="hidden" name="locale" value={locale} />
-                        <input type="hidden" name="id" value={m.id} />
-                        <button type="submit" className="hover:text-danger">
-                          {t.memories.delete}
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </li>
+                <MemoryCard
+                  key={m.id}
+                  author={authors.get(m.author_id as string) ?? ""}
+                  date={dateFmt.format(new Date(m.created_at))}
+                  body={m.body}
+                  photo={phUrl}
+                  labels={cardLabels}
+                  badges={
+                    <>
+                      {m.status === "pending" && <PendingBadge label={t.app.pending} />}
+                      {m.shared && sharedChip(t.shared.isShared)}
+                    </>
+                  }
+                  actions={
+                    mine ? (
+                      <>
+                        {m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
+                        <form action={deleteMemory}>
+                          <input type="hidden" name="locale" value={locale} />
+                          <input type="hidden" name="id" value={m.id} />
+                          <button type="submit" className="rounded-full px-2 py-1 hover:text-danger">{t.memories.delete}</button>
+                        </form>
+                      </>
+                    ) : undefined
+                  }
+                />
               );
             })}
             {sharedMemories.map((m) => {
               const path = m.media_id ? memoryPath.get(m.media_id) : undefined;
-              const phUrl = path ? urls.get(path) : undefined;
-              const author = authors.get(m.author_id as string) ?? "";
               return (
-                <li key={m.id} className={`border-dashed p-5 sm:p-6 ${cls.card}`}>
-                  {phUrl && (
-                    <div className="float-right mb-3 ml-4">
-                      <MemoryPhoto src={phUrl} label={t.memories.openPhoto} close={t.add.close} />
-                    </div>
-                  )}
-                  <div className="mb-3 flex flex-wrap items-center gap-3 text-[0.95rem]">
-                    {sharedChip(t.shared.from.replace("{name}", familyOf.get(m.person_id) ?? ""))}
-                    {author && <span className="font-semibold">{author}</span>}
-                    <span className="text-ink-muted">· {dateFmt.format(new Date(m.created_at))}</span>
-                  </div>
-                  <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
-                </li>
+                <MemoryCard
+                  key={m.id}
+                  dashed
+                  author={authors.get(m.author_id as string) ?? ""}
+                  date={dateFmt.format(new Date(m.created_at))}
+                  body={m.body}
+                  photo={path ? urls.get(path) : undefined}
+                  labels={cardLabels}
+                  badges={sharedChip(t.shared.from.replace("{name}", familyOf.get(m.person_id) ?? ""))}
+                />
               );
             })}
           </ul>
@@ -599,7 +597,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           events={ev}
           places={pl}
           eventsReady={eventsReady}
-          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) ? composerNode : null }}
+          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: null }}
           living={person.is_living}
           aliveLabel={person.sex === "female" ? mt.aliveF : mt.aliveM}
           residence={residence}

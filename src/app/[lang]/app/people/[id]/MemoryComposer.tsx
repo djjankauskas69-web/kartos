@@ -1,17 +1,20 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useCallback, useRef, useState } from "react";
+import { Modal } from "./Modal";
 import { cls } from "@/components/ui";
 import { isImage, uploadPhoto } from "@/lib/upload";
 import { addMemory, type FormState } from "../../actions";
 
-type L = { title: string; lead: string; placeholder: string; addPhoto: string; removePhoto: string; submit: string; saving: string; pending: string; empty: string; error: string; photoError: string };
+type L = { button: string; close: string; title: string; lead: string; placeholder: string; addPhoto: string; removePhoto: string; submit: string; saving: string; pending: string; empty: string; error: string; photoError: string };
 
 /** A roomy box for a story about the person, with a photo button in its corner. */
 type Share = { title: string; onlyUs: string; alsoLinked: string };
 
 export function MemoryComposer({ locale, workspaceId, personId, needsApproval, labels, share }: { locale: string; workspaceId: string; personId: string; needsApproval: boolean; labels: L; share?: Share }) {
   const [shared, setShared] = useState(false);
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<{ url: string; file: File } | null>(null);
@@ -30,16 +33,24 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
       setShared(false);
       if (photo) URL.revokeObjectURL(photo.url);
       setPhoto(null);
+      if (!needsApproval) setOpen(false);
     }
     return result;
   }, {});
   const err = state.error === "empty" ? labels.empty : state.error === "photo" ? labels.photoError : state.error ? labels.error : null;
 
   return (
-    <form ref={formRef} action={action} className={`p-5 sm:p-6 ${cls.card}`}>
+    <>
+    <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-ink px-5 text-[1rem] font-semibold text-surface hover:bg-olive-deep">
+      <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
+      {labels.button}
+    </button>
+    {state.ok && needsApproval && !open && <p className="text-[0.95rem] text-ink-muted">{labels.pending}</p>}
+    <Modal open={open} onClose={close} label={labels.title} closeLabel={labels.close}>
+    <form ref={formRef} action={action}>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="personId" value={personId} />
-      <h2 className="text-[1.3rem] font-semibold">{labels.title}</h2>
+      <h2 className="pr-12 text-[1.4rem] font-semibold">{labels.title}</h2>
       <p className="mb-4 mt-1 text-[0.95rem] text-ink-muted">{labels.lead}</p>
       <div className="relative rounded-xl border border-line bg-surface focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
         <label htmlFor={`memory-${personId}`} className="sr-only">
@@ -48,10 +59,10 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
         <textarea
           id={`memory-${personId}`}
           name="body"
-          rows={9}
+          rows={8}
           maxLength={20000}
           placeholder={labels.placeholder}
-          className="block min-h-56 w-full resize-y rounded-xl bg-transparent px-4 pb-16 pt-3.5 text-[1.08rem] leading-relaxed text-ink placeholder:text-ink-muted/60 focus:outline-none"
+          className="block min-h-48 w-full resize-y rounded-xl bg-transparent px-4 pb-16 pt-3.5 text-[1.08rem] leading-relaxed text-ink placeholder:text-ink-muted/60 focus:outline-none"
         />
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
           {photo ? (
@@ -121,5 +132,7 @@ export function MemoryComposer({ locale, workspaceId, personId, needsApproval, l
         {pending ? labels.saving : labels.submit}
       </button>
     </form>
+    </Modal>
+    </>
   );
 }

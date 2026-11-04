@@ -577,7 +577,9 @@
     "photoError": "Couldn't upload the photo.",
     "about": "About",
     "storiesTitle": "Stories and memories",
-    "openPhoto": "Open the photo"
+    "openPhoto": "Open the photo",
+    "addButton": "Add a memory",
+    "read": "Read"
   },
   "grave": {
     "title": "Resting place",
