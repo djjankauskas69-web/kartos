@@ -586,20 +586,11 @@ export function TreeView({
             </button>
             {showOpen && (
               <div className="fixed inset-x-2 bottom-2 z-40 max-h-[80dvh] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[var(--shadow-float)] sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[min(40rem,calc(100dvh-12rem))] sm:w-[18.5rem]">
-                <div className="mb-2 flex items-center justify-between px-1">
-                  <p className="font-semibold">{labels.show.title}</p>
+                <div className="-mb-1 flex justify-end sm:hidden">
                   <button type="button" onClick={() => setShowOpen(false)} aria-label={labels.show.close} className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
-                <label className="mb-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-paper px-3 py-2.5">
-                  <span className="text-[0.95rem] font-semibold">{labels.show.relations}</span>
-                  <input type="checkbox" className="peer sr-only" checked={showRelations} onChange={(e) => relStore.set(e.target.checked)} />
-                  <span aria-hidden="true" className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${showRelations ? "bg-ink" : "bg-line"}`}>
-                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${showRelations ? "left-[18px]" : "left-0.5"}`} />
-                  </span>
-                </label>
-                <p className="mb-3 px-1 text-[0.88rem] text-ink-muted">{labels.show.lead}</p>
                 <label className="mb-3 flex items-center gap-2 px-1 text-[0.92rem]">
                   <span className="shrink-0 text-ink-muted">{labels.show.from}</span>
                   <select
@@ -648,6 +639,13 @@ export function TreeView({
                     {labels.show.clear}
                   </button>
                 )}
+                <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-paper px-3 py-2.5">
+                  <span className="text-[0.95rem] font-semibold">{labels.show.relations}</span>
+                  <input type="checkbox" className="peer sr-only" checked={showRelations} onChange={(e) => relStore.set(e.target.checked)} />
+                  <span aria-hidden="true" className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${showRelations ? "bg-ink" : "bg-line"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${showRelations ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                </label>
                 {familyToggles.length > 1 && (
                   <div className="mt-3 border-t border-line pt-3">
                     <p className="mb-1.5 px-1 text-[0.85rem] font-semibold text-ink-muted">{labels.show.families}</p>
