@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Photo = { url: string; alt: string };
 
@@ -47,7 +48,9 @@ export function PhotoLightbox({ photos, labels, children }: { photos: Photo[]; l
       }}
     >
       {children}
-      {photo && (
+      {photo &&
+        // On the page itself, not inside the sliding profile panel (which would trap and offset it).
+        createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -82,8 +85,9 @@ export function PhotoLightbox({ photos, labels, children }: { photos: Photo[]; l
               </p>
             </>
           )}
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   );
 }
