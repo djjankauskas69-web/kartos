@@ -461,11 +461,11 @@ export function MemorialProfile({
                     ...(living ? [] : [{ name: "deathYear", label: t.app.deathYear, value: inline.deathYear, kind: "year" as const }]),
                   ]}
                 >
-                  <span className={`block text-[1.25rem] tabular-nums ${years ? "text-ink-muted" : "text-ink-muted/80"}`}>{years || m.addYears}</span>
+                  <span className={`block text-[1.45rem] font-medium tabular-nums sm:text-[1.6rem] ${years ? "text-ink-muted" : "text-ink-muted/80"}`}>{years || m.addYears}</span>
                 </InlineEdit>
               </div>
             ) : (
-              years && <p className="mt-2 text-[1.25rem] tabular-nums text-ink-muted">{years}</p>
+              years && <p className="mt-2 text-[1.45rem] font-medium tabular-nums text-ink-muted sm:text-[1.6rem]">{years}</p>
             )}
             {(toMe || (living && aliveLabel)) && (
               <p className="mt-3 flex flex-wrap gap-2">

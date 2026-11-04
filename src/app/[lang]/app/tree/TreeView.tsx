@@ -890,7 +890,7 @@ export function TreeView({
                     )}
                   </span>
                   <span title={c.foreign} className="relative mt-3.5 line-clamp-2 break-words text-[1.25rem] font-semibold leading-[1.25] text-ink">{c.name}</span>
-                  <span className="relative mt-0.5 flex items-center gap-1.5 text-[1.08rem] font-medium tabular-nums text-ink/85">
+                  <span className="relative mt-0.5 flex items-center gap-1.5 text-[1.2rem] font-semibold tabular-nums text-ink/85">
                     {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
