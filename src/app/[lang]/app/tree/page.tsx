@@ -411,7 +411,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         locale={locale}
       />
       {drawerId && (
-        <ProfileDrawer closeHref={viewHref()} fullHref={`${base}/people/${drawerId}`} labels={{ close: t.tree.drawerClose, full: t.tree.drawerFull }}>
+        <ProfileDrawer closeHref={viewHref()} labels={{ close: t.tree.drawerClose }}>
           <Suspense key={drawerId} fallback={<KartosPulse />}>
             <Profile t={t} locale={locale} idPromise={Promise.resolve(drawerId)} compact />
           </Suspense>

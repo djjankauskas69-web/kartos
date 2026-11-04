@@ -7,8 +7,8 @@ import { drawerState } from "./drawer-state";
 const noop = () => () => {};
 
 const FALLBACK = {
-  lt: { close: "Uždaryti", full: "Atidaryti visą profilį" },
-  en: { close: "Close", full: "Open full profile" },
+  lt: { close: "Uždaryti" },
+  en: { close: "Close" },
 };
 
 /**
@@ -17,7 +17,7 @@ const FALLBACK = {
  * underneath is shown again straight away without being rebuilt. With `closeHref` it
  * navigates there instead (old ?person= links).
  */
-export function ProfileDrawer({ closeHref, fullHref, labels, shell = false, children }: { closeHref?: string; fullHref?: string; labels?: { close: string; full: string }; shell?: boolean; children: React.ReactNode }) {
+export function ProfileDrawer({ closeHref, labels, shell = false, children }: { closeHref?: string; labels?: { close: string }; shell?: boolean; children: React.ReactNode }) {
   const router = useRouter();
   // The loading shell has no dictionary; it reads the page language once mounted.
   const lang = useSyncExternalStore(noop, () => (document.documentElement.lang === "en" ? "en" : "lt"), () => "lt" as const);
@@ -69,15 +69,7 @@ export function ProfileDrawer({ closeHref, fullHref, labels, shell = false, chil
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
       <button type="button" data-drawer-close aria-label={l.close} tabIndex={-1} className={`absolute inset-0 cursor-default bg-ink/15 backdrop-blur-[1px] ${slide ? "animate-[fade-in_200ms_ease-out_both]" : ""}`} />
       <div className={`relative flex h-dvh w-full flex-col bg-paper ${slide ? "animate-[drawer-in_260ms_cubic-bezier(0.2,0.7,0.2,1)_both]" : ""} shadow-[-24px_0_60px_-30px_rgb(28_29_26/0.5)] sm:w-[min(calc(100vw-2rem),max(44rem,68vw))] sm:rounded-l-[22px]`}>
-        <div className="flex items-center justify-between gap-3 border-b border-line bg-surface/90 px-5 py-3 backdrop-blur sm:rounded-tl-[22px]">
-          {fullHref ? (
-            // A full page load, so the profile opens as its own page rather than over the tree again.
-            <a href={fullHref} className="text-[0.95rem] font-semibold text-ink-muted hover:text-ink hover:underline">
-              {l.full} ↗
-            </a>
-          ) : (
-            <span />
-          )}
+        <div className="flex items-center justify-end gap-3 border-b border-line bg-surface/90 px-5 py-3 backdrop-blur sm:rounded-tl-[22px]">
           <button type="button" data-drawer-close aria-label={l.close} title={l.close} className="flex h-11 w-11 items-center justify-center rounded-full text-[1.6rem] leading-none text-ink hover:bg-linen">
             ×
           </button>

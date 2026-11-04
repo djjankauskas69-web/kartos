@@ -19,11 +19,11 @@ export default function DrawerProfile({ params, searchParams }: Props) {
 }
 
 async function Panel({ params, searchParams }: Props) {
-  const [{ lang, id }, sp, t, locale] = await Promise.all([params, searchParams, getDictionary(), getLocale()]);
+  const [{ id }, sp, t, locale] = await Promise.all([params, searchParams, getDictionary(), getLocale()]);
   // ?ws= : someone from a joined family, shown from their own archive.
   const ws = typeof sp.ws === "string" ? sp.ws : undefined;
   return (
-    <ProfileDrawer key={`${ws ?? ""}${id}`} fullHref={`/${lang}/app/people/${id}${ws ? `?ws=${ws}` : ""}`}>
+    <ProfileDrawer key={`${ws ?? ""}${id}`}>
       <Profile t={t} locale={locale} idPromise={Promise.resolve(id)} compact wsId={ws} />
     </ProfileDrawer>
   );
