@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useState } from "react";
 import { MapView } from "@/components/map/Map";
 import { addPersonEvent, type EventState } from "./event-actions";
@@ -8,7 +7,7 @@ import { addPersonEvent, type EventState } from "./event-actions";
 type L = Record<string, string>;
 import { placeIcons, type PlaceKind } from "./place-icons";
 
-const KINDS: PlaceKind[] = ["residence", "birthplace", "work", "study", "resting", "other"];
+const KINDS: PlaceKind[] = ["residence", "birthplace", "work", "study", "other"];
 
 /** Scrolls to the add-a-place card and puts the cursor in the place box. */
 export function FocusPlaceButton({ label }: { label: string }) {
@@ -29,7 +28,7 @@ export function FocusPlaceButton({ label }: { label: string }) {
 }
 
 /** "Add a new place": kind chips, the place, years, and an optional point on the map. */
-export function PlaceForm({ locale, personId, labels, center, graveHref }: { locale: string; personId: string; labels: L; center?: { lat: number; lng: number }; graveHref?: string }) {
+export function PlaceForm({ locale, personId, labels, center }: { locale: string; personId: string; labels: L; center?: { lat: number; lng: number } }) {
   const [kind, setKind] = useState<PlaceKind>("residence");
   const [map, setMap] = useState(false);
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
@@ -55,22 +54,13 @@ export function PlaceForm({ locale, personId, labels, center, graveHref }: { loc
       <input type="hidden" name="lat" value={pin?.lat ?? ""} />
       <input type="hidden" name="lng" value={pin?.lng ?? ""} />
 
-      <div className="@container/kinds"><div className="grid grid-cols-2 gap-2 @lg/kinds:grid-cols-3 @4xl/kinds:grid-cols-6">
-        {KINDS.map((k) =>
-          k === "resting" ? (
-            graveHref && (
-              <Link key={k} href={graveHref} className={chip(false)}>
-                <span className="text-ink-muted">{placeIcons[k]}</span>
-                {labels.resting}
-              </Link>
-            )
-          ) : (
-            <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}>
-              <span className={kind === k ? "text-olive-deep" : "text-ink-muted"}>{placeIcons[k]}</span>
-              {labels[k]}
-            </button>
-          ),
-        )}
+      <div className="@container/kinds"><div className="grid grid-cols-2 gap-2 @lg/kinds:grid-cols-3 @4xl/kinds:grid-cols-5">
+        {KINDS.map((k) => (
+          <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}>
+            <span className={kind === k ? "text-olive-deep" : "text-ink-muted"}>{placeIcons[k]}</span>
+            {labels[k]}
+          </button>
+        ))}
       </div></div>
 
       <div className="flex flex-col gap-3 lg:flex-row">
