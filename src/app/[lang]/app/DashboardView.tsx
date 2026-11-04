@@ -80,10 +80,6 @@ export function DashboardView(props: DashboardData) {
           <Scribble className="ml-[12%] mt-1 h-4 w-40 text-ink/80" />
           <p className="mt-4 text-[1.15rem] font-medium text-ink/85">{d.subtitle}</p>
           {since && <p className="mt-1.5 text-[1.05rem] font-semibold text-olive-deep">{d.since.replace("{y}", String(since))}</p>}
-          <Link href={`${base}/tree`} className={`${pill} mt-6 bg-ink text-surface shadow-[0_10px_24px_-12px_rgb(28_29_26/0.8)] hover:bg-olive-deep`}>
-            <IconTree size={20} />
-            {d.viewTree}
-          </Link>
         </div>
       </section>
 
