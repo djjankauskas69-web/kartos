@@ -261,7 +261,6 @@ export function MemorialProfile({
           <div className="mb-4 flex items-center gap-3">
             <span className="text-ink-muted">{icons.people}</span>
             <h2 className="flex-1 text-[1.25rem] font-semibold">{m.tabFamily}</h2>
-            <Link href={treeHref} className="text-[0.92rem] font-semibold hover:underline">{m.viewInTree} ↗</Link>
           </div>
           {hasFamily ? (
             <div className="@container/fam"><div className="grid gap-5 @md/fam:grid-cols-3 @md/fam:gap-4">
