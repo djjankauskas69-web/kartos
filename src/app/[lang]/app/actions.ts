@@ -516,8 +516,11 @@ export async function recordPhotos(form: FormData): Promise<FormState> {
     kind: "photo",
     width: i.width ?? null,
     height: i.height ?? null,
+    ...(form.get("shared") === "1" ? { shared: true } : {}),
   }));
-  const { error } = await supabase.from("media").insert(rows);
+  let { error } = await supabase.from("media").insert(rows);
+  // Without database update 0012 there is no "shared" column yet; the photos are kept for the family.
+  if (error && /shared/.test(error.message)) ({ error } = await supabase.from("media").insert(rows.map((r) => ({ ...r, shared: undefined }))));
   if (error) {
     console.error("recordPhotos", error);
     return { error: "save" };

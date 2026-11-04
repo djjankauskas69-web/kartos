@@ -13,17 +13,20 @@ export function PhotoUploader({
   workspaceId,
   personId,
   needsApproval,
+  share,
 }: {
   t: Dictionary;
   locale: Locale;
   workspaceId: string;
   personId: string;
   needsApproval: boolean;
+  share?: { title: string; onlyUs: string; alsoLinked: string };
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [shared, setShared] = useState(false);
 
   async function onFiles(list: FileList | null) {
     const files = [...(list ?? [])];
@@ -50,6 +53,7 @@ export function PhotoUploader({
       form.set("locale", locale);
       form.set("personId", personId);
       form.set("items", JSON.stringify(items));
+      if (shared) form.set("shared", "1");
       const result = await recordPhotos(form);
       if (result.error) setError(t.photos.errorUpload);
       else setSaved(true);
@@ -60,6 +64,18 @@ export function PhotoUploader({
 
   return (
     <div className="space-y-2">
+      {share && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[0.95rem] font-semibold">{share.title}</span>
+          <div className="inline-flex rounded-full border border-line bg-paper p-1">
+            {([[false, share.onlyUs], [true, share.alsoLinked]] as const).map(([v, label]) => (
+              <button key={String(v)} type="button" aria-pressed={shared === v} onClick={() => setShared(v)} className={`min-h-10 rounded-full px-4 text-[0.95rem] font-semibold ${shared === v ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <label className={`${cls.secondary} cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep`}>
         <input
           ref={input}

@@ -111,14 +111,15 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
 
   // What the linked families share about this person, their differing facts, and which of ours are shared.
   type SharedMemory = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null };
-  const [sharedMemRes, sharedTagRes, factsRes, ownFlags] = linkedIds.length
+  const ownFlagsP = photos.length ? supabase.from("media").select("id, shared").in("id", photos.map((p) => p.id)) : Promise.resolve({ data: [] as Array<{ id: string; shared: boolean }> });
+  const [sharedMemRes, sharedTagRes, factsRes] = linkedIds.length
     ? await Promise.all([
         supabase.from("memories").select("id, body, author_id, created_at, person_id, media_id").in("person_id", linkedIds).eq("shared", true).eq("status", "approved").order("created_at", { ascending: false }),
         supabase.from("media_persons").select("person_id, media:media(id, kind, storage_path, status, shared, deleted_at, created_at)").in("person_id", linkedIds),
         supabase.rpc("linked_facts", { mine: id }),
-        photos.length ? supabase.from("media").select("id, shared").in("id", photos.map((p) => p.id)) : Promise.resolve({ data: [] as Array<{ id: string; shared: boolean }> }),
       ])
-    : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }, { data: [] }];
+  const ownFlags = await ownFlagsP;
   const familyOf = new Map(linkedPeople.map((l) => [l.person, l.workspace_name]));
   const sharedMemories = (sharedMemRes.data ?? []) as SharedMemory[];
   type SharedMedia = { id: string; kind: string; storage_path: string | null; status: Status; shared: boolean; deleted_at: string | null; created_at: string };
@@ -210,7 +211,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 workspaceId={current.id}
                 personId={id}
                 needsApproval={can.needsApproval(role)}
-                share={linkedIds.length && !other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked } : undefined}
+                share={!other ? { title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked } : undefined}
                 labels={{ title: t.memories.composerTitle, lead: t.memories.composerLead, placeholder: t.memories.composerPh, addPhoto: t.memories.addPhoto, removePhoto: t.memories.removePhoto, submit: t.memories.submit, saving: t.memories.saving, pending: t.app.savedPending, empty: t.memories.errorEmpty, error: t.app.errorSave, photoError: t.memories.photoError }}
               />
   );
@@ -263,7 +264,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                   <p className="max-w-[70ch] whitespace-pre-line text-[1.08rem] leading-relaxed">{m.body}</p>
                   {(can.edit(role) || m.author_id === user.id) && !other && (
                     <div className="clear-both mt-3 flex items-center justify-end gap-3 text-[0.92rem] text-ink-muted">
-                      {linkedIds.length > 0 && m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
+                      {!other && m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
                       <form action={deleteMemory}>
                         <input type="hidden" name="locale" value={locale} />
                         <input type="hidden" name="id" value={m.id} />
@@ -308,7 +309,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cls.h2}>{t.photos.title}</h2>
           {can.add(role) && (
-            <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} />
+            <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} share={{ title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked }} />
           )}
         </div>
         {photos.length === 0 && sharedPhotos.length === 0 ? (
@@ -342,7 +343,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                         <PendingButton label={t.photos.setPortrait} busyLabel={t.photos.settingPortrait} className="rounded-full border border-line px-2.5 py-1 font-semibold hover:bg-linen" />
                       </form>
                     )}
-                    {can.edit(role) && linkedIds.length > 0 && ph.status === "approved" && shareToggle("media", ph.id, sharedPhotoIds.has(ph.id))}
+                    {can.edit(role) && !other && ph.status === "approved" && shareToggle("media", ph.id, sharedPhotoIds.has(ph.id))}
                     {can.edit(role) && (
                       <form action={deletePhoto} className="ml-auto">
                         <input type="hidden" name="locale" value={locale} />
