@@ -9,6 +9,7 @@ import { recordPhotos } from "../../actions";
 import { Modal } from "./Modal";
 
 type Picked = { file: File; url: string };
+const LIMIT = 12;
 
 /** Choose photos, see them, say who sees them, then publish. */
 export function PhotoUploader({
@@ -32,6 +33,7 @@ export function PhotoUploader({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [all, setAll] = useState(false);
   const p = t.photos as Record<string, string>;
 
   const clear = useCallback(() => {
@@ -40,6 +42,7 @@ export function PhotoUploader({
       return [];
     });
     setError(null);
+    setAll(false);
     if (input.current) input.current.value = "";
   }, []);
   const latest = useRef<Picked[]>([]);
@@ -110,36 +113,42 @@ export function PhotoUploader({
 
       <Modal open={picked.length > 0} onClose={() => !busy && clear()} label={t.photos.add} closeLabel={t.photos.close} wide>
         <div className="space-y-5">
-          <h2 className="pr-12 text-[1.4rem] font-semibold">
-            {t.photos.add} <span className="font-normal text-ink-muted">({picked.length})</span>
-          </h2>
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {picked.map((x, i) => (
-              <li key={x.url} className="group relative aspect-square overflow-hidden rounded-xl bg-linen">
+          <div className="flex flex-wrap items-center gap-3 pr-12">
+            <h2 className="text-[1.4rem] font-semibold">
+              {t.photos.add} <span className="font-normal text-ink-muted">({picked.length})</span>
+            </h2>
+            {!busy && (
+              <label className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+                {pick}+ {p.more}
+              </label>
+            )}
+          </div>
+          {/* Two rows at most; the rest are counted on the last square, which shows them all. */}
+          <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {(all || picked.length <= LIMIT ? picked : picked.slice(0, LIMIT - 1)).map((x) => (
+              <li key={x.url} className="relative aspect-square overflow-hidden rounded-lg bg-linen">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
                 <img src={x.url} alt="" className="h-full w-full object-cover" />
                 {!busy && (
                   <button
                     type="button"
-                    aria-label={p.remove ?? "×"}
+                    aria-label={p.remove}
                     onClick={() => {
                       URL.revokeObjectURL(x.url);
-                      setPicked((list) => list.filter((_, j) => j !== i));
+                      setPicked((list) => list.filter((y) => y.url !== x.url));
                     }}
-                    className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[1.2rem] leading-none text-ink shadow"
+                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[1.05rem] leading-none text-ink shadow"
                   >
                     ×
                   </button>
                 )}
               </li>
             ))}
-            {!busy && (
+            {!all && picked.length > LIMIT && (
               <li>
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line text-ink-muted hover:border-ink/40 hover:text-ink">
-                  {pick}
-                  <span aria-hidden="true" className="text-[1.6rem] leading-none">+</span>
-                  <span className="text-[0.9rem] font-semibold">{p.more ?? t.photos.add}</span>
-                </label>
+                <button type="button" onClick={() => setAll(true)} className="flex aspect-square w-full items-center justify-center rounded-lg bg-linen text-[1.3rem] font-semibold text-ink hover:bg-line">
+                  +{picked.length - (LIMIT - 1)}
+                </button>
               </li>
             )}
           </ul>
