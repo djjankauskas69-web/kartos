@@ -106,22 +106,6 @@ function directLine(start: string, rels: Array<{ person_a: string; person_b: str
 type AddGroup = "parent" | "partner" | "child" | "sibling";
 type MenuState = { key: string; mode: "card" | "add" | "which"; group?: AddGroup } | null;
 
-/** People of this family: a soft warm tone per surname, so branches read even without photos. */
-const SURNAME_TONES = [
-  { bg: "#efe7d6", ink: "#5e4a2b" },
-  { bg: "#e5ecdf", ink: "#3f5634" },
-  { bg: "#f0e2dc", ink: "#6e3f31" },
-  { bg: "#f3e6d3", ink: "#6b4a22" },
-  { bg: "#e9e6d8", ink: "#4d4a33" },
-  { bg: "#f1ead2", ink: "#5f5420" },
-];
-const surnameTone = (name: string) => {
-  const sur = (name.trim().split(/\s+/).pop() ?? "").toLowerCase().replace(/(ienė|aitė|ytė|utė|ūtė|is|as|us|ys|ė|a)$/u, "");
-  let h = 0;
-  for (const ch of sur) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return SURNAME_TONES[h % SURNAME_TONES.length];
-};
-
 /** Each linked family gets its own soft colour (the same as its dot above the tree). */
 const FAMILY_COLORS = [
   { bg: "#e3ebf3", ink: "#3e566e", ring: "#8fa5bb" },
@@ -885,7 +869,7 @@ export function TreeView({
                           height: PHOTO,
                           ...(c.foreign
                             ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign)?.ring }
-                            : { backgroundColor: surnameTone(c.name).bg, color: surnameTone(c.name).ink }),
+                            : { backgroundColor: c.living ? "#ece8de" : "#e6dfd0", color: "#4a453b" }),
                         }}
                         className={`flex items-center justify-center rounded-full font-serif text-[2rem] ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${ringOf(c)}`}
                       >
