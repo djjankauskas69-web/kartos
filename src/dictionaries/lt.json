@@ -764,7 +764,8 @@
     "dateMarried": "{a} ir {b} susituokė",
     "dateJubileeLiving": "{name} šiais metais švenčia {n}-metį",
     "dateJubileePast": "Šiemet {n} metų nuo {name} gimimo",
-    "inviteNotJoined": "Medyje dar {n} gyvų giminaičių, kurie neprisijungę. Pakvieskite juos papildyti istoriją."
+    "inviteNotJoined": "Medyje dar {n} gyvų giminaičių, kurie neprisijungę. Pakvieskite juos papildyti istoriją.",
+    "statMemories": "Prisiminimai"
   },
   "archive": {
     "title": "Archyvas",

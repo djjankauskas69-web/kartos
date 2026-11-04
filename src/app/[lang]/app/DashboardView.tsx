@@ -29,7 +29,7 @@ export type DashboardData = {
   role: Role;
   since: number | null;
   cover?: string;
-  counts: { people: number; generations: number; graves: number; photos: number };
+  counts: { people: number; generations: number; memories: number; photos: number };
   head?: Person;
   partner?: Person;
   elders: Person[];
@@ -59,7 +59,7 @@ export function DashboardView(props: DashboardData) {
   const stats = [
     { icon: <IconPeople size={24} />, n: counts.people, label: d.statPeople, href: `${base}/members` },
     { icon: <IconTree size={24} />, n: counts.generations, label: d.statGenerations, href: `${base}/tree` },
-    { icon: <IconPin size={24} />, n: counts.graves, label: d.statGraves, href: `${base}/map` },
+    { icon: <IconQuote size={24} />, n: counts.memories, label: d.statMemories, href: `${base}/archive?tab=stories` },
     { icon: <IconImage size={24} />, n: counts.photos, label: d.statPhotos, href: `${base}/archive?tab=photos` },
   ];
 

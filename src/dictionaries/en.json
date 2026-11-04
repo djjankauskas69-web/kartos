@@ -764,7 +764,8 @@
     "dateMarried": "{a} and {b} married",
     "dateJubileeLiving": "{name} turns {n} this year",
     "dateJubileePast": "{n} years since {name} was born",
-    "inviteNotJoined": "{n} living relatives in the tree have not joined yet. Invite them to add to the story."
+    "inviteNotJoined": "{n} living relatives in the tree have not joined yet. Invite them to add to the story.",
+    "statMemories": "Memories"
   },
   "archive": {
     "title": "Archive",

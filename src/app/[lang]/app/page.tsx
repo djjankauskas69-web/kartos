@@ -50,6 +50,10 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("workspaces").select("cover_path").eq("id", ws).maybeSingle(),
     myPersonLinks(locale),
   ]);
+  const [memCount, storyCount] = await Promise.all([
+    supabase.from("memories").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
+    supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "story").neq("status", "rejected"),
+  ]);
   const { people, byId, rels } = graph;
   const { data: accessList } = can.admin(current.role) ? await supabase.rpc("tree_access_list", { ws }) : { data: null };
   const pendingAccess = ((accessList ?? []) as Array<{ status: string }>).filter((r) => r.status === "pending").length;
@@ -204,7 +208,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
       role={current.role}
       since={since}
       cover={coverPath ? urls.get(coverPath) : undefined}
-      counts={{ people: people.length, generations: generationCount(people, rels), graves: graves.data?.length ?? 0, photos: photosCount.count ?? 0 }}
+      counts={{ people: people.length, generations: generationCount(people, rels), memories: (memCount.count ?? 0) + (storyCount.count ?? 0), photos: photosCount.count ?? 0 }}
       head={head}
       partner={partner}
       elders={elders}
