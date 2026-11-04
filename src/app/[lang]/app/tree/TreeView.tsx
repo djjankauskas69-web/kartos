@@ -790,7 +790,8 @@ export function TreeView({
         }}
         className={`relative touch-none select-none overflow-hidden outline-none ${grabbing ? "cursor-grabbing" : "cursor-grab"} ${full ? "h-full" : fitH === null ? "h-[calc(100dvh-14rem)] min-h-[26rem]" : ""} ${ready ? "" : "opacity-0"}`}
       >
-        <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0" }} className={`absolute left-0 top-0 ${glide}`}>
+        {/* --k lets the text keep a readable size on screen however far out the tree is zoomed. */}
+        <div style={{ width, height, transform: `translate(${x}px, ${y}px) scale(${k})`, transformOrigin: "0 0", ["--k" as string]: k }} className={`absolute left-0 top-0 ${glide}`}>
           {/* Every other generation sits on a faint band, so a row reads as one generation. */}
           {rows.map((r, i) =>
             i % 2 === 1 ? <div key={r.y} aria-hidden="true" style={{ top: r.y - 34, height: cardH + 68, left: -4000, width: width + 8000 }} className="pointer-events-none absolute bg-[#8a7a5c]/[0.045]" /> : null,
@@ -836,7 +837,7 @@ export function TreeView({
             {cards.map((c) => (
               <li
                 key={c.key}
-                style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
+                style={{ left: c.x, top: c.y, width: cardW, minHeight: cardH }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
                 className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
@@ -847,7 +848,7 @@ export function TreeView({
                   style={{ top: PHOTO / 2 }}
                   className={`pointer-events-none absolute inset-x-1.5 bottom-1 rounded-[18px] border shadow-[0_10px_24px_-18px_rgb(60_45_30/0.55)] transition-shadow group-hover:shadow-[0_14px_30px_-16px_rgb(60_45_30/0.6)] ${c.living ? "border-[#e6e1d6] bg-white/95" : "border-[#e3d8c4] bg-[#f8f2e7]/95"}`}
                 />
-                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-3.5 text-center focus-visible:outline-offset-2">
+                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex min-h-full w-full flex-col items-center rounded-2xl px-3.5 pb-4 text-center focus-visible:outline-offset-2" style={{ minHeight: cardH }}>
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
@@ -889,15 +890,15 @@ export function TreeView({
                       </span>
                     )}
                   </span>
-                  <span title={c.foreign} className="relative mt-3.5 line-clamp-2 break-words text-[1.25rem] font-semibold leading-[1.25] text-ink">{c.name}</span>
-                  <span className="relative mt-0.5 flex items-center gap-1.5 text-[1.08rem] tabular-nums text-ink/70">
+                  <span title={c.foreign} style={{ fontSize: "max(1.25rem, calc(15px / var(--k)))" }} className="relative mt-3.5 line-clamp-2 break-words font-semibold leading-[1.2] text-ink">{c.name}</span>
+                  <span style={{ fontSize: "max(1.08rem, calc(13.5px / var(--k)))" }} className="relative mt-0.5 flex items-center gap-1.5 whitespace-nowrap tabular-nums text-ink/70">
                     {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
                     {c.pending && <span className="h-2 w-2 rounded-full bg-[#b8892e]" title={labels.pending} />}
                   </span>
                   {(() => {
                     const rel = !showRelations ? undefined : relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
-                    return rel ? <span className="relative mt-1 line-clamp-2 break-words text-[0.92rem] font-semibold leading-snug text-olive-deep first-letter:uppercase">{rel}</span> : null;
+                    return rel ? <span style={{ fontSize: "max(0.92rem, calc(12.5px / var(--k)))" }} className="relative mt-1 line-clamp-2 break-words font-semibold leading-snug text-olive-deep first-letter:uppercase">{rel}</span> : null;
                   })()}
                 </CardLink>
                 {(
