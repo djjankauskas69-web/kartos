@@ -52,7 +52,6 @@ export function MemoryCard({
               <span className="relative shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                 <img src={photo} alt="" loading="lazy" className="h-14 w-14 rounded-lg object-cover ring-2 ring-white shadow-[0_6px_14px_-8px_rgb(28_29_26/0.6)]" />
-                <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[0.9rem] font-semibold leading-none text-surface">+</span>
               </span>
             )}
           </span>
@@ -60,14 +59,19 @@ export function MemoryCard({
       </button>
 
       <Modal open={open} onClose={close} label={author || labels.read} closeLabel={labels.close} wide={!!photo}>
-        <div className="space-y-5">
-          <div className="pr-12">{head}</div>
+        {/* Text and photo side by side, so the photo stays in view while reading. */}
+        <div className={photo ? "grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" : ""}>
+          <div className="min-w-0 space-y-5">
+            <div className="pr-12 md:pr-0">{head}</div>
+            <p className="whitespace-pre-line text-[1.12rem] leading-relaxed">{body}</p>
+            {actions && <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4 text-[0.95rem] text-ink-muted">{actions}</div>}
+          </div>
           {photo && (
-            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-            <img src={photo} alt="" className="max-h-[60dvh] w-full rounded-xl bg-linen object-contain" />
+            <div className="md:order-last md:pt-10">
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+              <img src={photo} alt="" className="w-full rounded-xl bg-linen object-contain md:sticky md:top-0 md:max-h-[75dvh]" />
+            </div>
           )}
-          <p className="whitespace-pre-line text-[1.12rem] leading-relaxed">{body}</p>
-          {actions && <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4 text-[0.95rem] text-ink-muted">{actions}</div>}
         </div>
       </Modal>
     </li>

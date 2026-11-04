@@ -33,7 +33,7 @@ export function Modal({ open, onClose, label, closeLabel, children, wide = false
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[22px] bg-surface p-5 shadow-2xl sm:rounded-[22px] sm:p-7 ${wide ? "sm:max-w-3xl" : "sm:max-w-2xl"}`}>
+      <div className={`relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[22px] bg-surface p-5 shadow-2xl sm:rounded-[22px] sm:p-7 ${wide ? "sm:max-w-5xl" : "sm:max-w-2xl"}`}>
         <button type="button" onClick={onClose} aria-label={closeLabel} title={closeLabel} className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-[1.6rem] leading-none text-ink hover:bg-linen">
           ×
         </button>
