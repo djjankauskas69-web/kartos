@@ -954,7 +954,13 @@
     "chosenN": "Pasirinkta: {n}",
     "more": "Dar",
     "onlyFamilyHint": "Matys tik jūsų šeimos archyvo nariai.",
-    "everyoneHint": "Matys ir kitos šeimos, su kuriomis susieti jūsų medžiai."
+    "everyoneHint": "Matys ir kitos šeimos, su kuriomis susieti jūsų medžiai.",
+    "comments": "Komentarai",
+    "addComment": "Pridėti komentarą",
+    "commentPh": "Parašykite, ką prisimenate apie šią nuotrauką…",
+    "send": "Siųsti",
+    "commentsSetup": "Komentarams reikia atnaujinti duomenų bazę (0018).",
+    "editInfo": "Kas nuotraukoje ir kada?"
   },
   "peopleList": {
     "title": "Žmonės",

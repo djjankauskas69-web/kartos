@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { MemoryCard } from "../people/[id]/MemoryCard";
-import { createAlbum, deleteFolder, deleteItems, moveItems, setAlbumCover, tagItems, updateAlbum } from "./actions";
+import { createAlbum, deleteFolder, deleteItem, deleteItems, moveItem, moveItems, setAlbumCover, tagItems, updateAlbum } from "./actions";
 import { fieldCls, labelCls, PeoplePicker, type PersonOption } from "./fields";
 import { Detail, Dialog, DialogHead, Preview, StoryForm, UploadForm, Visibility, type ArchiveItem, type L, type PeriodLabels } from "./parts";
 import { Slideshow, type Slide } from "./Slideshow";
@@ -14,6 +14,16 @@ export type Album = { id: string; preset: string | null; name: string; descripti
 export type MemoryStory = { id: string; body: string; author: string; date: string; createdAt: string; personId: string; personName: string; photos: string[]; shared: boolean };
 
 type Tab = "albums" | "photos" | "stories" | "documents";
+
+const MI = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true, className: "shrink-0 text-ink-muted" };
+const mi = {
+  download: <svg {...MI}><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" /></svg>,
+  comment: <svg {...MI}><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" /></svg>,
+  edit: <svg {...MI}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>,
+  folder: <svg {...MI}><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5V17A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V7.5Z" /></svg>,
+  cover: <svg {...MI}><rect x="3.5" y="5" width="17" height="14" rx="2" /><path d="m4 17 5-4.5 3.5 3 3-2.8L20 17" /></svg>,
+  trash: <svg {...MI} className="shrink-0"><path d="M4.5 7h15M10 11v5M14 11v5M6 7l1 12a1.5 1.5 0 0 0 1.5 1.4h7A1.5 1.5 0 0 0 17 19l1-12M9.5 7V4.5h5V7" /></svg>,
+};
 
 // Folders that hold papers are not albums; they show under Documents.
 const DOC_PRESETS = new Set(["documents", "letters"]);
@@ -66,6 +76,17 @@ export function ArchiveHome({
   const [selected, setSelected] = useState<string[]>([]);
   const [bulk, setBulk] = useState<null | "tag" | "delete">(null);
   const [downloading, setDownloading] = useState(false);
+  const [menu, setMenu] = useState<{ id: string; mode: "menu" | "move" | "delete" } | null>(null);
+  const [openMode, setOpenMode] = useState<"view" | "comment" | "edit">("view");
+  // A tap anywhere else closes the photo menu.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.("[data-menu-root]")) setMenu(null);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [menu]);
 
   const personName = useMemo(() => new Map(people.map((p) => [p.id, p.name])), [people]);
   const folderName = useMemo(() => new Map(albums.map((a) => [a.id, a.name])), [albums]);
@@ -176,13 +197,126 @@ export function ArchiveHome({
   const playIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>;
   const n = (s: string, v: number) => s.replace("{n}", String(v));
 
+  /** The little ⋯ in a photo's corner: download, comment, who is in it, move, cover, delete. */
+  const PhotoMenu = ({ item }: { item: ArchiveItem }) => {
+    const open = menu?.id === item.id;
+    const albumOf = item.folderId ? albums.find((a) => a.id === item.folderId) : undefined;
+    const row = "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-paper";
+    return (
+      <div className="absolute right-2 top-2 z-10">
+        <button
+          type="button"
+          onClick={() => setMenu(open ? null : { id: item.id, mode: "menu" })}
+          aria-label={t.itemMenu}
+          title={t.itemMenu}
+          aria-expanded={open}
+          className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[1.2rem] leading-none text-ink shadow-md transition hover:bg-ink hover:text-white ${open ? "opacity-100" : "opacity-100 lg:opacity-0 lg:group-hover/ph:opacity-100 lg:focus:opacity-100"}`}
+        >
+          ⋯
+        </button>
+        {open && (
+          <div className="absolute right-0 top-11 w-64 rounded-2xl border border-line bg-surface p-1.5 text-[0.98rem] shadow-[var(--shadow-float)]">
+            {menu.mode === "delete" ? (
+              <form
+                action={async (form) => {
+                  const r = await deleteItem(form);
+                  if (r.ok) setMenu(null);
+                }}
+                className="p-2"
+              >
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="id" value={item.id} />
+                <p className="mb-3 leading-snug">{t.deleteAsk}</p>
+                <div className="flex gap-2">
+                  <button type="submit" className="min-h-10 flex-1 rounded-xl bg-danger font-semibold text-surface">{t.deleteConfirm}</button>
+                  <button type="button" onClick={() => setMenu({ id: item.id, mode: "menu" })} className="min-h-10 flex-1 rounded-xl border border-line font-semibold">{t.cancel}</button>
+                </div>
+              </form>
+            ) : menu.mode === "move" ? (
+              <div className="max-h-72 overflow-y-auto">
+                <button type="button" onClick={() => setMenu({ id: item.id, mode: "menu" })} className={`${row} font-semibold`}>‹ {t.moveToAlbum}</button>
+                {[{ id: "", name: t.noAlbum }, ...albumOptions].map((f) => (
+                  <form
+                    key={f.id || "none"}
+                    action={async (form) => {
+                      await moveItem(form);
+                      setMenu(null);
+                    }}
+                  >
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="id" value={item.id} />
+                    <input type="hidden" name="folderId" value={f.id} />
+                    <button type="submit" disabled={(item.folderId ?? "") === f.id} className={`${row} ${(item.folderId ?? "") === f.id ? "font-semibold" : ""}`}>
+                      <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                      {(item.folderId ?? "") === f.id && <span aria-hidden="true">✓</span>}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            ) : (
+              <>
+                {item.url && (
+                  <button type="button" onClick={() => { setMenu(null); void download([item.id]); }} className={row}>
+                    {mi.download}
+                    {t.download}
+                  </button>
+                )}
+                <button type="button" onClick={() => { setMenu(null); setOpenMode("comment"); setOpenId(item.id); }} className={row}>
+                  {mi.comment}
+                  {t.addComment}
+                  {item.comments && item.comments.length > 0 && <span className="ml-auto text-[0.88rem] text-ink-muted">{item.comments.length}</span>}
+                </button>
+                {item.canEdit && (
+                  <button type="button" onClick={() => { setMenu(null); setOpenMode("edit"); setOpenId(item.id); }} className={row}>
+                    {mi.edit}
+                    {t.editInfo}
+                  </button>
+                )}
+                {isEditor && albumOptions.length > 0 && (
+                  <button type="button" onClick={() => setMenu({ id: item.id, mode: "move" })} className={row}>
+                    {mi.folder}
+                    <span className="flex-1">{t.moveToAlbum}</span>
+                    <span aria-hidden="true" className="text-ink-muted">›</span>
+                  </button>
+                )}
+                {albumOf && canEditAlbum(albumOf) && item.kind === "photo" && (
+                  <form
+                    action={async (form) => {
+                      await setAlbumCover(form);
+                      setMenu(null);
+                    }}
+                  >
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="id" value={albumOf.id} />
+                    <input type="hidden" name="mediaId" value={item.id} />
+                    <button type="submit" className={row}>
+                      {mi.cover}
+                      {t.makeCover}
+                    </button>
+                  </form>
+                )}
+                {item.canDelete && (
+                  <button type="button" onClick={() => setMenu({ id: item.id, mode: "delete" })} className={`${row} text-danger`}>
+                    {mi.trash}
+                    {t.delete}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   /** Photos as an airy wall: their own shapes, side by side in columns. */
   const wall = (list: ArchiveItem[]) => (
     <ul className="columns-2 gap-3 sm:columns-3 lg:columns-4 [&>li]:mb-3">
       {list.map((p, i) => {
         const on = selected.includes(p.id);
         return (
-          <li key={p.id} className="break-inside-avoid">
+          <li key={p.id} className={`group/ph relative break-inside-avoid ${menu?.id === p.id ? "z-30" : ""}`} data-menu-root>
+            {!selecting && <PhotoMenu item={p} />}
             <button
               type="button"
               onClick={() => (selecting ? toggle(p.id) : setOpenId(p.id))}
@@ -631,7 +765,13 @@ export function ArchiveHome({
             folderName={folderName}
             periodLabels={periodLabels}
             canCover={open.folderId ? canEditAlbum(albums.find((a) => a.id === open.folderId) ?? ({} as Album)) : false}
-            onClose={() => setOpenId(null)}
+            canComment={canAdd}
+            startComment={openMode === "comment"}
+            startEditing={openMode === "edit"}
+            onClose={() => {
+              setOpenId(null);
+              setOpenMode("view");
+            }}
           />
         )}
       </Dialog>

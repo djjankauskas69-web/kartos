@@ -51,12 +51,17 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const { data: memMedia } = memMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memMediaIds) : { data: [] };
   const memPath = new Map((memMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
+  // Comments under the photos (database update 0018; none before it).
+  const { data: commentRows } = await supabase.from("media_comments").select("id, media_id, author_id, body, created_at").eq("workspace_id", current.id).order("created_at").limit(3000);
+  const comments = (commentRows ?? []) as Array<{ id: string; media_id: string; author_id: string | null; body: string; created_at: string }>;
   const [urls, names] = await Promise.all([
     signedUrls(locale, [...rows.map((m) => m.storage_path).filter((p): p is string => !!p), ...memPath.values()]),
-    profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string)]),
+    profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string), ...comments.map((c) => c.author_id as string)]),
   ]);
   const isEditor = can.edit(current.role);
   const kinds = t.archive.kind as Record<Kind, string>;
+  const commentsBy = new Map<string, typeof comments>();
+  for (const c of comments) commentsBy.set(c.media_id, [...(commentsBy.get(c.media_id) ?? []), c]);
 
   const items: ArchiveItem[] = rows.map((m) => {
     const kind = (["photo", "document", "story"].includes(m.kind) ? m.kind : "photo") as Kind;
@@ -81,6 +86,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
       pdf: m.mime_type === "application/pdf" || /\.pdf$/i.test(m.storage_path ?? ""),
       pending,
       shared: !!m.shared,
+      comments: (commentsBy.get(m.id) ?? []).map((c) => ({ id: c.id, body: c.body, author: names.get(c.author_id as string) ?? "", at: c.created_at, canDelete: isEditor || c.author_id === user.id })),
       width: m.width,
       height: m.height,
       canEdit: isEditor || (pending && m.uploader_id === user.id),

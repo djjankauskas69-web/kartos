@@ -376,3 +376,31 @@ export async function setAlbumCover(form: FormData): Promise<ArchiveResult> {
   refresh();
   return { ok: true };
 }
+
+/* ---------- Comments under a photo ---------- */
+
+export async function addComment(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const mediaId = uuid(form, "mediaId");
+  const body = text(form, "body", 2000);
+  if (!mediaId || !body) return { error: "text" };
+  const { error } = await supabase.from("media_comments").insert({ workspace_id: workspace.id, media_id: mediaId, body });
+  if (error) {
+    console.error("addComment", error);
+    return { error: /media_comments/.test(error.message) ? "setup" : "save" };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteComment(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale);
+  const id = uuid(form, "id");
+  if (!id) return { error: "save" };
+  const { error } = await supabase.from("media_comments").delete().eq("id", id).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}

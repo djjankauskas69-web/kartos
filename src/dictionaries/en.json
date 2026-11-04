@@ -954,7 +954,13 @@
     "chosenN": "Chosen: {n}",
     "more": "More",
     "onlyFamilyHint": "Only members of your family archive will see it.",
-    "everyoneHint": "Families linked to your tree will see it too."
+    "everyoneHint": "Families linked to your tree will see it too.",
+    "comments": "Comments",
+    "addComment": "Add a comment",
+    "commentPh": "Write what you remember about this photo…",
+    "send": "Send",
+    "commentsSetup": "Comments need database update 0018.",
+    "editInfo": "Who is in it, and when?"
   },
   "peopleList": {
     "title": "People",

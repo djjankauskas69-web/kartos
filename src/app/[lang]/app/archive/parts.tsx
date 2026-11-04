@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
 import { ShareChoice } from "@/components/ShareChoice";
-import { createStory, deleteItem, recordFiles, setAlbumCover, updateItem } from "./actions";
+import { addComment, createStory, deleteComment, deleteItem, recordFiles, setAlbumCover, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
 export type Kind = "photo" | "document" | "story";
@@ -29,6 +29,7 @@ export type ArchiveItem = {
   canEdit: boolean;
   canDelete: boolean;
   shared: boolean;
+  comments?: Array<{ id: string; body: string; author: string; at: string; canDelete: boolean }>;
   uploaderId: string | null;
   width: number | null;
   height: number | null;
@@ -148,9 +149,13 @@ export function Detail({
   periodLabels,
   startEditing = false,
   canCover = false,
+  canComment = false,
+  startComment = false,
   onClose,
 }: {
   canCover?: boolean;
+  canComment?: boolean;
+  startComment?: boolean;
   item: ArchiveItem;
   t: L;
   locale: Locale;
@@ -324,7 +329,74 @@ export function Detail({
           </div>
         </div>
       </div>
+      <Comments item={item} t={t} locale={locale} canAdd={canComment} autoFocus={startComment} />
     </div>
+  );
+}
+
+/** Short notes from the family under a photo: who wrote what, and a box to add one. */
+function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean; autoFocus: boolean }) {
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const box = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!autoFocus || !box.current) return;
+    box.current.focus({ preventScroll: true });
+    box.current.scrollIntoView({ block: "center" });
+  }, [autoFocus]);
+  const list = item.comments ?? [];
+  if (!canAdd && list.length === 0) return null;
+  return (
+    <section className="border-t border-line px-6 pb-6 pt-5">
+      <h3 className="text-[1.2rem] font-semibold">
+        {t.comments} {list.length > 0 && <span className="font-normal text-ink-muted">({list.length})</span>}
+      </h3>
+      {list.length > 0 && (
+        <ul className="mt-3 space-y-3">
+          {list.map((c) => (
+            <li key={c.id} className="flex gap-3">
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{c.author.slice(0, 1).toUpperCase() || "·"}</span>
+              <div className="min-w-0 flex-1 rounded-2xl bg-paper px-4 py-2.5">
+                <p className="text-[0.9rem]">
+                  <span className="font-semibold">{c.author}</span> <span className="text-ink-muted">· {new Date(c.at).toLocaleDateString(locale)}</span>
+                </p>
+                <p className="mt-0.5 whitespace-pre-line leading-relaxed">{c.body}</p>
+              </div>
+              {c.canDelete && (
+                <form action={async (f) => void (await deleteComment(f))} className="self-center">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={c.id} />
+                  <button type="submit" aria-label={t.delete} title={t.delete} className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-danger">×</button>
+                </form>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canAdd && (
+        <form
+          className="mt-4 flex items-end gap-2"
+          action={async (form) => {
+            setBusy(true);
+            setError(null);
+            const r = await addComment(form);
+            setBusy(false);
+            if (r.ok) {
+              if (box.current) box.current.value = "";
+            } else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
+          }}
+        >
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="mediaId" value={item.id} />
+          <label htmlFor={`c-${item.id}`} className="sr-only">{t.addComment}</label>
+          <textarea id={`c-${item.id}`} ref={box} name="body" rows={2} maxLength={2000} required placeholder={t.commentPh} className={`${fieldCls} min-h-12 flex-1 resize-y py-3`} />
+          <button type="submit" disabled={busy} className="min-h-12 shrink-0 rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
+            {busy ? "…" : t.send}
+          </button>
+        </form>
+      )}
+      {error && <p role="alert" className="mt-2 text-danger">{error}</p>}
+    </section>
   );
 }
 
