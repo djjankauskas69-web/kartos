@@ -60,7 +60,7 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
   items = items.filter((i) => typeof i.path === "string" && i.path.startsWith(`${workspace.id}/`));
   if (!items.length) return { error: "save" };
 
-  const shared = {
+  const common = {
     folder_id: uuid(form, "folderId"),
     place: text(form, "place", 200),
     description: text(form, "description", 20000),
@@ -77,9 +77,11 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
     mime_type: i.mime?.slice(0, 100) ?? null,
     size_bytes: Number(i.size) || null,
     file_name: (i.fileName ?? "").slice(0, 200) || null,
-    ...shared,
+    ...common,
+    ...(form.get("shared") === "1" ? { shared: true } : {}),
   }));
-  const { error } = await supabase.from("media").insert(rows);
+  let { error } = await supabase.from("media").insert(rows);
+  if (error && /shared/.test(error.message)) ({ error } = await supabase.from("media").insert(rows.map((r) => ({ ...r, shared: undefined }))));
   if (error) {
     console.error("recordFiles", error);
     return { error: "save" };
@@ -100,16 +102,27 @@ export async function createStory(form: FormData): Promise<ArchiveResult> {
   if (period === "bad") return { error: "year" };
 
   const id = crypto.randomUUID();
-  const { error } = await supabase.from("media").insert({
+  // A story may carry one photo, uploaded by the browser just before.
+  let photoPath: string | null = null;
+  try {
+    const ph = JSON.parse(String(form.get("photo") ?? "null")) as { path?: string } | null;
+    if (ph?.path && ph.path.startsWith(`${workspace.id}/`)) photoPath = ph.path;
+  } catch {}
+  const row = {
     id,
     workspace_id: workspace.id,
     kind: "story",
     title,
     description: body,
+    storage_path: photoPath,
+    mime_type: photoPath ? "image/jpeg" : null,
     folder_id: uuid(form, "folderId"),
     place: text(form, "place", 200),
     ...period,
-  });
+    ...(form.get("shared") === "1" ? { shared: true } : {}),
+  };
+  let { error } = await supabase.from("media").insert(row);
+  if (error && /shared/.test(error.message)) ({ error } = await supabase.from("media").insert({ ...row, shared: undefined }));
   if (error) {
     console.error("createStory", error);
     return { error: "save" };
@@ -137,6 +150,7 @@ export async function updateItem(form: FormData): Promise<ArchiveResult> {
       folder_id: uuid(form, "folderId"),
       place: text(form, "place", 200),
       ...period,
+      ...(form.has("shared") ? { shared: form.get("shared") === "1" } : {}),
     })
     .eq("id", id)
     .eq("workspace_id", workspace.id)
@@ -265,6 +279,99 @@ export async function deleteItems(form: FormData): Promise<ArchiveResult> {
   const paths = (data ?? []).flatMap((m) => (m.storage_path ? [m.storage_path as string] : []));
   if (paths.length) await supabase.storage.from("family-media").remove(paths);
   const { error } = await supabase.from("media").delete().in("id", ids).eq("workspace_id", workspace.id);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
+
+/* ---------- Albums ---------- */
+
+function readAlbum(form: FormData) {
+  const y = String(form.get("year") ?? "").trim();
+  const n = Number(y);
+  if (y && (!Number.isInteger(n) || n < 1000 || n > 2100)) return "bad" as const;
+  return {
+    name: text(form, "name", 80),
+    description: text(form, "description", 2000),
+    year: y ? n : null,
+    people: readPeople(form),
+    shared: form.get("shared") === "1",
+  };
+}
+
+/** A new album; any member who may add things can make one. An optional cover photo comes uploaded. */
+export async function createAlbum(form: FormData): Promise<ArchiveResult & { id?: string }> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const a = readAlbum(form);
+  if (a === "bad") return { error: "year" };
+  if (!a.name) return { error: "title" };
+  const id = crypto.randomUUID();
+  let { error } = await supabase.from("media_folders").insert({ id, workspace_id: workspace.id, name: a.name, description: a.description, year: a.year, people: a.people, shared: a.shared });
+  // Before database update 0014 an album is just a named folder.
+  if (error && /description|year|people|shared|column/.test(error.message)) ({ error } = await supabase.from("media_folders").insert({ id, workspace_id: workspace.id, name: a.name }));
+  if (error) {
+    console.error("createAlbum", error);
+    return { error: "save" };
+  }
+  let cover: { path?: string; width?: number; height?: number } | null = null;
+  try {
+    cover = JSON.parse(String(form.get("cover") ?? "null"));
+  } catch {}
+  if (cover?.path && cover.path.startsWith(`${workspace.id}/`)) {
+    const mediaId = crypto.randomUUID();
+    const { error: mErr } = await supabase.from("media").insert({
+      id: mediaId,
+      workspace_id: workspace.id,
+      storage_path: cover.path,
+      kind: "photo",
+      width: cover.width ?? null,
+      height: cover.height ?? null,
+      mime_type: "image/jpeg",
+      folder_id: id,
+      ...(a.shared ? { shared: true } : {}),
+    });
+    if (!mErr) {
+      await supabase.from("media_folders").update({ cover_id: mediaId }).eq("id", id);
+      await tag(supabase, workspace.id, [mediaId], a.people);
+    }
+  }
+  refresh();
+  return { ok: true, id };
+}
+
+export async function updateAlbum(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const id = uuid(form, "id");
+  const a = readAlbum(form);
+  if (!id) return { error: "save" };
+  if (a === "bad") return { error: "year" };
+  if (!a.name) return { error: "title" };
+  let { data, error } = await supabase
+    .from("media_folders")
+    .update({ name: a.name, description: a.description, year: a.year, people: a.people, shared: a.shared })
+    .eq("id", id)
+    .eq("workspace_id", workspace.id)
+    .select("id");
+  if (error && /description|year|people|shared|column/.test(error.message))
+    ({ data, error } = await supabase.from("media_folders").update({ name: a.name }).eq("id", id).eq("workspace_id", workspace.id).select("id"));
+  if (error || !data?.length) {
+    if (error) console.error("updateAlbum", error);
+    return { error: "save" };
+  }
+  refresh();
+  return { ok: true };
+}
+
+/** Which photo is on the album's cover. */
+export async function setAlbumCover(form: FormData): Promise<ArchiveResult> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const id = uuid(form, "id");
+  const mediaId = uuid(form, "mediaId");
+  if (!id || !mediaId) return { error: "save" };
+  const { error } = await supabase.from("media_folders").update({ cover_id: mediaId }).eq("id", id).eq("workspace_id", workspace.id);
   if (error) return { error: "save" };
   refresh();
   return { ok: true };

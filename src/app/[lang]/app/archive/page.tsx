@@ -4,41 +4,57 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { folderLabel, periodLabel, type FolderRow } from "@/lib/archive";
 import { cls } from "@/components/ui";
-import { ArchiveLibrary, type ArchiveItem, type Kind } from "./ArchiveLibrary";
+import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
+import type { ArchiveItem, Kind, L } from "./parts";
 import { PageLoading } from "@/components/PageLoading";
 
 export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/app/archive">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<PageLoading />}>
-      <Archive t={t} locale={locale} itemPromise={searchParams.then((s) => String(s.item ?? ""))} />
+      <Archive t={t} locale={locale} paramsPromise={searchParams.then((s) => ({ item: String(s.item ?? ""), tab: String(s.tab ?? "") }))} />
     </Suspense>
   );
 }
 
-async function Archive({ t, locale, itemPromise }: { t: Dictionary; locale: Locale; itemPromise: Promise<string> }) {
+const MEDIA = "id, kind, title, description, place, taken_year, year_qualifier, year_to, folder_id, storage_path, mime_type, uploader_id, status, created_at, file_name, width, height, media_persons(person_id)";
+
+async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Locale; paramsPromise: Promise<{ item: string; tab: string }> }) {
   const { supabase, user, current } = await requireWorkspace(locale);
-  const [{ people }, media, folderRows, itemParam] = await Promise.all([
-    getFamilyGraph(locale, current.id),
+  const mediaQuery = (cols: string) =>
     supabase
       .from("media")
-      .select("id, kind, title, description, place, taken_year, year_qualifier, year_to, folder_id, storage_path, mime_type, uploader_id, status, created_at, file_name, media_persons(person_id)")
+      .select(cols)
       .eq("workspace_id", current.id)
       .neq("status", "rejected")
       // Photos that belong to a memory stay with that memory.
       .or("storage_path.is.null,storage_path.not.like.*/memories/*")
       .order("created_at", { ascending: false })
-      .limit(1000),
-    supabase.from("media_folders").select("id, preset, name, sort").eq("workspace_id", current.id).order("sort").order("created_at"),
-    itemPromise,
+      .limit(2000);
+  const folderQuery = (cols: string) => supabase.from("media_folders").select(cols).eq("workspace_id", current.id).order("sort").order("created_at");
+
+  const [{ people }, mediaRes, folderRes, memRes, params] = await Promise.all([
+    getFamilyGraph(locale, current.id),
+    mediaQuery(`${MEDIA}, shared`).then(async (r) => (r.error ? mediaQuery(MEDIA) : r)),
+    folderQuery("id, preset, name, sort, description, year, cover_id, people, shared, created_by").then(async (r) => (r.error ? folderQuery("id, preset, name, sort, created_by") : r)),
+    supabase.from("memories").select("id, body, author_id, created_at, person_id, media_id, shared, status").eq("workspace_id", current.id).neq("status", "rejected").order("created_at", { ascending: false }).limit(500),
+    paramsPromise,
   ]);
 
-  const rows = media.data ?? [];
-  const [urls, uploaders] = await Promise.all([
-    signedUrls(locale, rows.map((m) => m.storage_path).filter((p): p is string => !!p)),
-    profileNames(locale, rows.map((m) => m.uploader_id as string)),
+  type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string }[] | null };
+  const rows = (mediaRes.data ?? []) as unknown as Row[];
+  type Mem = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null; shared: boolean; status: string };
+  const mems = (memRes.data ?? []) as Mem[];
+  const memMediaIds = mems.flatMap((m) => (m.media_id ? [m.media_id] : []));
+  const { data: memMedia } = memMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memMediaIds) : { data: [] };
+  const memPath = new Map((memMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
+
+  const [urls, names] = await Promise.all([
+    signedUrls(locale, [...rows.map((m) => m.storage_path).filter((p): p is string => !!p), ...memPath.values()]),
+    profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string)]),
   ]);
   const isEditor = can.edit(current.role);
+  const kinds = t.archive.kind as Record<Kind, string>;
 
   const items: ArchiveItem[] = rows.map((m) => {
     const kind = (["photo", "document", "story"].includes(m.kind) ? m.kind : "photo") as Kind;
@@ -46,7 +62,7 @@ async function Archive({ t, locale, itemPromise }: { t: Dictionary; locale: Loca
     return {
       id: m.id,
       kind,
-      title: m.title || m.file_name || t.archive.kind[kind],
+      title: m.title || m.file_name || kinds[kind],
       description: m.description,
       place: m.place,
       year: m.taken_year,
@@ -54,18 +70,53 @@ async function Archive({ t, locale, itemPromise }: { t: Dictionary; locale: Loca
       yearTo: m.year_to,
       dateLabel: periodLabel(t, m.taken_year, m.year_qualifier, m.year_to),
       folderId: m.folder_id,
-      people: ((m.media_persons as { person_id: string }[] | null) ?? []).map((r) => r.person_id),
-      uploader: uploaders.get(m.uploader_id as string) ?? "",
+      people: (m.media_persons ?? []).map((r) => r.person_id),
+      uploader: names.get(m.uploader_id as string) ?? "",
+      uploaderId: m.uploader_id,
       createdAt: m.created_at,
       url: m.storage_path ? urls.get(m.storage_path) : undefined,
       pdf: m.mime_type === "application/pdf" || /\.pdf$/i.test(m.storage_path ?? ""),
       pending,
+      shared: !!m.shared,
+      width: m.width,
+      height: m.height,
       canEdit: isEditor || (pending && m.uploader_id === user.id),
       canDelete: isEditor,
     };
   });
 
-  const folders = ((folderRows.data ?? []) as FolderRow[]).map((f) => ({ id: f.id, preset: f.preset, name: folderLabel(t, f) }));
+  type F = FolderRow & { description?: string | null; year?: number | null; cover_id?: string | null; people?: string[] | null; shared?: boolean; created_by?: string | null };
+  const albums: Album[] = ((folderRes.data ?? []) as unknown as F[]).map((f) => ({
+    id: f.id,
+    preset: f.preset,
+    name: folderLabel(t, f),
+    description: f.description ?? null,
+    year: f.year ?? null,
+    coverId: f.cover_id ?? null,
+    people: f.people ?? [],
+    shared: !!f.shared,
+    createdBy: f.created_by ?? null,
+  }));
+
+  const byId = new Map(people.map((p) => [p.id, p]));
+  const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
+  const memories: MemoryStory[] = mems
+    .filter((m) => byId.has(m.person_id))
+    .map((m) => {
+      const path = m.media_id ? memPath.get(m.media_id) : undefined;
+      return {
+        id: m.id,
+        body: m.body,
+        author: names.get(m.author_id as string) ?? "",
+        date: dateFmt.format(new Date(m.created_at)),
+        createdAt: m.created_at,
+        personId: m.person_id,
+        personName: fullName(byId.get(m.person_id)!),
+        photo: path ? urls.get(path) : undefined,
+        shared: !!m.shared,
+      };
+    });
+
   const personOptions = people.map((p) => ({
     id: p.id,
     name: fullName(p),
@@ -79,22 +130,27 @@ async function Archive({ t, locale, itemPromise }: { t: Dictionary; locale: Loca
     pending: t.app.pending,
     approvalNote: t.app.approvalNote,
     yearError: t.app.errorYear,
-  } as unknown as Record<string, string> & { kind: Record<Kind, string> };
+  } as unknown as L;
+  const tab = (["albums", "photos", "stories", "documents"] as const).find((x) => x === params.tab) ?? "albums";
+  const item = items.find((i) => i.id === params.item);
 
   return (
     <div>
       <h1 className={cls.h1}>{a.title}</h1>
-      <p className="mb-6 mt-1 text-[1.1rem] text-ink-muted">{a.lead}</p>
-      <ArchiveLibrary
+      <p className="mb-7 mt-1 text-[1.1rem] text-ink-muted">{a.lead}</p>
+      <ArchiveHome
         items={items}
-        folders={folders}
+        albums={albums}
+        memories={memories}
         people={personOptions}
         workspaceId={current.id}
         locale={locale}
+        userId={user.id}
         canAdd={can.add(current.role)}
-        canManageFolders={isEditor}
+        isEditor={isEditor}
         needsApproval={can.needsApproval(current.role)}
-        initialItem={items.some((i) => i.id === itemParam) ? itemParam : null}
+        initialItem={item ? item.id : null}
+        initialTab={item ? (item.kind === "document" ? "documents" : item.kind === "story" ? "stories" : "photos") : tab}
         t={labels}
       />
     </div>

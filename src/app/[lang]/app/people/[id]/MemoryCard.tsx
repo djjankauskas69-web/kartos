@@ -7,6 +7,7 @@ import { PhotoLightbox } from "./PhotoLightbox";
 /** A memory as a card: the photo on top (if there is one), the start of the text; opens to read it all. */
 export function MemoryCard({
   author,
+  title,
   date,
   body,
   photo,
@@ -16,6 +17,7 @@ export function MemoryCard({
   labels,
 }: {
   author: string;
+  title?: string;
   date: string;
   body: string;
   photo?: string;
@@ -46,6 +48,7 @@ export function MemoryCard({
       >
         <span className="flex flex-1 flex-col gap-3 p-5">
           {head}
+          {title && <span className="text-[1.2rem] font-semibold leading-snug">{title}</span>}
           <span className="line-clamp-5 whitespace-pre-line text-[1.05rem] leading-relaxed">{body}</span>
           <span className="mt-auto flex items-end justify-between gap-3 pt-1">
             <span className="text-[0.95rem] font-semibold text-olive-deep group-hover:underline">{labels.read} →</span>
@@ -64,6 +67,7 @@ export function MemoryCard({
         <div className={photo ? "grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" : ""}>
           <div className="min-w-0 space-y-5">
             <div className="pr-12 md:pr-0">{head}</div>
+            {title && <h2 className="text-[1.6rem] font-semibold leading-tight">{title}</h2>}
             <p className="whitespace-pre-line text-[1.12rem] leading-relaxed">{body}</p>
             {actions && <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4 text-[0.95rem] text-ink-muted">{actions}</div>}
           </div>
