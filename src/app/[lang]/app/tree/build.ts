@@ -17,9 +17,9 @@ export type BuildRel = { person_a: string; person_b: string; type: "parent_child
 
 type AddOption = { label: string; href: string; group: "parent" | "partner" | "child" | "sibling" };
 
-export const SIZE: TreeSize = { cardW: 184, cardH: 222, gapX: 48, rowGap: 100, pad: 32 };
+export const SIZE: TreeSize = { cardW: 184, cardH: 246, gapX: 48, rowGap: 100, pad: 32 };
 /** Round portrait at the top of each card (radius) — partners join at its centre. */
-export const PHOTO_R = 48;
+export const PHOTO_R = 60;
 const BOX = 8; // padding of the box around a person or a couple
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];

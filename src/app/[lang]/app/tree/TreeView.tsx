@@ -217,7 +217,7 @@ const READABLE = 0.85;
 const MAX = 2;
 const TOP = 96; // room for the generation chips above the tree
 const BOTTOM = 84; // room for the zoom toolbar below it
-const PHOTO = 96;
+const PHOTO = 120;
 
 type View = { x: number; y: number; k: number };
 const clampK = (k: number) => Math.max(MIN, Math.min(MAX, k));
@@ -887,7 +887,7 @@ export function TreeView({
                             ? { backgroundColor: familyColor.get(c.foreign)?.bg, color: familyColor.get(c.foreign)?.ink, outlineColor: strongRing(c) ? undefined : familyColor.get(c.foreign)?.ring }
                             : { backgroundColor: surnameTone(c.name).bg, color: surnameTone(c.name).ink }),
                         }}
-                        className={`flex items-center justify-center rounded-full font-serif text-[1.7rem] ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${c.living ? "" : "sepia-[.35]"} ${ringOf(c)}`}
+                        className={`flex items-center justify-center rounded-full font-serif text-[2rem] ring-4 ring-white shadow-[0_8px_20px_-10px_rgb(28_29_26/0.45)] ${ringOf(c)}`}
                       >
                         {c.initials}
                       </span>
