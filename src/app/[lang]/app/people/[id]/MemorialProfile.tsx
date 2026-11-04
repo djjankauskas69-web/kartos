@@ -201,8 +201,8 @@ export function MemorialProfile({
     list.length > 0 && (
       <div className="min-w-0">
         <h3 className="mb-2.5 text-[0.95rem] text-ink-muted">{title}</h3>
-        <ul className="space-y-2.5">
-          {list.slice(0, 4).map((r) => (
+        <ul className="grid gap-x-4 gap-y-3 [grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))]">
+          {list.slice(0, 6).map((r) => (
             <li key={r.id}>
               <Link href={r.href} scroll={false} replace={inDrawer} className="group flex items-center gap-3">
                 {r.portrait ? (
@@ -212,7 +212,7 @@ export function MemorialProfile({
                   <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen text-[0.9rem] font-semibold text-ink-muted">{r.initials}</span>
                 )}
                 <span className="min-w-0">
-                  <span className="block text-[0.95rem] font-semibold leading-snug [overflow-wrap:anywhere] group-hover:underline">{r.name}</span>
+                  <span className="block text-[0.98rem] font-semibold leading-snug [overflow-wrap:break-word] group-hover:underline">{r.name}</span>
                   {r.sub && <span className="block text-[0.88rem] tabular-nums text-ink-muted">{r.sub}</span>}
                 </span>
               </Link>
@@ -268,7 +268,7 @@ export function MemorialProfile({
             <h2 className="flex-1 text-[1.25rem] font-semibold">{m.tabFamily}</h2>
           </div>
           {hasFamily ? (
-            <div className="@container/fam"><div className="grid gap-5 @md/fam:grid-cols-3 @md/fam:gap-4">
+            <div className="@container/fam"><div className="grid gap-5">
               {relCol(t.family.parents, family.parents)}
               {relCol(t.family.partners, family.partners)}
               {relCol(t.family.children, family.children)}
