@@ -7,9 +7,10 @@ import { PlaceForm } from "./PlaceForm";
 import { placeIcons, type PlaceKind } from "./place-icons";
 import { AboutEditor } from "./AboutEditor";
 import { InlineEdit } from "./InlineEdit";
+import { EventRow } from "./EventRow";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
-export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; pending?: boolean };
+export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; canEdit?: boolean; pending?: boolean };
 export type ProfileRelative = { id: string; name: string; sub: string; portrait?: string; initials: string; href: string };
 export type MemorialPlace = { key: string; kind: PlaceKind; place: string; lat?: number | null; lng?: number | null; year?: number | null; yearTo?: number | null; href?: string; id?: string; canDelete?: boolean };
 
@@ -117,30 +118,14 @@ export function MemorialProfile({
   const markers: MapMarker[] = pinned.map((p) => ({ id: p.key, lat: p.lat!, lng: p.lng!, title: kindLabel(p.kind), lines: [p.place] }));
   const center = pinned[0] ? { lat: pinned[0].lat!, lng: pinned[0].lng! } : undefined;
 
+  const evLabels = { eventTitle: m.eventTitle, eventYear: m.eventYear, eventYearTo: m.eventYearTo, eventPlace: m.eventPlace, save: m.save, cancel: m.cancel, delete: m.delete, pending: m.pending, error: m.saveError, yearError: m.yearError, clickToEdit: m.clickToEdit };
   const timeline = (list: MemorialEvent[], full: boolean) =>
     list.length === 0 ? (
       <p className="text-ink-muted">{m.noEvents}</p>
     ) : (
       <ol className="relative space-y-4 before:absolute before:bottom-2 before:left-[0.32rem] before:top-2 before:w-px before:bg-line">
         {list.map((e) => (
-          <li key={e.key} className="relative flex items-start gap-4 pl-6">
-            <span aria-hidden="true" className="absolute left-0 top-2 h-[0.7rem] w-[0.7rem] rounded-full border-2 border-white bg-olive ring-1 ring-olive/40" />
-            <span className="w-[5.2rem] shrink-0 whitespace-nowrap rounded-full bg-linen px-2 py-0.5 text-center text-[0.9rem] font-semibold tabular-nums">
-              {e.year ? (e.yearTo ? `${e.year}–${String(e.yearTo).slice(2)}` : e.year) : "—"}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold leading-snug">{e.title}</span>
-              {e.sub && <span className="block text-[0.92rem] text-ink-muted">{e.sub}</span>}
-              {e.pending && <span className="text-[0.85rem] text-[#7a5a1e]">{m.pending}</span>}
-            </span>
-            {full && e.id && e.canDelete && (
-              <form action={deletePersonEvent}>
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="id" value={e.id} />
-                <button type="submit" className="text-[0.88rem] text-ink-muted hover:text-danger">{m.delete}</button>
-              </form>
-            )}
-          </li>
+          <EventRow key={e.key} locale={locale} e={e} labels={evLabels} showDelete={full} />
         ))}
       </ol>
     );

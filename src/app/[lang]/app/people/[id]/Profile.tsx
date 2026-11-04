@@ -486,7 +486,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       if (c?.birth_year) ev.push({ key: `c-${cid}`, year: c.birth_year, title: `${c.sex === "male" ? mt.bornSon : c.sex === "female" ? mt.bornDaughter : mt.bornChild} ${c.given_names}` });
     }
     for (const e of personEvents.filter((e) => e.kind === "event")) {
-      ev.push({ key: e.id, id: e.id, year: e.year, yearTo: e.year_to, title: e.title ?? "", sub: e.place, canDelete: can.edit(role) || e.created_by === user.id, pending: e.status === "pending" });
+      ev.push({ key: e.id, id: e.id, year: e.year, yearTo: e.year_to, title: e.title ?? "", sub: e.place, canDelete: can.edit(role) || e.created_by === user.id, canEdit: can.edit(role) && !other, pending: e.status === "pending" });
     }
     if (!person.is_living && (person.death_year || person.death_place)) ev.push({ key: "died", year: person.death_year, title: mt.died, sub: person.death_place });
     if (!person.is_living && burial?.cemetery_name) ev.push({ key: "buried", year: person.death_year, title: female ? mt.buriedF : mt.buriedM, sub: burial.cemetery_name });

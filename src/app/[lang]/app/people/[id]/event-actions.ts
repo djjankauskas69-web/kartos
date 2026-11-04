@@ -55,3 +55,30 @@ export async function deletePersonEvent(form: FormData) {
   if (id) await supabase.from("person_events").delete().eq("id", id).eq("workspace_id", workspace.id);
   refresh();
 }
+
+/** A life event someone wrote themselves, changed right in the timeline. */
+export async function updatePersonEvent(_: EventState, form: FormData): Promise<EventState> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale);
+  const id = uuid(form, "id");
+  const title = text(form, "title", 200);
+  if (!id) return { error: "save" };
+  if (!title) return { error: "title" };
+  const raw = (k: string) => String(form.get(k) ?? "").trim();
+  const year = yr(form, "year");
+  const yearTo = yr(form, "yearTo");
+  if ((raw("year") && year === null) || (raw("yearTo") && yearTo === null) || (year && yearTo && yearTo < year)) return { error: "year" };
+  const { data, error } = await supabase
+    .from("person_events")
+    .update({ title, place: text(form, "place", 200), year, year_to: yearTo })
+    .eq("id", id)
+    .eq("workspace_id", workspace.id)
+    .eq("kind", "event")
+    .select("id");
+  if (error || !data?.length) {
+    if (error) console.error("updatePersonEvent", error);
+    return { error: "save" };
+  }
+  refresh();
+  return { ok: true };
+}
