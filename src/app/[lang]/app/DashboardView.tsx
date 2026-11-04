@@ -78,8 +78,7 @@ export function DashboardView(props: DashboardData) {
         <div className="relative max-w-xl pt-8 sm:pt-4">
           <h1 className="text-[2.6rem] leading-[1.02] [text-shadow:0_0_20px_rgb(255_255_255/0.8)] sm:text-[3.4rem]">{name}</h1>
           <Scribble className="ml-[12%] mt-1 h-4 w-40 text-ink/80" />
-          <p className="mt-4 text-[1.15rem] font-medium text-ink/85">{d.subtitle}</p>
-          {since && <p className="mt-1.5 text-[1.05rem] font-semibold text-olive-deep">{d.since.replace("{y}", String(since))}</p>}
+          <p className="mt-4 text-[1.15rem] font-medium text-ink/85">{since ? d.since.replace("{y}", String(since)) : d.subtitle}</p>
         </div>
       </section>
 

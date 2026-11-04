@@ -700,7 +700,7 @@
     }
   },
   "dash": {
-    "subtitle": "Your family's story in one place.",
+    "subtitle": "Generations and memories in one place.",
     "statPeople": "People",
     "statGenerations": "Generations",
     "statGraves": "Graves",
@@ -727,7 +727,7 @@
     "menu": "Menu",
     "renameFamily": "Rename this family",
     "uploadedPhotosBy": "{name} uploaded photos:",
-    "since": "Family history since {y}",
+    "since": "Generations and memories since {y}.",
     "viewTree": "View the family tree",
     "coverChange": "Change cover",
     "coverReset": "Back to default",

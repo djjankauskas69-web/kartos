@@ -700,7 +700,7 @@
     }
   },
   "dash": {
-    "subtitle": "Jūsų šeimos istorija vienoje vietoje.",
+    "subtitle": "Kartos ir prisiminimai vienoje vietoje.",
     "statPeople": "Žmonės",
     "statGenerations": "Kartos",
     "statGraves": "Kapavietės",
@@ -727,7 +727,7 @@
     "menu": "Meniu",
     "renameFamily": "Pervadinti šią šeimą",
     "uploadedPhotosBy": "{name} įkėlė nuotraukų:",
-    "since": "Šeimos istorija nuo {y} m.",
+    "since": "Kartos ir prisiminimai nuo {y} m.",
     "viewTree": "Peržiūrėti šeimos medį",
     "coverChange": "Keisti viršelį",
     "coverReset": "Grąžinti pradinį",
