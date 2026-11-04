@@ -162,6 +162,20 @@ export function ArchiveHome({
   }
 
   const open = items.find((i) => i.id === openId) ?? null;
+  // The order the photos are seen in right now, so ← and → in the opened photo follow it.
+  const navList =
+    tab === "documents"
+      ? documents
+      : tab === "stories"
+        ? []
+        : album
+          ? sortPhotos(items.filter((i) => i.folderId === album.id && i.kind !== "document"))
+          : tab === "photos"
+            ? shownPhotos
+            : photos;
+  const at = open ? navList.findIndex((i) => i.id === open.id) : -1;
+  const prevItem = at > 0 ? navList[at - 1] : null;
+  const nextItem = at >= 0 && at < navList.length - 1 ? navList[at + 1] : null;
   const periodLabels: PeriodLabels = { date: t.date, exact: t.dateExact, about: t.dateAbout, between: t.dateBetween, year: t.year, from: t.yearFrom, to: t.yearTo, placeholder: t.yearPlaceholder };
   const canEditAlbum = (a: Album) => isEditor || (canAdd && a.createdBy === userId);
 
@@ -623,7 +637,10 @@ export function ArchiveHome({
       <Dialog open={!!open} onClose={() => setOpenId(null)} title={open?.title ?? ""} wide>
         {open && (
           <Detail
+            key={open.id}
             item={open}
+            onPrev={prevItem ? () => setOpenId(prevItem.id) : undefined}
+            onNext={nextItem ? () => setOpenId(nextItem.id) : undefined}
             t={t}
             locale={locale}
             folders={open.kind === "document" ? docFolders : albumOptions}

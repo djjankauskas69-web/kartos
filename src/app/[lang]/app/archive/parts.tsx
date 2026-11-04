@@ -150,12 +150,14 @@ export function Detail({
   startEditing = false,
   canCover = false,
   canComment = false,
-  startComment = false,
+  onPrev,
+  onNext,
   onClose,
 }: {
   canCover?: boolean;
   canComment?: boolean;
-  startComment?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
   item: ArchiveItem;
   t: L;
   locale: Locale;
@@ -170,8 +172,17 @@ export function Detail({
   const [editing, setEditing] = useState(startEditing);
   const [covered, setCovered] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  // Bumped by "Comment": the box below gets the cursor.
-  const [commentKey, setCommentKey] = useState(0);
+  // ← and → go to the previous and next photo (not while typing).
+  useEffect(() => {
+    if (editing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as Element)?.closest?.("input, textarea, select")) return;
+      if (e.key === "ArrowLeft" && onPrev) onPrev();
+      if (e.key === "ArrowRight" && onNext) onNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, onPrev, onNext]);
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;
@@ -230,26 +241,8 @@ export function Detail({
       </form>
     );
 
-  // Only what is known: empty details are left out instead of showing dashes.
-  const rows: Array<[string, React.ReactNode]> = [
-    [t.date, item.dateLabel],
-    [t.place, item.place],
-    [t.folder, item.folderId ? folderName.get(item.folderId) : null],
-    [
-      t.people,
-      item.people.length ? (
-        <span className="flex flex-wrap gap-1.5">
-          {item.people.map((p) => (
-            <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.95rem] font-semibold hover:underline">
-              {personName.get(p) ?? "—"}
-            </Link>
-          ))}
-        </span>
-      ) : null,
-    ],
-    [t.uploadedBy, item.uploader],
-    [t.whoSees, item.shared ? t.everyone : t.onlyFamily],
-  ].filter(([, v]) => v) as Array<[string, React.ReactNode]>;
+  // Only what is known: empty details are left out.
+  const facts = [item.dateLabel, item.place, item.folderId ? folderName.get(item.folderId) : null, item.uploader ? `${t.uploadedBy}: ${item.uploader}` : null, item.shared ? t.everyone : null].filter(Boolean) as string[];
 
   async function download() {
     if (!item.url) return;
@@ -269,139 +262,147 @@ export function Detail({
     setDownloading(false);
   }
 
-  const action = "flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl border border-line bg-surface px-3 py-2 text-[0.95rem] font-semibold transition hover:border-ink/40 hover:bg-paper";
-  const I = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  const arrow = "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-xl border border-line bg-surface text-ink shadow-sm hover:border-ink/40";
+  const link = "font-semibold text-ink-muted hover:text-ink hover:underline";
 
   return (
     <div>
-      <DialogHead title={item.title || t.kind[item.kind]} onClose={onClose} closeLabel={t.close} />
-      <div className="grid gap-6 p-6 md:grid-cols-[1.45fr_1fr]">
-        <div className={`overflow-hidden rounded-2xl ${item.kind === "story" ? "max-h-[70vh] overflow-y-auto ring-1 ring-line" : "flex max-h-[70vh] min-h-64 items-center justify-center bg-[#efe8d8]"}`}>
+      <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-5 sm:px-8">
+        <h2 className="min-w-0 truncate text-[1.5rem] font-semibold leading-tight">{item.title || t.kind[item.kind]}</h2>
+        <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.5rem] hover:bg-paper" aria-label={t.close}>
+          ×
+        </button>
+      </div>
+
+      {/* The picture large in the middle, with the next and previous a click away */}
+      <div className="relative px-6 sm:px-20">
+        {onPrev && (
+          <button type="button" onClick={onPrev} aria-label={t.slidePrev} title={t.slidePrev} className={`${arrow} left-3 sm:left-6`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+          </button>
+        )}
+        <div className={`mx-auto flex items-center justify-center overflow-hidden ${item.kind === "story" ? "max-h-[60vh] max-w-2xl overflow-y-auto rounded-2xl ring-1 ring-line" : "h-[min(58vh,36rem)]"}`}>
           {item.kind === "story" && item.url && (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
             <img src={item.url} alt="" className="max-h-80 w-full object-cover" />
           )}
-          <Preview item={item} large />
+          {item.kind !== "story" && item.url && !item.pdf ? (
+            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+            <img src={item.url} alt={item.title} className="max-h-full max-w-full object-contain shadow-[0_12px_30px_-18px_rgb(28_29_26/0.5)]" />
+          ) : (
+            <div className={item.kind === "story" ? "w-full" : "aspect-[3/4] h-full"}>
+              <Preview item={item} large />
+            </div>
+          )}
         </div>
-        <div className="flex min-w-0 flex-col gap-5">
-          {item.pending && <p className="w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.9rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
+        {onNext && (
+          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-6`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        )}
+      </div>
 
-          {/* The three things people do with a photo: keep it, say something about it, or remove it. */}
+      <div className="grid gap-x-8 gap-y-5 px-6 pb-6 pt-6 sm:px-8 md:grid-cols-[1fr_auto]">
+        <div className="min-w-0 space-y-2">
+          {item.pending && <p className="w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.9rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
+          {facts.length > 0 && <p className="text-[1rem] text-ink-muted">{facts.join(" · ")}</p>}
+          {item.people.length > 0 && (
+            <p className="flex flex-wrap gap-1.5">
+              {item.people.map((p) => (
+                <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.95rem] font-semibold hover:underline">
+                  {personName.get(p) ?? "—"}
+                </Link>
+              ))}
+            </p>
+          )}
+          {item.kind !== "story" && item.description && <p className="whitespace-pre-line text-[1.02rem] leading-relaxed">{item.description}</p>}
+          {(item.canEdit || (canCover && item.kind === "photo" && item.folderId)) && (
+            <p className="flex flex-wrap gap-x-5 gap-y-1 pt-1 text-[0.95rem]">
+              {item.canEdit && (
+                <button type="button" onClick={() => setEditing(true)} className={link}>
+                  {t.edit}
+                </button>
+              )}
+              {item.kind === "photo" && item.folderId && canCover && (
+                <button
+                  type="button"
+                  disabled={covered}
+                  onClick={async () => {
+                    const f = new FormData();
+                    f.set("locale", locale);
+                    f.set("id", item.folderId!);
+                    f.set("mediaId", item.id);
+                    await setAlbumCover(f);
+                    setCovered(true);
+                  }}
+                  className={`${link} disabled:no-underline`}
+                >
+                  {covered ? `✓ ${t.isCover}` : t.makeCover}
+                </button>
+              )}
+            </p>
+          )}
+          <Comments item={item} t={t} locale={locale} canAdd={canComment} />
+        </div>
+
+        <div className="flex flex-wrap items-end justify-end gap-3 self-end">
           {confirm ? (
             <form
               action={async (form) => {
                 const r = await deleteItem(form);
                 if (r.ok) onClose();
               }}
-              className="rounded-2xl border border-danger/30 bg-danger/5 p-4"
+              className="flex flex-wrap items-center gap-2"
             >
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="id" value={item.id} />
-              <p className="font-semibold">{t.deleteAsk}</p>
-              <div className="mt-3 flex gap-2">
-                <button type="submit" className="min-h-11 flex-1 rounded-full bg-danger px-4 font-semibold text-surface">{t.deleteConfirm}</button>
-                <button type="button" onClick={() => setConfirm(false)} className="min-h-11 flex-1 rounded-full border border-line bg-surface px-4 font-semibold">{t.cancel}</button>
-              </div>
+              <span className="font-semibold">{t.deleteAsk}</span>
+              <button type="submit" className="min-h-12 rounded-xl bg-danger px-5 font-semibold text-surface">{t.deleteConfirm}</button>
+              <button type="button" onClick={() => setConfirm(false)} className="min-h-12 rounded-xl border border-line px-5 font-semibold">{t.cancel}</button>
             </form>
           ) : (
-            <div className="flex gap-2">
-              {item.url && (
-                <button type="button" onClick={download} disabled={downloading} className={`${action} disabled:opacity-60`}>
-                  <svg {...I}><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" /></svg>
-                  {downloading ? "…" : t.download}
-                </button>
-              )}
-              {canComment && (
-                <button type="button" onClick={() => setCommentKey((k) => k + 1)} className={action}>
-                  <svg {...I}><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" /></svg>
-                  {t.comment}
-                </button>
-              )}
+            <>
               {item.canDelete && (
-                <button type="button" onClick={() => setConfirm(true)} className={`${action} text-danger hover:border-danger/40 hover:bg-danger/5`}>
-                  <svg {...I}><path d="M4.5 7h15M10 11v5M14 11v5M6 7l1 12a1.5 1.5 0 0 0 1.5 1.4h7A1.5 1.5 0 0 0 17 19l1-12M9.5 7V4.5h5V7" /></svg>
+                <button type="button" onClick={() => setConfirm(true)} className="min-h-12 rounded-xl border border-line bg-surface px-6 text-[1.02rem] font-semibold hover:border-danger/40 hover:text-danger">
                   {t.delete}
                 </button>
               )}
-            </div>
-          )}
-
-          {rows.length > 0 && (
-            <dl className="divide-y divide-line rounded-2xl border border-line">
-              {rows.map(([k, v]) => (
-                <div key={k} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
-                  <dt className="text-[0.92rem] text-ink-muted">{k}</dt>
-                  <dd className="text-right font-semibold">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {item.kind !== "story" && item.description && <p className="whitespace-pre-line font-serif text-[1.08rem] leading-relaxed">{item.description}</p>}
-          {(item.canEdit || canCover) && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[0.95rem]">
-              {item.canEdit && (
-                <button type="button" onClick={() => setEditing(true)} className="font-semibold text-ink-muted hover:text-ink hover:underline">
-                  {t.edit}
+              {item.url && (
+                <button type="button" onClick={download} disabled={downloading} className="min-h-12 rounded-xl bg-ink px-6 text-[1.02rem] font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
+                  {downloading ? "…" : t.download}
                 </button>
               )}
-              {item.kind === "photo" && item.folderId && canCover && (
-                <form
-                  action={async (form) => {
-                    await setAlbumCover(form);
-                    setCovered(true);
-                  }}
-                >
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="id" value={item.folderId} />
-                  <input type="hidden" name="mediaId" value={item.id} />
-                  <button type="submit" disabled={covered} className="font-semibold text-ink-muted hover:text-ink hover:underline disabled:no-underline">
-                    {covered ? `✓ ${t.isCover}` : t.makeCover}
-                  </button>
-                </form>
-              )}
-            </div>
+            </>
           )}
-
-          <Comments key={commentKey} item={item} t={t} locale={locale} canAdd={canComment} autoFocus={startComment || commentKey > 0} />
         </div>
       </div>
     </div>
   );
 }
 
-/** Short notes from the family under a photo: who wrote what, and a box to add one. */
-function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean; autoFocus: boolean }) {
+const COMMENT_MAX = 50;
+
+/** A few words from the family under a photo, quietly: the notes, then one short line to add yours. */
+function Comments({ item, t, locale, canAdd }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const box = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    if (!autoFocus || !box.current) return;
-    box.current.focus({ preventScroll: true });
-    box.current.scrollIntoView({ block: "center" });
-  }, [autoFocus]);
+  const [text, setText] = useState("");
   const list = item.comments ?? [];
   if (!canAdd && list.length === 0) return null;
   return (
-    <section>
-      <h3 className="text-[1.15rem] font-semibold">
-        {t.comments} {list.length > 0 && <span className="font-normal text-ink-muted">({list.length})</span>}
-      </h3>
+    <div className="pt-3">
       {list.length > 0 && (
-        <ul className="mt-3 space-y-3">
+        <ul className="mb-2 space-y-1.5">
           {list.map((c) => (
-            <li key={c.id} className="flex gap-3">
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linen font-semibold text-ink-muted">{c.author.slice(0, 1).toUpperCase() || "·"}</span>
-              <div className="min-w-0 flex-1 rounded-2xl bg-paper px-4 py-2.5">
-                <p className="text-[0.9rem]">
-                  <span className="font-semibold">{c.author}</span> <span className="text-ink-muted">· {new Date(c.at).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" })}</span>
-                </p>
-                <p className="mt-0.5 whitespace-pre-line leading-relaxed">{c.body}</p>
-              </div>
+            <li key={c.id} className="group/c flex items-baseline gap-2 text-[0.98rem]">
+              <span className="shrink-0 font-semibold">{c.author}</span>
+              <span className="min-w-0 break-words">{c.body}</span>
+              <span className="shrink-0 text-[0.85rem] text-ink-muted">{new Date(c.at).toLocaleDateString(locale, { month: "short", day: "numeric" })}</span>
               {c.canDelete && (
-                <form action={async (f) => void (await deleteComment(f))} className="self-center">
+                <form action={async (f) => void (await deleteComment(f))} className="shrink-0 opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="id" value={c.id} />
-                  <button type="submit" aria-label={t.delete} title={t.delete} className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-danger">×</button>
+                  <button type="submit" aria-label={t.delete} title={t.delete} className="text-ink-muted hover:text-danger">×</button>
                 </form>
               )}
             </li>
@@ -410,28 +411,37 @@ function Comments({ item, t, locale, canAdd, autoFocus }: { item: ArchiveItem; t
       )}
       {canAdd && (
         <form
-          className="mt-3 flex flex-col gap-2"
+          className="flex max-w-md items-center gap-2 border-b border-line focus-within:border-ink/50"
           action={async (form) => {
             setBusy(true);
             setError(null);
             const r = await addComment(form);
             setBusy(false);
-            if (r.ok) {
-              if (box.current) box.current.value = "";
-            } else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
+            if (r.ok) setText("");
+            else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
           }}
         >
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="mediaId" value={item.id} />
           <label htmlFor={`c-${item.id}`} className="sr-only">{t.addComment}</label>
-          <textarea id={`c-${item.id}`} ref={box} name="body" rows={2} maxLength={2000} required placeholder={t.commentPh} className={`${fieldCls} min-h-20 resize-y py-3`} />
-          <button type="submit" disabled={busy} className="min-h-11 self-end rounded-full bg-ink px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
-            {busy ? "…" : t.send}
+          <input
+            id={`c-${item.id}`}
+            name="body"
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
+            maxLength={COMMENT_MAX}
+            autoComplete="off"
+            placeholder={`${t.addComment}…`}
+            className="min-h-11 min-w-0 flex-1 bg-transparent text-[0.98rem] placeholder:text-ink-muted/70 focus:outline-none"
+          />
+          {text && <span className="shrink-0 text-[0.8rem] tabular-nums text-ink-muted">{COMMENT_MAX - text.length}</span>}
+          <button type="submit" disabled={busy || !text.trim()} aria-label={t.send} title={t.send} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-paper disabled:opacity-30">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </button>
         </form>
       )}
-      {error && <p role="alert" className="mt-2 text-danger">{error}</p>}
-    </section>
+      {error && <p role="alert" className="mt-1 text-[0.92rem] text-danger">{error}</p>}
+    </div>
   );
 }
 

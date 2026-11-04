@@ -383,7 +383,7 @@ export async function addComment(form: FormData): Promise<ArchiveResult> {
   const locale = formLocale(form);
   const { supabase, workspace } = await actionContext(locale, can.add);
   const mediaId = uuid(form, "mediaId");
-  const body = text(form, "body", 2000);
+  const body = text(form, "body", 50);
   if (!mediaId || !body) return { error: "text" };
   const { error } = await supabase.from("media_comments").insert({ workspace_id: workspace.id, media_id: mediaId, body });
   if (error) {
