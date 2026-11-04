@@ -197,7 +197,6 @@ type Labels = {
 
 const MIN = 0.1;
 /** Below this names no longer read: the first view doesn't go smaller (the "whole tree" button still can). */
-const READABLE = 0.85;
 const MAX = 2;
 const TOP = 96; // room for the generation chips above the tree
 const BOTTOM = 84; // room for the zoom toolbar below it
@@ -374,17 +373,9 @@ export function TreeView({
     if (fitH === null) return;
     const id = requestAnimationFrame(() => {
       const { w, h } = size();
-      // The whole tree when it still reads; bigger trees start around you, at a size that reads.
-      const whole = Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height);
-      if (whole >= READABLE) go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
-      else if (start) {
-        const k = READABLE;
-        const cx = w / 2 - (start.x + cardW / 2) * k;
-        const cy = TOP + (h - TOP - BOTTOM) / 2 - (start.y + cardH / 2) * k;
-        // Don't leave empty space beyond the tree's edges when it can be avoided.
-        const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
-        go({ k, x: clamp(cx, w - 40 - width * k, 40), y: clamp(cy, h - BOTTOM - height * k, TOP) });
-      }
+      // Always the whole tree first, in the middle; zoom in from there.
+      const whole = clampK(Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height));
+      go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
       requestAnimationFrame(() => setReady(true));
     });
     return () => cancelAnimationFrame(id);
