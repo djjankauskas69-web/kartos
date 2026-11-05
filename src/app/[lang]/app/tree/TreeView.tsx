@@ -225,6 +225,8 @@ export function TreeView({
   familyToggles = [],
   show,
   locale = "lt",
+  loose,
+  listHref,
   labels,
 }: {
   cards: TreeCard[];
@@ -244,7 +246,11 @@ export function TreeView({
   /** Kinds of relatives that can be lit up, counted from you: who they are and who joins them to you. */
   locale?: string;
   show?: { rels: Array<{ person_a: string; person_b: string; type: "parent_child" | "partner" }>; people: Array<{ id: string; sex: "male" | "female" | "unknown" | null }>; lang: "lt" | "en" };
-  labels: Labels;
+  /** People not joined to the tree yet (shown to admins): a dot on the filter and a row in it. */
+  loose?: { text: string; hint: string; href: string };
+  /** The list view of the same tree. */
+  listHref?: string;
+  labels: Labels & { viewTree?: string; viewList?: string };
 }) {
   const router = useRouter();
   const frame = useRef<HTMLDivElement>(null);
@@ -570,8 +576,9 @@ export function TreeView({
               aria-expanded={showOpen}
               aria-label={labels.show.title}
               title={labels.show.title}
-              className={`flex h-9 items-center gap-2 px-3.5 text-[0.9rem] ${pill}`}
+              className={`relative flex h-9 items-center gap-2 px-3.5 text-[0.9rem] ${pill}`}
             >
+              {loose && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#b8892e] ring-2 ring-surface" />}
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
               <span>
                 {picked.length > 0 && <b className="font-semibold">{labels.show.cats[picked[0]]}{picked.length > 1 ? ` ${labels.show.more.replace("{n}", String(picked.length - 1))}` : ""}</b>}
@@ -591,6 +598,13 @@ export function TreeView({
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
+                {loose && (
+                  <Link href={loose.href} title={loose.hint} className="mb-3 flex items-center gap-2.5 rounded-xl bg-[#f6efe0] px-3 py-2.5 text-[0.92rem] font-semibold hover:bg-[#f0e5cf]">
+                    <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-[#b8892e]" />
+                    <span className="flex-1">{loose.text}</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
                 <label className="mb-3 flex items-center gap-2 px-1 text-[0.92rem]">
                   <span className="shrink-0 text-ink-muted">{labels.show.from}</span>
                   <select
@@ -701,6 +715,17 @@ export function TreeView({
                 ))}
               </select>
             </>
+          )}
+          {listHref && (
+            <nav className={`flex items-center p-0.5 ${pill}`} aria-label={labels.viewTree}>
+              <span aria-current="page" title={labels.viewTree} className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-white">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1.2" /><rect x="3" y="16" width="6" height="5" rx="1.2" /><rect x="15" y="16" width="6" height="5" rx="1.2" /><path d="M12 8v4M6 16v-4h12v4" /></svg>
+                <span className="sr-only">{labels.viewTree}</span>
+              </span>
+              <Link href={listHref} title={labels.viewList} aria-label={labels.viewList} className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:text-ink">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1" /><circle cx="4.5" cy="18" r="1" /></svg>
+              </Link>
+            </nav>
           )}
           <button type="button" onClick={toggleFull} className={`hidden h-9 w-9 items-center justify-center sm:flex ${pill}`} aria-label={full ? labels.exitFullscreen : labels.fullscreen} title={full ? labels.exitFullscreen : labels.fullscreen}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

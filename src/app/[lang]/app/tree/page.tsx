@@ -130,46 +130,33 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   // People not connected to anyone yet (they don't show in the tree).
   const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
   const loose = people.length > 1 ? people.filter((p) => !connected.has(p.id)).length : 0;
-  const looseChip = loose > 0 && (
-    <Link href={`${base}/members?f=loose`} title={t.add.looseHint} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.88rem] font-semibold hover:border-ink/40">
-      <span className="h-2 w-2 rounded-full bg-[#b8892e]" aria-hidden="true" />
-      {t.add.looseChip.replace("{n}", String(loose))} →
-    </Link>
-  );
-  const header = (subtitle: React.ReactNode, view: "tree" | "list") => {
-    const href = (v: string) => {
-      const q = new URLSearchParams();
-      if (search.p) q.set("p", search.p);
-      if (search.d) q.set("d", search.d);
-      if (v === "list") q.set("view", "list");
-      const s = q.toString();
-      return `${base}/tree${s ? `?${s}` : ""}`;
-    };
-    const tab = (on: boolean) =>
-      `flex min-h-9 items-center rounded-full px-3.5 text-[0.92rem] ${on ? "bg-surface font-semibold shadow-[0_1px_3px_rgb(60_45_30/0.15)]" : "text-ink-muted hover:text-ink"}`;
-    return (
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{t.tree.title}</h1>
-        <div className="min-w-0 text-[0.98rem] text-ink-muted">{subtitle}</div>
-        {looseChip}
-        <div className="ml-auto flex items-center gap-2">
-          <nav className="flex rounded-full border border-line bg-linen/60 p-0.5" aria-label={t.tree.title}>
-            <Link href={href("tree")} aria-current={view === "tree" ? "page" : undefined} className={tab(view === "tree")}>
-              {t.tree.viewTree}
-            </Link>
-            <Link href={href("list")} aria-current={view === "list" ? "page" : undefined} className={tab(view === "list")}>
-              {t.tree.viewList}
-            </Link>
-          </nav>
-        </div>
-      </div>
-    );
+  const looseInfo = loose > 0 && can.admin(current.role) ? { text: t.add.looseChip.replace("{n}", String(loose)), hint: t.add.looseHint, href: `${base}/members?f=loose` } : undefined;
+  const viewHrefFor = (v: string) => {
+    const q = new URLSearchParams();
+    if (search.p) q.set("p", search.p);
+    if (search.d) q.set("d", search.d);
+    if (v === "list") q.set("view", "list");
+    const s = q.toString();
+    return `${base}/tree${s ? `?${s}` : ""}`;
   };
+  // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
+  const header = (subtitle: React.ReactNode, view: "tree" | "list") => (
+    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+      <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{t.tree.title}</h1>
+      <div className="min-w-0 text-[0.92rem] text-ink-muted/80">{subtitle}</div>
+      {view === "list" && (
+        <Link href={viewHrefFor("tree")} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full border border-line bg-surface px-3.5 text-[0.9rem] font-semibold hover:border-ink/40">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1.2" /><rect x="3" y="16" width="6" height="5" rx="1.2" /><rect x="15" y="16" width="6" height="5" rx="1.2" /><path d="M12 8v4M6 16v-4h12v4" /></svg>
+          {t.tree.viewTree}
+        </Link>
+      )}
+    </div>
+  );
 
   if (people.length === 0) {
     return (
       <div>
-        {header(current.name, "tree")}
+        {header(null, "tree")}
         {host}
         <div className={`px-6 py-10 text-center ${cls.card}`}>
           <p className="text-ink-muted">{t.tree.empty}</p>
@@ -182,7 +169,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   const totalGens = Math.max(...gens.values());
   const subtitleWhole = (
     <>
-      {current.name} · {plural(locale, totalGens, t.tree.gen)} · {plural(locale, people.length, t.tree.people)}
+      {plural(locale, people.length, t.tree.people)} · {plural(locale, totalGens, t.tree.gen)}
     </>
   );
 
@@ -407,8 +394,12 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           elsewhere: t.tree.elsewhere,
           sides: t.tree.sides,
           which: t.tree.which,
+          viewTree: t.tree.viewTree,
+          viewList: t.tree.viewList,
         }}
         locale={locale}
+        loose={looseInfo}
+        listHref={viewHrefFor("list")}
       />
       {drawerId && (
         <ProfileDrawer closeHref={viewHref()} labels={{ close: t.tree.drawerClose }}>
