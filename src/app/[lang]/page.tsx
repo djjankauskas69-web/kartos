@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import { SiteHeader } from "@/components/SiteHeader";
-import { MiniMap } from "@/components/HeroArchive";
-import { StoryGrave, StoryTree } from "@/components/motion/StoryVisuals";
+import { StoryComments, StoryTree } from "@/components/motion/StoryVisuals";
 import { InkGrave, InkPhotos, InkTree } from "@/components/LineArt";
 import { Scribble } from "@/components/Scribble";
 import { FadeIn, Parallax, RevealWords, StickyStory } from "@/components/motion/Scroll";
@@ -140,7 +139,11 @@ export default async function Home() {
                 </figure>
               </div>,
               <StoryTree key="tree" title={s.treeTitle} />,
-              <StoryGrave key="grave" map={<MiniMap />} rests={s.restsTitle} cemetery={s.cemetery} plot={s.plot} directions={s.directions} />,
+              <StoryComments
+                key="comments"
+                photo={PHOTOS.story}
+                comments={L.storyComments.map((c, i) => ({ ...c, face: ["/landing/face-ruta.jpg", "/landing/face-vytautas.jpg", "/landing/face-tomas.jpg"][i] }))}
+              />,
             ]}
           />
         </section>
@@ -207,10 +210,13 @@ export default async function Home() {
           </div>
           <FadeIn stagger={140} className="mt-12 grid gap-4 md:grid-cols-3">
             <Keep photo={PHOTOS.cards[0]} icon={<InkTree className="h-14 w-16" />} title={t.keep.tree.title} body={t.keep.tree.body} />
-            <Keep photo={PHOTOS.cards[1]} icon={<InkGrave className="h-14 w-16" />} title={t.keep.map.title} body={t.keep.map.body} />
-            <Keep photo={PHOTOS.cards[2]} icon={<InkPhotos className="h-14 w-16" />} title={t.keep.archive.title} body={t.keep.archive.body} />
+            <Keep photo={PHOTOS.cards[2]} icon={<InkPhotos className="h-14 w-16" />} title={t.keep.map.title} body={t.keep.map.body} />
+            <Keep photo={PHOTOS.cards[1]} icon={<InkLetter />} title={t.keep.archive.title} body={t.keep.archive.body} />
           </FadeIn>
         </section>
+
+        {/* ---------- Together: albums, comments on photos, invitations, two families ---------- */}
+        <Together t={t} />
 
         {/* ---------- Family band with numbers ---------- */}
         <section className="px-2 sm:px-3">
@@ -269,9 +275,12 @@ export default async function Home() {
 
         {/* ---------- Visiting graves ---------- */}
         <section className="border-t border-line bg-surface">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:py-24">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-2 lg:py-20">
             <div className="max-w-xl">
-              <h2 className="text-[2.2rem] sm:text-[2.8rem]">{t.visit.title}</h2>
+              <span className="mb-4 flex h-12 w-14 items-center justify-center rounded-[10px] bg-paper text-ink" aria-hidden="true">
+                <InkGrave className="h-10 w-12" />
+              </span>
+              <h2 className="text-[1.9rem] sm:text-[2.3rem]">{t.visit.title}</h2>
               <p className="mt-4 text-ink-muted">{t.visit.body}</p>
             </div>
             <ul className="divide-y divide-line rounded-[var(--radius-card)] border border-line/70 bg-paper">
@@ -354,7 +363,7 @@ function Footer({ t }: { t: Dictionary }) {
           <nav className="flex flex-wrap gap-x-6 gap-y-2">
             <a href="#" className="hover:text-surface">{t.footer.privacy}</a>
             <a href="#" className="hover:text-surface">{t.footer.terms}</a>
-            <a href="mailto:hello@example.com" className="hover:text-surface">{t.footer.contact}</a>
+            <a href="mailto:hello@mykartos.com" className="hover:text-surface">{t.footer.contact}</a>
           </nav>
         </div>
         {/* The name, large and quiet, then the hills it all grows from */}
@@ -373,5 +382,113 @@ function Footer({ t }: { t: Dictionary }) {
         </div>
       </div>
     </footer>
+  );
+}
+
+/** A quill-and-letter mark for "memories and stories", drawn like the other line icons. */
+function InkLetter() {
+  return (
+    <svg viewBox="0 0 64 56" className="h-12 w-14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 14h30l8 8v24H10z" />
+      <path d="M40 14v8h8M17 27h22M17 34h22M17 41h14" />
+      <path d="M44 8c6-4 12-2 12-2s-1 7-7 11l-7 5" />
+    </svg>
+  );
+}
+
+function Together({ t }: { t: Dictionary }) {
+  const g = t.together;
+  const card = "flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-line/70 bg-surface";
+  const pic = "relative flex h-56 items-center justify-center overflow-hidden bg-paper";
+  return (
+    <section className="mx-auto max-w-6xl px-5 pb-24 sm:px-8 lg:pb-32">
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <h2 className="max-w-xl text-[2.4rem] sm:text-[3.2rem]">{g.title}</h2>
+        <p className="max-w-sm text-ink-muted">{g.lead}</p>
+      </div>
+      <FadeIn stagger={120} className="mt-12 grid gap-4 md:grid-cols-2">
+        {/* Albums */}
+        <article className={card}>
+          <div className={pic}>
+            {g.albums.map((name, i) => (
+              <figure
+                key={name}
+                style={{ transform: `translateX(${(i - 1) * 9.2}rem) rotate(${(i - 1) * 4}deg)`, zIndex: i === 1 ? 2 : 1 }}
+                className="absolute w-36 rounded-[10px] bg-white p-1.5 pb-2 shadow-[0_18px_34px_-18px_rgb(28_29_26/0.55)]"
+              >
+                <Photo src={[PHOTOS.floating[3], PHOTOS.story, PHOTOS.floating[0]][i]} alt="" className="aspect-[4/3] w-full rounded-[6px]" />
+                <figcaption className="mt-1.5 truncate px-1 text-[0.8rem] font-semibold">{name}</figcaption>
+              </figure>
+            ))}
+          </div>
+          <div className="p-6">
+            <h3 className="text-[1.5rem]">{g.items[0].title}</h3>
+            <p className="mt-2 text-ink-muted">{g.items[0].body}</p>
+          </div>
+        </article>
+        {/* Comments drifting over a photo */}
+        <article className={card}>
+          <div className={pic}>
+            <Photo src={PHOTOS.floating[1]} alt="" className="absolute inset-0 h-full w-full" />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16">
+              {t.landing.storyComments.slice(0, 2).map((c, i) => (
+                <div key={c.name} className="flex items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-4 text-white backdrop-blur-md">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+                  <img src={["/landing/face-ruta.jpg", "/landing/face-vytautas.jpg"][i]} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/40" />
+                  <span className="text-[0.88rem] leading-snug">
+                    <span className="block text-[0.75rem] font-semibold text-white/70">{c.name}</span>
+                    {c.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-6">
+            <h3 className="text-[1.5rem]">{g.items[1].title}</h3>
+            <p className="mt-2 text-ink-muted">{g.items[1].body}</p>
+          </div>
+        </article>
+        {/* Invitation with your name */}
+        <article className={card}>
+          <div className={pic}>
+            <div className="w-[min(20rem,85%)] rounded-[16px] bg-white p-5 text-center shadow-[0_18px_40px_-20px_rgb(28_29_26/0.5)]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+              <img src="/landing/face-elena.jpg" alt="" className="mx-auto h-14 w-14 rounded-full object-cover" />
+              <p className="mt-3 font-semibold leading-snug">{g.inviteFor}</p>
+              <p className="mt-1 text-[0.9rem] text-ink-muted">{g.inviteAs}</p>
+              <span className="mt-4 inline-flex min-h-10 items-center rounded-full bg-night px-5 text-[0.92rem] font-medium text-surface">{g.inviteCta}</span>
+            </div>
+          </div>
+          <div className="p-6">
+            <h3 className="text-[1.5rem]">{g.items[2].title}</h3>
+            <p className="mt-2 text-ink-muted">{g.items[2].body}</p>
+          </div>
+        </article>
+        {/* Two families joined at a couple */}
+        <article className={card}>
+          <div className={pic}>
+            <svg viewBox="0 0 320 180" className="h-full w-full max-w-md" aria-hidden="true">
+              <g fill="none" stroke="#b9b6aa" strokeWidth="1.5">
+                <path d="M70 52 V78 H110 V104 M150 52 V78 H110" />
+                <path d="M210 52 V78 H230 V104 M250 52 V78 H230" />
+                <path d="M110 120 H230" strokeDasharray="0" />
+                <path d="M170 120 V146" />
+              </g>
+              {[[70, 40, "#1c1d1a"], [150, 40, "#1c1d1a"], [210, 40, "#7a8f5a"], [250, 40, "#7a8f5a"], [110, 116, "#1c1d1a"], [230, 116, "#7a8f5a"]].map(([x, y, c], i) => (
+                <circle key={i} cx={x as number} cy={(y as number) + 4} r="11" fill="#fff" stroke={c as string} strokeWidth="2.5" />
+              ))}
+              <circle cx="170" cy="156" r="9" fill="#fff" stroke="#b8892e" strokeWidth="2.5" />
+              <text x="110" y="22" textAnchor="middle" className="fill-ink text-[12px] font-semibold">{g.familyA}</text>
+              <text x="230" y="22" textAnchor="middle" fill="#5d6e44" className="text-[12px] font-semibold">{g.familyB}</text>
+              <text x="170" y="112" textAnchor="middle" className="fill-ink-muted text-[11px]">{g.joinedAt}</text>
+            </svg>
+          </div>
+          <div className="p-6">
+            <h3 className="text-[1.5rem]">{g.items[3].title}</h3>
+            <p className="mt-2 text-ink-muted">{g.items[3].body}</p>
+          </div>
+        </article>
+      </FadeIn>
+    </section>
   );
 }

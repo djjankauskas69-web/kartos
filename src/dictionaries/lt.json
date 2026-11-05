@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "MyKartos — jūsų šeimos atminties namai",
-    "description": "Šeimos medis, kapų žemėlapis ir nuotraukų archyvas vienoje privačioje vietoje. Kurkite kartu su artimaisiais."
+    "description": "Šeimos medis, albumai ir prisiminimai vienoje privačioje vietoje. Kurkite kartu su artimaisiais."
   },
   "nav": {
     "how": "Kaip tai veikia",
@@ -12,10 +12,10 @@
   },
   "hero": {
     "title": "Viena vieta prisiminti visus",
-    "lead": "Sudėkite savo šeimos istoriją į vieną privatų archyvą: kas kam kuo buvo, kur kas palaidotas, senos nuotraukos ir prisiminimai, kuriuos verta išsaugoti vaikams.",
+    "lead": "Sudėkite savo šeimos istoriją į vieną privatų archyvą: kas kam kuo buvo, senos nuotraukos ir prisiminimai, kuriuos verta išsaugoti vaikams.",
     "cta": "Sukurti šeimos archyvą",
     "secondary": "Kaip tai veikia",
-    "note": "Nemokama. Jūsų duomenys matomi tik jūsų šeimai.",
+    "note": "Nemokama. Ką matys kiti, sprendžiate jūs.",
     "facts": [
       {
         "big": "Privatu",
@@ -59,12 +59,12 @@
       "body": "Tėvai, seneliai, vaikai, sutuoktiniai ir antrosios santuokos. Medis auga, kai prisijungia kiti giminaičiai."
     },
     "map": {
-      "title": "Kapų žemėlapis",
-      "body": "Tiksli kapo vieta, kvartalas, eilė ir užrašas, kaip jį rasti. Visi šeimos kapai viename žemėlapyje."
+      "title": "Albumai ir nuotraukos",
+      "body": "Senos nuotraukos, laiškai ir dokumentai, sudėti į albumus ir priskirti konkretiems žmonėms bei metams."
     },
     "archive": {
-      "title": "Nuotraukos ir prisiminimai",
-      "body": "Senos nuotraukos, laiškai, dokumentai ir istorijos, priskirtos konkretiems žmonėms ir laikotarpiams."
+      "title": "Prisiminimai ir istorijos",
+      "body": "Ką močiutė pasakodavo, kaip susipažino seneliai, kokie buvo tie metai. Su nuotrauka, kad nepasimirštų."
     }
   },
   "steps": {
@@ -84,8 +84,8 @@
     }
   },
   "visit": {
-    "title": "Kai ateina Vėlinės, visi šeimos kapai — viename žemėlapyje",
-    "body": "Jaunesni giminaičiai nebeturi klausinėti, kur ilsisi proseneliai. Atidarote žemėlapį, pasirenkate kapą ir gaunate kelią iki jo.",
+    "title": "Prireikus — ir šeimos kapavietės",
+    "body": "Prie žmogaus galite pažymėti, kur jis ilsisi. Prieš Vėlines jaunesni giminaičiai nebeklausinėja — atsidaro žemėlapį ir gauna kelią iki kapo.",
     "list": [
       "Lėbartų kapinės, Klaipėda",
       "Plungės senosios kapinės",
@@ -97,7 +97,7 @@
     "items": [
       {
         "title": "Privatu iš anksto",
-        "body": "Viską mato tik pakviesti šeimos nariai. Niekas neskelbiama automatiškai."
+        "body": "Viską mato tik pakviesti šeimos nariai. Prie kiekvienos nuotraukos ir prisiminimo pats pasirenkate: tik šeimai ar visiems."
       },
       {
         "title": "Gyvi žmonės saugomi",
@@ -1199,7 +1199,7 @@
     "step2Name": "Kas jis {name}?"
   },
   "landing": {
-    "reveal": "Kas kam kuo buvo. Kur kas palaidotas. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — Kartos padeda tai išsaugoti vaikams ir anūkams.",
+    "reveal": "Kas kam kuo buvo. Kas yra toje senoje nuotraukoje. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — MyKartos padeda tai išsaugoti vaikams ir anūkams.",
     "bigLines": [
       "Prisiminimai,",
       "kurie",
@@ -1217,8 +1217,8 @@
         "body": "Prie jo prisijungia tėvai, vaikai ir sutuoktiniai. Medis auga, kai prisijungia giminės."
       },
       {
-        "title": "Ir žinote, kur jis ilsisi",
-        "body": "Kapavietė pažymėta žemėlapyje — su kvartalu, eile ir keliu iki jos."
+        "title": "Ir visa šeima prisimena kartu",
+        "body": "Po nuotrauka giminės palieka po kelis žodžius — kas joje, kada, kas tada nutiko."
       }
     ],
     "bandTitle": "Visa šeima — vienoje vietoje",
@@ -1281,7 +1281,21 @@
       }
     ],
     "personPhotos": "Nuotraukos ir laiškai",
-    "personMore": "dar 14"
+    "personMore": "dar 14",
+    "storyComments": [
+      {
+        "name": "Rūta",
+        "text": "Čia močiutės virtuvė Plungėje!"
+      },
+      {
+        "name": "Vytautas",
+        "text": "1956-ųjų Kūčios, pamenu"
+      },
+      {
+        "name": "Tomas",
+        "text": "O kas tas berniukas kairėje?"
+      }
+    ]
   },
   "story": {
     "titleFemale": "Kokia ji buvo",
@@ -1554,5 +1568,38 @@
     "bannerOne": "{n} šeima prašo leidimo matyti jūsų medį.",
     "bannerMany": "{n} šeimos prašo leidimo matyti jūsų medį.",
     "bannerButton": "Peržiūrėti"
+  },
+  "together": {
+    "title": "Kartu su visa šeima",
+    "lead": "Archyvas gyvas tol, kol jį pildo daug rankų. Todėl viskas sukurta taip, kad prisidėti būtų paprasta kiekvienam — nuo anūko iki prosenelės.",
+    "items": [
+      {
+        "title": "Albumai, kuriuos norisi vartyti",
+        "body": "Kalėdos pas senelius, vasaros kaime, vestuvės. Nuotrauką atidarote per visą ekraną, o albumus galite rodyti kaip skaidres prie šventinio stalo."
+      },
+      {
+        "title": "Komentarai ant nuotraukų",
+        "body": "Kiekvienas gali palikti po kelis žodžius. Jie švelniai plaukia per nuotrauką — su vardu ir veidu to, kas parašė."
+      },
+      {
+        "title": "Kvietimas — su jūsų vardu",
+        "body": "Pakviestas giminaitis iš karto mato, kuo jis yra medyje. Užtenka nuorodos per Messenger, Viber ar el. paštą."
+      },
+      {
+        "title": "Dvi šeimos — vienas medis",
+        "body": "Kai susituokiate, abiejų giminių medžiai susijungia jūsų vietoje. Kiekviena šeima lieka savo archyvo šeimininkė."
+      }
+    ],
+    "albums": [
+      "Kalėdos pas senelius",
+      "Vasara kaime, 1978",
+      "Vestuvės"
+    ],
+    "inviteFor": "Ieva, jus kviečia į Jankauskų šeimą",
+    "inviteAs": "Medyje jūs — Ieva Petraukaitė",
+    "inviteCta": "Prisijungti",
+    "familyA": "Jankauskai",
+    "familyB": "Petraukai",
+    "joinedAt": "Justas ir Ieva"
   }
 }

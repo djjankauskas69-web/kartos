@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "MyKartos — a home for your family's memory",
-    "description": "Family tree, grave map and photo archive in one private place. Build it together with your relatives."
+    "description": "Family tree, albums and memories in one private place. Build it together with your family."
   },
   "nav": {
     "how": "How it works",
@@ -12,10 +12,10 @@
   },
   "hero": {
     "title": "One place to remember everyone",
-    "lead": "Gather your family's history into one private archive: who was who, where each person rests, the old photographs, and the stories worth keeping for your children.",
+    "lead": "Gather your family's story in one private archive: who was who, old photos and the memories worth keeping for your children.",
     "cta": "Create your family archive",
     "secondary": "How it works",
-    "note": "Free. Only your family can see what you add.",
+    "note": "Free. You decide what others see.",
     "facts": [
       {
         "big": "Private",
@@ -53,18 +53,18 @@
   },
   "keep": {
     "title": "What you'll keep",
-    "lead": "The three things most often lost between generations.",
+    "lead": "Three things most often lost between generations.",
     "tree": {
       "title": "Family tree",
       "body": "Parents, grandparents, children, spouses and second marriages. The tree grows as more relatives join."
     },
     "map": {
-      "title": "Grave map",
-      "body": "The exact grave, its section and row, and a note on how to find it. Every family grave on one map."
+      "title": "Albums and photos",
+      "body": "Old photos, letters and documents, gathered into albums and linked to the right people and years."
     },
     "archive": {
-      "title": "Photos and memories",
-      "body": "Old photographs, letters, documents and stories, linked to the people and years they belong to."
+      "title": "Memories and stories",
+      "body": "What grandmother used to tell, how the grandparents met, what those years were like. With a photo, so it isn't forgotten."
     }
   },
   "steps": {
@@ -84,20 +84,20 @@
     }
   },
   "visit": {
-    "title": "When it's time to visit, every family grave is on one map",
-    "body": "Younger relatives no longer have to ask where their great-grandparents rest. Open the map, choose the grave, and get directions to it.",
+    "title": "When needed — family graves too",
+    "body": "You can mark where someone rests. Before All Souls' Day the younger ones no longer have to ask — they open the map and get directions to the grave.",
     "list": [
-      "Lėbartai Cemetery, Klaipėda",
-      "Old Cemetery, Plungė",
-      "Rasos Cemetery, Vilnius"
+      "Lėbartai cemetery, Klaipėda",
+      "Plungė old cemetery",
+      "Rasos cemetery, Vilnius"
     ]
   },
   "privacy": {
     "title": "Your family's history belongs to you",
     "items": [
       {
-        "title": "Private by default",
-        "body": "Only invited family members can see anything. Nothing is ever published automatically."
+        "title": "Private from the start",
+        "body": "Only invited family members see anything. For each photo and memory you choose: family only, or everyone."
       },
       {
         "title": "Living relatives protected",
@@ -1199,7 +1199,7 @@
     "step2Name": "What are they to {name}?"
   },
   "landing": {
-    "reveal": "Who was who to whom. Where everyone rests. What grandmother used to tell at the table. All of it is often lost within a single generation — Kartos helps you keep it for your children and grandchildren.",
+    "reveal": "Who was who. Who is in that old photo. What grandmother used to tell at the table. All of it is often lost within one generation — MyKartos helps keep it for your children and grandchildren.",
     "bigLines": [
       "Memories",
       "that",
@@ -1210,15 +1210,15 @@
     "story": [
       {
         "title": "Upload an old photo",
-        "body": "Snap it with your phone — even a torn one. Mark who is in it."
+        "body": "Take a picture of it with your phone — even a torn one. Mark who is in it."
       },
       {
         "title": "The person appears in the tree",
-        "body": "Parents, children and spouses join them. The tree grows as relatives join."
+        "body": "Parents, children and partners join them. The tree grows as relatives join."
       },
       {
-        "title": "And you know where they rest",
-        "body": "The grave is marked on the map — with section, row and the way there."
+        "title": "And the whole family remembers together",
+        "body": "Under the photo relatives leave a few words — who it is, when, what happened then."
       }
     ],
     "bandTitle": "The whole family, in one place",
@@ -1281,7 +1281,21 @@
       }
     ],
     "personPhotos": "Photos and letters",
-    "personMore": "14 more"
+    "personMore": "14 more",
+    "storyComments": [
+      {
+        "name": "Rūta",
+        "text": "That's grandma's kitchen in Plungė!"
+      },
+      {
+        "name": "Vytautas",
+        "text": "Christmas Eve 1956, I remember"
+      },
+      {
+        "name": "Tomas",
+        "text": "Who's the boy on the left?"
+      }
+    ]
   },
   "story": {
     "titleFemale": "What she was like",
@@ -1554,5 +1568,38 @@
     "bannerOne": "{n} family is asking to see your tree.",
     "bannerMany": "{n} families are asking to see your tree.",
     "bannerButton": "Review"
+  },
+  "together": {
+    "title": "Together with the whole family",
+    "lead": "An archive stays alive while many hands fill it in. So everything is made to be easy for everyone to join — from grandchild to great-grandmother.",
+    "items": [
+      {
+        "title": "Albums you want to leaf through",
+        "body": "Christmas at the grandparents', summers in the countryside, weddings. Open a photo full screen, or show albums as a slideshow at the family table."
+      },
+      {
+        "title": "Comments on photos",
+        "body": "Anyone can leave a few words. They drift gently across the photo — with the name and face of whoever wrote them."
+      },
+      {
+        "title": "An invitation with your name",
+        "body": "An invited relative sees straight away who they are in the tree. A link via Messenger, WhatsApp or email is enough."
+      },
+      {
+        "title": "Two families — one tree",
+        "body": "When you marry, both families' trees join at you. Each family stays the owner of its own archive."
+      }
+    ],
+    "albums": [
+      "Christmas at the grandparents'",
+      "Summer in the countryside, 1978",
+      "The wedding"
+    ],
+    "inviteFor": "Ieva, you're invited to the Jankauskas family",
+    "inviteAs": "In the tree you are Ieva Petraukaitė",
+    "inviteCta": "Join",
+    "familyA": "Jankauskas",
+    "familyB": "Petraukas",
+    "joinedAt": "Justas and Ieva"
   }
 }

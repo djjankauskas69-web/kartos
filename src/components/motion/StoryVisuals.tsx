@@ -103,3 +103,31 @@ export function StoryGrave({ map, rests, cemetery, plot, directions }: { map: Re
     </div>
   );
 }
+
+/** Step 3: the same photo, and the family's words drifting up over it one after another. */
+export function StoryComments({ photo, comments }: { photo: string; comments: Array<{ face: string; name: string; text: string }> }) {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="relative w-[82%] overflow-hidden rounded-[14px] shadow-[0_30px_60px_-30px_rgb(28_29_26/0.55)]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+        <img src={photo} alt="" className="block aspect-[4/3] w-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 bg-gradient-to-t from-black/55 to-transparent p-4 pt-20">
+          {comments.map((c, i) => (
+            <div
+              key={c.name}
+              style={{ transitionDelay: `${300 + i * 650}ms` }}
+              className="flex translate-y-3 items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-4 text-white opacity-0 backdrop-blur-md transition-all duration-500 group-data-[active=true]:translate-y-0 group-data-[active=true]:opacity-100"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+              <img src={c.face} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/40" />
+              <span className="text-[0.88rem] leading-snug">
+                <span className="block text-[0.75rem] font-semibold text-white/70">{c.name}</span>
+                {c.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
