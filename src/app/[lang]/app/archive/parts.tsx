@@ -30,7 +30,7 @@ export type ArchiveItem = {
   canEdit: boolean;
   canDelete: boolean;
   shared: boolean;
-  comments?: Array<{ id: string; body: string; author: string; at: string; canDelete: boolean }>;
+  comments?: Array<{ id: string; body: string; author: string; avatar?: string; at: string; canDelete: boolean }>;
   uploaderId: string | null;
   width: number | null;
   height: number | null;
@@ -373,8 +373,12 @@ export function Detail({
       <div className="absolute right-3 top-3 z-20 rounded-full bg-white/90 shadow-sm md:bg-transparent md:shadow-none">{closeBtn}</div>
       <div className="group/pic relative flex min-h-[44dvh] flex-1 items-center justify-center bg-[#f1ece2] p-4 sm:p-8">
         {item.url && !item.pdf ? (
-          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-          <img src={item.url} alt={title} className="max-h-[44dvh] max-w-full rounded-[6px] object-contain shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)] md:max-h-full" />
+          // The comments sit on the photo itself, so the frame is exactly the photo's size.
+          <div className="relative max-w-full overflow-hidden rounded-[8px] shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+            <img src={item.url} alt={title} className="block max-h-[50dvh] max-w-full object-contain md:max-h-[calc(min(86dvh,48rem)-4rem)]" />
+            {item.kind === "photo" && <LiveComments key={item.id} item={item} t={t} locale={locale} canAdd={canComment} />}
+          </div>
         ) : (
           <div className="aspect-[3/4] h-[44dvh] md:h-full">
             <Preview item={item} large />
@@ -414,7 +418,6 @@ export function Detail({
           {people_}
           {item.description && <p className="whitespace-pre-line text-[0.98rem] leading-relaxed">{item.description}</p>}
           {editLinks}
-          <Comments item={item} t={t} locale={locale} canAdd={canComment} />
         </div>
         <div className="border-t border-line px-5 py-4">{actions}</div>
       </aside>
@@ -425,42 +428,64 @@ export function Detail({
 const COMMENT_MAX = 50;
 
 /** A few words from the family under a photo, quietly: the notes, then one short line to add yours. */
-function Comments({ item, t, locale, canAdd }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean }) {
+/**
+ * Comments float over the photo like a live chat: the family's notes rise one after another
+ * (face, name, words), the newest at the bottom; one short line below to add yours.
+ */
+function LiveComments({ item, t, locale, canAdd }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
   const list = item.comments ?? [];
-  if (!canAdd && list.length === 0) return null;
+  // On opening, the notes come in one by one; a new one shows straight away.
+  const [shown, setShown] = useState(0);
+  const total = list.length;
+  useEffect(() => {
+    if (shown >= total) return;
+    const id = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 450 : 1100);
+    return () => window.clearTimeout(id);
+  }, [shown, total]);
+  if (!canAdd && total === 0) return null;
+  const visible = list.slice(0, Math.max(shown, 0)).slice(-6);
   return (
-    <div className="pt-3">
-      {list.length > 0 && (
-        <ul className="mb-2 space-y-1.5">
-          {list.map((c) => (
-            <li key={c.id} className="group/c flex items-baseline gap-2 text-[0.98rem]">
-              <span className="shrink-0 font-semibold">{c.author}</span>
-              <span className="min-w-0 break-words">{c.body}</span>
-              <span className="shrink-0 text-[0.85rem] text-ink-muted">{new Date(c.at).toLocaleDateString(locale, { month: "short", day: "numeric" })}</span>
-              {c.canDelete && (
-                <form action={async (f) => void (await deleteComment(f))} className="shrink-0 opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="id" value={c.id} />
-                  <button type="submit" aria-label={t.delete} title={t.delete} className="text-ink-muted hover:text-danger">×</button>
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/45 via-black/15 to-transparent p-3 pt-16 sm:p-4 sm:pt-20">
+      <ul className={`flex max-h-[13rem] max-w-[22rem] flex-col max-sm:[&>li:nth-last-child(n+3)]:hidden justify-end gap-1.5 overflow-hidden ${visible.length > 3 ? "[mask-image:linear-gradient(to_bottom,transparent,black_2.5rem)]" : ""}`}>
+        {visible.map((c) => (
+          <li key={c.id} className="group/c pointer-events-auto flex w-fit max-w-full animate-[live-in_380ms_cubic-bezier(0.2,0.7,0.2,1)_both] items-start gap-2 rounded-2xl bg-black/40 py-1.5 pl-1.5 pr-3 text-white shadow-[0_6px_18px_-10px_rgb(0_0_0/0.6)] backdrop-blur-md">
+            {c.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+              <img src={c.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
+            ) : (
+              <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-[0.72rem] font-semibold">
+                {c.author.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?"}
+              </span>
+            )}
+            <span className="min-w-0 pt-px text-[0.9rem] leading-snug">
+              <span className="mr-1.5 font-semibold text-white/75">{c.author}</span>
+              <span className="break-words">{c.body}</span>
+            </span>
+            {c.canDelete && (
+              <form action={async (f) => void (await deleteComment(f))} className="shrink-0 self-center opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="id" value={c.id} />
+                <button type="submit" aria-label={t.delete} title={t.delete} className="text-white/70 hover:text-white">×</button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
       {canAdd && (
         <form
-          className="flex max-w-md items-center gap-2 border-b border-line focus-within:border-ink/50"
+          className="pointer-events-auto flex max-w-[22rem] items-center gap-1 rounded-full bg-white/90 pl-4 pr-1 shadow-[0_6px_18px_-10px_rgb(0_0_0/0.5)] backdrop-blur focus-within:bg-white"
           action={async (form) => {
             setBusy(true);
             setError(null);
             const r = await addComment(form);
             setBusy(false);
-            if (r.ok) setText("");
-            else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
+            if (r.ok) {
+              setText("");
+              setShown(total + 1);
+            } else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
           }}
         >
           <input type="hidden" name="locale" value={locale} />
@@ -474,15 +499,15 @@ function Comments({ item, t, locale, canAdd }: { item: ArchiveItem; t: L; locale
             maxLength={COMMENT_MAX}
             autoComplete="off"
             placeholder={`${t.addComment}…`}
-            className="min-h-11 min-w-0 flex-1 bg-transparent text-[0.98rem] placeholder:text-ink-muted/70 focus:outline-none"
+            className="min-h-10 min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink placeholder:text-ink-muted/70 focus:outline-none"
           />
-          {text && <span className="shrink-0 text-[0.8rem] tabular-nums text-ink-muted">{COMMENT_MAX - text.length}</span>}
-          <button type="submit" disabled={busy || !text.trim()} aria-label={t.send} title={t.send} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-paper disabled:opacity-30">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          {text && <span className="shrink-0 text-[0.78rem] tabular-nums text-ink-muted">{COMMENT_MAX - text.length}</span>}
+          <button type="submit" disabled={busy || !text.trim()} aria-label={t.send} title={t.send} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-white disabled:opacity-25">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
           </button>
         </form>
       )}
-      {error && <p role="alert" className="mt-1 text-[0.92rem] text-danger">{error}</p>}
+      {error && <p role="alert" className="pointer-events-auto w-fit rounded-full bg-white px-3 py-1 text-[0.88rem] text-danger">{error}</p>}
     </div>
   );
 }

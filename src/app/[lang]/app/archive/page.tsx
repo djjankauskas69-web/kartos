@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
 import { PageLoading } from "@/components/PageLoading";
+import { portraitUrls } from "../portraits";
 
 export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/app/archive">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -54,6 +55,11 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   // Comments under the photos (database update 0018; none before it).
   const { data: commentRows } = await supabase.from("media_comments").select("id, media_id, author_id, body, created_at").eq("workspace_id", current.id).order("created_at").limit(3000);
   const comments = (commentRows ?? []) as Array<{ id: string; media_id: string; author_id: string | null; body: string; created_at: string }>;
+  // Each writer's face: their portrait as "This is me" in this family's tree.
+  const { data: memberRows } = comments.length ? await supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id).not("person_id", "is", null) : { data: [] };
+  const personOfUser = new Map((memberRows ?? []).map((r) => [r.user_id as string, r.person_id as string]));
+  const facePeople = people.filter((p) => [...personOfUser.values()].includes(p.id));
+  const faces = facePeople.length ? await portraitUrls(locale, facePeople) : new Map<string, string>();
   const [urls, names] = await Promise.all([
     signedUrls(locale, [...rows.map((m) => m.storage_path).filter((p): p is string => !!p), ...memPath.values()]),
     profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string), ...comments.map((c) => c.author_id as string)]),
@@ -86,7 +92,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
       pdf: m.mime_type === "application/pdf" || /\.pdf$/i.test(m.storage_path ?? ""),
       pending,
       shared: !!m.shared,
-      comments: (commentsBy.get(m.id) ?? []).map((c) => ({ id: c.id, body: c.body, author: names.get(c.author_id as string) ?? "", at: c.created_at, canDelete: isEditor || c.author_id === user.id })),
+      comments: (commentsBy.get(m.id) ?? []).map((c) => ({ id: c.id, body: c.body, author: names.get(c.author_id as string) ?? "", avatar: faces.get(personOfUser.get(c.author_id as string) ?? ""), at: c.created_at, canDelete: isEditor || c.author_id === user.id })),
       width: m.width,
       height: m.height,
       canEdit: isEditor || (pending && m.uploader_id === user.id),
