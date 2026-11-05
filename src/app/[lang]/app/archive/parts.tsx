@@ -140,6 +140,9 @@ export function DialogHead({ title, onClose, closeLabel }: { title: string; onCl
   );
 }
 
+/** How long each photo shows in the slideshow. */
+const SLIDE_MS = 5000;
+
 /** Whether the details beside a photo are open; kept while you move between photos. */
 let detailsOpen = false;
 
@@ -156,6 +159,8 @@ export function Detail({
   canCover = false,
   canComment = false,
   preload = [],
+  playing = false,
+  onPlay,
   onPrev,
   onNext,
   onClose,
@@ -164,6 +169,9 @@ export function Detail({
   canComment?: boolean;
   /** The photos either side, fetched ahead so moving on is instant. */
   preload?: Array<string | undefined>;
+  /** Shown as a slideshow: the photo alone, moving on by itself. */
+  playing?: boolean;
+  onPlay?: (on: boolean) => void;
   onPrev?: () => void;
   onNext?: () => void;
   item: ArchiveItem;
@@ -181,16 +189,40 @@ export function Detail({
   const [covered, setCovered] = useState(false);
   const [downloading, setDownloading] = useState(false);
   // ← and → go to the previous and next photo (not while typing).
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (editing) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as Element)?.closest?.("input, textarea, select")) return;
       if (e.key === "ArrowLeft" && onPrev) onPrev();
       if (e.key === "ArrowRight" && onNext) onNext();
+      if (playing && e.key === " ") {
+        e.preventDefault();
+        setPaused((p) => !p);
+      }
+      // Esc ends the slideshow first and stays on this photo; a second Esc closes.
+      if (playing && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onPlay?.(false);
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [editing, onPrev, onNext]);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [editing, onPrev, onNext, playing, onPlay]);
+  // Swipe left or right on a phone.
+  const touchX = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchX.current = e.touches[0]?.clientX ?? null;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const from = touchX.current;
+    touchX.current = null;
+    const to = e.changedTouches[0]?.clientX;
+    if (from == null || to == null || Math.abs(to - from) < 50) return;
+    if (to < from) onNext?.();
+    else onPrev?.();
+  };
   const [confirm, setConfirm] = useState(false);
   // Until the photo has arrived a quiet mark shows in its place (no lone comment line).
   const [loaded, setLoaded] = useState(false);
@@ -201,6 +233,11 @@ export function Detail({
     for (const u of preload) if (u) new window.Image().src = u;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per photo
   }, []);
+  useEffect(() => {
+    if (!playing || paused || !loaded || !onNext) return;
+    const id = window.setTimeout(onNext, SLIDE_MS);
+    return () => window.clearTimeout(id);
+  }, [playing, paused, loaded, onNext]);
   // The photo comes first; the details open with the (i) button and stay open (or closed)
   // while you go through the photos.
   const [info, setInfoState] = useState(() => detailsOpen);
@@ -393,7 +430,33 @@ export function Detail({
   return (
     <div className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]">
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
+      {playing && (
+        <div className="absolute inset-x-0 top-0 z-30 h-[3px] overflow-hidden rounded-full bg-white/15">
+          {loaded && <div key={item.id} style={{ animationDuration: `${SLIDE_MS}ms`, animationPlayState: paused ? "paused" : "running" }} className="h-full origin-left animate-[slide-progress_linear_both] bg-white/80" />}
+        </div>
+      )}
       <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
+        {onPlay && (
+          <button
+            type="button"
+            onClick={() => {
+              setPaused(false);
+              onPlay(!playing);
+              if (!playing) setInfo(false);
+            }}
+            aria-pressed={playing}
+            aria-label={playing ? t.slidePause : t.slidePlay}
+            title={playing ? t.slidePause : t.slidePlay}
+            className={`flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition-colors focus:outline-none ${playing ? "bg-ink text-white" : "bg-white/90 text-ink hover:bg-white"}`}
+          >
+            {playing ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
+            )}
+          </button>
+        )}
+        {!playing && (
         <button
           type="button"
           onClick={() => setInfo(!info)}
@@ -404,12 +467,17 @@ export function Detail({
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
         </button>
+        )}
         <div className="rounded-full bg-white/90 shadow-sm">{closeBtn}</div>
       </div>
       {/* The page shows dimmed behind the photo; only the details column is a card. */}
       {/* The photo stays in the middle of the screen; with the details open, the same room is left on both sides. */}
       <div className="flex min-w-0 flex-col md:h-full">
-      <div className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 transition-[padding] duration-300 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}>
+      <div
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 transition-[padding] duration-300 sm:px-16 ${info && !playing ? "md:px-[21.5rem]" : ""}`}
+      >
         {item.url && !item.pdf ? (
           // The comment line sits under the photo, starting at its left edge.
           <>
@@ -420,14 +488,23 @@ export function Detail({
               </span>
             </div>
           )}
-          <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
+          <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity ${playing ? "duration-700" : "duration-300"} ${loaded ? "opacity-100" : "opacity-0"}`}>
             {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
-            <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)]">
+            <div onClick={playing ? () => setPaused((p) => !p) : undefined} className={`relative max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] ${playing ? "cursor-pointer" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`} />
+              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} style={playing && loaded ? { animation: `kenburns ${SLIDE_MS + 900}ms ease-out both`, animationPlayState: paused ? "paused" : "running" } : undefined}
+                className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`}
+              />
+              {playing && paused && (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
+                  </span>
+                </span>
+              )}
               {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
             </div>
-            {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
+            {item.kind === "photo" && canComment && <div className={playing ? "invisible" : ""}><CommentInput item={item} t={t} locale={locale} /></div>}
           </div>
           </>
         ) : (
@@ -448,7 +525,7 @@ export function Detail({
       </div>
       </div>
 
-      <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
+      <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info && !playing ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
         <div className={`items-start justify-between gap-3 py-1 pl-5 pr-28 pt-4 md:flex md:min-h-16 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
