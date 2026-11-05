@@ -357,13 +357,13 @@ function Footer({ t }: { t: Dictionary }) {
             <a href="mailto:hello@example.com" className="hover:text-surface">{t.footer.contact}</a>
           </nav>
         </div>
-        <p aria-hidden="true" className="mt-10 select-none text-center font-serif text-[24vw] font-semibold leading-[0.8] tracking-[-0.07em] text-surface/95 lg:text-[19rem]">
-          kartos
-        </p>
-        <div className="halftone relative mt-6 h-40 sm:h-56" style={{ ["--ht-angle" as string]: "0deg" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- static placeholder */}
-          <img src={PHOTOS.strip} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-90" />
-          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-night to-transparent to-50%" />
+        {/* The name, large and quiet, then the hills it all grows from */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- logo */}
+        <img src="/brand/wordmark.svg" alt="" aria-hidden="true" className="mx-auto mt-14 block w-[min(86%,60rem)] select-none opacity-95 [filter:brightness(0)_invert(1)]" />
+        <div className="relative mt-10 h-44 sm:h-64">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
+          <img src="/landing/footer-hills.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-[50%_45%]" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-night via-night/30 to-transparent to-60%" />
         </div>
       </div>
     </footer>
