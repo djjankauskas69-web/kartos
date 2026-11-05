@@ -227,8 +227,8 @@ export default async function Home() {
                   ))}
                 </ul>
               </div>
-              <div className="halftone relative min-h-[18rem] lg:min-h-full" style={{ ["--ht-angle" as string]: "90deg" }}>
-                <Photo src={PHOTOS.band} alt="" className="absolute inset-0 h-full w-full" />
+              <div className="relative min-h-[18rem] lg:min-h-full">
+                <Photo src={PHOTOS.band} alt="" className="absolute inset-0 h-full w-full object-[55%_60%]" />
                 <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-olive-deep via-olive-deep/20 to-transparent lg:via-transparent" />
               </div>
             </div>

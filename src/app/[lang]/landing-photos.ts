@@ -10,7 +10,7 @@ export const PHOTOS = {
   // a framed family photo, soldiers' portrait, an album page).
   floating: ["/landing/memory-01.jpg", "/landing/memory-02.jpg", "/landing/memory-03.jpg", "/landing/memory-04.jpg", "/landing/memory-05.jpg", "/landing/memory-06.jpg"],
   story: "/landing/story-family.jpg", // family at the kitchen table, 1950s
-  band: "/landing/photo-08.jpg",
+  band: "/landing/band-family.jpg", // a family at sunset on a field
   cards: ["/landing/photo-04.jpg", "/landing/photo-10.jpg", "/landing/photo-07.jpg"],
   strip: "/landing/photo-12.jpg",
 };
