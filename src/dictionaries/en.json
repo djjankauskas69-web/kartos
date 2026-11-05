@@ -623,7 +623,7 @@
     "directions": "How to find it",
     "directionsPlaceholder": "e.g. By the birch, third row from the chapel",
     "mapTitle": "Location on the map",
-    "mapHelp": "Switch to “Satellite” and zoom in – paths and rows of graves show up. Tap at the grave or drag the pin. Exact coordinates aren't required: the cemetery, section and plot number are enough.",
+    "mapHelp": "Switch to “Satellite” and zoom in to see the paths and graves. Tap the grave or drag the pin. If you don't know exactly, the cemetery is enough.",
     "useGps": "I'm standing at the grave",
     "locating": "Finding location…",
     "gpsError": "Couldn't get your location. Allow location access or tap the map.",

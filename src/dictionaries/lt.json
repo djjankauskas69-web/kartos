@@ -623,7 +623,7 @@
     "directions": "Kaip rasti",
     "directionsPlaceholder": "Pvz. prie beržo, trečia eilė nuo koplyčios",
     "mapTitle": "Vieta žemėlapyje",
-    "mapHelp": "Įjunkite „Palydovas“ ir priartinkite – matysis takeliai ir kapų eilės. Paspauskite ties kapu arba patempkite smeigtuką. Tikslių koordinačių nebūtina: užtenka įrašyti kapines, kvartalą ir kapo numerį.",
+    "mapHelp": "Įjunkite „Palydovas“ ir priartinkite – matysis takeliai ir kapai. Paspauskite ties kapu arba patempkite smeigtuką. Jei tiksliai nežinote, užtenka kapinių.",
     "useGps": "Aš stoviu prie kapo",
     "locating": "Matuojama vieta…",
     "gpsError": "Nepavyko nustatyti vietos. Leiskite naršyklei naudoti vietą arba paspauskite žemėlapyje.",

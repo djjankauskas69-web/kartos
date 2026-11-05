@@ -206,15 +206,6 @@ export function GraveForm({
     }
   }
 
-  const field = (name: string, label: string, value: string | null | undefined, placeholder?: string) => (
-    <div>
-      <label htmlFor={`grave-${name}`} className={cls.label}>
-        {label}
-      </label>
-      <input id={`grave-${name}`} name={name} defaultValue={value ?? ""} placeholder={placeholder} maxLength={200} className={cls.input} />
-    </div>
-  );
-
   return (
     <form action={action} className="space-y-8">
       <input type="hidden" name="locale" value={locale} />
@@ -230,6 +221,24 @@ export function GraveForm({
           <label htmlFor="grave-cemetery" className={cls.label}>
             {t.grave.cemetery}
           </label>
+          {hasGooglePlaces ? (
+            // Type the cemetery: Google suggests it, and a pick moves the map and the pin there.
+            <PlaceSearch
+              locale={locale}
+              id="grave-cemetery"
+              name="cemetery"
+              defaultValue={initial?.cemetery_name ?? ""}
+              placeholder={t.grave.cemeteryPlaceholder}
+              near={pin ?? (cemeteries.find((c) => c.lat !== null) ? { lat: cemeteries.find((c) => c.lat !== null)!.lat!, lng: cemeteries.find((c) => c.lat !== null)!.lng! } : null)}
+              onPick={(pl) => {
+                setPin({ lat: pl.lat, lng: pl.lng });
+                setAccuracy(null);
+                setFocusKey((k) => k + 1);
+              }}
+              inputClassName={`${cls.input} w-full`}
+              className="w-full"
+            />
+          ) : (
           <input
             id="grave-cemetery"
             name="cemetery"
@@ -248,7 +257,8 @@ export function GraveForm({
             aria-describedby={cemeteries.length ? "grave-cemetery-hint" : undefined}
             className={cls.input}
           />
-          {cemeteries.length > 0 && (
+          )}
+          {!hasGooglePlaces && cemeteries.length > 0 && (
             <>
               <datalist id="known-cemeteries">
                 {cemeteries.map((c) => (
@@ -261,11 +271,10 @@ export function GraveForm({
             </>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {field("section", t.grave.section, initial?.section)}
-          {field("row", t.grave.row, initial?.row_label)}
-          {field("plot", t.grave.plot, initial?.plot)}
-        </div>
+        {/* Section, row and plot numbers are rarely used; earlier ones are kept as they were. */}
+        <input type="hidden" name="section" value={initial?.section ?? ""} />
+        <input type="hidden" name="row" value={initial?.row_label ?? ""} />
+        <input type="hidden" name="plot" value={initial?.plot ?? ""} />
         <div>
           <label htmlFor="grave-directions" className={cls.label}>
             {t.grave.directions}
@@ -296,24 +305,7 @@ export function GraveForm({
             <label htmlFor="grave-search" className="sr-only">
               {t.grave.searchPlaceholder}
             </label>
-            {hasGooglePlaces ? (
-              // Google suggests cemeteries and addresses as you type; a pick moves the pin there.
-              <PlaceSearch
-                locale={locale}
-                id="grave-search"
-                placeholder={t.grave.searchPlaceholder}
-                near={pin ?? (view ? { lat: view.lat, lng: view.lng } : null)}
-                onPick={(pl) => {
-                  setPin({ lat: pl.lat, lng: pl.lng });
-                  setAccuracy(null);
-                  setFocusKey((k) => k + 1);
-                  const cem = document.getElementById("grave-cemetery") as HTMLInputElement | null;
-                  if (cem && !cem.value.trim()) cem.value = pl.name;
-                }}
-                className="min-w-0 flex-1"
-                inputClassName="min-h-11 w-full min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
-              />
-            ) : (
+            {hasGooglePlaces ? null : (
               <>
                 <input
                   id="grave-search"
