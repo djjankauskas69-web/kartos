@@ -358,6 +358,20 @@ export function TreeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tree (after the canvas has its height)
   }, [start?.key, width, height, fitH === null]);
 
+  // Into or out of full screen: the whole tree again, in the middle of the new size
+  // (once now, and once more after the browser has finished growing the window).
+  const wasFull = useRef(full);
+  useEffect(() => {
+    if (wasFull.current === full) return;
+    wasFull.current = full;
+    const a = window.setTimeout(fit, 60);
+    const b = window.setTimeout(fit, 420);
+    return () => {
+      window.clearTimeout(a);
+      window.clearTimeout(b);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when full screen changes
+  }, [full]);
   // Going to another page (or hiding this one) leaves the full screen too.
   useEffect(() => {
     if (!full) return;
