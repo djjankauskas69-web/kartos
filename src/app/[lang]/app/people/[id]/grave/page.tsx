@@ -4,16 +4,17 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getPerson, requireWorkspace } from "@/lib/data";
-import { cls } from "@/components/ui";
 import { deleteGrave } from "../../../actions";
 import { ConfirmAction } from "../../../forms";
 import { GraveForm, type GraveValues } from "./GraveForm";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
+import { PageHeader } from "@/components/PageHeader";
+import { WideMain } from "../../../tree/WideMain";
 
 export default async function GravePage({ params, searchParams }: PageProps<"/[lang]/app/people/[id]/grave">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton kind="map" />}>
       <Grave t={t} locale={locale} idPromise={params.then((p) => p.id)} backPromise={searchParams.then((s) => String(s.back ?? ""))} />
     </Suspense>
   );
@@ -72,13 +73,14 @@ async function Grave({
   if (!allowed) redirect(`/${locale}/app/people/${id}`);
 
   return (
-    <div className="max-w-3xl">
-      <Link href={back ? `/${locale}/app/map` : `/${locale}/app/people/${id}`} className="text-[1rem] font-semibold text-sage-deep hover:underline">
-        ‹ {back ? t.map.title : fullName(person)}
+    <div>
+      {/* The map beside the form needs the full width. */}
+      <WideMain />
+      <Link href={back ? `/${locale}/app/map` : `/${locale}/app/people/${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+        <span aria-hidden="true">←</span>
+        {back ? t.map.title : fullName(person)}
       </Link>
-      {/* The name is already in the back link, unless that link goes to the map. */}
-      {back && <p className="mt-6 font-serif text-[1.15rem] text-bronze">{fullName(person)}</p>}
-      <h1 className={`mb-8 ${back ? "mt-1" : "mt-6"} ${cls.h1}`}>{burial ? t.grave.edit : t.grave.add}</h1>
+      <PageHeader title={burial ? t.grave.edit : t.grave.add} meta={fullName(person)} className="mb-5 mt-5" />
       <GraveForm
         t={t}
         locale={locale}
@@ -90,7 +92,7 @@ async function Grave({
         back={back}
       />
       {burial && can.edit(current.role) && (
-        <div className="mt-14 border-t border-line pt-8">
+        <div className="mt-6">
           <ConfirmAction
             action={deleteGrave}
             values={{ locale, burialId: burial.id as string, personId: id }}

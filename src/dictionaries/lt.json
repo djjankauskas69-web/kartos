@@ -657,7 +657,12 @@
     "copied": "Nukopijuota",
     "navGoogle": "Google Maps",
     "navWaze": "Waze",
-    "navApple": "Apple Maps"
+    "navApple": "Apple Maps",
+    "tapHint": "Paspauskite ant kapo žemėlapyje arba patempkite smeigtuką",
+    "coordsToggle": "Turite tikslias koordinates?",
+    "photoChange": "Pakeisti nuotrauką",
+    "whereTitle": "Kur yra kapas",
+    "detailsTitle": "Apie kapą"
   },
   "map": {
     "title": "Kapavietės",

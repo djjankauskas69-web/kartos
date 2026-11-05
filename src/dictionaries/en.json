@@ -657,7 +657,12 @@
     "copied": "Copied",
     "navGoogle": "Google Maps",
     "navWaze": "Waze",
-    "navApple": "Apple Maps"
+    "navApple": "Apple Maps",
+    "tapHint": "Tap the grave on the map or drag the pin",
+    "coordsToggle": "Have exact coordinates?",
+    "photoChange": "Change photo",
+    "whereTitle": "Where the grave is",
+    "detailsTitle": "About the grave"
   },
   "map": {
     "title": "Graves",

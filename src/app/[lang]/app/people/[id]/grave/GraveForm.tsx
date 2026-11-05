@@ -206,8 +206,23 @@ export function GraveForm({
     }
   }
 
+  // The chosen grave photo, shown small before saving.
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const choosePhoto = (f: File | null) => {
+    setPhoto(f);
+    setPhotoUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return f ? URL.createObjectURL(f) : null;
+    });
+  };
+
+  const card = "rounded-[20px] border border-line/70 bg-surface";
+  const floatBtn =
+    "inline-flex min-h-11 items-center gap-2 rounded-full border border-line/80 bg-surface/95 px-4 text-[0.95rem] font-semibold shadow-[0_8px_22px_-14px_rgb(28_29_26/0.6)] backdrop-blur hover:bg-surface disabled:opacity-70";
+  const I = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+
   return (
-    <form action={action} className="space-y-8">
+    <form action={action} className="grid gap-5 lg:grid-cols-[minmax(20rem,25rem)_minmax(0,1fr)] [&>*]:min-w-0">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="personId" value={personId} />
       {initial?.id && <input type="hidden" name="burialId" value={initial.id} />}
@@ -215,8 +230,13 @@ export function GraveForm({
       <input type="hidden" name="lat" value={pin?.lat ?? ""} />
       <input type="hidden" name="lng" value={pin?.lng ?? ""} />
       <input type="hidden" name="accuracy" value={accuracy ?? ""} />
+      {/* Section, row and plot numbers are rarely used; earlier ones are kept as they were. */}
+      <input type="hidden" name="section" value={initial?.section ?? ""} />
+      <input type="hidden" name="row" value={initial?.row_label ?? ""} />
+      <input type="hidden" name="plot" value={initial?.plot ?? ""} />
 
-      <div className="space-y-4">
+      {/* Left: the few things to write down */}
+      <section className={`order-2 flex flex-col gap-5 p-5 sm:p-6 lg:order-1 ${card}`}>
         <div>
           <label htmlFor="grave-cemetery" className={cls.label}>
             {t.grave.cemetery}
@@ -239,74 +259,32 @@ export function GraveForm({
               className="w-full"
             />
           ) : (
-          <input
-            id="grave-cemetery"
-            name="cemetery"
-            list="known-cemeteries"
-            defaultValue={initial?.cemetery_name ?? ""}
-            placeholder={t.grave.cemeteryPlaceholder}
-            maxLength={200}
-            autoComplete="off"
-            onChange={(e) => {
-              const known = cemeteries.find((c) => c.name === e.target.value && c.lat !== null);
-              if (known && !pin) {
-                setView({ lat: known.lat!, lng: known.lng!, zoom: 17 });
-                setViewKey((k) => k + 1);
-              }
-            }}
-            aria-describedby={cemeteries.length ? "grave-cemetery-hint" : undefined}
-            className={cls.input}
-          />
-          )}
-          {!hasGooglePlaces && cemeteries.length > 0 && (
             <>
-              <datalist id="known-cemeteries">
-                {cemeteries.map((c) => (
-                  <option key={c.name} value={c.name} />
-                ))}
-              </datalist>
-              <p id="grave-cemetery-hint" className="mt-1.5 text-[0.92rem] text-ink-muted">
-                {t.grave.cemeteryHint}
-              </p>
-            </>
-          )}
-        </div>
-        {/* Section, row and plot numbers are rarely used; earlier ones are kept as they were. */}
-        <input type="hidden" name="section" value={initial?.section ?? ""} />
-        <input type="hidden" name="row" value={initial?.row_label ?? ""} />
-        <input type="hidden" name="plot" value={initial?.plot ?? ""} />
-        <div>
-          <label htmlFor="grave-directions" className={cls.label}>
-            {t.grave.directions}
-          </label>
-          <textarea
-            id="grave-directions"
-            name="directions"
-            rows={2}
-            maxLength={1000}
-            defaultValue={initial?.directions_note ?? ""}
-            placeholder={t.grave.directionsPlaceholder}
-            className={cls.textarea}
-          />
-        </div>
-      </div>
-
-      <fieldset className="space-y-3">
-        <legend className="text-[1.25rem] font-serif">{t.grave.mapTitle}</legend>
-        <p className="text-[0.98rem] text-ink-muted">{t.grave.mapHelp}</p>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={locate} disabled={gps === "locating"} className={cls.secondary}>
-            {gps === "locating" ? t.grave.locating : t.grave.useGps}
-          </button>
-          <button type="button" onClick={() => setExpanded(true)} className={cls.secondary}>
-            {t.grave.expand}
-          </button>
-          <div className="flex min-w-0 flex-1 basis-64 gap-2">
-            <label htmlFor="grave-search" className="sr-only">
-              {t.grave.searchPlaceholder}
-            </label>
-            {hasGooglePlaces ? null : (
-              <>
+              <input
+                id="grave-cemetery"
+                name="cemetery"
+                list="known-cemeteries"
+                defaultValue={initial?.cemetery_name ?? ""}
+                placeholder={t.grave.cemeteryPlaceholder}
+                maxLength={200}
+                autoComplete="off"
+                onChange={(e) => {
+                  const known = cemeteries.find((c) => c.name === e.target.value && c.lat !== null);
+                  if (known && !pin) {
+                    setView({ lat: known.lat!, lng: known.lng!, zoom: 17 });
+                    setViewKey((k) => k + 1);
+                  }
+                }}
+                className={cls.input}
+              />
+              {cemeteries.length > 0 && (
+                <datalist id="known-cemeteries">
+                  {cemeteries.map((c) => (
+                    <option key={c.name} value={c.name} />
+                  ))}
+                </datalist>
+              )}
+              <div className="mt-2 flex gap-2">
                 <input
                   id="grave-search"
                   value={query}
@@ -323,91 +301,56 @@ export function GraveForm({
                 <button type="button" onClick={search} className={cls.secondary}>
                   {t.grave.search}
                 </button>
-              </>
-            )}
-          </div>
-        </div>
-        {gps === "error" && <ErrorText message={t.grave.gpsError} />}
-        {gps === "locating" && live !== null && (
-          <p role="status" className="text-[0.95rem] font-semibold text-sage-deep">
-            {t.grave.measuring.replace("{m}", String(live))}
-          </p>
-        )}
-        {gps === "done" && accuracy !== null && (
-          <p role="status" className="text-[0.95rem] font-semibold text-sage-deep">
-            {t.grave.gpsDone.replace("{m}", String(accuracy))}
-          </p>
-        )}
-        {searchMsg && <p className="text-[0.95rem] text-ink-muted">{searchMsg}</p>}
-
-        <div className={expanded ? "fixed inset-0 z-[60] flex flex-col bg-surface" : "relative"}>
-          {expanded && (
-            <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-              <p className="min-w-0 flex-1 text-[0.98rem] leading-snug">{t.grave.aimHelp}</p>
-              <button type="button" onClick={() => setExpanded(false)} className={cls.primary}>
-                {t.grave.done}
-              </button>
-            </div>
-          )}
-          <div className={expanded ? "relative min-h-0 flex-1" : "relative"}>
-            <MapView
-              value={pin}
-              onPick={onPick}
-              focusKey={focusKey}
-              view={view}
-              viewKey={viewKey}
-              baseLayer="satellite"
-              layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }}
-              scrollZoom
-              accuracy={accuracy}
-              onCenter={onCenter}
-              className={expanded ? "h-full w-full" : "h-[22rem] w-full rounded-xl border border-line sm:h-[28rem]"}
-            />
-            {expanded && (
-              <>
-                <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[600] -translate-x-1/2 -translate-y-1/2">
-                  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ filter: "drop-shadow(0 0 2px rgb(255 255 255 / .9))" }}>
-                    <circle cx="28" cy="28" r="13" stroke="#fdfcfa" strokeWidth="4" />
-                    <circle cx="28" cy="28" r="13" stroke="#1c1d1a" strokeWidth="2" />
-                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#fdfcfa" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#1c1d1a" strokeWidth="2" strokeLinecap="round" />
-                    <circle cx="28" cy="28" r="2.2" fill="#1c1d1a" />
-                  </svg>
-                </span>
-                <div className="absolute inset-x-0 bottom-0 z-[600] flex justify-center p-4 pb-[max(2.75rem,env(safe-area-inset-bottom))]">
-                  <button type="button" onClick={markCenter} className={`${cls.primary} min-h-14 px-8 text-[1.15rem] shadow-[var(--shadow-float)]`}>
-                    {t.grave.markHere}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-[0.95rem] text-ink-muted">
-          {pin && (
-            <span>
-              {pin.lat.toFixed(6)}, {pin.lng.toFixed(6)}
-              {accuracy !== null && ` · ${t.grave.accuracy} ${accuracy} m`}
-            </span>
-          )}
-          {pin && (
-            <button type="button" onClick={copyCoords} className="font-semibold text-sage-deep underline-offset-2 hover:underline">
-              {copied ? t.grave.copied : t.grave.copy}
-            </button>
-          )}
-          {pin && (
-            <button type="button" onClick={() => setPin(null)} className="underline underline-offset-2 hover:text-ink">
-              {t.grave.clearPin}
-            </button>
+              </div>
+              {searchMsg && <p className="mt-1.5 text-[0.92rem] text-ink-muted">{searchMsg}</p>}
+            </>
           )}
         </div>
 
         <div>
-          <label htmlFor="grave-coords" className="mb-1.5 block font-semibold">
-            {t.grave.coords} <span className="font-normal text-ink-muted">({t.app.optional})</span>
+          <label htmlFor="grave-directions" className={cls.label}>
+            {t.grave.directions} <span className="font-normal text-ink-muted">({t.app.optional})</span>
           </label>
-          <div className="flex max-w-xl gap-2">
+          <textarea
+            id="grave-directions"
+            name="directions"
+            rows={3}
+            maxLength={1000}
+            defaultValue={initial?.directions_note ?? ""}
+            placeholder={t.grave.directionsPlaceholder}
+            className={cls.textarea}
+          />
+        </div>
+
+        <div>
+          <p className={cls.label}>
+            {t.grave.photo} <span className="font-normal text-ink-muted">({t.app.optional})</span>
+          </p>
+          <label className="group relative flex h-36 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-line bg-paper/60 text-ink-muted transition hover:border-ink/30 hover:text-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep">
+            <input id="grave-photo" type="file" accept="image/*" onChange={(e) => choosePhoto(e.target.files?.[0] ?? null)} className="sr-only" />
+            {photoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                <img src={photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span className="relative rounded-full bg-surface/90 px-3.5 py-1.5 text-[0.9rem] font-semibold text-ink shadow-sm">{t.grave.photoChange}</span>
+              </>
+            ) : (
+              <span className="flex flex-col items-center gap-1.5 px-4 text-center text-[0.95rem]">
+                <svg {...I} width={26} height={26}><rect x="3.5" y="5" width="17" height="14" rx="2" /><circle cx="9" cy="10" r="1.7" /><path d="m4 17.5 4.8-4.3 3.4 3 3.3-3.2 4.5 4.5" /></svg>
+                <span className="font-semibold">+ {t.grave.choosePhoto}</span>
+                <span className="text-[0.85rem]">{t.grave.photoHelp}</span>
+              </span>
+            )}
+          </label>
+        </div>
+
+        <details className="group rounded-2xl bg-paper/60 px-4 py-3 [&_summary::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-[0.95rem] font-semibold">
+            {t.grave.coordsToggle}
+            <span aria-hidden="true" className="text-ink-muted transition group-open:rotate-180">▾</span>
+          </summary>
+          <div className="mt-3 flex gap-2">
+            <label htmlFor="grave-coords" className="sr-only">{t.grave.coords}</label>
             <input
               id="grave-coords"
               value={coordsText}
@@ -423,44 +366,108 @@ export function GraveForm({
               }}
               placeholder={t.grave.coordsPlaceholder}
               inputMode="decimal"
-              aria-describedby="grave-coords-hint"
               className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
             />
             <button type="button" onClick={applyCoords} className={cls.secondary}>
               {t.grave.coordsApply}
             </button>
           </div>
-          <p id="grave-coords-hint" className={`mt-1.5 text-[0.92rem] ${coordsError ? "text-danger" : "text-ink-muted"}`} role={coordsError ? "alert" : undefined}>
+          <p className={`mt-1.5 text-[0.88rem] ${coordsError ? "text-danger" : "text-ink-muted"}`} role={coordsError ? "alert" : undefined}>
             {coordsError ? t.grave.coordsError : t.grave.coordsHint}
           </p>
+        </details>
+
+        <div className="mt-auto space-y-2 border-t border-line pt-5">
+          <ErrorText message={uploadError ?? errorMessage(t, state.error)} />
+          <button type="submit" disabled={pending} className={`${cls.primary} w-full justify-center`}>
+            {pending ? t.app.loading : t.grave.save}
+          </button>
+          {needsApproval && <p className="text-center text-[0.9rem] text-ink-muted">{t.app.approvalNote}</p>}
         </div>
-      </fieldset>
+      </section>
 
-      <div>
-        <p className={cls.label}>
-          {t.grave.photo}
-          <span className="font-normal text-ink-muted"> ({t.app.optional})</span>
-        </p>
-        <p className="mb-2 text-[0.95rem] text-ink-muted">{t.grave.photoHelp}</p>
-        <label className={`${cls.secondary} cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep`}>
-          <input
-            id="grave-photo"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-            className="sr-only"
+      {/* Right: the map, where the grave is pointed at */}
+      <section className={expanded ? "fixed inset-0 z-[60] flex flex-col bg-surface" : `relative order-1 h-[60dvh] min-h-[22rem] overflow-hidden lg:order-2 lg:h-auto lg:min-h-[38rem] ${card}`}>
+        {expanded && (
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+            <p className="min-w-0 flex-1 text-[0.98rem] leading-snug">{t.grave.aimHelp}</p>
+            <button type="button" onClick={() => setExpanded(false)} className={cls.primary}>
+              {t.grave.done}
+            </button>
+          </div>
+        )}
+        <div className={expanded ? "relative min-h-0 flex-1" : "absolute inset-0"}>
+          <MapView
+            value={pin}
+            onPick={onPick}
+            focusKey={focusKey}
+            view={view}
+            viewKey={viewKey}
+            baseLayer="satellite"
+            layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }}
+            scrollZoom
+            accuracy={accuracy}
+            onCenter={onCenter}
+            className="absolute inset-0 h-full w-full"
           />
-          {photo ? photo.name : `+ ${t.grave.choosePhoto}`}
-        </label>
-      </div>
-
-      <ErrorText message={uploadError ?? errorMessage(t, state.error)} />
-      <div className="flex flex-wrap items-center gap-4">
-        <button type="submit" disabled={pending} className={cls.primary}>
-          {pending ? t.app.loading : t.grave.save}
-        </button>
-        {needsApproval && <p className="text-[0.95rem] text-ink-muted">{t.app.approvalNote}</p>}
-      </div>
+          {expanded ? (
+            <>
+              <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[600] -translate-x-1/2 -translate-y-1/2">
+                <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ filter: "drop-shadow(0 0 2px rgb(255 255 255 / .9))" }}>
+                  <circle cx="28" cy="28" r="13" stroke="#fdfcfa" strokeWidth="4" />
+                  <circle cx="28" cy="28" r="13" stroke="#1c1d1a" strokeWidth="2" />
+                  <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#fdfcfa" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M28 2v14M28 40v14M2 28h14M40 28h14" stroke="#1c1d1a" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="28" cy="28" r="2.2" fill="#1c1d1a" />
+                </svg>
+              </span>
+              <div className="absolute inset-x-0 bottom-0 z-[600] flex justify-center p-4 pb-[max(2.75rem,env(safe-area-inset-bottom))]">
+                <button type="button" onClick={markCenter} className={`${cls.primary} min-h-14 px-8 text-[1.15rem] shadow-[var(--shadow-float)]`}>
+                  {t.grave.markHere}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Bottom: what is marked (or how to mark), and the two ways to place the pin */}
+              <div className="pointer-events-none absolute inset-x-3 bottom-3 z-[600] flex flex-wrap items-end justify-between gap-2">
+                <div className="pointer-events-auto flex flex-wrap gap-2">
+                  <button type="button" onClick={locate} disabled={gps === "locating"} className={floatBtn}>
+                    <svg {...I}><circle cx="12" cy="12" r="6.5" /><circle cx="12" cy="12" r="2" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></svg>
+                    {gps === "locating" ? t.grave.locating : t.grave.useGps}
+                  </button>
+                  <button type="button" onClick={() => setExpanded(true)} className={`${floatBtn} sm:hidden`}>
+                    <svg {...I}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+                    {t.grave.expand}
+                  </button>
+                </div>
+                <div role="status" className="pointer-events-auto max-w-full rounded-2xl border border-line/80 bg-surface/95 px-4 py-2.5 text-[0.9rem] shadow-[0_8px_22px_-14px_rgb(28_29_26/0.6)] backdrop-blur">
+                  {gps === "error" ? (
+                    <span className="font-semibold text-danger">{t.grave.gpsError}</span>
+                  ) : gps === "locating" && live !== null ? (
+                    <span className="font-semibold text-sage-deep">{t.grave.measuring.replace("{m}", String(live))}</span>
+                  ) : pin ? (
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="tabular-nums text-ink-muted">
+                        {pin.lat.toFixed(6)}, {pin.lng.toFixed(6)}
+                        {accuracy !== null && ` · ±${accuracy} m`}
+                      </span>
+                      <button type="button" onClick={copyCoords} className="font-semibold text-sage-deep hover:underline">
+                        {copied ? t.grave.copied : t.grave.copy}
+                      </button>
+                      <button type="button" onClick={() => setPin(null)} className="text-ink-muted hover:text-ink hover:underline">
+                        {t.grave.clearPin}
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="text-ink-muted">{t.grave.tapHint}</span>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
     </form>
   );
 }
