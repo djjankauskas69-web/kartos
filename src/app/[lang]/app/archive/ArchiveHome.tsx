@@ -191,13 +191,13 @@ export function ArchiveHome({
   const playIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>;
   const n = (s: string, v: number) => s.replace("{n}", String(v));
 
-  /** Photos as an airy wall: their own shapes, side by side in columns. */
+  /** Photos as an even grid of squares, neatly in rows. */
   const wall = (list: ArchiveItem[]) => (
-    <ul className="columns-2 gap-3 sm:columns-3 lg:columns-4 [&>li]:mb-3">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {list.map((p, i) => {
         const on = selected.includes(p.id);
         return (
-          <li key={p.id} className="break-inside-avoid">
+          <li key={p.id}>
             <button
               type="button"
               onClick={() => (selecting ? toggle(p.id) : setOpenId(p.id))}
@@ -207,9 +207,9 @@ export function ArchiveHome({
             >
               {p.kind === "photo" && p.url ? (
                 // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                <img src={p.url} alt={p.title} loading="lazy" className="block w-full" style={p.width && p.height ? { aspectRatio: `${p.width} / ${p.height}` } : undefined} />
+                <img src={p.url} alt={p.title} loading="lazy" className="block aspect-square w-full object-cover" />
               ) : (
-                <span className="block aspect-[4/5]">
+                <span className="block aspect-square">
                   <Preview item={p} />
                 </span>
               )}
