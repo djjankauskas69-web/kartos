@@ -1,5 +1,7 @@
 "use client";
 
+import { LogoLoader } from "./LogoLoader";
+
 import { useEffect, useState } from "react";
 
 /**
@@ -15,8 +17,7 @@ export function PageLoading({ delay = 600 }: { delay?: number }) {
   return (
     <div role="status" aria-busy="true" className="flex min-h-[50vh] items-center justify-center">
       {show && (
-        // eslint-disable-next-line @next/next/no-img-element -- small static logo
-        <img src="/brand/mark.svg" alt="" aria-hidden="true" width={56} height={46} style={{ width: 56, height: "auto" }} className="animate-[kartos-pulse_1.4s_ease-in-out_infinite]" />
+        <LogoLoader size={64} />
       )}
     </div>
   );

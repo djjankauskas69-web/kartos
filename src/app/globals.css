@@ -157,3 +157,20 @@
     transform: rotate(360deg);
   }
 }
+
+/* The tree logo as a loader: parts rise from the root to the crown, then fade, and again. */
+@keyframes kartos-part {
+  0% { opacity: 0; transform: scaleX(0.15) translateY(18px); }
+  22% { opacity: 1; transform: scaleX(1) translateY(0); }
+  70% { opacity: 1; transform: scaleX(1) translateY(0); }
+  100% { opacity: 0; transform: scaleX(0.6) translateY(-6px); }
+}
+.kartos-loader path {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: kartos-part 2.2s cubic-bezier(0.22, 0.7, 0.2, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kartos-loader path { animation: none; opacity: 1; }
+}
