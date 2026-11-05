@@ -151,7 +151,9 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
     <div>
       <h1 className={cls.h1}>{a.title}</h1>
       <p className="mb-7 mt-1 text-[1.1rem] text-ink-muted">{a.lead}</p>
+      {/* Pages stay alive in the background, so a new link (?tab=, ?album=…) starts this view afresh. */}
       <ArchiveHome
+        key={`${tab}|${params.album}|${params.item}|${params.upload}|${params.play}`}
         items={items}
         albums={albums}
         memories={memories}
