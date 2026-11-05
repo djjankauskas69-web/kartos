@@ -332,7 +332,12 @@ export default function GoogleMap({
     const m = map.current;
     if (!m) return;
     m.setMapTypeId(layer === "satellite" ? "hybrid" : "roadmap");
-    if (layer === "satellite" && m.getZoom() < 17 && (value || placed.current.size)) m.setZoom(17);
+    // Satellite only helps up close: zoom in on the pin or the chosen grave (never on a random spot).
+    const focus = value ?? (selectedId ? placed.current.get(selectedId)?.getPosition() : null);
+    if (layer === "satellite" && focus && m.getZoom() < 17) {
+      m.panTo(focus);
+      m.setZoom(17);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the layer changes
   }, [layer, g]);
 

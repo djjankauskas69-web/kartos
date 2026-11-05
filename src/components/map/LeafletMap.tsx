@@ -283,7 +283,9 @@ export default function LeafletMap({
     if (!m) return;
     base.current?.remove();
     base.current = makeBase(layer).addTo(m);
-    if (layer === "satellite" && m.getZoom() < 17 && (value || placed.current.size)) m.setZoom(Math.max(m.getZoom(), 17));
+    // Satellite only helps up close: zoom in on the pin or the chosen grave (never on a random spot).
+    const focus = value ? L.latLng(value.lat, value.lng) : selectedId ? placed.current.get(selectedId)?.getLatLng() : undefined;
+    if (layer === "satellite" && focus && m.getZoom() < 17) m.setView(focus, 17);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the layer changes
   }, [layer]);
 
