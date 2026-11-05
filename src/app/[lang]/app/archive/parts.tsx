@@ -114,7 +114,7 @@ export function Dialog({ open, onClose, title, children, wide = false, photo = f
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
+      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] outline-none border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
     >
       {open && children}
     </dialog>
@@ -408,7 +408,13 @@ export function Detail({
     item.uploader && [t.uploadedBy, item.uploader],
   ].filter(Boolean) as Array<[string, string]>;
   return (
-    <div className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]">
+    <div
+      // A click on the dim page around the photo closes it.
+      onClick={(e) => {
+        if (!(e.target as Element).closest("[data-keep], button, a, input, form, aside")) onClose();
+      }}
+      className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]"
+    >
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
       <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
         {onExpand && (
@@ -454,7 +460,7 @@ export function Detail({
           )}
           <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
             {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
-            <div className={`relative max-w-full overflow-hidden shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] rounded-[10px]`}>
+            <div data-keep className={`relative max-w-full overflow-hidden shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] rounded-[10px]`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
               <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain max-h-[66dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`}
               />
@@ -464,7 +470,7 @@ export function Detail({
           </div>
           </>
         ) : (
-          <div className="aspect-[3/4] h-[44dvh] md:h-full">
+          <div data-keep className="aspect-[3/4] h-[44dvh] md:h-full">
             <Preview item={item} large />
           </div>
         )}
