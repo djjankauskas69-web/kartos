@@ -87,7 +87,7 @@ export function KartosPulse({ label }: { label?: string }) {
   return (
     <div role="status" aria-label={label ?? "…"} className="flex h-full min-h-[60vh] items-center justify-center">
       {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
-        <img src="/brand/mark.png" alt="" aria-hidden="true" width={64} height={52} style={{ width: 64, height: "auto" }} className="animate-[kartos-pulse_1.4s_ease-in-out_infinite]" />
+        <img src="/brand/mark.svg" alt="" aria-hidden="true" width={64} height={52} style={{ width: 64, height: "auto" }} className="animate-[kartos-pulse_1.4s_ease-in-out_infinite]" />
     </div>
   );
 }
