@@ -228,7 +228,8 @@ export default function LeafletMap({
       marker.setZIndexOffset(on ? 1000 : 0);
     }
     const sel = selectedId ? placed.current.get(selectedId) : undefined;
-    if (sel) m.setView(sel.getLatLng(), Math.max(m.getZoom(), 16), { animate: true });
+    // Glide there (out a little, across, and in) rather than jump.
+    if (sel) m.flyTo(sel.getLatLng(), Math.max(m.getZoom(), 17), { duration: 1.2 });
   }, [selectedId, markers]);
 
   // Back to every grave at once ("All graves").

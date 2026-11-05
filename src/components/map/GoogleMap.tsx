@@ -99,6 +99,33 @@ function faceMarkerClass(g: any) {
   return FaceMarker;
 }
 
+/**
+ * Glide to a place instead of jumping: zoom out until both here and there are in view, slide
+ * across, then zoom in one step at a time (Google animates single steps smoothly).
+ */
+function flyTo(g: any, m: any, to: any, zoom: number, flight: { current: number }) {
+  const id = ++flight.current;
+  const alive = () => flight.current === id;
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const target = to instanceof g.maps.LatLng ? to : new g.maps.LatLng(to.lat, to.lng);
+  void (async () => {
+    // Out, until the place is on screen.
+    while (alive() && m.getZoom() > 3 && !m.getBounds()?.contains(target)) {
+      m.setZoom(m.getZoom() - 1);
+      await wait(160);
+    }
+    if (!alive()) return;
+    m.panTo(target);
+    await wait(420);
+    // In, one step at a time, keeping it in the middle.
+    while (alive() && m.getZoom() < zoom) {
+      m.setZoom(m.getZoom() + 1);
+      m.panTo(target);
+      await wait(170);
+    }
+  })();
+}
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /**
@@ -138,6 +165,7 @@ export default function GoogleMap({
   const circle = useRef<any>(null);
   const info = useRef<any>(null);
   const placed = useRef(new Map<string, any>());
+  const flight = useRef(0);
   const onPickRef = useRef(onPick);
   const onSelectRef = useRef(onSelect);
   const onCenterRef = useRef(onCenter);
@@ -239,10 +267,10 @@ export default function GoogleMap({
       }
     }
     const sel = selectedId ? placed.current.get(selectedId) : undefined;
-    if (sel) {
-      m.panTo(sel.getPosition());
-      if (m.getZoom() < 16) m.setZoom(16);
-    }
+    if (sel) flyTo(g, m, sel.getPosition(), Math.max(m.getZoom(), 17), flight);
+    return () => {
+      flight.current++;
+    };
   }, [g, selectedId, markers]);
 
   // Back to every grave at once ("All graves").
