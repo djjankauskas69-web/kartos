@@ -176,7 +176,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   /* ---- List ---- */
   if (search.view === "list") {
     const portraits = allPortraits;
-    const genLabel = Object.fromEntries([...new Set(gens.values())].map((n) => [n, t.tree.generationN.replace("{n}", roman(n))]));
+    // "I karta · seneliai": what each generation is to you, when you are marked in the tree.
+    const myGen = me ? gens.get(me) : undefined;
+    const genOf = t.tree.genOf as Record<string, string>;
+    const genLabel = Object.fromEntries(
+      [...new Set(gens.values())].map((n) => {
+        const rel = myGen != null ? genOf[String(myGen - n)] : undefined;
+        return [n, `${t.tree.generationN.replace("{n}", roman(n))}${rel ? ` · ${rel}` : ""}`];
+      }),
+    );
     return (
       <div>
         {header(subtitleWhole, "list")}
@@ -185,17 +193,20 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           people={people.map((p) => ({
             id: p.id,
             name: fullName(p),
-            years: p.is_living ? (p.birth_year ? `${p.birth_year} –` : t.app.alive) : p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",
+            birth: p.birth_year,
+            death: p.death_year,
             living: p.is_living,
             pending: p.status === "pending",
             portrait: portraits.get(p.id),
             initials: `${p.given_names[0] ?? ""}${p.surname?.[0] ?? ""}`.toUpperCase(),
             gen: gens.get(p.id) ?? 1,
+            relation: relations.get(p.id),
             profileHref: `${base}/people/${p.id}`,
             treeHref: `${base}/tree?p=${p.id}`,
           }))}
           genLabel={genLabel}
-          labels={{ search: t.tree.listSearch, open: t.tree.listOpen, show: t.tree.listShow, empty: t.tree.listEmpty, pending: t.app.pending }}
+          canEdit={can.edit(current.role)}
+          labels={{ search: t.tree.listSearch, show: t.tree.listShow, empty: t.tree.listEmpty, pending: t.app.pending, all: t.tree.listAll, living: t.tree.listLiving, deceased: t.tree.listDeceased, born: t.tree.listBorn, fill: t.tree.listFill }}
         />
       </div>
     );

@@ -381,6 +381,12 @@
     "listOpen": "Atidaryti",
     "listShow": "Rodyti medyje",
     "listEmpty": "Nieko nerasta.",
+    "listAll": "Visi",
+    "listLiving": "Gyvi",
+    "listDeceased": "Mirę",
+    "listBorn": "g. {y}",
+    "listFill": "Papildykite profilį",
+    "genOf": {"3": "proseneliai", "2": "seneliai", "1": "tėvai", "0": "jūsų karta", "-1": "vaikai", "-2": "anūkai", "-3": "proanūkiai"},
     "gen": {
       "one": "karta",
       "few": "kartos",

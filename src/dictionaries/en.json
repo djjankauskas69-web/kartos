@@ -381,6 +381,12 @@
     "listOpen": "Open",
     "listShow": "Show in tree",
     "listEmpty": "No one found.",
+    "listAll": "All",
+    "listLiving": "Living",
+    "listDeceased": "Deceased",
+    "listBorn": "b. {y}",
+    "listFill": "Add details",
+    "genOf": {"3": "great-grandparents", "2": "grandparents", "1": "parents", "0": "your generation", "-1": "children", "-2": "grandchildren", "-3": "great-grandchildren"},
     "gen": {
       "one": "generation",
       "few": "generations",
