@@ -311,7 +311,13 @@
     "invite": "Invite",
     "inviteCopied": "Link copied",
     "inviteGeneral": "General invitation link",
-    "inviteGeneralLead": "For people not in the tree yet: after joining they choose who they are."
+    "inviteGeneralLead": "For people not in the tree yet: after joining they choose who they are.",
+    "countMembers": {
+      "one": "member",
+      "few": "members",
+      "many": "members",
+      "other": "members"
+    }
   },
   "review": {
     "title": "Awaiting approval",
@@ -712,6 +718,12 @@
       "few": "people",
       "many": "people",
       "other": "people"
+    },
+    "countGraves": {
+      "one": "grave",
+      "few": "graves",
+      "many": "graves",
+      "other": "graves"
     }
   },
   "dash": {

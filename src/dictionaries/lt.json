@@ -311,7 +311,13 @@
     "invite": "Pakviesti",
     "inviteCopied": "Nuoroda nukopijuota",
     "inviteGeneral": "Bendra kvietimo nuoroda",
-    "inviteGeneralLead": "Tiems, kurių dar nėra medyje: prisijungę jie patys pasirinks, kas yra."
+    "inviteGeneralLead": "Tiems, kurių dar nėra medyje: prisijungę jie patys pasirinks, kas yra.",
+    "countMembers": {
+      "one": "narys",
+      "few": "nariai",
+      "many": "nario",
+      "other": "narių"
+    }
   },
   "review": {
     "title": "Laukia patvirtinimo",
@@ -712,6 +718,12 @@
       "few": "žmonės",
       "many": "žmonės",
       "other": "žmonių"
+    },
+    "countGraves": {
+      "one": "kapavietė",
+      "few": "kapavietės",
+      "many": "kapavietės",
+      "other": "kapaviečių"
     }
   },
   "dash": {

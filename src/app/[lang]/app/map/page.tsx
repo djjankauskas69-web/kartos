@@ -1,3 +1,5 @@
+import { plural } from "../tree/build";
+import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { QUIET_CEMETERY, SatelliteThumb } from "@/components/SatelliteThumb";
@@ -139,18 +141,18 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
     <div>
       {/* List, map and details side by side need the full width. */}
       <WideMain />
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className={cls.h1}>{t.map.title}</h1>
-          <p className="mt-1 text-[1.05rem] text-ink-muted">{t.map.pageLead}</p>
-        </div>
-        {can.add(current.role) && (
-          <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-olive px-6 font-semibold text-surface hover:bg-olive-deep">
-            <IconPlus size={20} />
-            {t.map.addGrave}
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title={t.map.title}
+        meta={items.length ? plural(locale, items.length, t.map.countGraves) : undefined}
+        actions={
+          can.add(current.role) && (
+            <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-ink px-5 text-[1.02rem] font-semibold text-surface hover:bg-olive-deep">
+              <IconPlus size={20} />
+              {t.map.addGrave}
+            </Link>
+          )
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState

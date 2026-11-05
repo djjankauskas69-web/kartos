@@ -15,7 +15,7 @@ export const cls = {
   danger:
     "inline-flex min-h-11 items-center justify-center rounded-full border border-danger/40 px-5 text-[1rem] font-semibold text-danger hover:bg-danger/5",
   card: "rounded-[var(--radius-card)] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]",
-  h1: "text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3.5rem]",
+  h1: "text-[2.1rem] font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[2.5rem]",
   h2: "text-[1.5rem]",
 };
 

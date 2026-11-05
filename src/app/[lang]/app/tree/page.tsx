@@ -19,6 +19,7 @@ import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { PageLoading } from "@/components/PageLoading";
+import { PageHeader } from "@/components/PageHeader";
 
 type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
 
@@ -140,12 +141,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree${s ? `?${s}` : ""}`;
   };
   // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
-  const header = (subtitle: React.ReactNode) => (
-    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-      <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{t.tree.title}</h1>
-      <div className="min-w-0 text-[0.92rem] text-ink-muted/80">{subtitle}</div>
-    </div>
-  );
+  const header = (subtitle: React.ReactNode) => <PageHeader title={t.tree.title} meta={subtitle} className="mb-4" />;
 
   if (people.length === 0) {
     return (

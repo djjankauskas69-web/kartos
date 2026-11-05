@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { folderLabel, periodLabel, type FolderRow } from "@/lib/archive";
 import { plural } from "../tree/build";
+import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
 import { PageLoading } from "@/components/PageLoading";
@@ -150,12 +151,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   return (
     <div>
       {/* Same quiet heading as the tree: the tabs already say what is here. */}
-      <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{a.title}</h1>
-        <p className="text-[0.92rem] text-ink-muted/80">
-          {plural(locale, albums.length, a.countAlbums)} · {plural(locale, items.filter((i) => i.kind === "photo").length, a.countPhotos)}
-        </p>
-      </div>
+      <PageHeader title={a.title} meta={<>{plural(locale, albums.length, a.countAlbums)} · {plural(locale, items.filter((i) => i.kind === "photo").length, a.countPhotos)}</>} />
       {/* Pages stay alive in the background, so a new link (?tab=, ?album=…) starts this view afresh. */}
       <ArchiveHome
         key={`${tab}|${params.album}|${params.item}|${params.upload}|${params.play}`}

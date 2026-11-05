@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -94,8 +95,8 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <div className="max-w-3xl">
-      <h1 className={cls.h1}>{t.review.title}</h1>
-      <p className="mt-2 text-ink-muted">{t.review.lead}</p>
+      <PageHeader title={t.review.title} className="mb-2" />
+      <p className="text-ink-muted">{t.review.lead}</p>
       {total === 0 && <p className={`mt-8 px-5 py-6 ${cls.card}`}>{t.review.empty}</p>}
 
       {group(t.review.people, persons.data?.length ?? 0, <>

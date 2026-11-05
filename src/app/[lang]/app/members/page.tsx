@@ -1,3 +1,5 @@
+import { plural } from "../tree/build";
+import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -123,12 +125,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className={cls.h1}>{m.title}</h1>
-        </div>
-
-      </div>
+      <PageHeader title={m.title} meta={<>{plural(locale, persons.length, t.tree.people)} · {plural(locale, members.length, m.countMembers)}</>} />
 
       {panel && <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={mine.links.get(current.id)} />}
       <MembersCenter
