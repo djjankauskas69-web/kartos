@@ -4,7 +4,7 @@ import Link from "next/link";
 export function Wordmark({ href, size = "md" }: { href: string; size?: "md" | "lg" }) {
   const h = size === "lg" ? { mark: 40, word: 30 } : { mark: 32, word: 23 };
   return (
-    <Link href={href} className="inline-flex items-center gap-2.5" aria-label="MyKartos">
+    <Link href={href} className="inline-flex items-center gap-1.5" aria-label="MyKartos">
       {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
       <img src="/brand/mark.svg" alt="" width={Math.round((h.mark * 1770) / 1435)} height={h.mark} className="shrink-0" style={{ height: h.mark, width: "auto" }} />
       {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
