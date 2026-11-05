@@ -1,5 +1,7 @@
 "use client";
 
+import { PlaceSearch, hasGooglePlaces } from "@/components/map/PlaceSearch";
+
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -294,22 +296,43 @@ export function GraveForm({
             <label htmlFor="grave-search" className="sr-only">
               {t.grave.searchPlaceholder}
             </label>
-            <input
-              id="grave-search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  search();
-                }
-              }}
-              placeholder={t.grave.searchPlaceholder}
-              className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
-            />
-            <button type="button" onClick={search} className={cls.secondary}>
-              {t.grave.search}
-            </button>
+            {hasGooglePlaces ? (
+              // Google suggests cemeteries and addresses as you type; a pick moves the pin there.
+              <PlaceSearch
+                locale={locale}
+                id="grave-search"
+                placeholder={t.grave.searchPlaceholder}
+                near={pin ?? (view ? { lat: view.lat, lng: view.lng } : null)}
+                onPick={(pl) => {
+                  setPin({ lat: pl.lat, lng: pl.lng });
+                  setAccuracy(null);
+                  setFocusKey((k) => k + 1);
+                  const cem = document.getElementById("grave-cemetery") as HTMLInputElement | null;
+                  if (cem && !cem.value.trim()) cem.value = pl.name;
+                }}
+                className="min-w-0 flex-1"
+                inputClassName="min-h-11 w-full min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
+              />
+            ) : (
+              <>
+                <input
+                  id="grave-search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      search();
+                    }
+                  }}
+                  placeholder={t.grave.searchPlaceholder}
+                  className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4"
+                />
+                <button type="button" onClick={search} className={cls.secondary}>
+                  {t.grave.search}
+                </button>
+              </>
+            )}
           </div>
         </div>
         {gps === "error" && <ErrorText message={t.grave.gpsError} />}

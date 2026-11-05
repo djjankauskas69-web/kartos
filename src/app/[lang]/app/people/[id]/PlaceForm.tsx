@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { MapView } from "@/components/map/Map";
+import { PlaceSearch } from "@/components/map/PlaceSearch";
 import { addPersonEvent, type EventState } from "./event-actions";
 
 type L = Record<string, string>;
@@ -64,11 +65,21 @@ export function PlaceForm({ locale, personId, labels, center }: { locale: string
       </div></div>
 
       <div className="flex flex-col gap-3 lg:flex-row">
-        <label className="flex min-h-12 flex-1 items-center gap-3 rounded-xl border border-line bg-surface px-4 focus-within:border-ink/50">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-ink-muted"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
-          <span className="sr-only">{labels.eventPlace}</span>
-          <input id="add-place-input" name="place" maxLength={200} placeholder={labels.placeSearchPh} className="min-w-0 flex-1 bg-transparent py-3 outline-none placeholder:text-ink-muted/70" />
-        </label>
+        {/* Google suggests the place as you type; picking one also puts it on the map. */}
+        <PlaceSearch
+          locale={locale}
+          id="add-place-input"
+          name="place"
+          placeholder={labels.placeSearchPh}
+          near={center ?? null}
+          onPick={(pl) => {
+            setPin({ lat: pl.lat, lng: pl.lng });
+            setMap(true);
+          }}
+          className="min-h-12 flex-1 rounded-xl border border-line bg-surface px-4 focus-within:border-ink/50"
+          inputClassName="min-w-0 flex-1 bg-transparent py-3 outline-none placeholder:text-ink-muted/70"
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-ink-muted"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>}
+        />
         {kind !== "birthplace" && (
           <div className="flex items-center gap-2">
             <input name="year" inputMode="numeric" maxLength={4} placeholder={labels.fromYear} aria-label={labels.fromYear} className="min-h-12 w-24 rounded-xl border border-line bg-surface px-3 text-center outline-none focus:border-ink/50" />
