@@ -187,3 +187,24 @@
   }
 }
 
+
+/* Placeholder shapes while a page loads: a slow, soft breath. */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The line along the top while the next page loads: quick at first, then waits near the end. */
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0.05);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}

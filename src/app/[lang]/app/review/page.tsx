@@ -7,12 +7,12 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, lifeSpan, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { review } from "../actions";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 
 export default async function ReviewPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton title={t.review.title} kind="list" />}>
       <Review t={t} locale={locale} />
     </Suspense>
   );

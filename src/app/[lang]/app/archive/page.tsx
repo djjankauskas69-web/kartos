@@ -6,13 +6,13 @@ import { folderLabel, looksLikeFileName, periodLabel, type FolderRow } from "@/l
 import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 import { portraitUrls } from "../portraits";
 
 export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/app/archive">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton title={t.archive.title} kind="grid" />}>
       <Archive t={t} locale={locale} paramsPromise={searchParams.then((s) => ({ item: String(s.item ?? ""), tab: String(s.tab ?? ""), album: String(s.album ?? ""), upload: s.upload === "1", play: s.play === "1" }))} />
     </Suspense>
   );
@@ -35,12 +35,17 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const memQuery = (cols: string) => supabase.from("memories").select(cols).eq("workspace_id", current.id).neq("status", "rejected").order("created_at", { ascending: false }).limit(500);
   const folderQuery = (cols: string) => supabase.from("media_folders").select(cols).eq("workspace_id", current.id).order("sort").order("created_at");
 
-  const [{ people }, mediaRes, folderRes, memRes, params] = await Promise.all([
+  // Everything that does not depend on something else is asked for at once.
+  const [{ people }, mediaRes, folderRes, memRes, params, { data: commentRows }, { data: memberRows }] = await Promise.all([
     getFamilyGraph(locale, current.id),
     mediaQuery(`${MEDIA}, shared`).then(async (r) => (r.error ? mediaQuery(MEDIA) : r)),
     folderQuery("id, preset, name, sort, description, year, cover_id, people, shared, created_by").then(async (r) => (r.error ? folderQuery("id, preset, name, sort, created_by") : r)),
     memQuery("id, body, author_id, created_at, person_id, media_id, media_ids, shared, status").then(async (r) => (r.error ? memQuery("id, body, author_id, created_at, person_id, media_id, shared, status") : r)),
     paramsPromise,
+    // Comments under the photos (database update 0018; none before it).
+    supabase.from("media_comments").select("id, media_id, author_id, body, created_at").eq("workspace_id", current.id).order("created_at").limit(3000),
+    // Who is who in the tree, for each writer's face.
+    supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id).not("person_id", "is", null),
   ]);
 
   type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string }[] | null };
@@ -49,20 +54,15 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const mems = (memRes.data ?? []) as unknown as Mem[];
   const idsOf = (m: Mem) => (m.media_ids?.length ? m.media_ids : m.media_id ? [m.media_id] : []);
   const memMediaIds = mems.flatMap(idsOf);
+  const comments = (commentRows ?? []) as Array<{ id: string; media_id: string; author_id: string | null; body: string; created_at: string }>;
+  const personOfUser = new Map((memberRows ?? []).map((r) => [r.user_id as string, r.person_id as string]));
+  const facePeople = comments.length ? people.filter((p) => [...personOfUser.values()].includes(p.id)) : [];
   const { data: memMedia } = memMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memMediaIds) : { data: [] };
   const memPath = new Map((memMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
-
-  // Comments under the photos (database update 0018; none before it).
-  const { data: commentRows } = await supabase.from("media_comments").select("id, media_id, author_id, body, created_at").eq("workspace_id", current.id).order("created_at").limit(3000);
-  const comments = (commentRows ?? []) as Array<{ id: string; media_id: string; author_id: string | null; body: string; created_at: string }>;
-  // Each writer's face: their portrait as "This is me" in this family's tree.
-  const { data: memberRows } = comments.length ? await supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id).not("person_id", "is", null) : { data: [] };
-  const personOfUser = new Map((memberRows ?? []).map((r) => [r.user_id as string, r.person_id as string]));
-  const facePeople = people.filter((p) => [...personOfUser.values()].includes(p.id));
-  const faces = facePeople.length ? await portraitUrls(locale, facePeople) : new Map<string, string>();
-  const [urls, names] = await Promise.all([
+  const [urls, names, faces] = await Promise.all([
     signedUrls(locale, [...rows.map((m) => m.storage_path).filter((p): p is string => !!p), ...memPath.values()]),
     profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string), ...comments.map((c) => c.author_id as string)]),
+    facePeople.length ? portraitUrls(locale, facePeople) : Promise.resolve(new Map<string, string>()),
   ]);
   const isEditor = can.edit(current.role);
   const kinds = t.archive.kind as Record<Kind, string>;

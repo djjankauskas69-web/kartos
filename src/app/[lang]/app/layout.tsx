@@ -19,7 +19,7 @@ import {
 import { can, getContext, getPerson, myPersonLinks, pendingCount } from "@/lib/data";
 import { portraitUrls } from "./portraits";
 import { signOut, switchWorkspace } from "./actions";
-import { SideNav, TopNav, type NavItem } from "./AppNav";
+import { NavProgress, SideNav, TopNav, type NavItem } from "./AppNav";
 import { MenuCloser } from "./MenuCloser";
 
 export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">) {
@@ -38,7 +38,18 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
           </Suspense>
         </div>
         <div className="mt-6 flex-1">
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <nav aria-label={t.dash.menu} className="flex flex-col gap-1">
+                {navItems(t, locale).map((item) => (
+                  <Link key={item.href} href={item.href} className="flex min-h-12 items-center gap-3.5 rounded-xl px-4 text-[1.05rem] text-ink/85 hover:bg-linen/70">
+                    <span className="text-ink-muted">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            }
+          >
             <Navigation t={t} locale={locale} variant="side" />
           </Suspense>
         </div>
@@ -77,6 +88,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
           </div>
         </header>
         <MenuCloser />
+        <NavProgress />
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 lg:py-10 group-data-[wide]/col:max-w-none group-data-[wide]/col:py-4 lg:group-data-[wide]/col:px-6">
           {children}
         </main>
@@ -85,17 +97,23 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
   );
 }
 
-async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Locale; variant: "side" | "top" | "bottom" }) {
-  const { current } = await getContext(locale);
-  if (!current) return null;
+/** The sections every member has; shown at once, before anything is loaded. */
+function navItems(t: Dictionary, locale: Locale): NavItem[] {
   const base = `/${locale}/app`;
-  const items: NavItem[] = [
+  return [
     { href: base, label: t.appNav.overview, icon: <IconHome />, exact: true },
     // People profiles open from the tree, so the tree stays highlighted there.
     { href: `${base}/tree`, label: t.appNav.tree, icon: <IconTree />, also: [`${base}/people`] },
     { href: `${base}/archive`, label: t.appNav.archive, icon: <IconImage /> },
     { href: `${base}/members`, label: t.appNav.members, icon: <IconMembers /> },
   ];
+}
+
+async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Locale; variant: "side" | "top" | "bottom" }) {
+  const { current } = await getContext(locale);
+  if (!current) return null;
+  const base = `/${locale}/app`;
+  const items = navItems(t, locale);
   const graves: NavItem = { href: `${base}/map`, label: t.appNav.map, icon: <IconPin /> };
   if (variant === "bottom") return <SideNav items={[graves]} label={t.appNav.map} />;
   if (can.admin(current.role)) {

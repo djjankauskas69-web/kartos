@@ -18,7 +18,7 @@ import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 import { PageHeader } from "@/components/PageHeader";
 
 type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
@@ -26,7 +26,14 @@ type Search = { p: string; d: string; view: string; hl: string; person: string; 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense
+      fallback={
+        <>
+          <WideMain />
+          <PageSkeleton title={t.tree.title} kind="tree" />
+        </>
+      }
+    >
       <Tree
         t={t}
         locale={locale}

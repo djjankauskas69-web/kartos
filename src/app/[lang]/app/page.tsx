@@ -7,12 +7,12 @@ import { cls } from "@/components/ui";
 import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
 import { DashboardView, type Activity, type FamilyDate } from "./DashboardView";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 
 export default async function Overview() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton kind="dashboard" />}>
       <Dashboard t={t} locale={locale} />
     </Suspense>
   );
@@ -37,7 +37,8 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const base = `/${locale}/app`;
   const d = t.dash;
   const photoMedia = () => supabase.from("media").select("id, storage_path, created_at, uploader_id, folder_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%");
-  const [graph, graves, photosCount, recentPhotos, recentPeople, recentMemories, folders, events, members, coverRes, mine] = await Promise.all([
+  // All of it asked for at once, so the overview waits for the slowest answer only.
+  const [graph, graves, photosCount, recentPhotos, recentPeople, recentMemories, folders, events, members, coverRes, mine, memCount, storyCount, { data: accessList }] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id, person_id, cemetery_name, lat, lng, created_at, created_by").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(300),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
@@ -49,13 +50,11 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     supabase.from("workspace_members").select("person_id").eq("workspace_id", ws),
     supabase.from("workspaces").select("cover_path").eq("id", ws).maybeSingle(),
     myPersonLinks(locale),
-  ]);
-  const [memCount, storyCount] = await Promise.all([
     supabase.from("memories").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "story").neq("status", "rejected"),
+    can.admin(current.role) ? supabase.rpc("tree_access_list", { ws }) : Promise.resolve({ data: null }),
   ]);
   const { people, byId, rels } = graph;
-  const { data: accessList } = can.admin(current.role) ? await supabase.rpc("tree_access_list", { ws }) : { data: null };
   const pendingAccess = ((accessList ?? []) as Array<{ status: string }>).filter((r) => r.status === "pending").length;
   const meElsewhere = ctxMemberships.find((m) => m.id !== ws && mine.links.get(m.id));
 

@@ -9,13 +9,13 @@ import { portraitUrls } from "../portraits";
 import { cls } from "@/components/ui";
 import { RenameWorkspaceForm } from "../forms";
 import { MembersCenter, type MemberRow } from "./MembersCenter";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 import { decideTreeAccess, setDiscoverable } from "../tree-access-actions";
 
 export default async function MembersPage({ searchParams }: PageProps<"/[lang]/app/members">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton title={t.members.title} kind="list" />}>
       <Members t={t} locale={locale} filterPromise={searchParams.then((s) => String(s.f ?? ""))} />
     </Suspense>
   );

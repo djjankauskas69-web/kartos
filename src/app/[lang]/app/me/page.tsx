@@ -9,13 +9,13 @@ import { ConfirmAction } from "../forms";
 import { portraitUrls } from "../portraits";
 import { unlinkMe } from "./actions";
 import { AccountRows, ClaimMe, MyDetailsForm, PortraitUpload } from "./MyProfile";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 import { FixedLanguageSwitch } from "@/components/LanguageSwitch";
 
 export default async function MePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton kind="list" />}>
       <Me t={t} locale={locale} />
     </Suspense>
   );

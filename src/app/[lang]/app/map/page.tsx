@@ -13,13 +13,13 @@ import { cls } from "@/components/ui";
 import { portraitUrls } from "../portraits";
 import { roman } from "../tree/build";
 import { GravesExplorer, type GraveItem } from "./GravesExplorer";
-import { PageLoading } from "@/components/PageLoading";
+import { PageSkeleton } from "@/components/Skeletons";
 import { WideMain } from "../tree/WideMain";
 
 export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PageSkeleton title={t.map.title} kind="map" />}>
       <Graves t={t} locale={locale} personPromise={searchParams.then((s) => String(s.person ?? ""))} />
     </Suspense>
   );
