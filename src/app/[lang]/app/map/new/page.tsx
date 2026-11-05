@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, requireWorkspace } from "@/lib/data";
+import { isUnknownParent } from "@/lib/data";
 import { cls } from "@/components/ui";
 import { portraitUrls } from "../../portraits";
 import { PersonPicker } from "./PersonPicker";
@@ -30,7 +31,7 @@ async function MarkGrave({ t, locale }: { t: Dictionary; locale: Locale }) {
   const marked = new Set((burials ?? []).map((b) => b.person_id as string));
   // People without a marked grave first, then the oldest.
   const deceased = people
-    .filter((p) => !p.is_living)
+    .filter((p) => !p.is_living && !isUnknownParent(p))
     .sort((a, b) => Number(marked.has(a.id)) - Number(marked.has(b.id)) || (a.birth_year ?? 9999) - (b.birth_year ?? 9999));
   const portraits = await portraitUrls(locale, deceased);
 

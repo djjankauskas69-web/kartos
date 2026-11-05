@@ -164,6 +164,9 @@ export function lifeSpan(p: Pick<Person, "birth_year" | "death_year" | "is_livin
   return "";
 }
 
+/** The placeholder parent made for brothers and sisters ("?"); not a real grave to mark. */
+export const isUnknownParent = (p: Pick<Person, "given_names" | "surname">) => p.given_names.trim() === "?" && !p.surname;
+
 export function fullName(p: Pick<Person, "given_names" | "surname">, locale?: string) {
   // The "unknown parent" made when adding a brother or sister before the parents are known.
   if (p.given_names.trim() === "?" && !p.surname) return locale === "en" ? "Parents unknown" : "Tėvai nežinomi";

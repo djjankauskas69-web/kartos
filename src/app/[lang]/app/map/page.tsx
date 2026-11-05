@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
+import { isUnknownParent } from "@/lib/data";
 import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
 import { cls } from "@/components/ui";
@@ -49,7 +50,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
   const seen = new Set<string>();
   const graves = (burials ?? []).filter((b) => byId.has(b.person_id) && !seen.has(b.person_id) && seen.add(b.person_id));
   // People who have passed away but whose grave isn't recorded yet ("not marked").
-  const unmarked = people.filter((p) => !p.is_living && p.status !== "rejected" && !seen.has(p.id));
+  const unmarked = people.filter((p) => !p.is_living && p.status !== "rejected" && !seen.has(p.id) && !isUnknownParent(p));
   const personIds = [...graves.map((g) => g.person_id), ...unmarked.map((p) => p.id)];
 
   const [tagged, memories, gravePhotos] = await Promise.all([
