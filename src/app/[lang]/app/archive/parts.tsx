@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { looksLikeFileName } from "@/lib/archive";
-import { useEffect, useRef, useState } from "react";
+import { LogoLoader } from "@/components/LogoLoader";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
 import { ShareChoice } from "@/components/ShareChoice";
@@ -154,12 +155,15 @@ export function Detail({
   startEditing = false,
   canCover = false,
   canComment = false,
+  preload = [],
   onPrev,
   onNext,
   onClose,
 }: {
   canCover?: boolean;
   canComment?: boolean;
+  /** The photos either side, fetched ahead so moving on is instant. */
+  preload?: Array<string | undefined>;
   onPrev?: () => void;
   onNext?: () => void;
   item: ArchiveItem;
@@ -188,6 +192,15 @@ export function Detail({
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, onPrev, onNext]);
   const [confirm, setConfirm] = useState(false);
+  // Until the photo has arrived a quiet mark shows in its place (no lone comment line).
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useCallback((el: HTMLImageElement | null) => {
+    if (el?.complete && el.naturalWidth) setLoaded(true);
+  }, []);
+  useEffect(() => {
+    for (const u of preload) if (u) new window.Image().src = u;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per photo
+  }, []);
   // The photo comes first; the details open with the (i) button and stay open (or closed)
   // while you go through the photos.
   const [info, setInfoState] = useState(() => detailsOpen);
@@ -399,15 +412,24 @@ export function Detail({
       <div className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 transition-[padding] duration-300 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}>
         {item.url && !item.pdf ? (
           // The comment line sits under the photo, starting at its left edge.
-          <div className="flex max-w-full flex-col items-start gap-2.5">
+          <>
+          {!loaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 shadow-sm">
+                <LogoLoader size={44} />
+              </span>
+            </div>
+          )}
+          <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
             {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
             <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)]">
               {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`} />
+              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`} />
               {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
             </div>
             {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
           </div>
+          </>
         ) : (
           <div className="aspect-[3/4] h-[44dvh] md:h-full">
             <Preview item={item} large />

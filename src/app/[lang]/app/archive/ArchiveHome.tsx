@@ -650,6 +650,7 @@ export function ArchiveHome({
             item={open}
             onPrev={prevItem ? () => setOpenId(prevItem.id) : undefined}
             onNext={nextItem ? () => setOpenId(nextItem.id) : undefined}
+            preload={[nextItem?.url, prevItem?.url]}
             t={t}
             locale={locale}
             folders={open.kind === "document" ? docFolders : albumOptions}
