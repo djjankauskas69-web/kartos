@@ -99,7 +99,7 @@ export function Preview({ item, large = false }: { item: ArchiveItem; large?: bo
   );
 }
 
-export function Dialog({ open, onClose, title, children, wide = false }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
+export function Dialog({ open, onClose, title, children, wide = false, photo = false }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean; photo?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current;
@@ -113,7 +113,7 @@ export function Dialog({ open, onClose, title, children, wide = false }: { open:
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto max-h-[92dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${wide ? "max-w-5xl" : "max-w-2xl"}`}
+      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] backdrop:bg-[#1c1d1a]/70" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
     >
       {open && children}
     </dialog>
@@ -368,16 +368,17 @@ export function Detail({
     item.uploader && [t.uploadedBy, item.uploader],
   ].filter(Boolean) as Array<[string, string]>;
   return (
-    <div className="relative flex flex-col md:h-[min(86dvh,48rem)] md:flex-row">
+    <div className="relative flex flex-col md:h-[min(94dvh,64rem)] md:flex-row">
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
       <div className="absolute right-3 top-3 z-20 rounded-full bg-white/90 shadow-sm md:bg-transparent md:shadow-none">{closeBtn}</div>
-      <div className="group/pic relative flex min-h-[44dvh] flex-1 items-center justify-center bg-[#f1ece2] p-4 sm:p-8">
+      <div className="flex min-w-0 flex-1 flex-col bg-[#f1ece2]">
+      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center p-2 sm:p-3">
         {item.url && !item.pdf ? (
-          // The comments sit on the photo itself, so the frame is exactly the photo's size.
-          <div className="relative max-w-full overflow-hidden rounded-[8px] shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)]">
+          // Comments drift over the photo itself, so the frame is exactly the photo's size.
+          <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)]">
             {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-            <img src={item.url} alt={title} className="block max-h-[50dvh] max-w-full object-contain md:max-h-[calc(min(86dvh,48rem)-4rem)]" />
-            {item.kind === "photo" && <LiveComments key={item.id} item={item} t={t} locale={locale} canAdd={canComment} />}
+            <img src={item.url} alt={title} className={`block max-h-[58dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
+            {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
           </div>
         ) : (
           <div className="aspect-[3/4] h-[44dvh] md:h-full">
@@ -395,8 +396,14 @@ export function Detail({
           </button>
         )}
       </div>
+      {item.kind === "photo" && canComment && (
+        <div className="px-3 pb-3 sm:px-4">
+          <CommentInput item={item} t={t} locale={locale} />
+        </div>
+      )}
+      </div>
 
-      <aside className="flex w-full flex-col border-line md:w-[21rem] md:shrink-0 md:border-l">
+      <aside className="flex w-full flex-col border-line md:w-[20rem] md:shrink-0 md:border-l">
         <div className={`items-start justify-between gap-3 py-1 pl-5 pr-14 pt-4 md:flex md:min-h-14 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
@@ -428,86 +435,104 @@ export function Detail({
 const COMMENT_MAX = 50;
 
 /** A few words from the family under a photo, quietly: the notes, then one short line to add yours. */
+const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+
 /**
- * Comments float over the photo like a live chat: the family's notes rise one after another
- * (face, name, words), the newest at the bottom; one short line below to add yours.
+ * The family's comments drift over the photo one at a time, like a live chat: each shows
+ * for a few seconds (face, name, words) and gives way to the next. A new one shows at once.
  */
-function LiveComments({ item, t, locale, canAdd }: { item: ArchiveItem; t: L; locale: Locale; canAdd: boolean }) {
+function CommentTicker({ comments, t, locale }: { comments: NonNullable<ArchiveItem["comments"]>; t: L; locale: Locale }) {
+  const total = comments.length;
+  const [i, setI] = useState(0);
+  const [out, setOut] = useState(false);
+  const [seen, setSeen] = useState(total);
+  // A comment just added: jump to it.
+  if (total !== seen) {
+    setSeen(total);
+    setI(Math.max(0, total - 1));
+    setOut(false);
+  }
+  useEffect(() => {
+    if (total < 2) return;
+    const leave = window.setTimeout(() => setOut(true), 3600);
+    const next = window.setTimeout(() => {
+      setI((n) => (n + 1) % total);
+      setOut(false);
+    }, 4000);
+    return () => {
+      window.clearTimeout(leave);
+      window.clearTimeout(next);
+    };
+  }, [i, total]);
+  const c = comments[Math.min(i, total - 1)];
+  if (!c) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/40 to-transparent p-3 pt-14 sm:p-4 sm:pt-16">
+      <div
+        key={c.id}
+        className={`group/c pointer-events-auto flex w-fit max-w-[min(26rem,100%)] animate-[live-in_420ms_cubic-bezier(0.2,0.7,0.2,1)_both] items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-4 text-white shadow-[0_6px_18px_-10px_rgb(0_0_0/0.6)] backdrop-blur-md transition-[opacity,transform] duration-400 ${out ? "-translate-y-2 opacity-0" : ""}`}
+      >
+        {c.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+          <img src={c.avatar} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
+        ) : (
+          <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-[0.75rem] font-semibold">
+            {initials(c.author)}
+          </span>
+        )}
+        <span className="min-w-0 text-[0.92rem] leading-snug">
+          <span className="block text-[0.78rem] font-semibold text-white/70">{c.author}</span>
+          <span className="block break-words">{c.body}</span>
+        </span>
+        {c.canDelete && (
+          <form action={async (f) => void (await deleteComment(f))} className="shrink-0 opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="id" value={c.id} />
+            <button type="submit" aria-label={t.delete} title={t.delete} className="text-white/70 hover:text-white">×</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** One short line under the photo to leave a comment (50 characters). */
+function CommentInput({ item, t, locale }: { item: ArchiveItem; t: L; locale: Locale }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
-  const list = item.comments ?? [];
-  // On opening, the notes come in one by one; a new one shows straight away.
-  const [shown, setShown] = useState(0);
-  const total = list.length;
-  useEffect(() => {
-    if (shown >= total) return;
-    const id = window.setTimeout(() => setShown((n) => n + 1), shown === 0 ? 450 : 1100);
-    return () => window.clearTimeout(id);
-  }, [shown, total]);
-  if (!canAdd && total === 0) return null;
-  const visible = list.slice(0, Math.max(shown, 0)).slice(-6);
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/45 via-black/15 to-transparent p-3 pt-16 sm:p-4 sm:pt-20">
-      <ul className={`flex max-h-[13rem] max-w-[22rem] flex-col max-sm:[&>li:nth-last-child(n+3)]:hidden justify-end gap-1.5 overflow-hidden ${visible.length > 3 ? "[mask-image:linear-gradient(to_bottom,transparent,black_2.5rem)]" : ""}`}>
-        {visible.map((c) => (
-          <li key={c.id} className="group/c pointer-events-auto flex w-fit max-w-full animate-[live-in_380ms_cubic-bezier(0.2,0.7,0.2,1)_both] items-start gap-2 rounded-2xl bg-black/40 py-1.5 pl-1.5 pr-3 text-white shadow-[0_6px_18px_-10px_rgb(0_0_0/0.6)] backdrop-blur-md">
-            {c.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-              <img src={c.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
-            ) : (
-              <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-[0.72rem] font-semibold">
-                {c.author.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?"}
-              </span>
-            )}
-            <span className="min-w-0 pt-px text-[0.9rem] leading-snug">
-              <span className="mr-1.5 font-semibold text-white/75">{c.author}</span>
-              <span className="break-words">{c.body}</span>
-            </span>
-            {c.canDelete && (
-              <form action={async (f) => void (await deleteComment(f))} className="shrink-0 self-center opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="id" value={c.id} />
-                <button type="submit" aria-label={t.delete} title={t.delete} className="text-white/70 hover:text-white">×</button>
-              </form>
-            )}
-          </li>
-        ))}
-      </ul>
-      {canAdd && (
-        <form
-          className="pointer-events-auto flex max-w-[22rem] items-center gap-1 rounded-full bg-white/90 pl-4 pr-1 shadow-[0_6px_18px_-10px_rgb(0_0_0/0.5)] backdrop-blur focus-within:bg-white"
-          action={async (form) => {
-            setBusy(true);
-            setError(null);
-            const r = await addComment(form);
-            setBusy(false);
-            if (r.ok) {
-              setText("");
-              setShown(total + 1);
-            } else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
-          }}
-        >
-          <input type="hidden" name="locale" value={locale} />
-          <input type="hidden" name="mediaId" value={item.id} />
-          <label htmlFor={`c-${item.id}`} className="sr-only">{t.addComment}</label>
-          <input
-            id={`c-${item.id}`}
-            name="body"
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
-            maxLength={COMMENT_MAX}
-            autoComplete="off"
-            placeholder={`${t.addComment}…`}
-            className="min-h-10 min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink placeholder:text-ink-muted/70 focus:outline-none"
-          />
-          {text && <span className="shrink-0 text-[0.78rem] tabular-nums text-ink-muted">{COMMENT_MAX - text.length}</span>}
-          <button type="submit" disabled={busy || !text.trim()} aria-label={t.send} title={t.send} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-white disabled:opacity-25">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
-          </button>
-        </form>
-      )}
-      {error && <p role="alert" className="pointer-events-auto w-fit rounded-full bg-white px-3 py-1 text-[0.88rem] text-danger">{error}</p>}
+    <div>
+      <form
+        className="mx-auto flex max-w-xl items-center gap-1 rounded-full border border-line bg-surface pl-4 pr-1 focus-within:border-ink/40"
+        action={async (form) => {
+          setBusy(true);
+          setError(null);
+          const r = await addComment(form);
+          setBusy(false);
+          if (r.ok) setText("");
+          else setError(r.error === "setup" ? t.commentsSetup : t.saveError);
+        }}
+      >
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="mediaId" value={item.id} />
+        <label htmlFor={`c-${item.id}`} className="sr-only">{t.addComment}</label>
+        <input
+          id={`c-${item.id}`}
+          name="body"
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
+          maxLength={COMMENT_MAX}
+          autoComplete="off"
+          placeholder={`${t.addComment}…`}
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-[0.98rem] placeholder:text-ink-muted/70 focus:outline-none"
+        />
+        {text && <span className="shrink-0 text-[0.8rem] tabular-nums text-ink-muted">{COMMENT_MAX - text.length}</span>}
+        <button type="submit" disabled={busy || !text.trim()} aria-label={t.send} title={t.send} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white disabled:opacity-25">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+        </button>
+      </form>
+      {error && <p role="alert" className="mt-1 text-center text-[0.9rem] text-danger">{error}</p>}
     </div>
   );
 }

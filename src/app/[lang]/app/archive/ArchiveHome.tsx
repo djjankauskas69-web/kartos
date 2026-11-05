@@ -643,7 +643,7 @@ export function ArchiveHome({
         </form>
       </Dialog>
 
-      <Dialog open={!!open} onClose={() => setOpenId(null)} title={open?.title ?? ""} wide>
+      <Dialog open={!!open} onClose={() => setOpenId(null)} title={open?.title ?? ""} wide photo={open?.kind !== "story"}>
         {open && (
           <Detail
             key={open.id}
