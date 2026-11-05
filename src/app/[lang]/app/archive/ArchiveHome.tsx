@@ -660,7 +660,10 @@ export function ArchiveHome({
                     const slides = slidesOf(list);
                     const start = Math.max(0, slides.findIndex((x) => x.id === open.id));
                     setOpenId(null);
-                    if (slides.length) setShow({ slides, start, manual: true });
+                    if (!slides.length) return;
+                    setShow({ slides, start, manual: true });
+                    // Straight to the whole screen, in the same click (where the browser allows it).
+                    void document.documentElement.requestFullscreen?.().catch(() => {});
                   }
                 : undefined
             }

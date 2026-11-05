@@ -86,6 +86,19 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
     };
   }, [go, onClose, wake, manual]);
 
+  // Opened from a photo over the whole screen: leaving the full screen (Esc) goes back to the photo.
+  useEffect(() => {
+    if (!manual) return;
+    let was = !!document.fullscreenElement;
+    const onChange = () => {
+      const now = !!document.fullscreenElement;
+      if (was && !now) onClose();
+      was = now;
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, [manual, onClose]);
+
   function toggleShuffle() {
     const current = order[pos];
     if (shuffled) {
@@ -173,7 +186,7 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
             <button type="button" onClick={() => setStrip((v) => !v)} aria-pressed={strip} aria-label={labels.all} title={labels.all} className={`${btn} ${strip ? "bg-white/35" : ""}`}>
               <svg {...I} width={22} height={22}><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>
             </button>
-            {typeof document !== "undefined" && document.fullscreenEnabled && (
+            {!manual && typeof document !== "undefined" && document.fullscreenEnabled && (
               <button
                 type="button"
                 onClick={() => (document.fullscreenElement ? document.exitFullscreen() : root.current?.requestFullscreen())}
