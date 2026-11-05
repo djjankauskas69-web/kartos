@@ -60,7 +60,7 @@ export function ArchiveHome({
   const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum" | "slides">(initialUpload ? "upload" : null);
   const [dropped, setDropped] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [show, setShow] = useState<{ slides: Slide[]; start: number } | null>(null);
+  const [show, setShow] = useState<{ slides: Slide[]; start: number; manual?: boolean } | null>(null);
   const [sort, setSort] = useState("newest");
   const [filter, setFilter] = useState("");
   const [selecting, setSelecting] = useState(false);
@@ -176,8 +176,7 @@ export function ArchiveHome({
   const at = open ? navList.findIndex((i) => i.id === open.id) : -1;
   const prevItem = at > 0 ? navList[at - 1] : null;
   const nextItem = at >= 0 && at < navList.length - 1 ? navList[at + 1] : null;
-  // The photo view over the whole screen; stays so while going through the photos.
-  const [playing, setPlaying] = useState(false);
+
   const periodLabels: PeriodLabels = { date: t.date, exact: t.dateExact, about: t.dateAbout, between: t.dateBetween, year: t.year, from: t.yearFrom, to: t.yearTo, placeholder: t.yearPlaceholder };
   const canEditAlbum = (a: Album) => isEditor || (canAdd && a.createdBy === userId);
 
@@ -645,7 +644,7 @@ export function ArchiveHome({
         </form>
       </Dialog>
 
-      <Dialog open={!!open} onClose={() => { setOpenId(null); setPlaying(false); }} title={open?.title ?? ""} wide photo={open?.kind !== "story"}>
+      <Dialog open={!!open} onClose={() => setOpenId(null)} title={open?.title ?? ""} wide photo={open?.kind !== "story"}>
         {open && (
           <Detail
             key={open.id}
@@ -653,8 +652,18 @@ export function ArchiveHome({
             onPrev={prevItem ? () => setOpenId(prevItem.id) : undefined}
             onNext={nextItem ? () => setOpenId(nextItem.id) : undefined}
             preload={[nextItem?.url, prevItem?.url]}
-            playing={playing && open.kind === "photo"}
-            onPlay={open.kind === "photo" ? setPlaying : undefined}
+            onExpand={
+              open.kind === "photo"
+                ? () => {
+                    // The same big view as the slideshow, gone through by hand; closing comes back here.
+                    const list = navList.length ? navList : [open];
+                    const slides = slidesOf(list);
+                    const start = Math.max(0, slides.findIndex((x) => x.id === open.id));
+                    setOpenId(null);
+                    if (slides.length) setShow({ slides, start, manual: true });
+                  }
+                : undefined
+            }
             t={t}
             locale={locale}
             folders={open.kind === "document" ? docFolders : albumOptions}
@@ -742,7 +751,12 @@ export function ArchiveHome({
         <Slideshow
           slides={show.slides}
           start={show.start}
-          onClose={() => setShow(null)}
+          manual={show.manual}
+          onClose={(id) => {
+            const back = show.manual ? id : null;
+            setShow(null);
+            if (back) setOpenId(back);
+          }}
           labels={{ close: t.close, prev: t.slidePrev, next: t.slideNext, play: t.slidePlay, pause: t.slidePause, shuffle: t.slideShuffle, fullscreen: t.slideFull, all: t.slideAll }}
         />
       )}

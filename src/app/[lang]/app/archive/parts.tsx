@@ -114,7 +114,7 @@ export function Dialog({ open, onClose, title, children, wide = false, photo = f
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px] [&:fullscreen]:h-screen [&:fullscreen]:max-h-none [&:fullscreen]:w-screen [&:fullscreen]:max-w-none [&:fullscreen]:rounded-none [&:fullscreen]:!bg-[#111]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
+      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
     >
       {open && children}
     </dialog>
@@ -156,8 +156,7 @@ export function Detail({
   canCover = false,
   canComment = false,
   preload = [],
-  playing = false,
-  onPlay,
+  onExpand,
   onPrev,
   onNext,
   onClose,
@@ -166,9 +165,8 @@ export function Detail({
   canComment?: boolean;
   /** The photos either side, fetched ahead so moving on is instant. */
   preload?: Array<string | undefined>;
-  /** Over the whole screen: just the photo, gone through with the arrows. */
-  playing?: boolean;
-  onPlay?: (on: boolean) => void;
+  /** Open these photos big, over the whole screen (gone through by hand). */
+  onExpand?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   item: ArchiveItem;
@@ -186,23 +184,16 @@ export function Detail({
   const [covered, setCovered] = useState(false);
   const [downloading, setDownloading] = useState(false);
   // ← and → go to the previous and next photo (not while typing).
-  const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (editing) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as Element)?.closest?.("input, textarea, select")) return;
       if (e.key === "ArrowLeft" && onPrev) onPrev();
       if (e.key === "ArrowRight" && onNext) onNext();
-      // Esc leaves the full screen first and stays on this photo; a second Esc closes.
-      if (playing && e.key === "Escape" && !document.fullscreenElement) {
-        e.preventDefault();
-        e.stopPropagation();
-        onPlay?.(false);
-      }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [editing, onPrev, onNext, playing, onPlay]);
+  }, [editing, onPrev, onNext]);
   // Swipe left or right on a phone.
   const touchX = useRef<number | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -226,26 +217,7 @@ export function Detail({
     for (const u of preload) if (u) new window.Image().src = u;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per photo
   }, []);
-  // The browser's own Esc (or its exit button) leaves full screen: back to the usual view.
-  useEffect(() => {
-    if (!playing) return;
-    const onChange = () => {
-      if (!document.fullscreenElement) onPlay?.(false);
-    };
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, [playing, onPlay]);
-  const toggleFull = async () => {
-    if (playing) {
-      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-      onPlay?.(false);
-      return;
-    }
-    setInfo(false);
-    onPlay?.(true);
-    // The whole screen where the browser allows it (not on iPhone); otherwise the view just fills the window.
-    await rootRef.current?.closest("dialog")?.requestFullscreen?.().catch(() => {});
-  };
+
   // The photo comes first; the details open with the (i) button and stay open (or closed)
   // while you go through the photos.
   const [info, setInfoState] = useState(() => detailsOpen);
@@ -436,24 +408,20 @@ export function Detail({
     item.uploader && [t.uploadedBy, item.uploader],
   ].filter(Boolean) as Array<[string, string]>;
   return (
-    <div ref={rootRef} className={`relative flex flex-col md:block ${playing ? "h-[96dvh] [:fullscreen>&]:h-dvh" : "md:h-[min(94dvh,64rem)]"}`}>
+    <div className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]">
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
       <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
-        {onPlay && (
+        {onExpand && (
           <button
             type="button"
-            onClick={toggleFull}
-            aria-pressed={playing}
-            aria-label={playing ? t.exitFullscreen : t.fullscreen}
-            title={playing ? t.exitFullscreen : t.fullscreen}
+            onClick={onExpand}
+            aria-label={t.fullscreen}
+            title={t.fullscreen}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-white focus:outline-none"
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {playing ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
-            </svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
           </button>
         )}
-        {!playing && (
         <button
           type="button"
           onClick={() => setInfo(!info)}
@@ -464,7 +432,6 @@ export function Detail({
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
         </button>
-        )}
         <div className="rounded-full bg-white/90 shadow-sm">{closeBtn}</div>
       </div>
       {/* The page shows dimmed behind the photo; only the details column is a card. */}
@@ -473,7 +440,7 @@ export function Detail({
       <div
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center transition-[padding] duration-300 ${playing ? "h-full p-2 sm:px-16" : `px-2 pb-2 pt-16 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}`}
+        className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center transition-[padding] duration-300 px-2 pb-2 pt-16 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}
       >
         {item.url && !item.pdf ? (
           // The comment line sits under the photo, starting at its left edge.
@@ -487,13 +454,13 @@ export function Detail({
           )}
           <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
             {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
-            <div className={`relative max-w-full overflow-hidden shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] ${playing ? "rounded-[4px]" : "rounded-[10px]"}`}>
+            <div className={`relative max-w-full overflow-hidden shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] rounded-[10px]`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain ${playing ? "max-h-[calc(100dvh-1rem)]" : `max-h-[66dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`}`}
+              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain max-h-[66dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`}
               />
               {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
             </div>
-            {item.kind === "photo" && canComment && !playing && <CommentInput item={item} t={t} locale={locale} />}
+            {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
           </div>
           </>
         ) : (
@@ -514,7 +481,7 @@ export function Detail({
       </div>
       </div>
 
-      <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info && !playing ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
+      <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
         <div className={`items-start justify-between gap-3 py-1 pl-5 pr-28 pt-4 md:flex md:min-h-16 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}

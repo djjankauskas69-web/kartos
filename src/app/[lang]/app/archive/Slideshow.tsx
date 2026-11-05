@@ -13,10 +13,11 @@ const DELAY = 5000;
  * The photos full screen, one after another (every 5 s). Pause, back, forward, shuffle,
  * pick from the strip below; works with keys, swipes and on a big TV (full screen).
  */
-export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slide[]; start?: number; onClose: () => void; labels: L }) {
+/** With `manual`, the same big view but nothing moves on by itself (opened from a photo). */
+export function Slideshow({ slides, start = 0, onClose: close, labels, manual = false }: { slides: Slide[]; start?: number; onClose: (currentId?: string) => void; labels: L; manual?: boolean }) {
   const [order, setOrder] = useState(() => slides.map((_, i) => i));
   const [pos, setPos] = useState(() => Math.max(0, Math.min(start, slides.length - 1)));
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(!manual);
   const [shuffled, setShuffled] = useState(false);
   const [chrome, setChrome] = useState(true);
   const [strip, setStrip] = useState(false);
@@ -25,6 +26,8 @@ export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slid
   const hideTimer = useRef<number | null>(null);
   const n = slides.length;
   const slide = slides[order[pos]];
+  const slideId = slide?.id;
+  const onClose = useCallback(() => close(slideId), [close, slideId]);
 
   const go = useCallback((d: number) => setPos((p) => (p + d + n) % n), [n]);
 
@@ -56,7 +59,7 @@ export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slid
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const keys = ["Escape", "ArrowRight", "ArrowLeft", " ", "k"];
+      const keys = manual ? ["Escape", "ArrowRight", "ArrowLeft"] : ["Escape", "ArrowRight", "ArrowLeft", " ", "k"];
       if (!keys.includes(e.key)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -81,7 +84,7 @@ export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slid
       void lock?.release().catch(() => {});
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     };
-  }, [go, onClose, wake]);
+  }, [go, onClose, wake, manual]);
 
   function toggleShuffle() {
     const current = order[pos];
@@ -147,12 +150,15 @@ export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slid
             </div>
           )}
           <div className="flex items-center justify-center gap-3 sm:gap-4">
+            {!manual && (
             <button type="button" onClick={toggleShuffle} aria-pressed={shuffled} aria-label={labels.shuffle} title={labels.shuffle} className={`${btn} ${shuffled ? "bg-white/35" : ""}`}>
               <svg {...I} width={22} height={22}><path d="M16 4h4v4M4 20 20 4M20 16v4h-4M15 15l5 5M4 4l5 5" /></svg>
             </button>
+            )}
             <button type="button" onClick={() => go(-1)} disabled={n < 2} aria-label={labels.prev} title={labels.prev} className={btn}>
               <svg {...I}><path d="m15 6-6 6 6 6" /></svg>
             </button>
+            {!manual && (
             <button type="button" onClick={() => setPlaying((p) => !p)} aria-label={playing ? labels.pause : labels.play} title={playing ? labels.pause : labels.play} className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-black hover:bg-white/90">
               {playing ? (
                 <svg {...I} fill="currentColor" stroke="none"><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></svg>
@@ -160,6 +166,7 @@ export function Slideshow({ slides, start = 0, onClose, labels }: { slides: Slid
                 <svg {...I} fill="currentColor" stroke="none"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
               )}
             </button>
+            )}
             <button type="button" onClick={() => go(1)} disabled={n < 2} aria-label={labels.next} title={labels.next} className={btn}>
               <svg {...I}><path d="m9 6 6 6-6 6" /></svg>
             </button>
