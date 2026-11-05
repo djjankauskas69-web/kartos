@@ -555,7 +555,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     return (
       <div className="space-y-4">
         {!compact && (
-          <Link href={fromMap ? `${base}/map` : `${base}/tree?p=${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+          <Link href={fromMap ? `${base}/map` : `${base}/tree`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
             <span aria-hidden="true">←</span>
             {fromMap ? t.map.title : t.appNav.tree}
           </Link>
