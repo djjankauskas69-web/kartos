@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapView } from "@/components/map/Map";
 import { DirectionsMenu } from "@/components/map/Directions";
 
@@ -86,6 +86,15 @@ export function GravesExplorer({
   const [listOpen, setListOpen] = useState(true);
   const [fitKey, setFitKey] = useState(0);
   const [copied, setCopied] = useState(false);
+
+  // Pages are kept alive in the background; each time the graves page is shown again it starts
+  // from the whole picture (every grave in view), unless a grave was asked for.
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- reset on every visit */
+    setSelected(initialId);
+    setFitKey((k) => k + 1);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [initialId]);
 
   const counts = useMemo(() => ({ all: items.length, marked: items.filter(isMarked).length, unmarked: items.filter((i) => !isMarked(i)).length }), [items]);
   const filtered = useMemo(() => {
