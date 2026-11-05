@@ -522,7 +522,8 @@
     "addBrother": "Add brother",
     "addSister": "Add sister",
     "viewTree": "Show in tree",
-    "removeLink": "Remove link"
+    "removeLink": "Remove link",
+    "fillParents": "Fill in the parents"
   },
   "relative": {
     "newPerson": "New person",
@@ -1546,7 +1547,15 @@
     "addBirthPlace": "+ Place of birth",
     "allDetails": "All details",
     "yearError": "Check the years.",
-    "nameRequired": "Enter a first name."
+    "nameRequired": "Enter a first name.",
+    "graveMarked": "Marked on the map",
+    "markGrave": "+ Mark the grave",
+    "tabLife": "Life",
+    "tabArchive": "Archive",
+    "fillIn": "Add:",
+    "addDocShort": "Document",
+    "addPlaceShort": "Place",
+    "memoriesEmpty": "No memories yet. What do you remember? Even one sentence will be precious to the next generations."
   },
   "shared": {
     "title": "Who will see it?",

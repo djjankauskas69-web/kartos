@@ -12,7 +12,8 @@ import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
 export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; canEdit?: boolean; pending?: boolean };
 export type ProfileRelative = { id: string; name: string; sub: string; portrait?: string; initials: string; href: string };
-export type MemorialPlace = { key: string; kind: PlaceKind; place: string; lat?: number | null; lng?: number | null; year?: number | null; yearTo?: number | null; href?: string; id?: string; canDelete?: boolean };
+export type MemorialPlace = { key: string; kind: PlaceKind; place: string; lat?: number | null; lng?: number | null; year?: number | null; yearTo?: number | null; href?: string; id?: string; canDelete?: boolean; addLabel?: string };
+export type MemoryPreview = { count: number; items: Array<{ id: string; author: string; date: string; body: string }> };
 
 const I = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 const icons = {
@@ -58,6 +59,7 @@ export function MemorialProfile({
   meHref,
   inDrawer = false,
   inline,
+  memoryPreview,
 }: {
   t: Dictionary;
   locale: string;
@@ -84,7 +86,9 @@ export function MemorialProfile({
   living?: boolean;
   aliveLabel?: string;
   residence?: string | null;
-  family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[] };
+  family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[]; parentsAdd?: Array<{ href: string; label: string }> };
+  /** The newest memories, shown first on the overview. */
+  memoryPreview?: MemoryPreview;
   treeHref?: string;
   meHref?: string;
   /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
@@ -139,6 +143,13 @@ export function MemorialProfile({
         {list.map((p) => (
           <li key={p.key} className="flex items-center gap-3 py-2.5">
             <span className="text-ink-muted">{icons.pin}</span>
+            {p.addLabel && p.href ? (
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold leading-snug">{kindLabel(p.kind)}</span>
+                <Link href={p.href} className="block text-[0.92rem] font-semibold text-olive-deep hover:underline">{p.addLabel}</Link>
+              </span>
+            ) : (
+            <>
             <span className="min-w-0 flex-1">
               <span className="block font-semibold leading-snug">{kindLabel(p.kind)}</span>
               <span className="block truncate text-[0.92rem] text-ink-muted">{p.place}</span>
@@ -155,6 +166,8 @@ export function MemorialProfile({
                 <button type="submit" className="text-[0.88rem] text-ink-muted hover:text-danger">{m.delete}</button>
               </form>
             )}
+            </>
+            )}
           </li>
         ))}
       </ul>
@@ -170,7 +183,7 @@ export function MemorialProfile({
           <button
             key={p.id}
             type="button"
-            data-tab-target="photos"
+            data-tab-target="archive"
             className={`relative overflow-hidden rounded-xl bg-linen ${i === 0 ? "col-span-2 row-span-2" : ""}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
@@ -206,10 +219,63 @@ export function MemorialProfile({
         </ul>
       </div>
     );
-  const hasFamily = family.parents.length + family.partners.length + family.children.length > 0;
+  const hasFamily = family.parents.length + family.partners.length + family.children.length + (family.parentsAdd?.length ?? 0) > 0;
+  const parentsAdd = family.parentsAdd?.length ? (
+    <div className={family.parents.length ? "mt-3" : ""}>
+      {!family.parents.length && <h3 className="mb-2.5 text-[0.95rem] text-ink-muted">{t.family.parents}</h3>}
+      <p className="flex flex-wrap gap-2">
+        {family.parentsAdd.map((a) => (
+          <Link key={a.href} href={a.href} scroll={false} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-line px-4 text-[0.95rem] font-semibold text-ink-muted hover:border-ink/40 hover:text-ink">
+            <span aria-hidden="true">+</span>
+            {a.label.replace(/^\+\s*/, "")}
+          </Link>
+        ))}
+      </p>
+    </div>
+  ) : null;
+
+  // Empty parts are folded into one quiet line instead of a big empty card each.
+  const showDocs = docs.length > 0;
+  const showPlaces = !living && places.length > 0;
+  const fillIn = canAdd && (!showDocs || (!living && !showPlaces && eventsReady)) && (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[18px] border border-dashed border-line px-5 py-3.5 text-[0.98rem]">
+      <span className="text-ink-muted">{m.fillIn}</span>
+      {!showDocs && (
+        <Link href={`${base}/archive`} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-linen px-3.5 font-semibold hover:bg-line/60">
+          {icons.doc}+ {m.addDocShort}
+        </Link>
+      )}
+      {!living && !showPlaces && eventsReady && (
+        <button type="button" data-tab-target="life" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-linen px-3.5 font-semibold hover:bg-line/60">
+          {icons.pin}+ {m.addPlaceShort}
+        </button>
+      )}
+    </div>
+  );
+
+  const memoriesCard = memoryPreview && (
+    <section className={card}>
+      {head(icons.quote, m.tabMemories, memoryPreview.count, memoryPreview.count > 0 ? "memories" : undefined)}
+      {memoryPreview.items.length > 0 ? (
+        <ul className="grid gap-4 @3xl:grid-cols-2">
+          {memoryPreview.items.map((x) => (
+            <li key={x.id}>
+              <button type="button" data-tab-target="memories" className="block h-full w-full rounded-2xl bg-paper px-5 py-4 text-left hover:bg-linen/70">
+                <p className="line-clamp-3 font-serif text-[1.15rem] leading-snug">„{x.body.trim()}“</p>
+                <p className="mt-2 text-[0.9rem] text-ink-muted">{[x.author, x.date].filter(Boolean).join(" · ")}</p>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="leading-relaxed text-ink-muted">{m.memoriesEmpty}</p>
+      )}
+    </section>
+  );
 
   const overview = (
-    <div className="@container">
+    <div className="@container space-y-5">
+      {memoriesCard}
       <div className="grid items-start gap-5 @3xl:grid-cols-2">
         <div className="min-w-0 space-y-5">
         <section className={card}>
@@ -228,17 +294,17 @@ export function MemorialProfile({
           )}
         </section>
         <section className={card}>
-          {head(icons.calendar, m.events, undefined, "events")}
+          {head(icons.calendar, m.events, undefined, "life")}
           {timeline(events.slice(0, 7), false)}
           {canAdd && eventsReady && <div className="mt-5"><EventForm locale={locale} personId={personId} mode="event" labels={labels} center={center} /></div>}
         </section>
-        {!living && (
+        {showPlaces && (
           <section className={card}>
-            {head(icons.pin, m.places, undefined, "places")}
-            {markers.length > 0 && <MapView markers={markers} className="mb-3 h-44 w-full rounded-xl border border-line" />}
+            {head(icons.pin, m.places, undefined, "life")}
+            {markers.length > 0 && <MapView markers={markers} maxZoom={12} className="mb-3 h-44 w-full rounded-xl border border-line" />}
             {places.length > 0 ? placeList(false) : <p className="text-[0.98rem] leading-relaxed text-ink-muted">{m.placesHint}</p>}
             {canAdd && eventsReady && (
-              <button type="button" data-tab-target="places" className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line font-semibold hover:border-ink/40">
+              <button type="button" data-tab-target="life" className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line font-semibold hover:border-ink/40">
                 <span aria-hidden="true" className="text-[1.2rem] leading-none">+</span>
                 {m.addPlaceBtn}
               </button>
@@ -254,7 +320,10 @@ export function MemorialProfile({
           </div>
           {hasFamily ? (
             <div className="@container/fam"><div className="grid gap-5">
-              {relCol(t.family.parents, family.parents)}
+              <div>
+                {relCol(t.family.parents, family.parents)}
+                {parentsAdd}
+              </div>
               {relCol(t.family.partners, family.partners)}
               {relCol(t.family.children, family.children)}
             </div></div>
@@ -263,11 +332,11 @@ export function MemorialProfile({
           )}
         </section>
         <section className={card}>
-          {head(icons.photo, m.photos, photoCount, "photos")}
+          {head(icons.photo, m.photos, photoCount, "archive")}
           {photoGrid}
         </section>
-        <section className={card}>
-          {head(icons.doc, m.documents, docs.length, "docs")}
+        {showDocs && <section className={card}>
+          {head(icons.doc, m.documents, docs.length, "archive")}
           {docs.length === 0 ? (
             <p className="text-ink-muted">{m.noDocs}</p>
           ) : (
@@ -291,14 +360,14 @@ export function MemorialProfile({
               {m.addDocument}
             </Link>
           )}
-        </section>
+        </section>}
+        {fillIn}
         </div>
       </div>
     </div>
   );
 
-  const panels: Record<string, React.ReactNode> = {
-    overview,
+  const parts: Record<string, React.ReactNode> = {
     events: (
       <div className="max-w-3xl space-y-5">
         <section className={card}>
@@ -311,7 +380,6 @@ export function MemorialProfile({
     ),
     photos: nodes.photos,
     docs: <div className="space-y-4">{nodes.docs}{docs.length === 0 && <p className="text-ink-muted">{m.noDocs}</p>}</div>,
-    family: nodes.family,
     places: (
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -365,7 +433,7 @@ export function MemorialProfile({
             {/* A plain window for the map: the pins when there are any, otherwise a short note. */}
             <div className="relative overflow-hidden rounded-[18px] border border-line bg-[#f3f1ea]">
               {lifeMarkers.length > 0 ? (
-                <MapView markers={lifeMarkers} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="h-80 w-full" />
+                <MapView markers={lifeMarkers} maxZoom={12} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="h-80 w-full" />
               ) : (
                 <div className="flex h-80 flex-col items-center justify-center gap-3 px-6 text-center text-ink-muted">
                   <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface text-olive-deep shadow-[0_6px_16px_-10px_rgb(28_29_26/0.5)]">{icons.pin}</span>
@@ -393,12 +461,25 @@ export function MemorialProfile({
         {nodes.grave}
       </div>
     ),
-    memories: (
-      <div className="space-y-6">
-        {nodes.composer}
-        {nodes.memories}
+  };
+  const panels: Record<string, React.ReactNode> = {
+    overview,
+    // Life: what happened, then where (the places and the grave).
+    life: (
+      <div className="space-y-12">
+        {parts.events}
+        {!living && parts.places}
       </div>
     ),
+    // Archive: photos and documents together.
+    archive: (
+      <div className="space-y-12">
+        {parts.photos}
+        {parts.docs}
+      </div>
+    ),
+    family: nodes.family,
+    memories: <div className="space-y-6">{nodes.memories}</div>,
   };
 
   return (
@@ -421,7 +502,7 @@ export function MemorialProfile({
               {initials}
             </span>
           )}
-          <div className="min-w-0 flex-1">
+          <div className={`min-w-0 flex-1 ${nodes.composer || meHref || (editHref && !inline) ? "sm:pr-60" : ""}`}>
             {inline ? (
               <InlineEdit
                 {...ie}
@@ -476,7 +557,9 @@ export function MemorialProfile({
               </div>
             )}
           </div>
-          <div className="flex gap-2 self-start sm:absolute sm:right-5 sm:top-5">
+          <div className="flex flex-wrap gap-2 self-start sm:absolute sm:right-5 sm:top-5">
+            {/* The one thing everyone can do here: leave a memory. */}
+            {nodes.composer}
             {meHref && (
               <Link href={meHref} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
                 {m.editMine}
@@ -494,12 +577,10 @@ export function MemorialProfile({
       <MemorialTabs
         tabs={[
           { id: "overview", label: m.tabOverview, icon: icons.home },
-          { id: "events", label: m.tabEvents, icon: icons.calendar },
-          { id: "photos", label: m.tabPhotos, count: photoCount, icon: icons.photo },
-          { id: "docs", label: m.tabDocs, count: docs.length, icon: icons.doc },
+          { id: "life", label: m.tabLife, icon: icons.calendar },
+          { id: "archive", label: m.tabArchive, count: photoCount + docs.length, icon: icons.photo },
           { id: "family", label: m.tabFamily, icon: icons.people },
-          ...(living ? [] : [{ id: "places", label: m.tabPlaces, icon: icons.pin }]),
-          { id: "memories", label: m.tabMemories, icon: icons.quote },
+          { id: "memories", label: m.tabMemories, count: memoryPreview?.count, icon: icons.quote },
         ]}
         panels={panels}
       />

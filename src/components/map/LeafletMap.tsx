@@ -49,6 +49,8 @@ type Props = {
   padLeft?: number;
   /** Bump to show every marker again. */
   fitKey?: number;
+  /** How close to come when showing the markers (17 = a single grave; ~11 = the town around a place). */
+  maxZoom?: number;
 };
 
 export type BaseLayer = "map" | "satellite";
@@ -127,6 +129,7 @@ export default function LeafletMap({
   onCenter,
   layerAt = "left",
   fitKey = 0,
+  maxZoom = 17,
   padLeft = 0,
 }: Props) {
   const [layer, setLayer] = useState<BaseLayer>(baseLayer);
@@ -205,8 +208,8 @@ export default function LeafletMap({
       bounds.push([mk.lat, mk.lng]);
     }
     const fit = () => {
-      if (bounds.length === 1) m.setView(bounds[0], 17);
-      else m.fitBounds(L.latLngBounds(bounds), { paddingTopLeft: [48 + (m.getSize().x >= 640 ? padLeft : 0), 72], paddingBottomRight: [48, 48], maxZoom: 17 });
+      if (bounds.length === 1) m.setView(bounds[0], maxZoom);
+      else m.fitBounds(L.latLngBounds(bounds), { paddingTopLeft: [48 + (m.getSize().x >= 640 ? padLeft : 0), 72], paddingBottomRight: [48, 48], maxZoom });
     };
     if (m.getSize().x > 0) fit();
     else pendingFit.current = fit;

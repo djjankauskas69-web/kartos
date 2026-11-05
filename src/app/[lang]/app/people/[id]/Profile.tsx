@@ -7,6 +7,7 @@ import {
   can,
   fullName,
   getFamilyGraph,
+  isUnknownParent,
   lifeSpan,
   profileNames,
   relativesOf,
@@ -492,7 +493,12 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     }
     for (const cid of fam.children) {
       const c = byId.get(cid);
-      if (c?.birth_year) ev.push({ key: `c-${cid}`, year: c.birth_year, title: `${c.sex === "male" ? mt.bornSon : c.sex === "female" ? mt.bornDaughter : mt.bornChild} ${c.given_names}` });
+      if (c?.birth_year) {
+        // Without a recorded sex, a Lithuanian first name usually tells (Petras, Jonas → son; Ona, Eglė → daughter).
+        const g = c.given_names.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+        const sex = c.sex ?? (locale === "lt" ? (/(as|is|ys|us|ius)$/.test(g) ? "male" : /(a|ė|ia)$/.test(g) ? "female" : null) : null);
+        ev.push({ key: `c-${cid}`, year: c.birth_year, title: `${sex === "male" ? mt.bornSon : sex === "female" ? mt.bornDaughter : mt.bornChild} ${c.given_names}` });
+      }
     }
     for (const e of personEvents.filter((e) => e.kind === "event")) {
       ev.push({ key: e.id, id: e.id, year: e.year, yearTo: e.year_to, title: e.title ?? "", sub: e.place, canDelete: can.edit(role) || e.created_by === user.id, canEdit: can.edit(role) && !other, pending: e.status === "pending" });
@@ -515,7 +521,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     const sub = (title: string | null) => (title === "work" || title === "study" || title === "other" ? title : "residence");
     for (const e of personEvents.filter((e) => e.kind === "residence").sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999)))
       pl.push({ key: e.id, id: e.id, kind: sub(e.title), place: e.place ?? "", lat: e.lat, lng: e.lng, year: e.year, yearTo: e.year_to, canDelete: mine(e) });
-    if (!person.is_living && burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", "), lat: burial.lat, lng: burial.lng, year: person.death_year, href: `${base}/map?person=${id}` });
+    if (!person.is_living && burial) pl.push({ key: "rest", kind: "resting", place: [burial.cemetery_name, burial.section, burial.plot].filter(Boolean).join(", ") || (burial.lat != null ? mt.graveMarked : ""), lat: burial.lat, lng: burial.lng, year: person.death_year, href: `${base}/map?person=${id}` });
+    // Not marked yet: the line itself says how to do it.
+    else if (!person.is_living && can.add(role) && !other) pl.push({ key: "rest", kind: "resting", place: "", href: `${base}/people/${id}/grave`, addLabel: mt.markGrave });
 
     const storyText =
       person.biography?.trim() ||
@@ -550,7 +558,23 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       const r = byId.get(rid)!;
       return { id: rid, name: fullName(r), sub: lifeSpan(r, t.app.born.toLowerCase()), portrait: portraits.get(rid), initials: `${r.given_names[0] ?? ""}${r.surname?.[0] ?? ""}`.toUpperCase(), href: relHref(rid) };
     };
-    const famCard = { parents: fam.parents.filter((x) => byId.has(x)).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
+    // The "parents unknown" stand-in is not a person to show; it becomes a way to fill them in.
+    const unknownParent = fam.parents.find((x) => byId.has(x) && isUnknownParent(byId.get(x)!));
+    const parentsAdd =
+      can.add(role) && !other && fam.parents.filter((x) => x !== unknownParent).length < 2
+        ? unknownParent
+          ? [{ href: `${base}/people/${unknownParent}/edit`, label: t.family.fillParents }]
+          : [
+              ...(!hasFather ? [{ href: `${base}/people/${id}/relative?kind=father`, label: t.family.addFather }] : []),
+              ...(!hasMother ? [{ href: `${base}/people/${id}/relative?kind=mother`, label: t.family.addMother }] : []),
+            ]
+        : [];
+    const allMemories = [...(memories ?? []).filter((x) => x.status !== "pending"), ...sharedMemories];
+    const memoryPreview = {
+      count: (memories ?? []).length + sharedMemories.length,
+      items: allMemories.slice(0, 2).map((x) => ({ id: x.id, author: authors.get(x.author_id as string) ?? "", date: dateFmt.format(new Date(x.created_at)), body: x.body })),
+    };
+    const famCard = { parentsAdd, parents: fam.parents.filter((x) => byId.has(x) && x !== unknownParent).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
 
     return (
       <div className="space-y-4">
@@ -607,7 +631,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           events={ev}
           places={pl}
           eventsReady={eventsReady}
-          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: null }}
+          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) ? composerNode : null }}
+          memoryPreview={memoryPreview}
           living={person.is_living}
           aliveLabel={person.sex === "female" ? mt.aliveF : mt.aliveM}
           residence={residence}

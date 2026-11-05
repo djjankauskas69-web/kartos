@@ -522,7 +522,8 @@
     "addBrother": "Pridėti brolį",
     "addSister": "Pridėti seserį",
     "viewTree": "Rodyti medyje",
-    "removeLink": "Pašalinti ryšį"
+    "removeLink": "Pašalinti ryšį",
+    "fillParents": "Įrašyti tėvus"
   },
   "relative": {
     "newPerson": "Naujas žmogus",
@@ -1546,7 +1547,15 @@
     "addBirthPlace": "+ Gimimo vieta",
     "allDetails": "Visi duomenys",
     "yearError": "Patikrinkite metus.",
-    "nameRequired": "Įrašykite vardą."
+    "nameRequired": "Įrašykite vardą.",
+    "graveMarked": "Pažymėta žemėlapyje",
+    "markGrave": "+ Pažymėti kapavietę",
+    "tabLife": "Gyvenimas",
+    "tabArchive": "Archyvas",
+    "fillIn": "Papildykite:",
+    "addDocShort": "Dokumentą",
+    "addPlaceShort": "Vietą",
+    "memoriesEmpty": "Prisiminimų dar nėra. Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms."
   },
   "shared": {
     "title": "Kas matys?",

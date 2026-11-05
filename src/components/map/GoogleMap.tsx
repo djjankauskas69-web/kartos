@@ -26,6 +26,8 @@ type Props = {
   padLeft?: number;
   /** Bump to show every marker again. */
   fitKey?: number;
+  /** How close to come when showing the markers (17 = a single grave; ~11 = the town around a place). */
+  maxZoom?: number;
 };
 
 const LITHUANIA = { lat: 55.25, lng: 23.9, zoom: 7 };
@@ -150,6 +152,7 @@ export default function GoogleMap({
   onCenter,
   layerAt = "left",
   fitKey = 0,
+  maxZoom = 17,
   padLeft = 0,
 }: Props) {
   // Every grave in view, clear of the panel and the buttons along the top.
@@ -242,10 +245,10 @@ export default function GoogleMap({
     }
     if (markers.length === 1) {
       m.setCenter({ lat: markers[0].lat, lng: markers[0].lng });
-      m.setZoom(17);
+      m.setZoom(maxZoom);
     } else {
       m.fitBounds(bounds, pad());
-      g.maps.event.addListenerOnce(m, "idle", () => m.getZoom() > 17 && m.setZoom(17));
+      g.maps.event.addListenerOnce(m, "idle", () => m.getZoom() > maxZoom && m.setZoom(maxZoom));
     }
     const current = placed.current;
     return () => {
