@@ -34,10 +34,12 @@ export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
  * the family tree.
  */
-async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId: wsGiven, wsIdPromise }: { t: Dictionary; locale: Locale; idPromise: Promise<string>; compact?: boolean; closeHref?: string; wsId?: string; wsIdPromise?: Promise<string | undefined> }) {
+async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId: wsGiven, wsIdPromise, fromMapPromise }: { t: Dictionary; locale: Locale; idPromise: Promise<string>; compact?: boolean; closeHref?: string; wsId?: string; wsIdPromise?: Promise<string | undefined>; fromMapPromise?: Promise<boolean> }) {
   void closeHref;
   const id = await idPromise;
   const wsId = wsGiven ?? (wsIdPromise ? await wsIdPromise : undefined);
+  // Opened from the graves map: the way back is to the graves, not the tree.
+  const fromMap = fromMapPromise ? await fromMapPromise : false;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const ctx = await requireWorkspace(locale);
   const { supabase, user } = ctx;
@@ -553,9 +555,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     return (
       <div className="space-y-4">
         {!compact && (
-          <Link href={`${base}/tree?p=${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+          <Link href={fromMap ? `${base}/map?person=${id}` : `${base}/tree?p=${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
             <span aria-hidden="true">←</span>
-            {t.appNav.tree}
+            {fromMap ? t.map.title : t.appNav.tree}
           </Link>
         )}
         {person.status === "pending" && <PendingBadge label={t.app.pending} />}

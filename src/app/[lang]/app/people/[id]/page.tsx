@@ -7,7 +7,7 @@ export default async function PersonPage({ params, searchParams }: PageProps<"/[
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<PageSkeleton kind="profile" />}>
-      <Profile t={t} locale={locale} idPromise={params.then((p) => p.id)} wsIdPromise={searchParams.then((s) => (typeof s.ws === "string" ? s.ws : undefined))} />
+      <Profile t={t} locale={locale} idPromise={params.then((p) => p.id)} wsIdPromise={searchParams.then((s) => (typeof s.ws === "string" ? s.ws : undefined))} fromMapPromise={searchParams.then((s) => s.back === "map")} />
     </Suspense>
   );
 }

@@ -108,7 +108,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
       pending: g.status === "pending",
       gravePhoto: g.photo_id ? urls.get(gravePhotoPath.get(g.photo_id) ?? "") : undefined,
       ...extra(p.id),
-      profileHref: `${base}/people/${p.id}`,
+      profileHref: `${base}/people/${p.id}?back=map`,
       editHref: canEdit ? `${base}/people/${p.id}/grave?back=map` : undefined,
     };
   });
@@ -128,7 +128,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
       lng: null,
       pending: false,
       ...extra(p.id),
-      profileHref: `${base}/people/${p.id}`,
+      profileHref: `${base}/people/${p.id}?back=map`,
       editHref: canAddGrave ? `${base}/people/${p.id}/grave?back=map` : undefined,
     });
   }
