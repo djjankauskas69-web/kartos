@@ -387,7 +387,15 @@
     "listDeceased": "Deceased",
     "listBorn": "b. {y}",
     "listFill": "Add details",
-    "genOf": {"3": "great-grandparents", "2": "grandparents", "1": "parents", "0": "your generation", "-1": "children", "-2": "grandchildren", "-3": "great-grandchildren"},
+    "genOf": {
+      "3": "great-grandparents",
+      "2": "grandparents",
+      "1": "parents",
+      "0": "your generation",
+      "-1": "children",
+      "-2": "grandchildren",
+      "-3": "great-grandchildren"
+    },
     "gen": {
       "one": "generation",
       "few": "generations",
@@ -968,7 +976,19 @@
     "send": "Send",
     "commentsSetup": "Comments need database update 0018.",
     "editInfo": "Who is in it, and when?",
-    "comment": "Comment"
+    "comment": "Comment",
+    "countAlbums": {
+      "one": "album",
+      "few": "albums",
+      "many": "albums",
+      "other": "albums"
+    },
+    "countPhotos": {
+      "one": "photo",
+      "few": "photos",
+      "many": "photos",
+      "other": "photos"
+    }
   },
   "peopleList": {
     "title": "People",

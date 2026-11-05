@@ -387,7 +387,15 @@
     "listDeceased": "Mirę",
     "listBorn": "g. {y}",
     "listFill": "Papildykite profilį",
-    "genOf": {"3": "proseneliai", "2": "seneliai", "1": "tėvai", "0": "jūsų karta", "-1": "vaikai", "-2": "anūkai", "-3": "proanūkiai"},
+    "genOf": {
+      "3": "proseneliai",
+      "2": "seneliai",
+      "1": "tėvai",
+      "0": "jūsų karta",
+      "-1": "vaikai",
+      "-2": "anūkai",
+      "-3": "proanūkiai"
+    },
     "gen": {
       "one": "karta",
       "few": "kartos",
@@ -968,7 +976,19 @@
     "send": "Siųsti",
     "commentsSetup": "Komentarams reikia atnaujinti duomenų bazę (0018).",
     "editInfo": "Kas nuotraukoje ir kada?",
-    "comment": "Komentuoti"
+    "comment": "Komentuoti",
+    "countAlbums": {
+      "one": "albumas",
+      "few": "albumai",
+      "many": "albumo",
+      "other": "albumų"
+    },
+    "countPhotos": {
+      "one": "nuotrauka",
+      "few": "nuotraukos",
+      "many": "nuotraukos",
+      "other": "nuotraukų"
+    }
   },
   "peopleList": {
     "title": "Žmonės",

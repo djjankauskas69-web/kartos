@@ -500,7 +500,6 @@ export function ArchiveHome({
   const actions =
     !canAdd ? null : tab === "albums" && !album ? (
       <>
-        <button type="button" onClick={() => setDialog("album")} className={secondary}>+ {t.createAlbum}</button>
         <button type="button" onClick={() => setDialog("upload")} className={primary}>
           <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
           {t.uploadPhotos}
