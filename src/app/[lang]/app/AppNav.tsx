@@ -74,8 +74,11 @@ export type NavItem = { href: string; label: string; icon: ReactNode; badge?: nu
 function useActive() {
   const pending = usePending();
   // While going somewhere, that section is already the lit one.
-  const current = usePathname();
-  const pathname = pending ?? current ?? "";
+  const current = usePathname() ?? "";
+  // A grave opened from the graves map belongs to the map (?back=map), not to the tree.
+  const fromMap = useSearchParams()?.get("back") === "map";
+  const here = fromMap ? current.replace(/\/people\/.*$/, "/map") : current;
+  const pathname = pending ?? here;
   const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   return (item: NavItem) => (item.exact ? pathname === item.href : under(item.href) || (item.also ?? []).some(under));
 }

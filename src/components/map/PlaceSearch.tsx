@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { GOOGLE_KEY, loadGoogle } from "./google";
 
 /**
  * A place box with Google's suggestions (Places API, through the Maps JavaScript API):
  * type "Lėbartų kap…", pick a line, and the point comes back with its name and address.
  * Without a key (NEXT_PUBLIC_GOOGLE_MAPS_KEY) it is a plain text box.
  */
-const KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+const KEY = GOOGLE_KEY;
 
 export type PickedPlace = { name: string; address: string; lat: number; lng: number };
 
@@ -19,26 +20,8 @@ type PlacesLib = {
   AutocompleteSessionToken: new () => unknown;
 };
 
-let loading: Promise<PlacesLib | null> | null = null;
 function loadPlaces(lang: string): Promise<PlacesLib | null> {
-  if (!KEY || typeof window === "undefined") return Promise.resolve(null);
-  if (loading) return loading;
-  loading = new Promise((resolve) => {
-    const w = window as unknown as { google?: { maps?: { importLibrary?: (n: string) => Promise<unknown> } }; __kartosMaps?: () => void };
-    const done = () => {
-      const imp = w.google?.maps?.importLibrary;
-      if (!imp) return resolve(null);
-      imp("places").then((lib) => resolve(lib as PlacesLib), () => resolve(null));
-    };
-    if (w.google?.maps?.importLibrary) return done();
-    w.__kartosMaps = done;
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(KEY)}&v=weekly&loading=async&language=${lang}&region=LT&callback=__kartosMaps`;
-    s.async = true;
-    s.onerror = () => resolve(null);
-    document.head.appendChild(s);
-  });
-  return loading;
+  return loadGoogle(lang).then((imp) => (imp ? (imp("places") as Promise<PlacesLib>).catch(() => null) : null));
 }
 
 export const hasGooglePlaces = !!KEY;
