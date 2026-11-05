@@ -27,7 +27,12 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
   const n = slides.length;
   const slide = slides[order[pos]];
   const slideId = slide?.id;
-  const onClose = useCallback(() => close(slideId), [close, slideId]);
+  // Always the current photo, without re-running the effects below on every photo.
+  const idRef = useRef(slideId);
+  useEffect(() => {
+    idRef.current = slideId;
+  }, [slideId]);
+  const onClose = useCallback(() => close(idRef.current), [close]);
 
   const go = useCallback((d: number) => setPos((p) => (p + d + n) % n), [n]);
 
@@ -82,9 +87,15 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
       window.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = overflow;
       void lock?.release().catch(() => {});
-      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     };
   }, [go, onClose, wake, manual]);
+  // Leaving the slideshow leaves the full screen too (only then, not on each photo).
+  useEffect(
+    () => () => {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    },
+    [],
+  );
 
   // Opened from a photo over the whole screen: leaving the full screen (Esc) goes back to the photo.
   useEffect(() => {
