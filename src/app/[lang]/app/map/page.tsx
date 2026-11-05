@@ -6,7 +6,7 @@ import { QUIET_CEMETERY, SatelliteThumb } from "@/components/SatelliteThumb";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
+import { can, fullName, getFamilyGraph, requireWorkspace, signedUrls } from "@/lib/data";
 import { isUnknownParent } from "@/lib/data";
 import { generations } from "@/lib/tree-layout";
 import { IconPlus } from "@/components/icons";
@@ -20,7 +20,14 @@ import { WideMain } from "../tree/WideMain";
 export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/map">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<PageSkeleton title={t.map.title} kind="map" />}>
+    <Suspense
+      fallback={
+        <>
+          <WideMain />
+          <PageSkeleton title={t.map.title} kind="map" />
+        </>
+      }
+    >
       <Graves t={t} locale={locale} personPromise={searchParams.then((s) => String(s.person ?? ""))} />
     </Suspense>
   );
@@ -53,43 +60,36 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
   const unmarked = people.filter((p) => !p.is_living && p.status !== "rejected" && !seen.has(p.id) && !isUnknownParent(p));
   const personIds = [...graves.map((g) => g.person_id), ...unmarked.map((p) => p.id)];
 
+  // Only what the map shows: counts of photos and memories, the grave photo, and faces.
   const [tagged, memories, gravePhotos] = await Promise.all([
     personIds.length
-      ? supabase.from("media_persons").select("person_id, media:media(storage_path, status, created_at)").in("person_id", personIds)
-      : Promise.resolve({ data: [] as Array<{ person_id: string; media: unknown }> }),
+      ? supabase.from("media_persons").select("person_id, media:media!inner(status)").in("person_id", personIds).neq("media.status", "rejected")
+      : Promise.resolve({ data: [] as Array<{ person_id: string }> }),
     personIds.length
-      ? supabase.from("memories").select("person_id, body, author_id, created_at").in("person_id", personIds).neq("status", "rejected").order("created_at")
-      : Promise.resolve({ data: [] as Array<{ person_id: string; body: string; author_id: string; created_at: string }> }),
+      ? supabase.from("memories").select("person_id").in("person_id", personIds).neq("status", "rejected")
+      : Promise.resolve({ data: [] as Array<{ person_id: string }> }),
     graves.some((g) => g.photo_id)
       ? supabase.from("media").select("id, storage_path").in("id", graves.map((g) => g.photo_id).filter(Boolean) as string[])
       : Promise.resolve({ data: [] as Array<{ id: string; storage_path: string }> }),
   ]);
-
-  type M = { storage_path: string; status: string; created_at: string };
-  const photosOf = new Map<string, string[]>();
-  for (const r of tagged.data ?? []) {
-    const m = r.media as M | null;
-    if (!m || m.status === "rejected") continue;
-    const list = photosOf.get(r.person_id) ?? [];
-    if (list.length < 12) photosOf.set(r.person_id, [...list, m.storage_path]);
-  }
+  const count = (rows: Array<{ person_id: string }> | null) => {
+    const m = new Map<string, number>();
+    for (const r of rows ?? []) m.set(r.person_id, (m.get(r.person_id) ?? 0) + 1);
+    return m;
+  };
+  const photoCount = count(tagged.data as Array<{ person_id: string }> | null);
+  const memoryCount = count(memories.data as Array<{ person_id: string }> | null);
   const gravePhotoPath = new Map((gravePhotos.data ?? []).map((m) => [m.id, m.storage_path]));
-  const [urls, portraits, authors] = await Promise.all([
-    signedUrls(locale, [...[...photosOf.values()].flat(), ...gravePhotoPath.values()]),
+  const [urls, portraits] = await Promise.all([
+    signedUrls(locale, [...gravePhotoPath.values()]),
     portraitUrls(locale, personIds.map((id) => byId.get(id)!)),
-    profileNames(locale, (memories.data ?? []).map((m) => m.author_id)),
   ]);
 
   const gens = generations(people, rels);
-  const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
   const canEdit = can.edit(current.role);
   const canAddGrave = can.add(current.role);
-  const extra = (id: string) => ({
-    photos: (photosOf.get(id) ?? []).map((path) => urls.get(path)).filter((u): u is string => !!u),
-    memories: (memories.data ?? [])
-      .filter((m) => m.person_id === id)
-      .map((m) => ({ body: m.body, author: authors.get(m.author_id) ?? "", date: dateFmt.format(new Date(m.created_at)) })),
-  });
+  const extra = (id: string) => ({ photoCount: photoCount.get(id) ?? 0, memoryCount: memoryCount.get(id) ?? 0 });
+
   const items: GraveItem[] = graves.map((g) => {
     const p = byId.get(g.person_id)!;
     return {

@@ -20,8 +20,9 @@ export type GraveItem = {
   lng: number | null;
   pending: boolean;
   gravePhoto?: string;
-  photos: string[];
-  memories: Array<{ body: string; author: string; date: string }>;
+  /** How many photos and memories the person has (shown as links to the profile). */
+  photoCount: number;
+  memoryCount: number;
   profileHref: string;
   editHref?: string;
 };
@@ -309,10 +310,10 @@ export function GravesExplorer({
           </div>
           <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[0.88rem]">
             <Link href={current.profileHref} className="text-ink-muted hover:text-ink hover:underline">
-              {labels.tabPhotos} ({current.photos.length})
+              {labels.tabPhotos} ({current.photoCount})
             </Link>
             <Link href={current.profileHref} className="text-ink-muted hover:text-ink hover:underline">
-              {labels.tabMemories} ({current.memories.length})
+              {labels.tabMemories} ({current.memoryCount})
             </Link>
             {current.editHref && isMarked(current) && (
               <Link href={current.editHref} className="ml-auto font-semibold text-ink-muted hover:text-ink hover:underline">
