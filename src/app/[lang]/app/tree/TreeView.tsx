@@ -552,7 +552,7 @@ export function TreeView({
         // A faint paper grain, like a family album page.
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .22 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
       }}
-      className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "fixed inset-0 z-40 h-dvh border-0" : "rounded-[18px]"}`}>
+      className={`overflow-hidden transition-colors duration-300 ${full ? "fixed inset-0 z-40 h-dvh" : "relative rounded-[18px] border border-line/60"}`}>
       {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className="flex flex-wrap items-center gap-2">
