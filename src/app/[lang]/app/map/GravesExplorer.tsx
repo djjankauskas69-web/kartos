@@ -131,6 +131,7 @@ export function GravesExplorer({
         selectedId={selected && current && isMarked(current) ? selected : null}
         onSelect={choose}
         fitKey={fitKey}
+        padLeft={listOpen ? 352 : 0}
         layerAt="right"
         layerLabels={{ map: labels.layerMap, satellite: labels.layerSatellite }}
         scrollZoom

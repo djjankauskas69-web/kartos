@@ -46,6 +46,7 @@ type Props = {
   onCenter?: (lat: number, lng: number) => void;
   /** Where the Map / Satellite switch sits (right when a panel covers the left). */
   layerAt?: "left" | "right";
+  padLeft?: number;
   /** Bump to show every marker again. */
   fitKey?: number;
 };
@@ -126,6 +127,7 @@ export default function LeafletMap({
   onCenter,
   layerAt = "left",
   fitKey = 0,
+  padLeft = 0,
 }: Props) {
   const [layer, setLayer] = useState<BaseLayer>(baseLayer);
   const base = useRef<L.Layer | null>(null);
@@ -204,7 +206,7 @@ export default function LeafletMap({
     }
     const fit = () => {
       if (bounds.length === 1) m.setView(bounds[0], 17);
-      else m.fitBounds(L.latLngBounds(bounds), { padding: [48, 48], maxZoom: 17 });
+      else m.fitBounds(L.latLngBounds(bounds), { paddingTopLeft: [48 + (m.getSize().x >= 640 ? padLeft : 0), 72], paddingBottomRight: [48, 48], maxZoom: 17 });
     };
     if (m.getSize().x > 0) fit();
     else pendingFit.current = fit;
@@ -235,7 +237,7 @@ export default function LeafletMap({
     if (!m || !fitKey || placed.current.size === 0) return;
     const pts = [...placed.current.values()].map((mk) => mk.getLatLng());
     if (pts.length === 1) m.setView(pts[0], 16, { animate: true });
-    else m.fitBounds(L.latLngBounds(pts), { padding: [64, 64], maxZoom: 17, animate: true });
+    else m.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [56 + (m.getSize().x >= 640 ? padLeft : 0), 72], paddingBottomRight: [56, 56], maxZoom: 17, animate: true });
   }, [fitKey]);
 
   // Jump to a place without a pin.

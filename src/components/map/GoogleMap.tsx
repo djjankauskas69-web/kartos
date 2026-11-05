@@ -22,6 +22,8 @@ type Props = {
   accuracy?: number | null;
   onCenter?: (lat: number, lng: number) => void;
   layerAt?: "left" | "right";
+  /** Room kept free on the left (a panel lies over the map there), in px, on wide screens. */
+  padLeft?: number;
   /** Bump to show every marker again. */
   fitKey?: number;
 };
@@ -121,7 +123,13 @@ export default function GoogleMap({
   onCenter,
   layerAt = "left",
   fitKey = 0,
+  padLeft = 0,
 }: Props) {
+  // Every grave in view, clear of the panel and the buttons along the top.
+  const pad = () => {
+    const wide = (el.current?.clientWidth ?? 0) >= 640;
+    return wide ? { top: 72, right: 56, bottom: 56, left: 56 + padLeft } : { top: 72, right: 40, bottom: 40, left: 40 };
+  };
   const el = useRef<HTMLDivElement>(null);
   const [g, setG] = useState<any>(null);
   const map = useRef<any>(null);
@@ -208,7 +216,7 @@ export default function GoogleMap({
       m.setCenter({ lat: markers[0].lat, lng: markers[0].lng });
       m.setZoom(17);
     } else {
-      m.fitBounds(bounds, 48);
+      m.fitBounds(bounds, pad());
       g.maps.event.addListenerOnce(m, "idle", () => m.getZoom() > 17 && m.setZoom(17));
     }
     const current = placed.current;
@@ -247,7 +255,7 @@ export default function GoogleMap({
     if (placed.current.size === 1) {
       m.panTo(b.getCenter());
       m.setZoom(16);
-    } else m.fitBounds(b, 64);
+    } else m.fitBounds(b, pad());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on explicit requests
   }, [fitKey]);
 
