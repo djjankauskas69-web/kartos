@@ -140,23 +140,17 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree${s ? `?${s}` : ""}`;
   };
   // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
-  const header = (subtitle: React.ReactNode, view: "tree" | "list") => (
+  const header = (subtitle: React.ReactNode) => (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
       <h1 className="text-[1.7rem] font-semibold leading-none tracking-[-0.03em]">{t.tree.title}</h1>
       <div className="min-w-0 text-[0.92rem] text-ink-muted/80">{subtitle}</div>
-      {view === "list" && (
-        <Link href={viewHrefFor("tree")} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full border border-line bg-surface px-3.5 text-[0.9rem] font-semibold hover:border-ink/40">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1.2" /><rect x="3" y="16" width="6" height="5" rx="1.2" /><rect x="15" y="16" width="6" height="5" rx="1.2" /><path d="M12 8v4M6 16v-4h12v4" /></svg>
-          {t.tree.viewTree}
-        </Link>
-      )}
     </div>
   );
 
   if (people.length === 0) {
     return (
       <div>
-        {header(null, "tree")}
+        {header(null)}
         {host}
         <div className={`px-6 py-10 text-center ${cls.card}`}>
           <p className="text-ink-muted">{t.tree.empty}</p>
@@ -182,12 +176,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     const genLabel = Object.fromEntries(
       [...new Set(gens.values())].map((n) => {
         const rel = myGen != null ? genOf[String(myGen - n)] : undefined;
-        return [n, `${t.tree.generationN.replace("{n}", roman(n))}${rel ? ` · ${rel}` : ""}`];
+        // Same names as beside the tree ("Seneliai", "Tėvai"); numbered when you are not marked.
+        const named = myGen != null ? (t.tree.genRel as Record<string, string>)[String(n - myGen)] : undefined;
+        return [n, named ?? `${t.tree.generationN.replace("{n}", roman(n))}${rel ? ` · ${rel}` : ""}`];
       }),
     );
     return (
-      <div>
-        {header(subtitleWhole, "list")}
+      <div className="tree-wide">
+        <WideMain />
+        {header(subtitleWhole)}
         {host}
         <ListView
           people={people.map((p) => ({
@@ -206,7 +203,9 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           }))}
           genLabel={genLabel}
           canEdit={can.edit(current.role)}
-          labels={{ search: t.tree.listSearch, show: t.tree.listShow, empty: t.tree.listEmpty, pending: t.app.pending, all: t.tree.listAll, living: t.tree.listLiving, deceased: t.tree.listDeceased, born: t.tree.listBorn, fill: t.tree.listFill }}
+          treeHref={viewHrefFor("tree")}
+          loose={looseInfo}
+          labels={{ search: t.tree.listSearch, show: t.tree.listShow, empty: t.tree.listEmpty, pending: t.app.pending, all: t.tree.listAll, living: t.tree.listLiving, deceased: t.tree.listDeceased, born: t.tree.listBorn, fill: t.tree.listFill, filter: t.tree.listFilter, viewTree: t.tree.viewTree, viewList: t.tree.viewList, fullscreen: t.tree.fullscreen, exitFullscreen: t.tree.exitFullscreen }}
         />
       </div>
     );
@@ -342,7 +341,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   return (
     <div className="tree-wide">
       <WideMain />
-      {header(subtitle, "tree")}
+      {header(subtitle)}
       {host}
       <TreeView
         cards={tree.cards}
