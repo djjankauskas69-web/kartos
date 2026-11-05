@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { looksLikeFileName } from "@/lib/archive";
 import { LogoLoader } from "@/components/LogoLoader";
+import { CommentDrift } from "@/components/CommentDrift";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
@@ -519,63 +520,30 @@ export function Detail({
 const COMMENT_MAX = 50;
 
 /** A few words from the family under a photo, quietly: the notes, then one short line to add yours. */
-const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
 
 /**
- * The family's comments drift over the photo one at a time, like a live chat: each shows
- * for a few seconds (face, name, words) and gives way to the next. A new one shows at once.
+ * The family's comments over the photo, one at a time: the one being read is clear, the next
+ * waits under it in a fog, and they move up in turn (see CommentDrift).
  */
 function CommentTicker({ comments, t, locale }: { comments: NonNullable<ArchiveItem["comments"]>; t: L; locale: Locale }) {
-  const total = comments.length;
-  const [i, setI] = useState(0);
-  const [out, setOut] = useState(false);
-  const [seen, setSeen] = useState(total);
-  // A comment just added: jump to it.
-  if (total !== seen) {
-    setSeen(total);
-    setI(Math.max(0, total - 1));
-    setOut(false);
-  }
-  useEffect(() => {
-    if (total < 2) return;
-    const leave = window.setTimeout(() => setOut(true), 3600);
-    const next = window.setTimeout(() => {
-      setI((n) => (n + 1) % total);
-      setOut(false);
-    }, 4000);
-    return () => {
-      window.clearTimeout(leave);
-      window.clearTimeout(next);
-    };
-  }, [i, total]);
-  const c = comments[Math.min(i, total - 1)];
-  if (!c) return null;
+  if (!comments.length) return null;
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/40 to-transparent p-3 pt-14 sm:p-4 sm:pt-16">
-      <div
-        key={c.id}
-        className={`group/c pointer-events-auto flex w-fit max-w-[min(26rem,100%)] animate-[live-in_420ms_cubic-bezier(0.2,0.7,0.2,1)_both] items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-4 text-white shadow-[0_6px_18px_-10px_rgb(0_0_0/0.6)] backdrop-blur-md transition-[opacity,transform] duration-400 ${out ? "-translate-y-2 opacity-0" : ""}`}
-      >
-        {c.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-          <img src={c.avatar} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/40" />
-        ) : (
-          <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-[0.75rem] font-semibold">
-            {initials(c.author)}
-          </span>
-        )}
-        <span className="min-w-0 text-[0.92rem] leading-snug">
-          <span className="block text-[0.78rem] font-semibold text-white/70">{c.author}</span>
-          <span className="block break-words">{c.body}</span>
-        </span>
-        {c.canDelete && (
-          <form action={async (f) => void (await deleteComment(f))} className="shrink-0 opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
-            <input type="hidden" name="locale" value={locale} />
-            <input type="hidden" name="id" value={c.id} />
-            <button type="submit" aria-label={t.delete} title={t.delete} className="text-white/70 hover:text-white">×</button>
-          </form>
-        )}
-      </div>
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/45 to-transparent p-3 pt-14 sm:p-4 sm:pt-16">
+      <CommentDrift
+        comments={comments.map((c) => ({
+          id: c.id,
+          name: c.author,
+          text: c.body,
+          avatar: c.avatar,
+          extra: c.canDelete ? (
+            <form action={async (f) => void (await deleteComment(f))} className="shrink-0 opacity-0 transition group-hover/c:opacity-100 focus-within:opacity-100">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="id" value={c.id} />
+              <button type="submit" aria-label={t.delete} title={t.delete} className="text-white/70 hover:text-white">×</button>
+            </form>
+          ) : undefined,
+        }))}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Scribble } from "@/components/Scribble";
 import { FadeIn, Parallax, RevealWords, StickyStory } from "@/components/motion/Scroll";
 import { TreeShowcase } from "@/components/motion/TreeShowcase";
 import { PHOTOS } from "./landing-photos";
+import { CommentDrift } from "@/components/CommentDrift";
 
 export default async function Home() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -430,17 +431,8 @@ function Together({ t }: { t: Dictionary }) {
         <article className={card}>
           <div className={pic}>
             <Photo src={PHOTOS.floating[1]} alt="" className="absolute inset-0 h-full w-full" />
-            <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16">
-              {t.landing.storyComments.slice(0, 2).map((c, i) => (
-                <div key={c.name} className="flex items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-4 text-white backdrop-blur-md">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
-                  <img src={["/landing/face-ruta.jpg", "/landing/face-vytautas.jpg"][i]} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/40" />
-                  <span className="text-[0.88rem] leading-snug">
-                    <span className="block text-[0.75rem] font-semibold text-white/70">{c.name}</span>
-                    {c.text}
-                  </span>
-                </div>
-              ))}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16">
+              <CommentDrift comments={t.landing.storyComments.map((c, i) => ({ id: c.name, name: c.name, text: c.text, avatar: ["/landing/face-ruta.jpg", "/landing/face-vytautas.jpg", "/landing/face-tomas.jpg"][i] }))} />
             </div>
           </div>
           <div className="p-6">
