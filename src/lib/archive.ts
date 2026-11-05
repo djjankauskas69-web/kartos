@@ -15,3 +15,10 @@ export function folderLabel(t: Dictionary, f: FolderRow) {
   if (f.name) return f.name;
   return (t.archive.preset as Record<string, string>)[f.preset ?? ""] ?? f.preset ?? "";
 }
+
+/** Camera and download names ("EFauSGRKXt2U NzHx…", "IMG 2041") are not real titles. */
+export function looksLikeFileName(title: string) {
+  const words = title.trim().split(/\s+/);
+  if (/^(img|dsc|dscn|pxl|photo|image|screenshot)\b/i.test(title) && /\d{3,}/.test(title)) return true;
+  return words.some((w) => w.length >= 8 && /\d/.test(w) && /[a-z]/.test(w) && /[A-Z]/.test(w));
+}

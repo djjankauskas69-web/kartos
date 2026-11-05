@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { looksLikeFileName } from "@/lib/archive";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
@@ -262,120 +263,161 @@ export function Detail({
     setDownloading(false);
   }
 
-  const arrow = "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-xl border border-line bg-surface text-ink shadow-sm hover:border-ink/40";
+  const people_ = item.people.length > 0 && (
+    <p className="flex flex-wrap gap-1.5">
+      {item.people.map((p) => (
+        <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.92rem] font-semibold hover:underline">
+          {personName.get(p) ?? "—"}
+        </Link>
+      ))}
+    </p>
+  );
   const link = "font-semibold text-ink-muted hover:text-ink hover:underline";
-
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-5 sm:px-8">
-        <h2 className="min-w-0 truncate text-[1.5rem] font-semibold leading-tight">{item.title || t.kind[item.kind]}</h2>
-        <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.5rem] hover:bg-paper" aria-label={t.close}>
-          ×
+  const editLinks = (item.canEdit || (canCover && item.kind === "photo" && item.folderId)) && (
+    <p className="flex flex-wrap gap-x-5 gap-y-1 text-[0.92rem]">
+      {item.canEdit && (
+        <button type="button" onClick={() => setEditing(true)} className={link}>
+          {t.edit}
         </button>
-      </div>
+      )}
+      {item.kind === "photo" && item.folderId && canCover && (
+        <button
+          type="button"
+          disabled={covered}
+          onClick={async () => {
+            const f = new FormData();
+            f.set("locale", locale);
+            f.set("id", item.folderId!);
+            f.set("mediaId", item.id);
+            await setAlbumCover(f);
+            setCovered(true);
+          }}
+          className={`${link} disabled:no-underline`}
+        >
+          {covered ? `✓ ${t.isCover}` : t.makeCover}
+        </button>
+      )}
+    </p>
+  );
+  const actions = confirm ? (
+    <form
+      action={async (form) => {
+        const r = await deleteItem(form);
+        if (r.ok) onClose();
+      }}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="id" value={item.id} />
+      <span className="w-full text-[0.95rem] font-semibold">{t.deleteAsk}</span>
+      <button type="submit" className="min-h-11 rounded-full bg-danger px-5 font-semibold text-surface">{t.deleteConfirm}</button>
+      <button type="button" onClick={() => setConfirm(false)} className="min-h-11 rounded-full border border-line px-5 font-semibold">{t.cancel}</button>
+    </form>
+  ) : (
+    <div className="flex items-center gap-2">
+      {item.url && (
+        <button type="button" onClick={download} disabled={downloading} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" /></svg>
+          {downloading ? "…" : t.download}
+        </button>
+      )}
+      {item.canDelete && (
+        <button type="button" onClick={() => setConfirm(true)} aria-label={t.delete} title={t.delete} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-muted hover:border-danger/40 hover:text-danger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.8 12.2h9.4L17.5 7M10 10.5v5.5M14 10.5v5.5" /></svg>
+        </button>
+      )}
+    </div>
+  );
+  const closeBtn = (
+    <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-ink focus:outline-none" aria-label={t.close}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+    </button>
+  );
 
-      {/* The picture large in the middle, with the next and previous a click away */}
-      <div className="relative px-6 sm:px-20">
-        {onPrev && (
-          <button type="button" onClick={onPrev} aria-label={t.slidePrev} title={t.slidePrev} className={`${arrow} left-3 sm:left-6`}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
-          </button>
-        )}
-        <div className={`mx-auto flex items-center justify-center overflow-hidden ${item.kind === "story" ? "max-h-[60vh] max-w-2xl overflow-y-auto rounded-2xl ring-1 ring-line" : "h-[min(58vh,36rem)]"}`}>
-          {item.kind === "story" && item.url && (
+  // Stories read like a page: the text large, details below.
+  if (item.kind === "story")
+    return (
+      <div>
+        <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-5 sm:px-8">
+          <h2 className="min-w-0 truncate text-[1.5rem] font-semibold leading-tight">{item.title || t.kind[item.kind]}</h2>
+          {closeBtn}
+        </div>
+        <div className="mx-6 max-h-[60vh] overflow-y-auto rounded-2xl ring-1 ring-line sm:mx-8">
+          {item.url && (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
             <img src={item.url} alt="" className="max-h-80 w-full object-cover" />
           )}
-          {item.kind !== "story" && item.url && !item.pdf ? (
-            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-            <img src={item.url} alt={item.title} className="max-h-full max-w-full object-contain shadow-[0_12px_30px_-18px_rgb(28_29_26/0.5)]" />
-          ) : (
-            <div className={item.kind === "story" ? "w-full" : "aspect-[3/4] h-full"}>
-              <Preview item={item} large />
-            </div>
-          )}
+          <Preview item={item} large />
         </div>
+        <div className="space-y-3 px-6 pb-6 pt-5 sm:px-8">
+          {facts.length > 0 && <p className="text-ink-muted">{facts.join(" · ")}</p>}
+          {people_}
+          {editLinks}
+          <div className="max-w-xs">{actions}</div>
+        </div>
+      </div>
+    );
+
+  // A photo or a document: the picture on a calm backdrop, the details in a narrow column beside it.
+  const arrow = "absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_6px_18px_-8px_rgb(28_29_26/0.5)] backdrop-blur transition hover:bg-white focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ink/40 sm:opacity-0 sm:group-hover/pic:opacity-100";
+  const title = item.title && !looksLikeFileName(item.title) ? item.title : "";
+  const details = [
+    item.dateLabel && [t.date ?? "", item.dateLabel],
+    item.place && [t.place, item.place],
+    item.folderId && folderName.get(item.folderId) && [t.folder, folderName.get(item.folderId)!],
+    item.uploader && [t.uploadedBy, item.uploader],
+  ].filter(Boolean) as Array<[string, string]>;
+  return (
+    <div className="relative flex flex-col md:h-[min(86dvh,48rem)] md:flex-row">
+      {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
+      <div className="absolute right-3 top-3 z-20 rounded-full bg-white/90 shadow-sm md:bg-transparent md:shadow-none">{closeBtn}</div>
+      <div className="group/pic relative flex min-h-[44dvh] flex-1 items-center justify-center bg-[#f1ece2] p-4 sm:p-8">
+        {item.url && !item.pdf ? (
+          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+          <img src={item.url} alt={title} className="max-h-[44dvh] max-w-full rounded-[6px] object-contain shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)] md:max-h-full" />
+        ) : (
+          <div className="aspect-[3/4] h-[44dvh] md:h-full">
+            <Preview item={item} large />
+          </div>
+        )}
+        {onPrev && (
+          <button type="button" onClick={onPrev} aria-label={t.slidePrev} title={t.slidePrev} className={`${arrow} left-3 sm:left-5`}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+        )}
         {onNext && (
-          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-6`}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-5`}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
           </button>
         )}
       </div>
 
-      <div className="grid gap-x-8 gap-y-5 px-6 pb-6 pt-6 sm:px-8 md:grid-cols-[1fr_auto]">
-        <div className="min-w-0 space-y-2">
-          {item.pending && <p className="w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.9rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
-          {facts.length > 0 && <p className="text-[1rem] text-ink-muted">{facts.join(" · ")}</p>}
-          {item.people.length > 0 && (
-            <p className="flex flex-wrap gap-1.5">
-              {item.people.map((p) => (
-                <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.95rem] font-semibold hover:underline">
-                  {personName.get(p) ?? "—"}
-                </Link>
+      <aside className="flex w-full flex-col border-line md:w-[21rem] md:shrink-0 md:border-l">
+        <div className={`items-start justify-between gap-3 py-1 pl-5 pr-14 pt-4 md:flex md:min-h-14 ${title || item.pending ? "flex" : "hidden"}`}>
+          <div className="min-w-0 pt-1.5">
+            {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
+            {item.pending && <p className="mt-1 w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.85rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
+          </div>
+        </div>
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-4 md:pt-2">
+          {details.length > 0 && (
+            <dl className="space-y-1.5 text-[0.95rem]">
+              {details.map(([k, v]) => (
+                <div key={k + v} className="flex gap-3">
+                  <dt className="w-24 shrink-0 text-ink-muted">{k}</dt>
+                  <dd className="min-w-0 break-words">{v}</dd>
+                </div>
               ))}
-            </p>
+            </dl>
           )}
-          {item.kind !== "story" && item.description && <p className="whitespace-pre-line text-[1.02rem] leading-relaxed">{item.description}</p>}
-          {(item.canEdit || (canCover && item.kind === "photo" && item.folderId)) && (
-            <p className="flex flex-wrap gap-x-5 gap-y-1 pt-1 text-[0.95rem]">
-              {item.canEdit && (
-                <button type="button" onClick={() => setEditing(true)} className={link}>
-                  {t.edit}
-                </button>
-              )}
-              {item.kind === "photo" && item.folderId && canCover && (
-                <button
-                  type="button"
-                  disabled={covered}
-                  onClick={async () => {
-                    const f = new FormData();
-                    f.set("locale", locale);
-                    f.set("id", item.folderId!);
-                    f.set("mediaId", item.id);
-                    await setAlbumCover(f);
-                    setCovered(true);
-                  }}
-                  className={`${link} disabled:no-underline`}
-                >
-                  {covered ? `✓ ${t.isCover}` : t.makeCover}
-                </button>
-              )}
-            </p>
-          )}
+          {item.shared && <p className="w-fit rounded-full bg-linen px-3 py-1 text-[0.85rem] font-semibold text-ink/80">{t.everyone}</p>}
+          {people_}
+          {item.description && <p className="whitespace-pre-line text-[0.98rem] leading-relaxed">{item.description}</p>}
+          {editLinks}
           <Comments item={item} t={t} locale={locale} canAdd={canComment} />
         </div>
-
-        <div className="flex flex-wrap items-end justify-end gap-3 self-end">
-          {confirm ? (
-            <form
-              action={async (form) => {
-                const r = await deleteItem(form);
-                if (r.ok) onClose();
-              }}
-              className="flex flex-wrap items-center gap-2"
-            >
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="id" value={item.id} />
-              <span className="font-semibold">{t.deleteAsk}</span>
-              <button type="submit" className="min-h-12 rounded-xl bg-danger px-5 font-semibold text-surface">{t.deleteConfirm}</button>
-              <button type="button" onClick={() => setConfirm(false)} className="min-h-12 rounded-xl border border-line px-5 font-semibold">{t.cancel}</button>
-            </form>
-          ) : (
-            <>
-              {item.canDelete && (
-                <button type="button" onClick={() => setConfirm(true)} className="min-h-12 rounded-xl border border-line bg-surface px-6 text-[1.02rem] font-semibold hover:border-danger/40 hover:text-danger">
-                  {t.delete}
-                </button>
-              )}
-              {item.url && (
-                <button type="button" onClick={download} disabled={downloading} className="min-h-12 rounded-xl bg-ink px-6 text-[1.02rem] font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
-                  {downloading ? "…" : t.download}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+        <div className="border-t border-line px-5 py-4">{actions}</div>
+      </aside>
     </div>
   );
 }
