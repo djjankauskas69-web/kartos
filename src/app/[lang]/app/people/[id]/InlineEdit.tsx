@@ -68,14 +68,14 @@ export function InlineEdit({
 
   if (!editing) {
     return (
-      <span className={`inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 ${className}`}>
+      <>
         <button
           type="button"
           onClick={() => {
             flash(null);
             setEditing(true);
           }}
-          className="group/ie -mx-2 inline-flex max-w-full cursor-text items-center gap-2 rounded-xl px-2 text-left hover:bg-white/70 focus-visible:bg-white/70"
+          className={`group/ie -mx-2 inline-flex max-w-full cursor-text items-center gap-2 rounded-xl px-2 text-left align-middle hover:bg-white/70 focus-visible:bg-white/70 ${className}`}
         >
           <span className="min-w-0">{children}</span>
           {/* Always there, faintly, so it is clear on a phone too that this can be changed. */}
@@ -86,7 +86,7 @@ export function InlineEdit({
           <span className="sr-only">{hint}</span>
         </button>
         {undo && (
-          <span role="status" className="inline-flex animate-[live-in_.35s_ease-out] items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.9rem] font-semibold text-olive-deep">
+          <span role="status" className="ml-3 inline-flex animate-[live-in_.35s_ease-out] items-center align-middle gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.9rem] font-semibold text-olive-deep">
             {labels.saved}
             <button
               type="button"
@@ -101,7 +101,7 @@ export function InlineEdit({
             </button>
           </span>
         )}
-      </span>
+      </>
     );
   }
 
