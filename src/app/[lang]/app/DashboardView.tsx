@@ -123,7 +123,6 @@ export function DashboardView(props: DashboardData) {
       {/* The latest memory, to read right here: what the archive is for */}
       {latestMemory && (
         <Link href={latestMemory.href} className={`group relative block overflow-hidden p-6 sm:p-8 ${card} bg-[#f8f4ec] hover:border-ink/25`}>
-          <span aria-hidden="true" className="pointer-events-none absolute -right-2 -top-6 font-serif text-[9rem] leading-none text-[#e9dfcb]">”</span>
           <p className="relative flex items-center gap-2 text-[0.95rem] font-semibold text-sage-deep">
             <IconQuote size={18} />
             {d.memoryTitle}
