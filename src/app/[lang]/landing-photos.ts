@@ -3,8 +3,8 @@
  * public/landing/ with the same names (JPG, about 1200 px on the long side).
  */
 export const PHOTOS = {
-  heroBackground: "/landing/hero-hills.jpg",
-  heroBackgroundSmall: "/landing/hero-hills-sm.jpg",
+  heroBackground: "/landing/hero-meadow.jpg",
+  heroBackgroundSmall: "/landing/hero-meadow-sm.jpg",
   hero: "/landing/photo-01.jpg",
   // "Memories that don't fade": real old photos (two girls, a box of portraits, a man in a hat,
   // a framed family photo, soldiers' portrait, an album page).
