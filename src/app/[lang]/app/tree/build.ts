@@ -135,7 +135,9 @@ export function buildTree({
       ...partner,
       ...(parentCount < 2 && !hasSex("male") ? [{ label: t.family.addFather, href: rel("father"), group: "parent" as const }] : []),
       ...(parentCount < 2 && !hasSex("female") ? [{ label: t.family.addMother, href: rel("mother"), group: "parent" as const }] : []),
-      ...(parentCount > 0 ? [{ label: t.family.addBrother, href: rel("brother"), group: "sibling" as const }, { label: t.family.addSister, href: rel("sister"), group: "sibling" as const }] : []),
+      // With no parents known yet, an "unknown parent" is made to join the brothers and sisters.
+      { label: t.family.addBrother, href: rel("brother"), group: "sibling" as const },
+      { label: t.family.addSister, href: rel("sister"), group: "sibling" as const },
     ];
     return out;
   };
@@ -185,15 +187,18 @@ export function buildTree({
         moreBelow: n.moreBelow,
       };
     }
+    // The "unknown parent" made for brothers and sisters: a quiet card until someone names them.
+    const unknown = p.given_names.trim() === "?" && !p.surname;
     return {
       key: n.key,
       id: n.id,
       x: n.x,
       y: n.y,
-      name: [p.given_names, p.surname].filter(Boolean).join(" "),
+      name: unknown ? t.tree.unknownParent : [p.given_names, p.surname].filter(Boolean).join(" "),
+      unknown,
       years: years(p),
       portrait: portraits[n.id],
-      initials: `${p.given_names.trim()[0] ?? ""}${p.surname?.trim()[0] ?? ""}`.toUpperCase(),
+      initials: unknown ? "?" : `${p.given_names.trim()[0] ?? ""}${p.surname?.trim()[0] ?? ""}`.toUpperCase(),
       living: p.is_living,
       pending: p.status === "pending",
       gen: gens.get(n.id) ?? 1,

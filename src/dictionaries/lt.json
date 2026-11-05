@@ -501,7 +501,8 @@
       "missing": "Nenurodytas vienas iš tėvų",
       "there": "Tėvai įrašyti „{family}“ medyje, todėl pažymima ten.",
       "open": "Atidaryti „{family}“"
-    }
+    },
+    "unknownParent": "Tėvai nežinomi"
   },
   "family": {
     "title": "Šeima",

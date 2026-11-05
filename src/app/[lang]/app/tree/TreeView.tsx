@@ -106,6 +106,8 @@ export type TreeCard = {
   addOptions: Array<{ label: string; href: string; group: AddGroup }>;
   /** You. */
   me?: boolean;
+  /** A placeholder parent ("Parents unknown"), drawn faintly. */
+  unknown?: boolean;
   /** Only one parent known, who has several partners: which one is the other parent? */
   missingParent?: { kind: "mother" | "father"; options: Array<{ id: string; name: string }>; openHref?: string; family?: string };
   /** Has their own family tree in an archive you are not in. */
@@ -855,7 +857,7 @@ export function TreeView({
                 style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
+                className={`group absolute transition-opacity duration-200 ${c.unknown ? "[&>span:first-child]:border-dashed [&>span:first-child]:bg-transparent opacity-70" : ""} ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
               >
                 {/* The card under the portrait: the medallion sits on its top edge. */}
                 <span

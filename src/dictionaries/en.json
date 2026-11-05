@@ -501,7 +501,8 @@
       "missing": "One parent not given",
       "there": "The parents are recorded in “{family}”, so it's marked there.",
       "open": "Open “{family}”"
-    }
+    },
+    "unknownParent": "Parents unknown"
   },
   "family": {
     "title": "Family",
