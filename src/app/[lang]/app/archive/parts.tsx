@@ -139,6 +139,9 @@ export function DialogHead({ title, onClose, closeLabel }: { title: string; onCl
   );
 }
 
+/** Whether the details beside a photo are open; kept while you move between photos. */
+let detailsOpen = false;
+
 export function Detail({
   item,
   t,
@@ -185,8 +188,13 @@ export function Detail({
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, onPrev, onNext]);
   const [confirm, setConfirm] = useState(false);
-  // On a phone the photo comes first; the details open with the (i) button.
-  const [info, setInfo] = useState(false);
+  // The photo comes first; the details open with the (i) button and stay open (or closed)
+  // while you go through the photos.
+  const [info, setInfoState] = useState(() => detailsOpen);
+  const setInfo = (v: boolean) => {
+    detailsOpen = v;
+    setInfoState(v);
+  };
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;
 
@@ -370,29 +378,32 @@ export function Detail({
     item.uploader && [t.uploadedBy, item.uploader],
   ].filter(Boolean) as Array<[string, string]>;
   return (
-    <div className="relative flex flex-col md:h-[min(94dvh,64rem)] md:flex-row">
+    <div className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]">
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
-      <div className="absolute right-3 top-3 z-20 rounded-full bg-white/90 shadow-sm md:bg-transparent md:shadow-none">{closeBtn}</div>
-      <button
-        type="button"
-        onClick={() => setInfo((v) => !v)}
-        aria-expanded={info}
-        aria-label={t.photoInfo}
-        title={t.photoInfo}
-        className={`absolute left-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-sm focus:outline-none md:hidden ${info ? "bg-ink text-white" : "bg-white/90 text-ink"}`}
-      >
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
-      </button>
+      <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setInfo(!info)}
+          aria-expanded={info}
+          aria-label={t.photoInfo}
+          title={t.photoInfo}
+          className={`flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition-colors focus:outline-none ${info ? "bg-ink text-white" : "bg-white/90 text-ink hover:bg-white"}`}
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
+        </button>
+        <div className="rounded-full bg-white/90 shadow-sm">{closeBtn}</div>
+      </div>
       {/* The page shows dimmed behind the photo; only the details column is a card. */}
-      <div className="flex min-w-0 flex-1 flex-col">
-      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 sm:px-16 sm:py-3 md:pt-3">
+      {/* The photo stays in the middle of the screen; with the details open, the same room is left on both sides. */}
+      <div className="flex min-w-0 flex-col md:h-full">
+      <div className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 transition-[padding] duration-300 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}>
         {item.url && !item.pdf ? (
           // The comment line sits under the photo, starting at its left edge.
           <div className="flex max-w-full flex-col items-start gap-2.5">
             {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
             <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)]">
               {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
+              <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`} />
               {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
             </div>
             {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
@@ -408,15 +419,15 @@ export function Detail({
           </button>
         )}
         {onNext && (
-          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-5`}>
+          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-5 ${info ? "md:right-[21.5rem]" : ""}`}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
           </button>
         )}
       </div>
       </div>
 
-      <aside className={`w-full flex-col rounded-[20px] bg-surface md:flex md:w-[20rem] md:shrink-0 ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
-        <div className={`items-start justify-between gap-3 py-1 pl-5 pr-14 pt-4 md:flex md:min-h-14 ${title || item.pending ? "flex" : "hidden"}`}>
+      <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
+        <div className={`items-start justify-between gap-3 py-1 pl-5 pr-28 pt-4 md:flex md:min-h-16 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
             {item.pending && <p className="mt-1 w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.85rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
