@@ -164,7 +164,9 @@ export function lifeSpan(p: Pick<Person, "birth_year" | "death_year" | "is_livin
   return "";
 }
 
-export function fullName(p: Pick<Person, "given_names" | "surname">) {
+export function fullName(p: Pick<Person, "given_names" | "surname">, locale?: string) {
+  // The "unknown parent" made when adding a brother or sister before the parents are known.
+  if (p.given_names.trim() === "?" && !p.surname) return locale === "en" ? "Parents unknown" : "Tėvai nežinomi";
   return [p.given_names, p.surname].filter(Boolean).join(" ");
 }
 

@@ -75,7 +75,7 @@ export function PlaceSearch({
   const [active, setActive] = useState(0);
   const lib = useRef<PlacesLib | null>(null);
   const token = useRef<unknown>(null);
-  const skip = useRef(false);
+  const typed = useRef(false);
   const box = useRef<HTMLDivElement>(null);
   const listId = useId();
   // Plain numbers, so a new object each render does not ask Google again.
@@ -85,10 +85,8 @@ export function PlaceSearch({
   // Suggestions a moment after typing stops.
   useEffect(() => {
     if (!KEY) return;
-    if (skip.current) {
-      skip.current = false;
-      return;
-    }
+    // Only after the person typed (not when a pick or a moved pin changes things).
+    if (!typed.current) return;
     const q = text.trim();
     if (q.length < 2) return;
     const t = window.setTimeout(async () => {
@@ -126,7 +124,7 @@ export function PlaceSearch({
   async function pick(p: Prediction) {
     setOpen(false);
     const label = p.mainText?.text ?? p.text.text;
-    skip.current = true;
+    typed.current = false;
     setText(label);
     onText?.(label);
     try {
@@ -148,6 +146,7 @@ export function PlaceSearch({
           name={name}
           value={text}
           onChange={(e) => {
+            typed.current = true;
             setText(e.target.value);
             onText?.(e.target.value);
             if (e.target.value.trim().length < 2) {
