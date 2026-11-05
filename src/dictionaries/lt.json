@@ -1539,9 +1539,11 @@
     "pending": "Laukia patvirtinimo",
     "goToTree": "Rodyti medyje",
     "linkFamily": "Susieti su kitos šeimos medžiu",
+    "savedFlash": "✓ Išsaugota",
+    "undo": "Atšaukti",
     "clickToEdit": "Spustelėkite, kad pakeistumėte",
     "addYears": "+ Gyvenimo metai",
-    "addBirthPlace": "Gimimo vieta",
+    "addBirthPlace": "+ Gimimo vieta",
     "allDetails": "Visi duomenys",
     "yearError": "Patikrinkite metus.",
     "nameRequired": "Įrašykite vardą."

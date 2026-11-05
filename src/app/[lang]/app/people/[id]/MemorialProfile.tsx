@@ -93,7 +93,7 @@ export function MemorialProfile({
   inline?: { givenNames: string; surname: string; birthSurname: string; birthYear: string; deathYear: string; birthPlace: string; withBirthSurname: boolean };
 }) {
   const m = t.memorial;
-  const ie = { locale, personId, hint: m.clickToEdit, labels: { save: m.save, cancel: m.cancel, error: m.saveError, year: m.yearError, required: m.nameRequired } };
+  const ie = { locale, personId, hint: m.clickToEdit, labels: { save: m.save, cancel: m.cancel, error: m.saveError, year: m.yearError, required: m.nameRequired, saved: m.savedFlash, undo: m.undo } };
   const card = "rounded-[18px] border border-line/80 bg-surface p-5 sm:p-6";
   const head = (icon: React.ReactNode, title: string, count?: number, tab?: string) => (
     <div className="mb-4 flex items-center gap-3">
@@ -219,7 +219,7 @@ export function MemorialProfile({
               locale={locale}
               personId={personId}
               text={storyText}
-              labels={{ empty: living ? m.noAbout : m.noStory, write: living ? m.writeAbout : m.writeStory, edit: m.editAbout, placeholder: m.aboutPh, save: m.save, saving: m.saving, cancel: m.cancel, error: m.saveError, more: m.readMore, less: m.readLess }}
+              labels={{ empty: living ? m.noAbout : m.noStory, write: living ? m.writeAbout : m.writeStory, edit: m.editAbout, placeholder: m.aboutPh, save: m.save, saving: m.saving, cancel: m.cancel, error: m.saveError, more: m.readMore, less: m.readLess, saved: m.savedFlash }}
             />
           ) : storyText ? (
             <ExpandText text={storyText} more={m.readMore} less={m.readLess} />

@@ -14,13 +14,22 @@ export function AboutEditor({
   locale: string;
   personId: string;
   text: string | null;
-  labels: { empty: string; write: string; edit: string; placeholder: string; save: string; saving: string; cancel: string; error: string; more: string; less: string };
+  labels: { empty: string; write: string; edit: string; placeholder: string; save: string; saving: string; cancel: string; error: string; more: string; less: string; saved?: string };
 }) {
   const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) return;
+    const t = window.setTimeout(() => setSaved(false), 3500);
+    return () => window.clearTimeout(t);
+  }, [saved]);
   const box = useRef<HTMLTextAreaElement>(null);
   const [state, action, pending] = useActionState(async (prev: AboutState, form: FormData) => {
     const res = await saveBiography(prev, form);
-    if (res.ok) setEditing(false);
+    if (res.ok) {
+      setEditing(false);
+      setSaved(true);
+    }
     return res;
   }, {});
 
@@ -35,7 +44,17 @@ export function AboutEditor({
 
   if (editing) {
     return (
-      <form action={action} className="space-y-3">
+      <form
+        action={action}
+        className="space-y-3"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            setEditing(false);
+          }
+        }}
+      >
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="personId" value={personId} />
         <textarea
@@ -60,25 +79,46 @@ export function AboutEditor({
     );
   }
 
+  const pencil = (
+    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+  const flash = saved && labels.saved && (
+    <p role="status" className="mt-3 inline-flex animate-[live-in_.35s_ease-out] rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.9rem] font-semibold text-olive-deep">{labels.saved}</p>
+  );
+
   return text ? (
     // Clicking the text itself opens it for writing ("Read more" still just expands it).
-    <div
-      title={labels.edit}
-      className="-m-2 cursor-text rounded-xl p-2 hover:bg-paper"
-      onClick={(e) => {
-        if ((e.target as Element).closest("button, a")) return;
-        if (window.getSelection()?.toString()) return;
-        setEditing(true);
-      }}
-    >
-      <ExpandText text={text} more={labels.more} less={labels.less} />
+    <div>
+      <div
+        className="group/ab relative -m-2 cursor-text rounded-xl p-2 pr-8 hover:bg-paper"
+        onClick={(e) => {
+          if ((e.target as Element).closest("button, a")) return;
+          if (window.getSelection()?.toString()) return;
+          setEditing(true);
+        }}
+      >
+        <ExpandText text={text} more={labels.more} less={labels.less} />
+        <button type="button" onClick={() => setEditing(true)} aria-label={labels.edit} className="absolute right-2 top-2.5 text-ink-muted opacity-35 transition-opacity group-hover/ab:opacity-100 focus-visible:opacity-100">
+          {pencil}
+        </button>
+      </div>
+      {flash}
     </div>
   ) : (
-    <div>
-      <p className="text-ink-muted">{labels.empty}</p>
-      <button type="button" onClick={() => setEditing(true)} className={`${button} mt-3`}>
-        {labels.write}
-      </button>
-    </div>
+    // Empty: the place itself is the button, so writing starts right here.
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="flex w-full cursor-text items-center gap-3 rounded-xl border border-dashed border-line px-4 py-4 text-left text-ink-muted hover:border-ink/40 hover:bg-paper hover:text-ink"
+    >
+      {pencil}
+      <span>
+        <span className="block">{labels.empty}</span>
+        <span className="mt-0.5 block font-semibold text-ink">{labels.write}</span>
+      </span>
+    </button>
   );
 }

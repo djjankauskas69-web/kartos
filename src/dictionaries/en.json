@@ -1539,9 +1539,11 @@
     "pending": "Waiting for approval",
     "goToTree": "Show in tree",
     "linkFamily": "Link with another family's tree",
+    "savedFlash": "✓ Saved",
+    "undo": "Undo",
     "clickToEdit": "Click to change",
     "addYears": "+ Years",
-    "addBirthPlace": "Place of birth",
+    "addBirthPlace": "+ Place of birth",
     "allDetails": "All details",
     "yearError": "Check the years.",
     "nameRequired": "Enter a first name."

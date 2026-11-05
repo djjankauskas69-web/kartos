@@ -99,9 +99,9 @@ export function EventRow({ locale, e, labels, showDelete }: { locale: string; e:
     <li className="relative pl-6">
       {dot}
       {e.canEdit && e.id ? (
-        <button type="button" onClick={() => setEditing(true)} title={labels.clickToEdit} className="group/ev -my-1 -mr-2 flex w-[calc(100%+0.5rem)] items-start gap-4 rounded-xl py-1 pr-2 text-left hover:bg-paper">
+        <button type="button" onClick={() => setEditing(true)} className="group/ev cursor-text -my-1 -mr-2 flex w-[calc(100%+0.5rem)] items-start gap-4 rounded-xl py-1 pr-2 text-left hover:bg-paper">
           {body}
-          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0 text-ink-muted opacity-0 transition-opacity group-hover/ev:opacity-100 group-focus-visible/ev:opacity-100">
+          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0 text-ink-muted opacity-35 transition-opacity group-hover/ev:opacity-100 group-focus-visible/ev:opacity-100">
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>

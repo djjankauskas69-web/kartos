@@ -25,11 +25,20 @@ export function InlineEdit({
   hidden?: Record<string, string>;
   children: React.ReactNode;
   hint: string;
-  labels: { save: string; cancel: string; error: string; year: string; required: string };
+  labels: { save: string; cancel: string; error: string; year: string; required: string; saved: string; undo: string };
   className?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const form = useRef<HTMLFormElement>(null);
+  // After a save: a short "✓ Saved" with a way back to what was there before.
+  const [undo, setUndo] = useState<FormData | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  function flash(back: FormData | null) {
+    window.clearTimeout(timer.current);
+    setUndo(back);
+    if (back) timer.current = window.setTimeout(() => setUndo(null), 6000);
+  }
   const [state, action, pending] = useActionState(async (prev: AboutState, data: FormData) => {
     const changed = fields.some((f) => String(data.get(f.name) ?? "").trim() !== f.value);
     if (!changed) {
@@ -37,7 +46,16 @@ export function InlineEdit({
       return {};
     }
     const res = await savePersonFields(prev, data);
-    if (res.ok) setEditing(false);
+    if (res.ok) {
+      setEditing(false);
+      // The old values, ready to be put back with one click.
+      const back = new FormData();
+      back.set("locale", locale);
+      back.set("personId", personId);
+      for (const f of fields) back.set(f.name, f.value);
+      if (data.has("birthYear")) back.set("prevBirthYear", String(data.get("birthYear") ?? "").trim());
+      flash(back);
+    }
     return res;
   }, {});
 
@@ -50,19 +68,40 @@ export function InlineEdit({
 
   if (!editing) {
     return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        title={hint}
-        className={`group/ie -mx-2 inline-flex max-w-full items-center gap-2 rounded-xl px-2 text-left hover:bg-white/70 focus-visible:bg-white/70 ${className}`}
-      >
-        <span className="min-w-0">{children}</span>
-        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-muted opacity-0 transition-opacity group-hover/ie:opacity-100 group-focus-visible/ie:opacity-100">
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-        </svg>
-        <span className="sr-only">{hint}</span>
-      </button>
+      <span className={`inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 ${className}`}>
+        <button
+          type="button"
+          onClick={() => {
+            flash(null);
+            setEditing(true);
+          }}
+          className="group/ie -mx-2 inline-flex max-w-full cursor-text items-center gap-2 rounded-xl px-2 text-left hover:bg-white/70 focus-visible:bg-white/70"
+        >
+          <span className="min-w-0">{children}</span>
+          {/* Always there, faintly, so it is clear on a phone too that this can be changed. */}
+          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-muted opacity-35 transition-opacity group-hover/ie:opacity-100 group-focus-visible/ie:opacity-100">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          <span className="sr-only">{hint}</span>
+        </button>
+        {undo && (
+          <span role="status" className="inline-flex animate-[live-in_.35s_ease-out] items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.9rem] font-semibold text-olive-deep">
+            {labels.saved}
+            <button
+              type="button"
+              onClick={async () => {
+                const back = undo;
+                flash(null);
+                await savePersonFields({}, back);
+              }}
+              className="underline decoration-olive-deep/40 underline-offset-2 hover:decoration-olive-deep"
+            >
+              {labels.undo}
+            </button>
+          </span>
+        )}
+      </span>
     );
   }
 
