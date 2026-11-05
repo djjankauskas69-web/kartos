@@ -11,6 +11,8 @@ import { CoverButton } from "./CoverButton";
 export type Activity = {
   at: string;
   kind: "person" | "profile" | "grave" | "memory" | "photos" | "album";
+  /** Who it is about, shown first (names do not decline well inside a sentence). */
+  name?: string;
   text: string;
   sub?: string;
   href: string;
@@ -20,6 +22,8 @@ export type Activity = {
 };
 
 export type FamilyDate = { key: string; year: number; kind: "birth" | "death" | "marriage" | "event" | "jubilee"; text: string; href: string; personId?: string; thumb?: string };
+
+export type Upcoming = { key: string; days: number; month: number; day: number; kind: "birthday" | "death"; text: string; href: string; personId: string; thumb?: string };
 
 export type DashboardData = {
   t: Dictionary;
@@ -45,6 +49,9 @@ export type DashboardData = {
   jubilees: FamilyDate[];
   dates: FamilyDate[];
   notJoined: number;
+  upcoming: Upcoming[];
+  latestMemory?: { body: string; author?: string; at: string; name: string; thumb?: string; href: string };
+  fill: Array<{ key: string; text: string; start: string; href: string }>;
 };
 
 const card = "rounded-[20px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03),0_14px_34px_-28px_rgb(60_45_30/0.45)]";
@@ -52,7 +59,7 @@ const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
 export function DashboardView(props: DashboardData) {
-  const { t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined } = props;
+  const { t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill } = props;
   const base = `/${locale}/app`;
   const d = t.dash;
   const born = t.app.born.toLowerCase();
@@ -112,6 +119,35 @@ export function DashboardView(props: DashboardData) {
           </li>
         ))}
       </ul>
+
+      {/* The latest memory, to read right here: what the archive is for */}
+      {latestMemory && (
+        <Link href={latestMemory.href} className={`group relative block overflow-hidden p-6 sm:p-8 ${card} bg-[#f8f4ec] hover:border-ink/25`}>
+          <span aria-hidden="true" className="pointer-events-none absolute -right-2 -top-6 font-serif text-[9rem] leading-none text-[#e9dfcb]">”</span>
+          <p className="relative flex items-center gap-2 text-[0.95rem] font-semibold text-sage-deep">
+            <IconQuote size={18} />
+            {d.memoryTitle}
+          </p>
+          <blockquote className="relative mt-3 line-clamp-4 max-w-4xl font-serif text-[1.35rem] leading-snug sm:text-[1.55rem]">„{latestMemory.body.trim()}“</blockquote>
+          <div className="relative mt-5 flex flex-wrap items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-[0.85rem] font-semibold text-ink-muted ring-2 ring-white">
+              {latestMemory.thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                <img src={latestMemory.thumb} alt="" className="h-full w-full object-cover" />
+              ) : (
+                latestMemory.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+              )}
+            </span>
+            <span className="min-w-0 flex-1 leading-snug">
+              <span className="block font-semibold">{d.memoryAbout.replace("{name}", latestMemory.name)}</span>
+              <span className="block text-[0.92rem] text-ink-muted">{[latestMemory.author, timeAgo(latestMemory.at, locale)].filter(Boolean).join(" · ")}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-olive-deep group-hover:underline">
+              {d.memoryMore} <IconArrow size={16} />
+            </span>
+          </div>
+        </Link>
+      )}
 
       {/* No memories yet: the reason the archive exists, said once, with the way to begin. */}
       {counts.memories === 0 && counts.people > 0 && can.add(role) && (
@@ -278,7 +314,17 @@ export function DashboardView(props: DashboardData) {
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 text-[1.03rem] leading-snug">{r.text}</span>
+                      <span className="line-clamp-2 text-[1.03rem] leading-snug">
+                        {r.name ? (
+                          <>
+                            <span className="font-semibold">{r.name}</span>
+                            <span className="text-ink-muted"> · </span>
+                            {r.text}
+                          </>
+                        ) : (
+                          r.text.charAt(0).toUpperCase() + r.text.slice(1)
+                        )}
+                      </span>
                       <span className="mt-0.5 block truncate text-[0.9rem] text-ink-muted">{[r.who, r.sub, timeAgo(r.at, locale)].filter(Boolean).join(" · ")}</span>
                     </span>
                     <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
@@ -293,9 +339,36 @@ export function DashboardView(props: DashboardData) {
           <div className={`p-6 sm:p-7 ${card}`}>
             <h2 className="flex items-center gap-3 text-[1.45rem]">
               <span className="text-sage-deep"><IconCalendar size={24} /></span>
-              {d.datesTitle}
+              {d.upcomingTitle}
             </h2>
-            <p className="mt-1 text-[0.98rem] text-ink-muted">{d.datesLead}</p>
+            <p className="mt-1 text-[0.98rem] text-ink-muted">{d.upcomingLead}</p>
+            {upcoming.length > 0 ? (
+              <ul className="mt-4 space-y-1">
+                {upcoming.map((u) => (
+                  <li key={u.key}>
+                    <Link href={u.href} className={`-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-paper/70 ${u.days === 0 ? "bg-[#f3ead8] hover:bg-[#efe2c9]" : ""}`}>
+                      <span className="w-[4.4rem] shrink-0 text-center leading-tight">
+                        <span className="block text-[0.82rem] font-semibold uppercase tracking-wide text-sage-deep">{u.days === 0 ? d.upToday : u.days === 1 ? d.upTomorrow : d.upIn.replace("{n}", String(u.days))}</span>
+                        <span className="block text-[0.85rem] tabular-nums text-ink-muted">{new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { month: "short", day: "numeric" }).format(new Date(2000, u.month - 1, u.day))}</span>
+                      </span>
+                      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-ink-muted">
+                        {u.thumb ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                          <img src={u.thumb} alt="" className={`h-full w-full object-cover ${u.kind === "death" ? "brightness-[.86] sepia-[.3]" : ""}`} />
+                        ) : u.kind === "death" ? (
+                          "✝"
+                        ) : (
+                          "✦"
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1 leading-snug">{u.text}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 text-[0.98rem] leading-relaxed text-ink-muted">{d.upEmpty}</p>
+            )}
             {jubilees.length > 0 && (
               <ul className="mt-4 space-y-2">
                 {jubilees.slice(0, 3).map((j) => (
@@ -308,24 +381,44 @@ export function DashboardView(props: DashboardData) {
                 ))}
               </ul>
             )}
-            {dates.length === 0 ? (
-              <p className="mt-4 text-ink-muted">{d.datesEmpty}</p>
-            ) : (
-              <>
-                <DateList items={dates.slice(0, 6)} />
-                {dates.length > 6 && (
-                  <details className="group">
-                    <summary className="mt-2 inline-flex min-h-11 cursor-pointer list-none items-center rounded-full border border-line px-4 font-semibold hover:border-ink/40 [&::-webkit-details-marker]:hidden">
-                      <span className="group-open:hidden">{d.datesAll.replace("{n}", String(dates.length))}</span>
-                      <span className="hidden group-open:inline">{d.datesLess}</span>
-                    </summary>
-                    <DateList items={dates.slice(6)} />
-                  </details>
-                )}
-              </>
+            {/* The whole story by year, folded away: there when wanted, not in the way. */}
+            {dates.length > 0 && (
+              <details className="group mt-4 border-t border-line pt-3">
+                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full px-1 font-semibold text-ink-muted hover:text-ink [&::-webkit-details-marker]:hidden">
+                  <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
+                  <span className="group-open:hidden">{d.historyAll.replace("{n}", String(dates.length))}</span>
+                  <span className="hidden group-open:inline">{d.datesLess}</span>
+                </summary>
+                <DateList items={dates} />
+              </details>
             )}
           </div>
 
+          {fill.length > 0 && (
+            <div className={`p-6 sm:p-7 ${card}`}>
+              <h2 className="flex items-center gap-3 text-[1.45rem]">
+                <span className="text-sage-deep"><IconPlus size={24} /></span>
+                {d.fillTitle}
+              </h2>
+              <p className="mt-1 text-[0.98rem] text-ink-muted">{d.fillLead}</p>
+              <ul className="mt-4 divide-y divide-line">
+                {fill.map((f) => (
+                  <li key={f.key}>
+                    <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-paper/70">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linen text-ink-muted">
+                        {f.key === "photo" ? <IconImage size={20} /> : f.key === "grave" ? <IconPin size={20} /> : <IconCalendar size={20} />}
+                      </span>
+                      <span className="min-w-0 flex-1 leading-snug">
+                        <span className="block font-semibold">{f.text}</span>
+                        <span className="block truncate text-[0.92rem] text-ink-muted">{f.start}</span>
+                      </span>
+                      <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </section>
     </div>
