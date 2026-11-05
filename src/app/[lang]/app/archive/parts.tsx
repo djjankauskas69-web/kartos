@@ -113,7 +113,7 @@ export function Dialog({ open, onClose, title, children, wide = false, photo = f
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] backdrop:bg-[#1c1d1a]/70" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
+      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
     >
       {open && children}
     </dialog>
@@ -383,14 +383,19 @@ export function Detail({
       >
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
       </button>
-      <div className="flex min-w-0 flex-1 flex-col bg-[#f1ece2]">
-      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 sm:p-3 md:pt-3">
+      {/* The page shows dimmed behind the photo; only the details column is a card. */}
+      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 sm:px-16 sm:py-3 md:pt-3">
         {item.url && !item.pdf ? (
-          // Comments drift over the photo itself, so the frame is exactly the photo's size.
-          <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-            <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
-            {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
+          // The comment line sits under the photo, starting at its left edge.
+          <div className="flex max-w-full flex-col items-start gap-2.5">
+            {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
+            <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+              <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
+              {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
+            </div>
+            {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
           </div>
         ) : (
           <div className="aspect-[3/4] h-[44dvh] md:h-full">
@@ -408,14 +413,9 @@ export function Detail({
           </button>
         )}
       </div>
-      {item.kind === "photo" && canComment && (
-        <div className="px-3 pb-3 sm:px-4">
-          <CommentInput item={item} t={t} locale={locale} />
-        </div>
-      )}
       </div>
 
-      <aside className={`w-full flex-col border-line md:flex md:w-[20rem] md:shrink-0 md:border-l ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
+      <aside className={`w-full flex-col rounded-[20px] bg-surface md:flex md:w-[20rem] md:shrink-0 ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
         <div className={`items-start justify-between gap-3 py-1 pl-5 pr-14 pt-4 md:flex md:min-h-14 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
@@ -516,7 +516,7 @@ function CommentInput({ item, t, locale }: { item: ArchiveItem; t: L; locale: Lo
   return (
     <div>
       <form
-        className="mx-auto flex max-w-xl items-center gap-1 rounded-full border border-line bg-surface pl-4 pr-1 focus-within:border-ink/40"
+        className="flex w-[min(26rem,calc(100vw-3rem))] items-center gap-1 rounded-full bg-white/95 pl-4 pr-1 shadow-[0_6px_18px_-10px_rgb(0_0_0/0.5)] focus-within:bg-white"
         action={async (form) => {
           setBusy(true);
           setError(null);
@@ -544,7 +544,7 @@ function CommentInput({ item, t, locale }: { item: ArchiveItem; t: L; locale: Lo
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
         </button>
       </form>
-      {error && <p role="alert" className="mt-1 text-center text-[0.9rem] text-danger">{error}</p>}
+      {error && <p role="alert" className="mt-1.5 w-fit rounded-full bg-white px-3 py-1 text-[0.88rem] text-danger">{error}</p>}
     </div>
   );
 }
