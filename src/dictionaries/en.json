@@ -940,7 +940,7 @@
     "contributorsN": "{n} contributed",
     "noAlbums": "No albums yet",
     "noAlbumsLead": "Create the first album – say “Christmas 2025” or “Old family photos” – and add photos.",
-    "albumEmpty": "No photos in this album yet",
+    "albumEmpty": "Add photos",
     "albumEmptyLead": "Upload photos – the whole family will see them.",
     "recent": "Latest photos",
     "seeAll": "All photos →",
@@ -1000,7 +1000,12 @@
       "few": "photos",
       "many": "photos",
       "other": "photos"
-    }
+    },
+    "slidePick": "Play a slideshow",
+    "slidePickLead": "Tick the albums you want to watch.",
+    "slidePickAll": "All photos",
+    "slideStart": "Play · {n} photos",
+    "slideNoAlbum": "Not in an album"
   },
   "peopleList": {
     "title": "People",

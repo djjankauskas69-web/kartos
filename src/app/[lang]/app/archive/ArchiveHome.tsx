@@ -57,7 +57,7 @@ export function ArchiveHome({
   const [tab, setTab] = useState<Tab>(initialTab);
   const [albumId, setAlbumId] = useState<string | null>(initialAlbum);
   const [openId, setOpenId] = useState<string | null>(initialItem);
-  const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum">(initialUpload ? "upload" : null);
+  const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum" | "slides">(initialUpload ? "upload" : null);
   const [dropped, setDropped] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [show, setShow] = useState<{ slides: Slide[]; start: number } | null>(null);
@@ -327,8 +327,9 @@ export function ArchiveHome({
                     // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                     <img src={a.cover.url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-[#efe8d8] text-ink-muted">
-                      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" /><circle cx="9" cy="10" r="1.7" /><path d="m4 17.5 4.8-4.3 3.4 3 3.3-3.2 4.5 4.5" /></svg>
+                    <span className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#efe8d8] text-ink-muted">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" /><circle cx="9" cy="10" r="1.7" /><path d="m4 17.5 4.8-4.3 3.4 3 3.3-3.2 4.5 4.5" /></svg>
+                      {canAdd && <span className="rounded-full bg-surface/80 px-3.5 py-1.5 text-[0.92rem] font-semibold text-ink/80 transition group-hover:bg-surface group-hover:text-ink">+ {t.albumEmpty}</span>}
                     </span>
                   )}
                   {a.shared && <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.8rem] font-semibold text-ink shadow">{t.everyone}</span>}
@@ -497,15 +498,24 @@ export function ArchiveHome({
   );
 
   // The main buttons change with the section, so the obvious next step is always first.
+  const slidesButton = photos.some((p) => p.url) && (
+    <button type="button" onClick={() => setDialog("slides")} className={secondary}>
+      {playIcon}
+      {t.slideshowShort}
+    </button>
+  );
   const actions =
-    !canAdd ? null : tab === "albums" && !album ? (
+    tab === "albums" && !album ? (
       <>
-        <button type="button" onClick={() => setDialog("upload")} className={primary}>
-          <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
-          {t.uploadPhotos}
-        </button>
+        {slidesButton}
+        {canAdd && (
+          <button type="button" onClick={() => setDialog("upload")} className={primary}>
+            <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
+            {t.uploadPhotos}
+          </button>
+        )}
       </>
-    ) : tab === "photos" ? (
+    ) : !canAdd ? null : tab === "photos" ? (
       <button type="button" onClick={() => setDialog("upload")} className={primary}>
         <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
         {t.uploadPhotos}
@@ -685,6 +695,21 @@ export function ArchiveHome({
         <StoryForm t={t} locale={locale} workspaceId={workspaceId} folders={albumOptions} people={people} periodLabels={periodLabels} needsApproval={needsApproval} onDone={() => setDialog(null)} />
       </Dialog>
 
+      <Dialog open={dialog === "slides"} onClose={() => setDialog(null)} title={t.slidePick}>
+        {dialog === "slides" && (
+          <SlidePicker
+            t={t}
+            albums={albumList.filter((a) => a.count > 0).map((a) => ({ id: a.id, name: a.name, cover: a.cover?.url, photos: photos.filter((p) => p.folderId === a.id && p.url) }))}
+            loose={photos.filter((p) => p.url && !albumList.some((a) => a.id === p.folderId))}
+            onClose={() => setDialog(null)}
+            onPlay={(list) => {
+              setDialog(null);
+              play(sortPhotos(list));
+            }}
+          />
+        )}
+      </Dialog>
+
       <Dialog open={dialog === "album" || dialog === "editAlbum"} onClose={() => setDialog(null)} title={t.createAlbum}>
         {(dialog === "album" || (dialog === "editAlbum" && album)) && (
           <AlbumForm
@@ -860,5 +885,71 @@ function AlbumForm({
         </div>
       </div>
     </form>
+  );
+}
+
+/** Which albums to watch as a slideshow: all ticked to start with; plays the ticked ones together. */
+function SlidePicker({
+  t,
+  albums,
+  loose,
+  onClose,
+  onPlay,
+}: {
+  t: L;
+  albums: Array<{ id: string; name: string; cover?: string; photos: ArchiveItem[] }>;
+  loose: ArchiveItem[];
+  onClose: () => void;
+  onPlay: (list: ArchiveItem[]) => void;
+}) {
+  const rows = [...albums, ...(loose.length ? [{ id: "_loose", name: t.slideNoAlbum, cover: loose[0]?.url, photos: loose }] : [])];
+  const [on, setOn] = useState<string[]>(() => rows.map((r) => r.id));
+  const picked = rows.filter((r) => on.includes(r.id)).flatMap((r) => r.photos);
+  const all = on.length === rows.length;
+  const box = (checked: boolean) => (
+    <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${checked ? "border-ink bg-ink text-white" : "border-ink/30"}`}>
+      {checked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
+    </span>
+  );
+  return (
+    <div>
+      <DialogHead title={t.slidePick} onClose={onClose} closeLabel={t.close} />
+      <div className="px-6 py-5">
+        <p className="mb-4 text-ink-muted">{t.slidePickLead}</p>
+        <button type="button" aria-pressed={all} onClick={() => setOn(all ? [] : rows.map((r) => r.id))} className="mb-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-2.5 text-left font-semibold hover:bg-paper">
+          {box(all)}
+          <span className="flex-1">{t.slidePickAll}</span>
+        </button>
+        <ul className="space-y-1 border-t border-line pt-2">
+          {rows.map((r) => {
+            const checked = on.includes(r.id);
+            return (
+              <li key={r.id}>
+                <button type="button" aria-pressed={checked} onClick={() => setOn((s) => (checked ? s.filter((x) => x !== r.id) : [...s, r.id]))} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2.5 py-1.5 text-left hover:bg-paper">
+                  {box(checked)}
+                  {r.cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                    <img src={r.cover} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <span className="h-11 w-11 shrink-0 rounded-lg bg-linen" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-[1.02rem]">{r.name}</span>
+                  <span className="text-[0.9rem] tabular-nums text-ink-muted">{t.photosN.replace("{n}", String(r.photos.length))}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <button
+          type="button"
+          disabled={!picked.length}
+          onClick={() => onPlay(picked)}
+          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 text-[1.02rem] font-semibold text-surface hover:bg-olive-deep disabled:opacity-40"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
+          {t.slideStart.replace("{n}", String(picked.length))}
+        </button>
+      </div>
+    </div>
   );
 }

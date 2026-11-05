@@ -940,7 +940,7 @@
     "contributorsN": "prisidėjo {n}",
     "noAlbums": "Albumų dar nėra",
     "noAlbumsLead": "Sukurkite pirmą albumą – pavyzdžiui, „Kalėdos 2025“ ar „Senos šeimos nuotraukos“ – ir įkelkite nuotraukas.",
-    "albumEmpty": "Šiame albume dar nėra nuotraukų",
+    "albumEmpty": "Pridėkite nuotraukų",
     "albumEmptyLead": "Įkelkite nuotraukas – jas matys visa šeima.",
     "recent": "Naujausios nuotraukos",
     "seeAll": "Visos nuotraukos →",
@@ -1000,7 +1000,12 @@
       "few": "nuotraukos",
       "many": "nuotraukos",
       "other": "nuotraukų"
-    }
+    },
+    "slidePick": "Paleisti skaidres",
+    "slidePickLead": "Pažymėkite albumus, kuriuos norite peržiūrėti.",
+    "slidePickAll": "Visos nuotraukos",
+    "slideStart": "Paleisti · {n} nuotr.",
+    "slideNoAlbum": "Be albumo"
   },
   "peopleList": {
     "title": "Žmonės",
