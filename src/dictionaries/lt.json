@@ -1033,7 +1033,7 @@
     "clear": "Rodyti visus"
   },
   "me": {
-    "title": "Mano profilis",
+    "title": "Mano paskyra",
     "lead": "Jūsų informacija šeimos medyje. Pakeitimai matomi šeimos nariams.",
     "menu": "Mano profilis",
     "inFamily": "Jūs šeimoje „{name}“",
@@ -1061,7 +1061,7 @@
     "birthPlace": "Gimimo vieta",
     "save": "Išsaugoti",
     "saved": "Išsaugota.",
-    "openCard": "Peržiūrėti mano kortelę medyje",
+    "openCard": "Mano profilis medyje",
     "unlink": "Tai ne aš – atsieti",
     "unlinkWarning": "Jūsų duomenys medyje liks, tik nebegalėsite jų redaguoti patys.",
     "unlinkConfirm": "Taip, atsieti",
@@ -1096,7 +1096,11 @@
     "viewMyCard": "Peržiūrėti mano kortelę",
     "yourRole": "Jūsų rolė:",
     "displayNameHint": "Rodomas prie jūsų prisiminimų ir nuotraukų, kol nesate pažymėtas medyje. Pažymėjus, naudojamas vardas iš medžio.",
-    "fillMore": "Atidaryti mano profilį ir pildyti daugiau"
+    "fillMore": "Atidaryti mano profilį ir pildyti daugiau",
+    "switchTo": "Pereiti",
+    "moreActions": "Daugiau veiksmų",
+    "photoHint": "Paspauskite nuotrauką, kad ją pakeistumėte",
+    "families": "Mano šeimos"
   },
   "add": {
     "title": "Naujas žmogus",

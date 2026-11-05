@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, getPerson, listPeople, myPersonLinks, requireWorkspace } from "@/lib/data";
+import { fullName, getPerson, listPeople, myPersonLinks, requireWorkspace, signedUrls } from "@/lib/data";
+import { PageHeader } from "@/components/PageHeader";
+import { switchWorkspace } from "../actions";
 import { cls, errorMessage } from "@/components/ui";
 import { Portrait } from "@/components/Portrait";
 import { ConfirmAction } from "../forms";
@@ -79,7 +81,11 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
       .sort((a, b) => Number(a.taken) - Number(b.taken) || a.name.localeCompare(b.name, locale));
     main = <ClaimMe locale={locale} people={options} t={m} errors={errors} />;
   } else {
-    const photo = (await portraitUrls(locale, [me])).get(me.id);
+    const { data: wsRows } = await supabase.from("workspaces").select("id, cover_path").in("id", memberships.map((x) => x.id));
+    const coverPaths = (wsRows ?? []).filter((w) => w.cover_path).map((w) => [w.id as string, w.cover_path as string] as const);
+    const [portraitMap, coverUrls] = await Promise.all([portraitUrls(locale, [me]), signedUrls(locale, coverPaths.map(([, p]) => p))]);
+    const photo = portraitMap.get(me.id);
+    const covers = new Map(coverPaths.flatMap(([id, p]) => (coverUrls.get(p) ? [[id, coverUrls.get(p)!] as const] : [])));
     const otherLinked = [...links.keys()].filter((ws) => ws !== current.id && memberships.some((x) => x.id === ws));
     main = (
       <div className="space-y-5">
@@ -87,31 +93,67 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
           {head(<svg {...I}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" /></svg>, m.details)}
           <div className="flex flex-col gap-7 md:flex-row md:items-start">
             <div className="flex flex-col items-center gap-3 md:w-48 md:shrink-0">
-              <div className="rounded-full p-1 ring-1 ring-line [&>*]:!h-40 [&>*]:!w-40 [&>*]:!rounded-full [&>*]:!text-[2.6rem]">
-                <Portrait given={me.given_names} surname={me.surname} src={photo} size="lg" />
-              </div>
-              <PortraitUpload locale={locale} workspaceId={current.id} otherWorkspaces={otherLinked} hasPhoto={!!photo} t={m} />
+              <PortraitUpload locale={locale} workspaceId={current.id} otherWorkspaces={otherLinked} hasPhoto={!!photo} t={m}>
+                <span className="block rounded-full p-1 ring-1 ring-line [&>*]:!h-40 [&>*]:!w-40 [&>*]:!rounded-full [&>*]:!text-[2.6rem]">
+                  <Portrait given={me.given_names} surname={me.surname} src={photo} size="lg" />
+                </span>
+              </PortraitUpload>
             </div>
             <div className="min-w-0 flex-1">
-              <MyDetailsForm locale={locale} person={me} moreHref={`/${locale}/app/people/${me.id}`} t={m} errors={errors} />
+              <MyDetailsForm locale={locale} person={me} t={m} errors={errors} />
             </div>
           </div>
         </section>
-        <section className={`flex flex-wrap items-center gap-5 ${card}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- shared picture */}
-          <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-24 w-28 shrink-0 rounded-2xl object-cover opacity-80 sepia-[.3]" />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[1.3rem] font-semibold">{m.inFamily.replace("{name}", current.name)}</h2>
-            <p className="mt-2 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] text-olive-deep">
-              {m.yourRole} <strong className="font-semibold">{t.roles[current.role]}</strong>
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <Link href={`${base}/people/${me.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-5 font-semibold hover:border-ink/40">
-              {m.openCard} →
-            </Link>
-            <ConfirmAction action={unlinkMe} values={{ locale }} label={m.unlink} confirmLabel={m.unlinkConfirm} cancelLabel={t.app.cancel} warning={m.unlinkWarning} />
-          </div>
+        {/* The families you belong to: the current one first, each with its cover */}
+        <section className={card}>
+          {head(<svg {...I}><circle cx="8" cy="8" r="3" /><circle cx="16.5" cy="9" r="2.5" /><path d="M2.5 19a5.5 5.5 0 0 1 11 0M14 19a4.5 4.5 0 0 1 7.5-3.3" /></svg>, m.families)}
+          <ul className="space-y-3">
+            {[current, ...memberships.filter((x) => x.id !== current.id)].map((ws) => {
+              const here = ws.id === current.id;
+              const cover = covers.get(ws.id);
+              return (
+                <li key={ws.id} className={`relative flex flex-wrap items-center gap-4 rounded-2xl p-3 ${here ? "bg-paper" : ""}`}>
+                  {cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+                    <img src={cover} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element -- shared picture
+                    <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-20 w-24 shrink-0 rounded-xl object-cover opacity-80 sepia-[.3]" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-[1.15rem] font-semibold">{ws.name}</h3>
+                    <p className="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#e7ebd9] px-2.5 py-0.5 text-[0.88rem] text-olive-deep">
+                      {m.yourRole} <strong className="font-semibold">{t.roles[ws.role]}</strong>
+                    </p>
+                  </div>
+                  {here ? (
+                    <div className="flex items-center gap-1">
+                      <Link href={`${base}/people/${me.id}`} className={`${cls.secondary} gap-2`}>
+                        {m.openCard} <span aria-hidden="true">→</span>
+                      </Link>
+                      {/* Rarely needed, so out of the way */}
+                      <details className="relative" data-menu>
+                        <summary aria-label={m.moreActions} title={m.moreActions} className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full text-[1.2rem] text-ink-muted hover:bg-linen hover:text-ink [&::-webkit-details-marker]:hidden">
+                          ⋯
+                        </summary>
+                        <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-line bg-surface p-3 shadow-[var(--shadow-float)]">
+                          <ConfirmAction action={unlinkMe} values={{ locale }} label={m.unlink} confirmLabel={m.unlinkConfirm} cancelLabel={t.app.cancel} warning={m.unlinkWarning} />
+                        </div>
+                      </details>
+                    </div>
+                  ) : (
+                    <form action={switchWorkspace}>
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="workspaceId" value={ws.id} />
+                      <button type="submit" className={cls.secondary}>
+                        {m.switchTo} <span aria-hidden="true">→</span>
+                      </button>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </div>
     );
@@ -119,7 +161,7 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <div>
-      <h1 className="sr-only">{m.title}</h1>
+      <PageHeader title={m.title} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem] [&>*]:min-w-0">
         <div>{main}</div>
         <aside className="space-y-5">
@@ -134,10 +176,16 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
               <span className="min-w-0 flex-1 text-[0.85rem] text-ink-muted">{t.nav.language}</span>
               <FixedLanguageSwitch current={locale} label={t.nav.language} path="/app/me" />
             </div>
-          </section>
-          <section className={card}>
-            {head(<svg {...I}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>, m.privacy)}
-            <p className="rounded-xl bg-paper px-4 py-3 text-[0.95rem] leading-relaxed">{m.privacyNote}</p>
+            {/* Who sees your details */}
+            <div className="mt-3 flex items-start gap-3.5 border-t border-line pt-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">
+                <svg {...I} width={22} height={22}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.85rem] text-ink-muted">{m.privacy}</span>
+                <span className="mt-0.5 block text-[0.92rem] leading-relaxed">{m.privacyNote}</span>
+              </span>
+            </div>
           </section>
         </aside>
       </div>

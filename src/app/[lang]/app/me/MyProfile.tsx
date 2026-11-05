@@ -139,10 +139,16 @@ export function ClaimMe({ locale, people, t, errors }: { locale: Locale; people:
 
 /* ---------- Linked: own details ---------- */
 
-export function MyDetailsForm({ locale, person, moreHref, t, errors }: { locale: Locale; person: Person; moreHref: string; t: T; errors: Errors }) {
-  const [state, action, pending] = useActionState(updateMe, {});
+export function MyDetailsForm({ locale, person, t, errors }: { locale: Locale; person: Person; moreHref?: string; t: T; errors: Errors }) {
+  // Save and cancel appear only once something has been changed.
+  const [dirty, setDirty] = useState(false);
+  const [state, action, pending] = useActionState(async (prev: Parameters<typeof updateMe>[0], form: FormData) => {
+    const r = await updateMe(prev, form);
+    if (r.ok) setDirty(false);
+    return r;
+  }, {});
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} onInput={() => setDirty(true)} onReset={() => setDirty(false)} className="space-y-4">
       <input type="hidden" name="locale" value={locale} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="my-given" label={t.given}>
@@ -166,18 +172,18 @@ export function MyDetailsForm({ locale, person, moreHref, t, errors }: { locale:
         <input type="hidden" name="birthPlace" value={person.birth_place ?? ""} />
         <input type="hidden" name="birthSurname" value={person.birth_surname ?? ""} />
       </div>
-      <a href={moreHref} className="inline-flex items-center gap-1.5 text-[0.98rem] font-semibold text-sage-deep underline-offset-2 hover:underline">
-        {t.fillMore} <span aria-hidden="true">→</span>
-      </a>
-      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-olive px-6 font-semibold text-surface hover:bg-olive-deep disabled:opacity-70">
-          <span aria-hidden="true">✓</span>
-          {pending ? "…" : t.saveChanges}
-        </button>
-        <button type="reset" className="min-h-12 rounded-xl border border-line px-6 font-semibold hover:border-ink/40">
-          {t.cancel}
-        </button>
-        {state.ok && !pending && (
+      <div className={`flex flex-wrap items-center gap-3 ${dirty || pending || state.ok || state.error ? "" : "hidden"}`}>
+        {(dirty || pending) && (
+          <>
+            <button type="submit" disabled={pending} className={cls.primary}>
+              {pending ? "…" : t.saveChanges}
+            </button>
+            <button type="reset" className={cls.secondary}>
+              {t.cancel}
+            </button>
+          </>
+        )}
+        {state.ok && !pending && !dirty && (
           <p role="status" className="font-semibold text-olive-deep">
             {t.saved}
           </p>
@@ -196,12 +202,15 @@ export function PortraitUpload({
   otherWorkspaces,
   hasPhoto,
   t,
+  children,
 }: {
   locale: Locale;
   workspaceId: string;
   otherWorkspaces: string[];
   hasPhoto: boolean;
   t: T;
+  /** The portrait itself: clicking it picks a new photo. */
+  children?: React.ReactNode;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<"idle" | "busy" | "done" | "error">("idle");
@@ -235,9 +244,22 @@ export function PortraitUpload({
   return (
     <div className="flex w-full flex-col items-center gap-2 text-center">
       <input ref={input} type="file" accept="image/*" className="sr-only" id="my-photo" onChange={(e) => onFile(e.target.files?.[0])} />
-      <button type="button" disabled={status === "busy"} onClick={() => input.current?.click()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 font-semibold hover:border-ink/40">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" /><circle cx="12" cy="13" r="3.5" /></svg>
-        {status === "busy" ? t.uploading : hasPhoto ? t.changePhoto : t.addPhoto}
+      <button
+        type="button"
+        disabled={status === "busy"}
+        onClick={() => input.current?.click()}
+        aria-label={hasPhoto ? t.changePhoto : t.addPhoto}
+        title={hasPhoto ? t.changePhoto : t.addPhoto}
+        className="group relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+      >
+        {children}
+        <span className={`absolute inset-1 flex flex-col items-center justify-center gap-1 rounded-full bg-ink/45 text-[0.85rem] font-semibold text-white transition-opacity ${status === "busy" ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"}`}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" /><circle cx="12" cy="13" r="3.5" /></svg>
+          {status === "busy" ? t.uploading : hasPhoto ? t.changePhoto : t.addPhoto}
+        </span>
+        <span aria-hidden="true" className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-surface bg-ink text-white shadow-sm group-hover:opacity-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" /><circle cx="12" cy="13" r="3.5" /></svg>
+        </span>
       </button>
       {status === "done" && (
         <p role="status" className="text-[0.92rem] font-semibold text-sage-deep">
