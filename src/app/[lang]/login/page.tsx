@@ -7,7 +7,7 @@ import { PasswordForm } from "./PasswordForm";
 
 export async function generateMetadata() {
   const t = await getDictionary();
-  return { title: `${t.login.title} — Kartos` };
+  return { title: `${t.login.title} — MyKartos` };
 }
 
 export default async function LoginPage() {

@@ -1,18 +1,14 @@
 import Link from "next/link";
 
-/**
- * Working-title wordmark. "Kartos" = "generations" in Lithuanian.
- * The mark is three stacked arcs — three generations.
- */
-export function Wordmark({ href }: { href: string }) {
+/** The MyKartos logo: the tree of generations and the name, as drawn by the family's designer. */
+export function Wordmark({ href, size = "md" }: { href: string; size?: "md" | "lg" }) {
+  const h = size === "lg" ? { mark: 40, word: 30 } : { mark: 32, word: 23 };
   return (
-    <Link href={href} className="group inline-flex items-center gap-2.5 text-ink" aria-label="Kartos">
-      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" fill="none">
-        <path d="M5 21a8 8 0 0 1 16 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M8.5 14.5a4.5 4.5 0 0 1 9 0" stroke="var(--color-sage)" strokeWidth="1.6" strokeLinecap="round" />
-        <circle cx="13" cy="7" r="2.2" fill="var(--color-bronze)" />
-      </svg>
-      <span className="font-serif text-[1.6rem] font-semibold leading-none tracking-[-0.05em]">kartos</span>
+    <Link href={href} className="inline-flex items-center gap-2.5" aria-label="MyKartos">
+      {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+      <img src="/brand/mark.png" alt="" width={Math.round((h.mark * 562) / 460)} height={h.mark} className="shrink-0" style={{ height: h.mark, width: "auto" }} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+      <img src="/brand/wordmark.png" alt="MyKartos" width={Math.round((h.word * 1428) / 321)} height={h.word} style={{ height: h.word, width: "auto" }} />
     </Link>
   );
 }

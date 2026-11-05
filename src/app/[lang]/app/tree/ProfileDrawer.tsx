@@ -86,11 +86,8 @@ export function ProfileDrawer({ closeHref, labels, shell = false, children }: { 
 export function KartosPulse({ label }: { label?: string }) {
   return (
     <div role="status" aria-label={label ?? "…"} className="flex h-full min-h-[60vh] items-center justify-center">
-      <svg width="64" height="64" viewBox="0 0 26 26" fill="none" aria-hidden="true" className="animate-[kartos-pulse_1.4s_ease-in-out_infinite]">
-        <path d="M5 21a8 8 0 0 1 16 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="text-ink" />
-        <path d="M8.5 14.5a4.5 4.5 0 0 1 9 0" stroke="var(--color-sage)" strokeWidth="1.6" strokeLinecap="round" />
-        <circle cx="13" cy="7" r="2.2" fill="var(--color-bronze)" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+        <img src="/brand/mark.png" alt="" aria-hidden="true" width={64} height={52} style={{ width: 64, height: "auto" }} className="animate-[kartos-pulse_1.4s_ease-in-out_infinite]" />
     </div>
   );
 }
