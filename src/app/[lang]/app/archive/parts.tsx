@@ -185,6 +185,8 @@ export function Detail({
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, onPrev, onNext]);
   const [confirm, setConfirm] = useState(false);
+  // On a phone the photo comes first; the details open with the (i) button.
+  const [info, setInfo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;
 
@@ -371,13 +373,23 @@ export function Detail({
     <div className="relative flex flex-col md:h-[min(94dvh,64rem)] md:flex-row">
       {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
       <div className="absolute right-3 top-3 z-20 rounded-full bg-white/90 shadow-sm md:bg-transparent md:shadow-none">{closeBtn}</div>
+      <button
+        type="button"
+        onClick={() => setInfo((v) => !v)}
+        aria-expanded={info}
+        aria-label={t.photoInfo}
+        title={t.photoInfo}
+        className={`absolute left-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-sm focus:outline-none md:hidden ${info ? "bg-ink text-white" : "bg-white/90 text-ink"}`}
+      >
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
+      </button>
       <div className="flex min-w-0 flex-1 flex-col bg-[#f1ece2]">
-      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center p-2 sm:p-3">
+      <div className="group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center px-2 pb-2 pt-16 sm:p-3 md:pt-3">
         {item.url && !item.pdf ? (
           // Comments drift over the photo itself, so the frame is exactly the photo's size.
           <div className="relative max-w-full overflow-hidden rounded-[10px] shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)]">
             {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-            <img src={item.url} alt={title} className={`block max-h-[58dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
+            <img src={item.url} alt={title} className={`block max-h-[66dvh] max-w-full object-contain ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-1.5rem)]"}`} />
             {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
           </div>
         ) : (
@@ -403,7 +415,7 @@ export function Detail({
       )}
       </div>
 
-      <aside className="flex w-full flex-col border-line md:w-[20rem] md:shrink-0 md:border-l">
+      <aside className={`w-full flex-col border-line md:flex md:w-[20rem] md:shrink-0 md:border-l ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
         <div className={`items-start justify-between gap-3 py-1 pl-5 pr-14 pt-4 md:flex md:min-h-14 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}

@@ -1005,7 +1005,8 @@
     "slidePickLead": "Tick the albums you want to watch.",
     "slidePickAll": "All photos",
     "slideStart": "Play · {n} photos",
-    "slideNoAlbum": "Not in an album"
+    "slideNoAlbum": "Not in an album",
+    "photoInfo": "Details"
   },
   "peopleList": {
     "title": "People",

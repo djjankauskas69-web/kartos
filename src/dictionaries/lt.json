@@ -1005,7 +1005,8 @@
     "slidePickLead": "Pažymėkite albumus, kuriuos norite peržiūrėti.",
     "slidePickAll": "Visos nuotraukos",
     "slideStart": "Paleisti · {n} nuotr.",
-    "slideNoAlbum": "Be albumo"
+    "slideNoAlbum": "Be albumo",
+    "photoInfo": "Informacija"
   },
   "peopleList": {
     "title": "Žmonės",
