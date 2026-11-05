@@ -3,7 +3,6 @@ import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { folderLabel, periodLabel, type FolderRow } from "@/lib/archive";
-import { plural } from "../tree/build";
 import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
@@ -150,8 +149,8 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
 
   return (
     <div>
-      {/* Same quiet heading as the tree: the tabs already say what is here. */}
-      <PageHeader title={a.title} meta={<>{plural(locale, albums.length, a.countAlbums)} · {plural(locale, items.filter((i) => i.kind === "photo").length, a.countPhotos)}</>} />
+      {/* The tabs already count what is here. */}
+      <PageHeader title={a.title} />
       {/* Pages stay alive in the background, so a new link (?tab=, ?album=…) starts this view afresh. */}
       <ArchiveHome
         key={`${tab}|${params.album}|${params.item}|${params.upload}|${params.play}`}
