@@ -222,6 +222,11 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
             peopleOne: t.map.people.one,
             peopleFew: t.map.people.few,
             peopleOther: t.map.people.other,
+            listShow: t.map.listShow,
+            listHide: t.map.listHide,
+            onMap: t.map.onMap,
+            close: t.map.close,
+            markShort: t.map.markShort,
           }}
         />
       )}

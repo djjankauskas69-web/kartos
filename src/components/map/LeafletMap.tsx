@@ -13,6 +13,9 @@ export type MapMarker = {
   href?: string;
   linkLabel?: string;
   directionsLabel?: string;
+  /** A face on the pin (the person's portrait), or their initials. */
+  photo?: string;
+  initials?: string;
 };
 
 type Props = {
@@ -41,6 +44,10 @@ type Props = {
   accuracy?: number | null;
   /** Reports the map centre after every move (for the aim-at-centre picker). */
   onCenter?: (lat: number, lng: number) => void;
+  /** Where the Map / Satellite switch sits (right when a panel covers the left). */
+  layerAt?: "left" | "right";
+  /** Bump to show every marker again. */
+  fitKey?: number;
 };
 
 export type BaseLayer = "map" | "satellite";
@@ -85,6 +92,20 @@ const pin = (accent: boolean, big = false) => {
   });
 };
 
+/** A round portrait (or initials) with a small point, for graves that show who rests there. */
+const facePin = (mk: { photo?: string; initials?: string }, on: boolean) => {
+  const d = on ? 56 : 42;
+  const inner = mk.photo
+    ? `<img src="${mk.photo.replace(/"/g, "&quot;")}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px;filter:sepia(.2)">`
+    : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;border-radius:999px;background:#ece8de;color:#4a453b;font:600 ${on ? 15 : 13}px/1 system-ui">${(mk.initials ?? "").replace(/[<>&]/g, "")}</span>`;
+  return L.divIcon({
+    className: "",
+    iconSize: [d, d + 8],
+    iconAnchor: [d / 2, d + 8],
+    html: `<div style="position:relative;width:${d}px;height:${d + 8}px;filter:drop-shadow(0 4px 6px rgb(40 50 35/.4))"><div style="width:${d}px;height:${d}px;border-radius:999px;border:3px solid ${on ? "#1c1d1a" : "#fdfcfa"};background:#fdfcfa;overflow:hidden">${inner}</div><span style="position:absolute;left:50%;bottom:0;width:12px;height:12px;transform:translate(-50%,-2px) rotate(45deg);background:${on ? "#1c1d1a" : "#fdfcfa"}"></span></div>`,
+  });
+};
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export default function LeafletMap({
@@ -103,6 +124,8 @@ export default function LeafletMap({
   scrollZoom = false,
   accuracy = null,
   onCenter,
+  layerAt = "left",
+  fitKey = 0,
 }: Props) {
   const [layer, setLayer] = useState<BaseLayer>(baseLayer);
   const base = useRef<L.Layer | null>(null);
@@ -171,7 +194,8 @@ export default function LeafletMap({
           : "",
         `</div>`,
       ].join("");
-      const marker = L.marker([mk.lat, mk.lng], { icon: pin(false), title: mk.title, keyboard: true, riseOnHover: true });
+      const marker = L.marker([mk.lat, mk.lng], { icon: mk.photo || mk.initials ? facePin(mk, false) : pin(false), title: mk.title, keyboard: true, riseOnHover: true });
+      (marker as L.Marker & { face?: MapMarker }).face = mk.photo || mk.initials ? mk : undefined;
       if (onSelectRef.current) marker.on("click", () => onSelectRef.current?.(mk.id));
       else marker.bindPopup(html);
       marker.addTo(layer);
@@ -197,12 +221,22 @@ export default function LeafletMap({
     if (!m) return;
     for (const [id, marker] of placed.current) {
       const on = id === selectedId;
-      marker.setIcon(pin(true, on));
+      const face = (marker as L.Marker & { face?: MapMarker }).face;
+      marker.setIcon(face ? facePin(face, on) : pin(true, on));
       marker.setZIndexOffset(on ? 1000 : 0);
     }
     const sel = selectedId ? placed.current.get(selectedId) : undefined;
     if (sel) m.setView(sel.getLatLng(), Math.max(m.getZoom(), 16), { animate: true });
   }, [selectedId, markers]);
+
+  // Back to every grave at once ("All graves").
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !fitKey || placed.current.size === 0) return;
+    const pts = [...placed.current.values()].map((mk) => mk.getLatLng());
+    if (pts.length === 1) m.setView(pts[0], 16, { animate: true });
+    else m.fitBounds(L.latLngBounds(pts), { padding: [64, 64], maxZoom: 17, animate: true });
+  }, [fitKey]);
 
   // Jump to a place without a pin.
   useEffect(() => {
@@ -279,7 +313,8 @@ export default function LeafletMap({
     <div className={`relative isolate overflow-hidden ${className ?? "h-80 w-full rounded-xl border border-line"}`}>
       <div ref={el} className="absolute inset-0" />
       {layerLabels && (
-        <div className="absolute left-3 top-3 z-[500] flex rounded-full border border-line bg-surface/95 p-1 text-[0.95rem] shadow-sm">
+        <div className={`absolute top-3 z-[500] flex rounded-full ${layerAt === "right" ? "right-14" : "left-3"}`}>
+          <div className="flex rounded-full border border-line bg-surface/95 p-1 text-[0.95rem] shadow-sm">
           {(["map", "satellite"] as const).map((k) => (
             <button
               key={k}
@@ -291,6 +326,7 @@ export default function LeafletMap({
               {k === "map" ? layerLabels.map : layerLabels.satellite}
             </button>
           ))}
+          </div>
         </div>
       )}
     </div>

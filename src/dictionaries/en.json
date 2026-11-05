@@ -708,7 +708,7 @@
     "graveMarked": "Grave marked",
     "graveUnmarked": "Grave not marked yet",
     "unknownPlace": "Place unknown",
-    "showAll": "Show all graves",
+    "showAll": "All graves",
     "cemeteryPlace": "Cemetery",
     "coords": "Coordinates",
     "copy": "Copy coordinates",
@@ -727,7 +727,12 @@
       "few": "graves",
       "many": "graves",
       "other": "graves"
-    }
+    },
+    "listShow": "List",
+    "listHide": "Hide list",
+    "onMap": "Marked on the map",
+    "close": "Close",
+    "markShort": "Mark"
   },
   "dash": {
     "subtitle": "Generations and memories in one place.",

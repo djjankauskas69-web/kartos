@@ -708,7 +708,7 @@
     "graveMarked": "Kapavietė pažymėta",
     "graveUnmarked": "Kapavietė dar nepažymėta",
     "unknownPlace": "Vieta nežinoma",
-    "showAll": "Rodyti visas kapavietes",
+    "showAll": "Visi kapai",
     "cemeteryPlace": "Kapinių vieta",
     "coords": "Koordinatės",
     "copy": "Kopijuoti koordinates",
@@ -727,7 +727,12 @@
       "few": "kapavietės",
       "many": "kapavietės",
       "other": "kapaviečių"
-    }
+    },
+    "listShow": "Sąrašas",
+    "listHide": "Slėpti sąrašą",
+    "onMap": "Pažymėta žemėlapyje",
+    "close": "Uždaryti",
+    "markShort": "Pažymėti"
   },
   "dash": {
     "subtitle": "Kartos ir prisiminimai vienoje vietoje.",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { MapView } from "@/components/map/Map";
 import { DirectionsMenu } from "@/components/map/Directions";
 
@@ -32,7 +32,7 @@ export type ExplorerLabels = Record<
   | "navApple" | "layerMap" | "layerSatellite" | "moreActions" | "openProfile" | "editGrave" | "notOnMap" | "addPin" | "choose"
   | "pending" | "directions" | "filterMarked" | "filterUnmarked" | "badgeMarked" | "badgeUnmarked" | "graveMarked"
   | "graveUnmarked" | "unknownPlace" | "showAll" | "cemeteryPlace" | "coords" | "copy" | "copied" | "personProfile"
-  | "tabOverview" | "markThis" | "peopleOne" | "peopleFew" | "peopleOther",
+  | "tabOverview" | "markThis" | "peopleOne" | "peopleFew" | "peopleOther" | "listShow" | "listHide" | "onMap" | "close" | "markShort",
   string
 >;
 
@@ -65,16 +65,10 @@ function Portrait({ item, className }: { item: GraveItem; className: string }) {
   );
 }
 
-function Badge({ marked, labels, big = false }: { marked: boolean; labels: ExplorerLabels; big?: boolean }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${big ? "px-3 py-1 text-[0.92rem]" : "px-2.5 py-0.5 text-[0.82rem]"} ${marked ? "bg-[#e7ebd9] text-olive-deep" : "bg-linen text-ink-muted"}`}>
-      {marked ? icon.check : icon.ring}
-      {big ? (marked ? labels.graveMarked : labels.graveUnmarked) : marked ? labels.badgeMarked : labels.badgeUnmarked}
-    </span>
-  );
-}
-
-/** Graves list, map and the chosen grave's details, side by side. */
+/**
+ * The family's graves on one big map: every marked grave shows the person's face; a list floats
+ * on the left (search, marked / not yet), and the chosen grave opens as a card on the map.
+ */
 export function GravesExplorer({
   items,
   initialId,
@@ -88,12 +82,10 @@ export function GravesExplorer({
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "marked" | "unmarked">("all");
   const [limit, setLimit] = useState(PAGE);
-  const [selected, setSelected] = useState<string | null>(initialId ?? items[0]?.id ?? null);
-  // The map shows every grave until someone picks one (or arrives with one chosen).
-  const [mapSelected, setMapSelected] = useState<string | null>(initialId);
-  const [tab, setTab] = useState<"info" | "photos" | "memories">("info");
+  const [selected, setSelected] = useState<string | null>(initialId);
+  const [listOpen, setListOpen] = useState(true);
+  const [fitKey, setFitKey] = useState(0);
   const [copied, setCopied] = useState(false);
-  const detail = useRef<HTMLDivElement>(null);
 
   const counts = useMemo(() => ({ all: items.length, marked: items.filter(isMarked).length, unmarked: items.filter((i) => !isMarked(i)).length }), [items]);
   const filtered = useMemo(() => {
@@ -104,297 +96,222 @@ export function GravesExplorer({
         terms.every((t) => fold(`${i.name} ${i.cemetery ?? ""}`).includes(t)),
     );
   }, [items, q, filter]);
-  // Pins carry the cemetery and how many family members rest there.
-  const markers = useMemo(() => {
-    const perCemetery = new Map<string, number>();
-    for (const i of items) if (isMarked(i) && i.cemetery) perCemetery.set(i.cemetery, (perCemetery.get(i.cemetery) ?? 0) + 1);
-    const people = (n: number) => `${n} ${n === 1 ? labels.peopleOne : n % 10 >= 2 && n % 10 <= 9 && (n % 100 < 11 || n % 100 > 19) ? labels.peopleFew : labels.peopleOther}`;
-    return filtered.filter(isMarked).map((i) => ({
-      id: i.id,
-      lat: i.lat as number,
-      lng: i.lng as number,
-      title: i.cemetery ?? i.name,
-      lines: [i.name, ...(i.cemetery ? [people(perCemetery.get(i.cemetery) ?? 1)] : [])],
-    }));
-  }, [filtered, items, labels]);
+  // Every marked grave, with the face of who rests there.
+  const markers = useMemo(
+    () =>
+      items.filter(isMarked).map((i) => ({
+        id: i.id,
+        lat: i.lat as number,
+        lng: i.lng as number,
+        title: i.name,
+        photo: i.portrait,
+        initials: i.initials,
+      })),
+    [items],
+  );
   const current = items.find((i) => i.id === selected) ?? null;
+  const place = (i: GraveItem) => i.cemetery ?? (isMarked(i) ? labels.onMap : labels.unknownPlace);
 
   function choose(id: string) {
     setSelected(id);
-    setMapSelected(id);
-    setTab("info");
     setCopied(false);
-    if (window.matchMedia("(max-width: 1279px)").matches) {
-      requestAnimationFrame(() => detail.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-    }
+    // On a phone the list makes room for the card.
+    if (window.matchMedia("(max-width: 767px)").matches) setListOpen(false);
   }
 
   const chip = (on: boolean) =>
-    `flex min-h-10 items-center rounded-full border px-3.5 text-[0.92rem] ${on ? "border-olive bg-olive font-semibold text-surface" : "border-line bg-surface text-ink hover:border-ink/30"}`;
-  const card = "rounded-[20px] border border-line/80 bg-surface";
-  const coords = current && isMarked(current) ? `${current.lat!.toFixed(4)}, ${current.lng!.toFixed(4)}` : null;
+    `flex min-h-9 items-center rounded-full border px-3 text-[0.88rem] ${on ? "border-olive bg-olive font-semibold text-surface" : "border-line bg-surface text-ink hover:border-ink/30"}`;
+  const float = "rounded-[20px] border border-line/70 bg-surface/95 shadow-[0_18px_40px_-22px_rgb(28_29_26/0.55)] backdrop-blur";
+  const coords = current && isMarked(current) ? `${current.lat!.toFixed(5)}, ${current.lng!.toFixed(5)}` : null;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)_minmax(22rem,26rem)] [&>*]:min-w-0">
-      {/* List */}
-      <section className={`flex flex-col p-4 xl:max-h-[calc(100dvh-13rem)] ${card}`}>
-        <label className="relative block">
-          <span className="sr-only">{labels.search}</span>
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">{icon.search}</span>
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setLimit(PAGE);
-            }}
-            placeholder={labels.search}
-            className="block min-h-12 w-full rounded-full border border-line bg-surface pl-11 pr-4 text-[0.98rem] placeholder:text-ink-muted/70 focus:border-ink/40 focus:outline-none"
-          />
-        </label>
+    <div className="relative h-[calc(100dvh-10.5rem)] min-h-[30rem] overflow-hidden rounded-[22px] border border-line/70 bg-linen">
+      <MapView
+        markers={markers}
+        selectedId={selected && current && isMarked(current) ? selected : null}
+        onSelect={choose}
+        fitKey={fitKey}
+        layerAt="right"
+        layerLabels={{ map: labels.layerMap, satellite: labels.layerSatellite }}
+        scrollZoom
+        className="absolute inset-0 h-full w-full"
+      />
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(["all", "marked", "unmarked"] as const).map((f) => (
-            <button key={f} type="button" aria-pressed={filter === f} onClick={() => { setFilter(f); setLimit(PAGE); }} className={chip(filter === f)}>
-              {f === "all" ? labels.all : f === "marked" ? labels.filterMarked : labels.filterUnmarked} ({counts[f]})
-            </button>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <p className="mt-6 px-2 text-ink-muted">{labels.noResults}</p>
-        ) : (
-          <ul className="-mx-1 mt-4 flex-1 space-y-1 overflow-y-auto px-1">
-            {filtered.slice(0, limit).map((i) => {
-              const on = i.id === selected;
-              return (
-                <li key={i.id}>
-                  <button
-                    type="button"
-                    onClick={() => choose(i.id)}
-                    aria-current={on ? "true" : undefined}
-                    className={`flex w-full items-center gap-3.5 rounded-2xl border px-3 py-3 text-left transition-colors ${on ? "border-olive/40 bg-[#eef1e4]" : "border-transparent hover:bg-paper"}`}
-                  >
-                    <Portrait item={i} className="h-16 w-16 shrink-0 rounded-full" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold leading-tight">{i.name}</span>
-                      {i.years && <span className="block text-[0.9rem] tabular-nums text-ink-muted">{i.years}</span>}
-                      <span className="mt-0.5 flex items-center gap-1.5 text-[0.9rem]">
-                        <span className="text-ink-muted">{icon.pin(15)}</span>
-                        <span className="truncate">{i.cemetery ?? labels.unknownPlace}</span>
-                        {i.pending && <span className="h-2 w-2 shrink-0 rounded-full bg-[#b8892e]" title={labels.pending} />}
-                      </span>
-                      <span className="mt-1.5 block">
-                        <Badge marked={isMarked(i)} labels={labels} />
-                      </span>
-                    </span>
-                    <span aria-hidden="true" className="text-[1.3rem] text-ink-muted">›</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {filtered.length > limit && (
-          <button type="button" onClick={() => setLimit((l) => l + PAGE)} className="mx-auto mt-3 flex min-h-11 items-center gap-2 rounded-full px-4 text-ink-muted hover:text-ink">
-            {labels.showMore} ▾
-          </button>
-        )}
-      </section>
-
-      {/* Map */}
-      <section className={`relative overflow-hidden ${card}`}>
+      {/* Back to every grave */}
+      {markers.length > 1 && (
         <button
           type="button"
-          onClick={() => setMapSelected(null)}
-          className="absolute right-14 top-3 z-[500] flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.92rem] font-semibold shadow-[0_4px_12px_-8px_rgb(28_29_26/0.5)] hover:border-ink/30"
+          onClick={() => {
+            setSelected(null);
+            setFitKey((k) => k + 1);
+          }}
+          className={`absolute bottom-6 right-4 z-[500] flex min-h-10 items-center gap-2 px-4 text-[0.92rem] font-semibold sm:bottom-auto sm:right-[19rem] sm:top-3 ${float} !rounded-full`}
         >
           {icon.layers}
           {labels.showAll}
         </button>
-        <MapView
-          markers={markers}
-          selectedId={mapSelected}
-          onSelect={choose}
-          layerLabels={{ map: labels.layerMap, satellite: labels.layerSatellite }}
-          className="h-[26rem] w-full lg:h-full lg:min-h-[34rem] xl:h-[calc(100dvh-13rem)]"
-        />
-      </section>
+      )}
 
-      {/* Chosen grave */}
-      <section ref={detail} className={`@container scroll-mt-6 overflow-hidden lg:col-span-2 xl:col-span-1 xl:max-h-[calc(100dvh-13rem)] xl:overflow-y-auto ${card}`}>
-        {!current ? (
-          <p className="p-6 text-ink-muted">{labels.choose}</p>
-        ) : (
-          <>
-            <div className="relative p-2.5 pb-0">
-              <div className="relative h-44 overflow-hidden rounded-2xl bg-[#ece8dd]">
-                {current.gravePhoto ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                  <img src={current.gravePhoto} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element -- shared background picture
-                  <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-full w-full object-cover opacity-70 sepia-[.35]" />
-                )}
-                <details className="absolute right-3 top-3" data-menu>
-                  <summary aria-label={labels.moreActions} title={labels.moreActions} className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full bg-surface/95 text-[1.1rem] shadow-[0_4px_12px_-8px_rgb(28_29_26/0.5)] [&::-webkit-details-marker]:hidden">
-                    ⋯
-                  </summary>
-                  <div className="absolute right-0 z-[600] mt-2 w-56 rounded-xl border border-line bg-surface p-1.5 shadow-[0_10px_30px_-12px_rgb(60_45_30/0.5)]">
-                    <Link href={current.profileHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">{labels.openProfile}</Link>
-                    {current.editHref && (
-                      <Link href={current.editHref} className="flex min-h-10 items-center rounded-lg px-3 hover:bg-paper">
-                        {current.cemetery || isMarked(current) ? labels.editGrave : labels.markThis}
-                      </Link>
-                    )}
-                  </div>
-                </details>
-              </div>
-              <div className="relative -mt-14 flex items-end gap-4 px-3">
-                <Portrait item={current} className="h-28 w-28 shrink-0 rounded-full ring-4 ring-surface" />
-              </div>
-            </div>
-            <div className="px-5 pb-2 pt-3">
-              <h2 className="text-[1.6rem] font-semibold leading-tight">{current.name}</h2>
-              {current.years && <p className="mt-0.5 tabular-nums text-ink-muted">{current.years}</p>}
-              <p className="mt-2 flex items-center gap-1.5">
-                <span className="text-ink-muted">{icon.pin(17)}</span>
-                {current.cemetery ?? labels.unknownPlace}
-              </p>
-              <p className="mt-2.5">
-                <Badge marked={isMarked(current)} labels={labels} big />
-              </p>
-            </div>
-
-            <div role="tablist" className="mt-3 flex gap-1 overflow-x-auto border-b border-line px-3">
-              {(
-                [
-                  ["info", labels.tabOverview],
-                  ["photos", `${labels.tabPhotos} (${current.photos.length})`],
-                  ["memories", `${labels.tabMemories} (${current.memories.length})`],
-                ] as const
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === key}
-                  onClick={() => setTab(key)}
-                  className={`-mb-px shrink-0 border-b-2 px-3 py-3 text-[0.95rem] ${tab === key ? "border-olive font-semibold" : "border-transparent text-ink-muted hover:text-ink"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4" role="tabpanel">
-              {tab === "info" && (
-                <div className="space-y-3">
-                  <div className="grid gap-2 @md:grid-cols-2">
-                    <div className="flex items-center gap-3 rounded-2xl bg-paper px-3.5 py-3">
-                      <span className="text-ink-muted">{icon.grave}</span>
-                      <span className="min-w-0">
-                        <span className="block text-[0.85rem] text-ink-muted">{labels.cemeteryPlace}</span>
-                        <span className="block truncate font-semibold">{current.cemetery ?? "—"}</span>
-                        {current.plot && <span className="block truncate text-[0.85rem] text-ink-muted">{current.plot}</span>}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-2xl bg-paper px-3.5 py-3">
-                      <span className="text-ink-muted">{icon.target}</span>
+      {/* The list, floating on the left (a sheet from below on a phone) */}
+      {listOpen ? (
+        <section className={`absolute inset-x-2 bottom-2 z-[500] flex max-h-[48%] flex-col p-3 ${current ? "max-sm:hidden" : ""} sm:inset-x-auto sm:bottom-3 sm:left-3 sm:top-3 sm:max-h-none sm:w-[21rem] ${float}`}>
+          <div className="flex items-center gap-2">
+            <label className="relative block flex-1">
+              <span className="sr-only">{labels.search}</span>
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted">{icon.search}</span>
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setLimit(PAGE);
+                }}
+                placeholder={labels.search}
+                className="block min-h-11 w-full rounded-full border border-line bg-surface pl-10 pr-4 text-[0.95rem] placeholder:text-ink-muted/70 focus:border-ink/40 focus:outline-none"
+              />
+            </label>
+            <button type="button" onClick={() => setListOpen(false)} aria-label={labels.listHide} title={labels.listHide} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
+              <svg {...I} width={18} height={18}><path d="m15 6-6 6 6 6" /></svg>
+            </button>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {(["all", "marked", "unmarked"] as const).map((f) => (
+              <button key={f} type="button" aria-pressed={filter === f} onClick={() => { setFilter(f); setLimit(PAGE); }} className={chip(filter === f)}>
+                {f === "all" ? labels.all : f === "marked" ? labels.filterMarked : labels.filterUnmarked} ({counts[f]})
+              </button>
+            ))}
+          </div>
+          {filtered.length === 0 ? (
+            <p className="mt-5 px-2 text-ink-muted">{labels.noResults}</p>
+          ) : (
+            <ul className="-mx-1 mt-3 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1">
+              {filtered.slice(0, limit).map((i) => {
+                const on = i.id === selected;
+                const marked = isMarked(i);
+                return (
+                  <li key={i.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => choose(i.id)}
+                      aria-current={on ? "true" : undefined}
+                      className={`flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors ${on ? "bg-[#eef1e4]" : "hover:bg-paper"}`}
+                    >
+                      <Portrait item={i} className={`h-11 w-11 shrink-0 rounded-full ${marked ? "" : "opacity-60"}`} />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[0.85rem] text-ink-muted">{labels.coords}</span>
-                        <span className="block truncate font-semibold tabular-nums">{coords ?? "—"}</span>
+                        <span className="block truncate font-semibold leading-tight">{i.name}</span>
+                        <span className="flex items-center gap-1 text-[0.85rem] text-ink-muted">
+                          {i.years && <span className="shrink-0 whitespace-nowrap tabular-nums">{i.years}</span>}
+                          {i.years && <span aria-hidden="true">·</span>}
+                          <span className="truncate">{place(i)}</span>
+                          {i.pending && <span className="h-2 w-2 shrink-0 rounded-full bg-[#b8892e]" title={labels.pending} />}
+                        </span>
                       </span>
-                      {coords && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard?.writeText(coords).then(() => setCopied(true), () => {});
-                          }}
-                          aria-label={copied ? labels.copied : labels.copy}
-                          title={copied ? labels.copied : labels.copy}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-surface hover:text-ink"
-                        >
-                          {copied ? icon.check : icon.copy}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {current.directions && (
-                    <p className="rounded-2xl bg-paper px-3.5 py-3 text-[0.95rem]">
-                      <span className="sr-only">{labels.directions}: </span>
-                      {current.directions}
-                    </p>
-                  )}
-                  {!isMarked(current) && (
-                    <p className="text-[0.95rem] text-ink-muted">
-                      {labels.notOnMap}{" "}
-                      {current.editHref && (
-                        <Link href={current.editHref} className="font-semibold text-olive-deep hover:underline">
-                          {labels.addPin}
-                        </Link>
-                      )}
-                    </p>
-                  )}
-                  <div className="grid gap-2 pt-1 @sm:grid-cols-2">
-                    {isMarked(current) ? (
-                      <DirectionsMenu
-                        lat={current.lat!}
-                        lng={current.lng!}
-                        label={labels.navigate}
-                        labels={{ google: labels.navGoogle, waze: labels.navWaze, apple: labels.navApple }}
-                        align="left"
-                        summaryClassName="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-olive px-4 font-semibold text-surface hover:bg-olive-deep"
-                      />
-                    ) : current.editHref ? (
-                      <Link href={current.editHref} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-olive px-4 font-semibold text-surface hover:bg-olive-deep">
-                        {icon.pin(18)}
-                        {labels.markThis}
+                    </button>
+                    {!marked && i.editHref && (
+                      <Link href={i.editHref} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-[0.85rem] font-semibold hover:border-ink/40">
+                        {labels.markShort}
                       </Link>
-                    ) : (
-                      <span />
                     )}
-                    <Link href={current.profileHref} className="flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line px-4 font-semibold hover:border-ink/40">
-                      {icon.person}
-                      {labels.personProfile} ↗
-                    </Link>
-                  </div>
-                </div>
-              )}
-              {tab === "photos" &&
-                (current.photos.length === 0 ? (
-                  <p className="text-ink-muted">{labels.noPhotos}</p>
-                ) : (
-                  <ul className="grid grid-cols-3 gap-2">
-                    {current.photos.map((src) => (
-                      <li key={src}>
-                        <a href={src} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg bg-linen">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ))}
-              {tab === "memories" &&
-                (current.memories.length === 0 ? (
-                  <p className="text-ink-muted">{labels.noMemories}</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {current.memories.map((m, i) => (
-                      <li key={i} className="rounded-2xl bg-paper p-4">
-                        <blockquote className="whitespace-pre-line leading-relaxed">{m.body}</blockquote>
-                        <p className="mt-2 text-[0.88rem] text-ink-muted">
-                          {m.author} · {m.date}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ))}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {filtered.length > limit && (
+            <button type="button" onClick={() => setLimit((l) => l + PAGE)} className="mx-auto mt-2 flex min-h-10 items-center gap-2 rounded-full px-4 text-ink-muted hover:text-ink">
+              {labels.showMore} ▾
+            </button>
+          )}
+        </section>
+      ) : null}
+      {(!listOpen || current) && (
+        <button
+          type="button"
+          onClick={() => {
+            setListOpen(true);
+            if (window.matchMedia("(max-width: 639px)").matches) setSelected(null);
+          }}
+          className={`absolute left-3 top-3 ${listOpen ? "sm:hidden" : ""} z-[500] flex min-h-11 items-center gap-2 px-4 font-semibold ${float} !rounded-full`}
+        >
+          <svg {...I} width={18} height={18}><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" /></svg>
+          {labels.listShow} ({counts.all})
+        </button>
+      )}
+
+      {/* The chosen grave, as a card on the map */}
+      {current && (
+        <article
+          key={current.id}
+          className={`absolute inset-x-2 bottom-2 z-[600] animate-[fade-in_200ms_ease-out_both] p-4 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:w-[23rem] ${float}`}
+        >
+          <button type="button" onClick={() => setSelected(null)} aria-label={labels.close} title={labels.close} className="absolute right-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-linen hover:text-ink">
+            <svg {...I} width={17} height={17} strokeWidth={2}><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+          <div className="flex items-center gap-3.5 pr-8">
+            <Portrait item={current} className="h-16 w-16 shrink-0 rounded-full ring-2 ring-surface" />
+            <div className="min-w-0">
+              <h2 className="truncate text-[1.3rem] font-semibold leading-tight">{current.name}</h2>
+              {current.years && <p className="tabular-nums text-ink-muted">{current.years}</p>}
+              <p className="mt-0.5 flex items-center gap-1 text-[0.92rem]">
+                <span className="text-ink-muted">{icon.pin(15)}</span>
+                <span className="truncate">{place(current)}</span>
+              </p>
             </div>
-          </>
-        )}
-      </section>
+          </div>
+          {current.gravePhoto && (
+            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+            <img src={current.gravePhoto} alt="" className="mt-3 h-32 w-full rounded-xl object-cover" />
+          )}
+          {current.directions && <p className="mt-3 rounded-xl bg-paper px-3 py-2 text-[0.92rem]">{current.directions}</p>}
+          {coords && (
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(coords).then(() => setCopied(true), () => {})}
+              className="mt-2 flex items-center gap-1.5 text-[0.82rem] tabular-nums text-ink-muted hover:text-ink"
+              title={copied ? labels.copied : labels.copy}
+            >
+              {copied ? icon.check : icon.copy}
+              {coords}
+            </button>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {isMarked(current) ? (
+              <DirectionsMenu
+                lat={current.lat!}
+                lng={current.lng!}
+                label={labels.navigate}
+                labels={{ google: labels.navGoogle, waze: labels.navWaze, apple: labels.navApple }}
+                align="left"
+                summaryClassName="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-olive px-3 font-semibold text-surface hover:bg-olive-deep"
+              />
+            ) : current.editHref ? (
+              <Link href={current.editHref} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-olive px-3 font-semibold text-surface hover:bg-olive-deep">
+                {icon.pin(17)}
+                {labels.markThis}
+              </Link>
+            ) : (
+              <span />
+            )}
+            <Link href={current.profileHref} className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line px-3 font-semibold hover:border-ink/40">
+              {icon.person}
+              {labels.personProfile}
+            </Link>
+          </div>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[0.88rem]">
+            <Link href={current.profileHref} className="text-ink-muted hover:text-ink hover:underline">
+              {labels.tabPhotos} ({current.photos.length})
+            </Link>
+            <Link href={current.profileHref} className="text-ink-muted hover:text-ink hover:underline">
+              {labels.tabMemories} ({current.memories.length})
+            </Link>
+            {current.editHref && isMarked(current) && (
+              <Link href={current.editHref} className="ml-auto font-semibold text-ink-muted hover:text-ink hover:underline">
+                {labels.editGrave}
+              </Link>
+            )}
+          </p>
+        </article>
+      )}
     </div>
   );
 }

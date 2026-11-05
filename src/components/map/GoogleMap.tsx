@@ -21,6 +21,9 @@ type Props = {
   scrollZoom?: boolean;
   accuracy?: number | null;
   onCenter?: (lat: number, lng: number) => void;
+  layerAt?: "left" | "right";
+  /** Bump to show every marker again. */
+  fitKey?: number;
 };
 
 const LITHUANIA = { lat: 55.25, lng: 23.9, zoom: 7 };
@@ -31,6 +34,67 @@ function pinIcon(g: any, accent: boolean, big = false) {
   const h = big ? 58 : 40;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 30 40"><path d="M15 39C6 27 2 21 2 14a13 13 0 0 1 26 0c0 7-4 13-13 25z" fill="${accent ? "#1c1d1a" : "#737660"}" stroke="#fdfcfa" stroke-width="${big ? 2.5 : 2}"/><circle cx="15" cy="14" r="${big ? 6 : 5}" fill="#fdfcfa"/></svg>`;
   return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, scaledSize: new g.maps.Size(w, h), anchor: new g.maps.Point(w / 2, h - 2) };
+}
+
+/**
+ * A round portrait (or initials) standing on the grave, drawn as plain HTML over the map so the
+ * real photo shows. Made once Google has loaded (OverlayView only exists then).
+ */
+let FaceMarker: any = null;
+function faceMarkerClass(g: any) {
+  if (FaceMarker) return FaceMarker;
+  FaceMarker = class extends g.maps.OverlayView {
+    pos: any;
+    div: HTMLDivElement;
+    on = false;
+    constructor(pos: { lat: number; lng: number }, mk: { photo?: string; initials?: string; title: string }, onClick: () => void) {
+      super();
+      this.pos = new g.maps.LatLng(pos.lat, pos.lng);
+      const d = document.createElement("div");
+      d.title = mk.title;
+      d.setAttribute("role", "button");
+      d.tabIndex = 0;
+      d.style.cssText = "position:absolute;cursor:pointer;transform:translate(-50%,-100%);transition:transform .15s;filter:drop-shadow(0 4px 6px rgb(40 50 35/.4))";
+      const face = mk.photo
+        ? `<img src="${mk.photo.replace(/"/g, "&quot;")}" alt="" style="width:100%;height:100%;object-fit:cover;filter:sepia(.2)">`
+        : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#ece8de;color:#4a453b;font:600 13px/1 system-ui">${(mk.initials ?? "").replace(/[<>&]/g, "")}</span>`;
+      d.innerHTML = `<div data-ring style="width:42px;height:42px;border-radius:999px;border:3px solid #fdfcfa;background:#fdfcfa;overflow:hidden">${face}</div><span data-tip style="display:block;width:12px;height:12px;margin:-8px auto 0;transform:rotate(45deg);background:#fdfcfa"></span>`;
+      d.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onClick();
+      });
+      d.addEventListener("keydown", (e) => e.key === "Enter" && onClick());
+      this.div = d;
+    }
+    onAdd() {
+      this.getPanes().overlayMouseTarget.appendChild(this.div);
+    }
+    draw() {
+      const p = this.getProjection()?.fromLatLngToDivPixel(this.pos);
+      if (!p) return;
+      this.div.style.left = `${p.x}px`;
+      this.div.style.top = `${p.y}px`;
+      this.div.style.zIndex = this.on ? "1000" : String(Math.round(p.y));
+    }
+    onRemove() {
+      this.div.remove();
+    }
+    getPosition() {
+      return this.pos;
+    }
+    setSelected(on: boolean) {
+      this.on = on;
+      const ring = this.div.querySelector<HTMLElement>("[data-ring]")!;
+      const tip = this.div.querySelector<HTMLElement>("[data-tip]")!;
+      const size = on ? "56px" : "42px";
+      ring.style.width = size;
+      ring.style.height = size;
+      ring.style.borderColor = on ? "#1c1d1a" : "#fdfcfa";
+      tip.style.background = on ? "#1c1d1a" : "#fdfcfa";
+      this.draw();
+    }
+  };
+  return FaceMarker;
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -55,6 +119,8 @@ export default function GoogleMap({
   scrollZoom = false,
   accuracy = null,
   onCenter,
+  layerAt = "left",
+  fitKey = 0,
 }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const [g, setG] = useState<any>(null);
@@ -114,7 +180,17 @@ export default function GoogleMap({
     const list: any[] = [];
     const bounds = new g.maps.LatLngBounds();
     for (const mk of markers) {
-      const marker = new g.maps.Marker({ position: { lat: mk.lat, lng: mk.lng }, map: m, title: mk.title, icon: pinIcon(g, false) });
+      const open = () => {
+        if (onSelectRef.current) onSelectRef.current(mk.id);
+        else {
+          info.current.setContent(html);
+          info.current.open({ map: m, position: { lat: mk.lat, lng: mk.lng } });
+        }
+      };
+      const face = !!(mk.photo || mk.initials);
+      const Face = face ? faceMarkerClass(g) : null;
+      const marker = Face ? new Face({ lat: mk.lat, lng: mk.lng }, mk, () => open()) : new g.maps.Marker({ position: { lat: mk.lat, lng: mk.lng }, map: m, title: mk.title, icon: pinIcon(g, false) });
+      if (Face) marker.setMap(m);
       const html = [
         `<div style="font-family:inherit;min-width:12rem"><strong style="font-size:1.05rem">${esc(mk.title)}</strong>`,
         ...(mk.lines ?? []).map((l) => `<div style="color:#6b6c63">${esc(l)}</div>`),
@@ -123,13 +199,7 @@ export default function GoogleMap({
         mk.directionsLabel ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${mk.lat},${mk.lng}" target="_blank" rel="noreferrer" style="font-weight:600">${esc(mk.directionsLabel)}</a>` : "",
         `</div></div>`,
       ].join("");
-      marker.addListener("click", () => {
-        if (onSelectRef.current) onSelectRef.current(mk.id);
-        else {
-          info.current.setContent(html);
-          info.current.open({ map: m, anchor: marker });
-        }
-      });
+      if (!Face) marker.addListener("click", open);
       placed.current.set(mk.id, marker);
       list.push(marker);
       bounds.extend({ lat: mk.lat, lng: mk.lng });
@@ -154,8 +224,11 @@ export default function GoogleMap({
     if (!g || !m) return;
     for (const [id, marker] of placed.current) {
       const on = id === selectedId;
-      marker.setIcon(pinIcon(g, true, on));
-      marker.setZIndex(on ? 1000 : 0);
+      if (marker.setSelected) marker.setSelected(on);
+      else {
+        marker.setIcon(pinIcon(g, true, on));
+        marker.setZIndex(on ? 1000 : 0);
+      }
     }
     const sel = selectedId ? placed.current.get(selectedId) : undefined;
     if (sel) {
@@ -163,6 +236,20 @@ export default function GoogleMap({
       if (m.getZoom() < 16) m.setZoom(16);
     }
   }, [g, selectedId, markers]);
+
+  // Back to every grave at once ("All graves").
+  useEffect(() => {
+    const m = map.current;
+    if (!g || !m || !fitKey || placed.current.size === 0) return;
+    info.current?.close();
+    const b = new g.maps.LatLngBounds();
+    for (const mk of placed.current.values()) b.extend(mk.getPosition());
+    if (placed.current.size === 1) {
+      m.panTo(b.getCenter());
+      m.setZoom(16);
+    } else m.fitBounds(b, 64);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on explicit requests
+  }, [fitKey]);
 
   // Jump to a place without a pin.
   useEffect(() => {
@@ -232,7 +319,8 @@ export default function GoogleMap({
     <div className={`relative isolate overflow-hidden ${className ?? "h-80 w-full rounded-xl border border-line"}`}>
       <div ref={el} className="absolute inset-0 bg-linen" />
       {layerLabels && (
-        <div className="absolute left-3 top-3 z-10 flex rounded-full border border-line bg-surface/95 p-1 text-[0.95rem] shadow-sm">
+        <div className={`absolute top-3 z-10 flex rounded-full ${layerAt === "right" ? "right-16" : "left-3"}`} >
+          <div className="flex rounded-full border border-line bg-surface/95 p-1 text-[0.95rem] shadow-sm">
           {(["map", "satellite"] as const).map((k) => (
             <button
               key={k}
@@ -244,6 +332,7 @@ export default function GoogleMap({
               {k === "map" ? layerLabels.map : layerLabels.satellite}
             </button>
           ))}
+          </div>
         </div>
       )}
     </div>
