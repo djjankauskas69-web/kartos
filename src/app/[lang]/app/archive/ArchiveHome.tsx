@@ -176,9 +176,8 @@ export function ArchiveHome({
   const at = open ? navList.findIndex((i) => i.id === open.id) : -1;
   const prevItem = at > 0 ? navList[at - 1] : null;
   const nextItem = at >= 0 && at < navList.length - 1 ? navList[at + 1] : null;
-  // Playing as a slideshow right in the photo view: goes round to the first photo at the end.
+  // The photo view over the whole screen; stays so while going through the photos.
   const [playing, setPlaying] = useState(false);
-  const playNext = at >= 0 && navList.length > 1 ? navList[(at + 1) % navList.length] : null;
   const periodLabels: PeriodLabels = { date: t.date, exact: t.dateExact, about: t.dateAbout, between: t.dateBetween, year: t.year, from: t.yearFrom, to: t.yearTo, placeholder: t.yearPlaceholder };
   const canEditAlbum = (a: Album) => isEditor || (canAdd && a.createdBy === userId);
 
@@ -652,10 +651,10 @@ export function ArchiveHome({
             key={open.id}
             item={open}
             onPrev={prevItem ? () => setOpenId(prevItem.id) : undefined}
-            onNext={nextItem ? () => setOpenId(nextItem.id) : playing && playNext ? () => setOpenId(playNext.id) : undefined}
-            preload={[nextItem?.url ?? playNext?.url, prevItem?.url]}
+            onNext={nextItem ? () => setOpenId(nextItem.id) : undefined}
+            preload={[nextItem?.url, prevItem?.url]}
             playing={playing && open.kind === "photo"}
-            onPlay={open.kind === "photo" && navList.length > 1 ? setPlaying : undefined}
+            onPlay={open.kind === "photo" ? setPlaying : undefined}
             t={t}
             locale={locale}
             folders={open.kind === "document" ? docFolders : albumOptions}

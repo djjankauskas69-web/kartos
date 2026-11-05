@@ -1006,7 +1006,9 @@
     "slidePickAll": "Visos nuotraukos",
     "slideStart": "Paleisti · {n} nuotr.",
     "slideNoAlbum": "Be albumo",
-    "photoInfo": "Informacija"
+    "photoInfo": "Informacija",
+    "fullscreen": "Visas ekranas",
+    "exitFullscreen": "Išeiti iš viso ekrano"
   },
   "peopleList": {
     "title": "Žmonės",

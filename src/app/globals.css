@@ -187,20 +187,3 @@
   }
 }
 
-/* Slideshow inside the photo view: a slow push-in, and the line counting to the next photo. */
-@keyframes kenburns {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.06);
-  }
-}
-@keyframes slide-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}

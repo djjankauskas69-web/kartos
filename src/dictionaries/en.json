@@ -1006,7 +1006,9 @@
     "slidePickAll": "All photos",
     "slideStart": "Play · {n} photos",
     "slideNoAlbum": "Not in an album",
-    "photoInfo": "Details"
+    "photoInfo": "Details",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen"
   },
   "peopleList": {
     "title": "People",
