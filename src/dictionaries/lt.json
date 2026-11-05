@@ -821,7 +821,7 @@
     "upEmpty": "Per artimiausią mėnesį progų nėra. Įrašykite tikslias gimimo ir mirties datas – jos atsiras čia.",
     "historyAll": "Šeimos istorija metais ({n})",
     "memoryTitle": "Naujausias prisiminimas",
-    "memoryAbout": "Apie {name}",
+    "memoryAbout": "{name}",
     "memoryMore": "Visi prisiminimai",
     "fillTitle": "Ką galima papildyti",
     "fillLead": "Keli žingsniai, kad šeimos istorija būtų pilnesnė.",
