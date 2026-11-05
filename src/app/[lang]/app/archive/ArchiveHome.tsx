@@ -319,7 +319,7 @@ export function ArchiveHome({
           </>
         ) : undefined)
       ) : (
-        <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {albumList.map((a) => (
             <li key={a.id}>
               <button type="button" onClick={() => setAlbumId(a.id)} className="group block w-full text-left">
