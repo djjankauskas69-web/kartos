@@ -358,8 +358,18 @@ export function TreeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tree (after the canvas has its height)
   }, [start?.key, width, height, fitH === null]);
 
+  // Going to another page (or hiding this one) leaves the full screen too.
   useEffect(() => {
-    const onChange = () => setFull(document.fullscreenElement === frame.current);
+    if (!full) return;
+    return () => {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    };
+  }, [full]);
+  useEffect(() => {
+    // Leaving the browser's full screen (Esc) brings the tree back into the page.
+    const onChange = () => {
+      if (!document.fullscreenElement) setFull(false);
+    };
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
@@ -453,10 +463,17 @@ export function TreeView({
 
   async function toggleFull() {
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await frame.current?.requestFullscreen();
+      // The whole page goes full screen and the tree covers it, so a profile opened from the
+      // tree slides in over it just as usual (and closing it comes back to the full-screen tree).
+      if (full) {
+        setFull(false);
+        if (document.fullscreenElement) await document.exitFullscreen();
+      } else {
+        setFull(true);
+        await document.documentElement.requestFullscreen?.();
+      }
     } catch {
-      /* not available here */
+      /* not available here: the tree still fills the window */
     }
   }
 
@@ -535,7 +552,7 @@ export function TreeView({
         // A faint paper grain, like a family album page.
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .22 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
       }}
-      className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "h-screen" : "rounded-[18px]"}`}>
+      className={`relative overflow-hidden border border-line/60 transition-colors duration-300 ${full ? "fixed inset-0 z-40 h-dvh border-0" : "rounded-[18px]"}`}>
       {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -1093,7 +1110,8 @@ function CardMenu({
           </div>
         )}
         <div className="pt-1.5" />
-        <CardLink foreign={card.profileHref.includes("/open?")} href={card.profileHref} role="menuitem" onClick={onLeave} className={item}>
+        {/* A profile in this family slides in over the tree, so a full-screen tree stays full screen. */}
+        <CardLink foreign={card.profileHref.includes("/open?")} href={card.profileHref} role="menuitem" onClick={card.profileHref.includes("/open?") ? onLeave : onClose} className={item}>
           <svg {...ICON}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
           {labels.menuProfile}
         </CardLink>
