@@ -359,11 +359,17 @@ function Footer({ t }: { t: Dictionary }) {
         </div>
         {/* The name, large and quiet, then the hills it all grows from */}
         {/* eslint-disable-next-line @next/next/no-img-element -- logo */}
-        <img src="/brand/wordmark.svg" alt="" aria-hidden="true" className="mx-auto mt-14 block w-[min(86%,60rem)] select-none opacity-95 [filter:brightness(0)_invert(1)]" />
-        <div className="relative mt-10 h-44 sm:h-64">
+        <img src="/brand/wordmark.svg" alt="" aria-hidden="true" className="relative z-10 mx-auto mt-14 block w-[min(86%,60rem)] select-none opacity-95 [filter:brightness(0)_invert(1)]" />
+        {/* The hills rise slowly out of the dark: a long, soft fade instead of an edge */}
+        <div className="relative -mt-28 h-80 sm:-mt-44 sm:h-[30rem]">
           {/* eslint-disable-next-line @next/next/no-img-element -- static photo */}
-          <img src="/landing/footer-hills.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-[50%_45%]" />
-          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-night via-night/30 to-transparent to-60%" />
+          <img
+            src="/landing/footer-hills.jpg"
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_40%]"
+            style={{ WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.15) 25%, rgb(0 0 0 / 0.55) 50%, rgb(0 0 0 / 0.9) 75%, #000 100%)", maskImage: "linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.15) 25%, rgb(0 0 0 / 0.55) 50%, rgb(0 0 0 / 0.9) 75%, #000 100%)" }}
+          />
         </div>
       </div>
     </footer>
