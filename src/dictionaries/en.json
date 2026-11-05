@@ -114,8 +114,8 @@
     ]
   },
   "final": {
-    "title": "Start with one name",
-    "body": "The rest follows: photos, dates, stories, and the relatives who know more.",
+    "title": "Don't let their stories be forgotten",
+    "body": "Start with one name. The rest will follow: photos, dates and memories you'll keep for the generations to come.",
     "cta": "Create your family archive"
   },
   "footer": {
@@ -594,7 +594,7 @@
     "delete": "Delete",
     "errorEmpty": "Write a memory first.",
     "composerTitle": "Write a memory",
-    "composerLead": "Tell what you remember – everyone in the family will see your story and who wrote it.",
+    "composerLead": "What do you remember? Even one sentence will be precious to the generations to come. Family members will see your story and who wrote it.",
     "composerPh": "E.g. when I was little, grandma baked every Sunday…",
     "addPhoto": "Add a photo",
     "removePhoto": "Remove",
@@ -605,7 +605,9 @@
     "storiesTitle": "Stories and memories",
     "openPhoto": "Open the photo",
     "addButton": "Add a memory",
-    "read": "Read"
+    "read": "Read",
+    "emptyTitle": "Don't let the memories fade",
+    "emptyLead": "What do you remember? Even one sentence will be precious to the generations to come."
   },
   "grave": {
     "title": "Resting place",
@@ -792,7 +794,10 @@
     "dateJubileeLiving": "{name} turns {n} this year",
     "dateJubileePast": "{n} years since {name} was born",
     "inviteNotJoined": "{n} living relatives in the tree have not joined yet. Invite them to add to the story.",
-    "statMemories": "Memories"
+    "statMemories": "Memories",
+    "leaveTitle": "Leave memories for the generations to come",
+    "leaveLead": "What did your grandparents use to tell? How did your parents meet? Pick someone in the tree and write what you remember.",
+    "leaveCta": "Write the first memory"
   },
   "archive": {
     "title": "Archive",
@@ -1251,7 +1256,7 @@
     ],
     "treeGen": "generation",
     "personTitle": "Every person, with their own story",
-    "personLead": "Not just a name and dates. What she was like, what she loved, what she used to tell — and what others remember about her.",
+    "personLead": "Not just a name and dates. Who she was, what she loved, what she used to say. Leave memories for those who will never meet her.",
     "personName": "Stasė Jankauskienė",
     "personNee": "née Petrauskaitė",
     "personAbout": "What she was like",

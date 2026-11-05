@@ -113,6 +113,22 @@ export function DashboardView(props: DashboardData) {
         ))}
       </ul>
 
+      {/* No memories yet: the reason the archive exists, said once, with the way to begin. */}
+      {counts.memories === 0 && counts.people > 0 && can.add(role) && (
+        <section className={`flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 ${card}`}>
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linen text-sage-deep"><IconQuote size={24} /></span>
+            <div>
+              <h2 className="font-serif text-[1.45rem] leading-snug">{d.leaveTitle}</h2>
+              <p className="mt-1 max-w-xl text-ink-muted">{d.leaveLead}</p>
+            </div>
+          </div>
+          <Link href={`${base}/tree`} className="inline-flex min-h-12 shrink-0 items-center gap-2 self-start rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep sm:self-center">
+            {d.leaveCta} <IconArrow size={18} />
+          </Link>
+        </section>
+      )}
+
       {/* Tree and graves */}
       <section className="grid gap-5 lg:grid-cols-[1.3fr_1fr] [&>*]:min-w-0">
         <div className={`flex flex-col p-6 sm:p-7 ${card}`}>

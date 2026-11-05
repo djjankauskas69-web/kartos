@@ -114,8 +114,8 @@
     ]
   },
   "final": {
-    "title": "Pradėkite nuo vieno vardo",
-    "body": "Kiti ateis paskui — nuotraukos, datos, istorijos ir giminaičiai, kurie žino daugiau.",
+    "title": "Neleiskite jų istorijoms užsimiršti",
+    "body": "Pradėkite nuo vieno vardo. Kiti ateis paskui: nuotraukos, datos ir prisiminimai, kuriuos išsaugosite kitoms kartoms.",
     "cta": "Sukurti šeimos archyvą"
   },
   "footer": {
@@ -594,7 +594,7 @@
     "delete": "Ištrinti",
     "errorEmpty": "Parašykite prisiminimą.",
     "composerTitle": "Parašyti prisiminimą",
-    "composerLead": "Papasakokite, ką prisimenate – visi šeimos nariai matys jūsų istoriją ir kas ją parašė.",
+    "composerLead": "Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms. Šeimos nariai matys jūsų istoriją ir kas ją parašė.",
     "composerPh": "Pvz. kai buvau maža, močiutė kiekvieną sekmadienį kepdavo…",
     "addPhoto": "Pridėti nuotrauką",
     "removePhoto": "Pašalinti",
@@ -605,7 +605,9 @@
     "storiesTitle": "Istorijos ir prisiminimai",
     "openPhoto": "Atidaryti nuotrauką",
     "addButton": "Pridėti prisiminimą",
-    "read": "Skaityti"
+    "read": "Skaityti",
+    "emptyTitle": "Neleiskite prisiminimams užsimiršti",
+    "emptyLead": "Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms."
   },
   "grave": {
     "title": "Kapo vieta",
@@ -792,7 +794,10 @@
     "dateJubileeLiving": "{name} šiais metais švenčia {n}-metį",
     "dateJubileePast": "Šiemet {n} metų nuo {name} gimimo",
     "inviteNotJoined": "Medyje dar {n} gyvų giminaičių, kurie neprisijungę. Pakvieskite juos papildyti istoriją.",
-    "statMemories": "Prisiminimai"
+    "statMemories": "Prisiminimai",
+    "leaveTitle": "Palikite prisiminimus kitoms kartoms",
+    "leaveLead": "Ką pasakodavo seneliai? Kaip susipažino tėvai? Pasirinkite žmogų medyje ir parašykite, ką prisimenate.",
+    "leaveCta": "Parašyti pirmą prisiminimą"
   },
   "archive": {
     "title": "Archyvas",
@@ -1251,7 +1256,7 @@
     ],
     "treeGen": "karta",
     "personTitle": "Kiekvienas žmogus — su savo istorija",
-    "personLead": "Ne tik vardas ir datos. Kokia ji buvo, ką mėgo, ką pasakodavo — ir ką apie ją prisimena kiti.",
+    "personLead": "Ne tik vardas ir datos. Kokia ji buvo, ką mėgo, ką pasakodavo. Palikite prisiminimus tiems, kurie jos jau nepažins.",
     "personName": "Stasė Jankauskienė",
     "personNee": "gim. Petrauskaitė",
     "personAbout": "Kokia ji buvo",

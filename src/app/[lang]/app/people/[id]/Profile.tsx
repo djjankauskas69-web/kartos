@@ -245,7 +245,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           {can.add(role) && composerNode}
         </div>
         {(memories ?? []).length === 0 && sharedMemories.length === 0 ? (
-          <p className="mt-3 text-ink-muted">{t.memories.empty}</p>
+          // Nothing written yet: a gentle nudge rather than an empty line.
+          <div className="mt-4 rounded-[18px] border border-dashed border-line bg-paper/60 px-6 py-7 text-center">
+            <p className="font-serif text-[1.3rem] leading-snug">{t.memories.emptyTitle}</p>
+            <p className="mx-auto mt-1.5 max-w-md text-ink-muted">{t.memories.emptyLead}</p>
+          </div>
         ) : (
           <ul className="mt-5 grid items-stretch gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {(memories ?? []).map((m) => {
