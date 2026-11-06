@@ -507,7 +507,33 @@
       "there": "The parents are recorded in “{family}”, so it's marked there.",
       "open": "Open “{family}”"
     },
-    "unknownParent": "Parents unknown"
+    "unknownParent": "Parents unknown",
+    "unlink": {
+      "menu": "Remove a link…",
+      "pick": "Which link should go?",
+      "question": "Remove this link?",
+      "hint": "Both people stay in the tree – only the link between them goes.",
+      "confirm": "Remove",
+      "cancel": "Cancel",
+      "back": "Back",
+      "rel": {
+        "parent": {
+          "m": "Father",
+          "f": "Mother",
+          "x": "Parent"
+        },
+        "child": {
+          "m": "Son",
+          "f": "Daughter",
+          "x": "Child"
+        },
+        "partner": {
+          "m": "Husband",
+          "f": "Wife",
+          "x": "Partner"
+        }
+      }
+    }
   },
   "family": {
     "title": "Family",
@@ -1626,7 +1652,8 @@
     "fillIn": "Add:",
     "addDocShort": "Document",
     "addPlaceShort": "Place",
-    "memoriesEmpty": "No memories yet. What do you remember? Even one sentence will be precious to the next generations."
+    "memoriesEmpty": "No memories yet. What do you remember? Even one sentence will be precious to the next generations.",
+    "manageInTree": "Arrange in the tree"
   },
   "shared": {
     "title": "Who will see it?",

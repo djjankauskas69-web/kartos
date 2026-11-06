@@ -88,7 +88,7 @@ export function MemorialProfile({
   living?: boolean;
   aliveLabel?: string;
   residence?: string | null;
-  family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[]; parentsAdd?: Array<{ href: string; label: string }> };
+  family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[]; manageHref?: string };
   /** The newest memories, shown first on the overview. */
   memoryPreview?: MemoryPreview;
   /** No memories tab (your own profile, before anyone has written about you). */
@@ -223,20 +223,19 @@ export function MemorialProfile({
         </ul>
       </div>
     );
-  const hasFamily = family.parents.length + family.partners.length + family.children.length + (family.parentsAdd?.length ?? 0) > 0;
-  const parentsAdd = family.parentsAdd?.length ? (
-    <div className={family.parents.length ? "mt-3" : ""}>
-      {!family.parents.length && <h3 className="mb-2.5 text-[0.95rem] text-ink-muted">{t.family.parents}</h3>}
-      <p className="flex flex-wrap gap-2">
-        {family.parentsAdd.map((a) => (
-          <Link key={a.href} href={a.href} scroll={false} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-line px-4 text-[0.95rem] font-semibold text-ink-muted hover:border-ink/40 hover:text-ink">
-            <span aria-hidden="true">+</span>
-            {a.label.replace(/^\+\s*/, "")}
-          </Link>
-        ))}
-      </p>
+  const hasFamily = family.parents.length + family.partners.length + family.children.length > 0;
+  // Who is whose is arranged on the tree, where the whole picture is in view.
+  const manage = family.manageHref && (
+    <Link href={family.manageHref} className="text-[0.92rem] font-semibold text-ink-muted hover:text-ink">
+      {m.manageInTree} →
+    </Link>
+  );
+  const noParents = family.parents.length === 0 && (
+    <div>
+      <h3 className="mb-1.5 text-[0.95rem] text-ink-muted">{t.family.parents}</h3>
+      <p className="text-[0.95rem] text-ink-muted/80">{t.family.none}</p>
     </div>
-  ) : null;
+  );
 
   // Empty parts are folded into one quiet line instead of a big empty card each.
   const showDocs = docs.length > 0;
@@ -321,12 +320,13 @@ export function MemorialProfile({
           <div className="mb-4 flex items-center gap-3">
             <span className="text-ink-muted">{icons.people}</span>
             <h2 className={`flex-1 ${cls.h3}`}>{m.tabFamily}</h2>
+            {manage}
           </div>
           {hasFamily ? (
             <div className="@container/fam"><div className="grid gap-5">
               <div>
                 {relCol(t.family.parents, family.parents)}
-                {parentsAdd}
+                {noParents}
               </div>
               {relCol(t.family.partners, family.partners)}
               {relCol(t.family.children, family.children)}

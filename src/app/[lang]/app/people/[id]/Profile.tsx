@@ -33,7 +33,6 @@ import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./Memor
 import { GraveView } from "./GraveView";
 import { PendingButton } from "./PortraitControls";
 import { PortraitPicker } from "./PortraitPicker";
-import { UnlinkRelative } from "./UnlinkRelative";
 
 export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
@@ -173,19 +172,13 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           ? `${t.app.died} ${person.death_year}`
           : null;
 
-  const relId = (a: string, b: string, type: "parent_child" | "partner") =>
-    rels.find(
-      (r) => r.type === type && ((r.person_a === a && r.person_b === b) || (type === "partner" && r.person_a === b && r.person_b === a)),
-    )?.id;
-
-  const relativeList = (ids: string[], linkFor?: (other: string) => string | undefined) =>
+  const relativeList = (ids: string[]) =>
     ids.length === 0 ? (
       <p className="text-ink-muted">{t.family.none}</p>
     ) : (
       <ul className="space-y-2">
         {ids.map((rid) => {
           const r = byId.get(rid)!;
-          const linkId = linkFor?.(rid);
           return (
             <li key={rid} className="flex items-center gap-3">
               <Link href={`${base}/people/${rid}`} className="group flex min-w-0 flex-1 items-center gap-3">
@@ -196,26 +189,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 </span>
               </Link>
               {r.status === "pending" && <PendingBadge label={t.app.pending} />}
-              {linkId && can.edit(role) && (
-                <UnlinkRelative
-                  locale={locale}
-                  linkId={linkId}
-                  labels={{ more: t.photos.more, remove: t.family.removeLink, question: t.family.removeQuestion, hint: t.family.removeHint.replace("{name}", fullName(r)), confirm: t.family.removeConfirm, cancel: t.family.removeCancel }}
-                />
-              )}
             </li>
           );
         })}
       </ul>
     );
-
-  const add = (kind: string, label: string) => (
-    <Link href={`${base}/people/${id}/relative?kind=${kind}`} className={cls.quiet}>
-      + {label}
-    </Link>
-  );
-  const hasFather = fam.parents.some((p) => byId.get(p)?.sex === "male");
-  const hasMother = fam.parents.some((p) => byId.get(p)?.sex === "female");
 
   const composerNode = (
               <MemoryComposer
@@ -467,27 +445,26 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     <>
       {/* Family */}
       <section>
-        <h2 className={cls.h2}>{t.family.title}</h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className={cls.h2}>{t.family.title}</h2>
+          {can.add(role) && !other && (
+            <Link href={`${base}/tree?p=${id}`} className="text-[0.95rem] font-semibold text-ink-muted hover:text-ink">
+              {t.memorial.manageInTree} →
+            </Link>
+          )}
+        </div>
         <div className={`mt-4 grid gap-x-10 gap-y-8 p-6 sm:grid-cols-2 ${cls.card}`}>
           <div>
             <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.parents}</h3>
-            {relativeList(fam.parents, (p) => relId(p, id, "parent_child"))}
-            {can.add(role) && fam.parents.length < 2 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {!hasFather && add("father", t.family.addFather)}
-                {!hasMother && add("mother", t.family.addMother)}
-              </div>
-            )}
+            {relativeList(fam.parents.filter((x) => byId.has(x) && !isUnknownParent(byId.get(x)!)))}
           </div>
           <div>
             <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.partners}</h3>
-            {relativeList(fam.partners, (p) => relId(id, p, "partner"))}
-            {can.add(role) && <div className="mt-2">{add("partner", t.family.addPartner)}</div>}
+            {relativeList(fam.partners)}
           </div>
           <div>
             <h3 className="mb-3 font-sans text-[1rem] font-semibold text-ink-muted">{t.family.children}</h3>
-            {relativeList(fam.children, (c) => relId(id, c, "parent_child"))}
-            {can.add(role) && <div className="mt-2">{add("child", t.family.addChild)}</div>}
+            {relativeList(fam.children)}
           </div>
           {fam.siblings.length > 0 && (
             <div>
@@ -608,15 +585,6 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     };
     // The "parents unknown" stand-in is not a person to show; it becomes a way to fill them in.
     const unknownParent = fam.parents.find((x) => byId.has(x) && isUnknownParent(byId.get(x)!));
-    const parentsAdd =
-      can.add(role) && !other && fam.parents.filter((x) => x !== unknownParent).length < 2
-        ? unknownParent
-          ? [{ href: `${base}/people/${unknownParent}/edit`, label: t.family.fillParents }]
-          : [
-              ...(!hasFather ? [{ href: `${base}/people/${id}/relative?kind=father`, label: t.family.addFather }] : []),
-              ...(!hasMother ? [{ href: `${base}/people/${id}/relative?kind=mother`, label: t.family.addMother }] : []),
-            ]
-        : [];
     const allMemories = [
       ...(memories ?? []).filter((x) => x.status !== "pending").map((x) => ({ id: x.id, who: x.author_id as string, at: x.created_at, body: x.body })),
       ...sharedMemories.map((x) => ({ id: x.id, who: x.author_id as string, at: x.created_at, body: x.body })),
@@ -626,7 +594,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       count: (memories ?? []).length + sharedMemories.length + storyRows.length,
       items: allMemories.slice(0, 2).map((x) => ({ id: x.id, author: authors.get(x.who) ?? "", date: dateFmt.format(new Date(x.at)), body: x.body })),
     };
-    const famCard = { parentsAdd, parents: fam.parents.filter((x) => byId.has(x) && x !== unknownParent).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
+    const famCard = { manageHref: can.add(role) && !other ? `${base}/tree?p=${id}` : undefined, parents: fam.parents.filter((x) => byId.has(x) && x !== unknownParent).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
 
     return (
       <div className="space-y-4">

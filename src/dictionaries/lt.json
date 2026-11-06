@@ -507,7 +507,33 @@
       "there": "Tėvai įrašyti „{family}“ medyje, todėl pažymima ten.",
       "open": "Atidaryti „{family}“"
     },
-    "unknownParent": "Tėvai nežinomi"
+    "unknownParent": "Tėvai nežinomi",
+    "unlink": {
+      "menu": "Pašalinti ryšį…",
+      "pick": "Kurį ryšį pašalinti?",
+      "question": "Pašalinti šį ryšį?",
+      "hint": "Abu žmonės liks medyje – dings tik ryšys tarp jų.",
+      "confirm": "Pašalinti",
+      "cancel": "Atšaukti",
+      "back": "Atgal",
+      "rel": {
+        "parent": {
+          "m": "Tėvas",
+          "f": "Motina",
+          "x": "Tėvas ar motina"
+        },
+        "child": {
+          "m": "Sūnus",
+          "f": "Dukra",
+          "x": "Vaikas"
+        },
+        "partner": {
+          "m": "Vyras",
+          "f": "Žmona",
+          "x": "Sutuoktinis"
+        }
+      }
+    }
   },
   "family": {
     "title": "Šeima",
@@ -1626,7 +1652,8 @@
     "fillIn": "Papildykite:",
     "addDocShort": "Dokumentą",
     "addPlaceShort": "Vietą",
-    "memoriesEmpty": "Prisiminimų dar nėra. Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms."
+    "memoriesEmpty": "Prisiminimų dar nėra. Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms.",
+    "manageInTree": "Tvarkyti medyje"
   },
   "shared": {
     "title": "Kas matys?",

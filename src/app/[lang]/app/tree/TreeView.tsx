@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 import { requestTreeAccess } from "../tree-access-actions";
-import { setOtherParent } from "../actions";
+import { removeRelationship, setOtherParent } from "../actions";
 import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
 import { kinship } from "@/lib/kinship";
 
@@ -114,6 +114,8 @@ export type TreeCard = {
   elsewhere?: { family: string; ws: string; status: string | null };
   families: Array<{ label: string; href: string; compareHref?: string; branchHref?: string; branchOn?: boolean }>;
   linkHref?: string;
+  /** Editors: this person's links, to take one apart from the card menu. */
+  links?: Array<{ id: string; kind: string; label: string }>;
   /** Shown from a linked family (its name). */
   foreign?: string;
   moreAbove: boolean;
@@ -125,6 +127,7 @@ export type TreeLine = { d: string; keys: string[] };
 export type TreePlus = { key: string; x: number; y: number; gen: number; options: Array<{ label: string; href: string }> };
 
 type Labels = {
+  unlink: { menu: string; pick: string; question: string; hint: string; confirm: string; cancel: string; back: string; rel: Record<string, { m: string; f: string; x: string }> };
   zoomIn: string;
   zoomOut: string;
   fit: string;
@@ -1040,6 +1043,7 @@ function CardMenu({
   onLeave: () => void;
 }) {
   const [showNav, setShowNav] = useState(false);
+  const [unlink, setUnlink] = useState<"off" | "pick" | { id: string; label: string }>("off");
   const whichBlock = (
       card.missingParent && (
           <div className="mb-1.5 rounded-xl bg-[#fbf3e2] px-3 py-2.5">
@@ -1165,6 +1169,44 @@ function CardMenu({
                 </a>
               ))}
             </div>
+            )}
+          </div>
+        )}
+        {card.links && card.links.length > 0 && (
+          <div className="mt-1.5 border-t border-line pt-1.5">
+            {unlink === "off" ? (
+              <button type="button" role="menuitem" onClick={() => setUnlink("pick")} className={`${item} text-ink-muted hover:text-danger`}>
+                <svg {...ICON}><path d="M9 15 6.5 17.5a3.5 3.5 0 0 1-5-5L4 10M15 9l2.5-2.5a3.5 3.5 0 0 1 5 5L20 14M8 8 5 5M16 16l3 3" /></svg>
+                {labels.unlink.menu}
+              </button>
+            ) : unlink === "pick" ? (
+              <div className="px-1 pb-1">
+                <p className="px-2 pb-1.5 pt-1 text-[0.85rem] text-ink-muted">{labels.unlink.pick}</p>
+                {card.links.map((l) => (
+                  <button key={l.id} type="button" onClick={() => setUnlink({ id: l.id, label: l.label })} className={`${item} text-[0.94rem]`}>
+                    <span className="min-w-0 flex-1 truncate">{l.label}</span>
+                  </button>
+                ))}
+                <button type="button" onClick={() => setUnlink("off")} className="mt-1 rounded-full px-3 py-1.5 text-[0.88rem] font-semibold text-ink-muted hover:bg-linen hover:text-ink">
+                  ← {labels.unlink.back}
+                </button>
+              </div>
+            ) : (
+              <div role="alertdialog" aria-label={labels.unlink.question} className="m-1 rounded-xl bg-[#fbeeea] p-3">
+                <p className="font-semibold">{labels.unlink.question}</p>
+                <p className="mt-0.5 text-[0.92rem]">{unlink.label}</p>
+                <p className="mt-1 text-[0.85rem] leading-snug text-ink-muted">{labels.unlink.hint}</p>
+                <form action={removeRelationship} onSubmit={() => setTimeout(onClose, 0)} className="mt-2.5 flex items-center justify-end gap-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={unlink.id} />
+                  <button type="button" onClick={() => setUnlink("pick")} className="min-h-9 rounded-full px-3 text-[0.9rem] font-semibold text-ink-muted hover:bg-white/70 hover:text-ink">
+                    {labels.unlink.cancel}
+                  </button>
+                  <button type="submit" className="inline-flex min-h-9 items-center rounded-full bg-danger px-3.5 text-[0.9rem] font-semibold text-white hover:opacity-90">
+                    {labels.unlink.confirm}
+                  </button>
+                </form>
+              </div>
             )}
           </div>
         )}

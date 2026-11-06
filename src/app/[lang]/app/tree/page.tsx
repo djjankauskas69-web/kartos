@@ -331,6 +331,29 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   };
   const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
   if (!tree) return null;
+  // Editors take a link apart here, on the tree, where they see what it changes.
+  if (can.edit(current.role)) {
+    const isUnknown = (id: string) => {
+      const q = byId.get(id);
+      return !q || (q.given_names.trim() === "?" && !q.surname);
+    };
+    const word = (other: string, kind: "parent" | "child" | "partner") => {
+      const sex = byId.get(other)?.sex;
+      const w = t.tree.unlink.rel[kind];
+      return sex === "male" ? w.m : sex === "female" ? w.f : w.x;
+    };
+    for (const c of tree.cards) {
+      if (c.foreign || c.unknown) continue;
+      c.links = rels.flatMap((r) => {
+        const mine = r.person_a === c.id || r.person_b === c.id;
+        if (!mine || !r.id) return [];
+        const other = r.person_a === c.id ? r.person_b : r.person_a;
+        if (isUnknown(other)) return [];
+        const kind = r.type === "partner" ? "partner" : r.person_b === c.id ? "parent" : "child";
+        return [{ id: r.id, kind, label: `${word(other, kind)}: ${fullName(byId.get(other)!)}` }];
+      }).sort((a, b) => ["parent", "partner", "child"].indexOf(a.kind) - ["parent", "partner", "child"].indexOf(b.kind));
+    }
+  }
 
 
   const subtitle = tree.whole ? (
@@ -412,6 +435,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           which: t.tree.which,
           viewTree: t.tree.viewTree,
           viewList: t.tree.viewList,
+          unlink: t.tree.unlink,
         }}
         locale={locale}
         loose={looseInfo}
