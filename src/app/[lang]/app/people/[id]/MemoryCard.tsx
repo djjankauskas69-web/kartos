@@ -186,6 +186,9 @@ function Reader({
   onDeleted: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  // The text as last saved here, shown right away (the server copy follows a moment later).
+  const [saved, setSaved] = useState<string | null>(null);
+  const text = saved ?? body;
   const [menu, setMenu] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +197,7 @@ function Reader({
     if (r?.error) setError(r.error === "setup" ? (labels.setup ?? "") : (labels.error ?? ""));
     else setError(null);
   };
-  const paragraphs = body.split(/\n\s*\n/).filter((p) => p.trim());
+  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
   const hidden = (live: MemoryLive) => <input type="hidden" name="locale" value={live.locale} />;
 
   return (
@@ -293,26 +296,34 @@ function Reader({
 
         {editing && live ? (
           <form
-            action={(f) =>
+            action={(f) => {
+              // Back to reading straight away, with the new text; if saving fails, back to the box.
+              const before = saved;
+              setSaved(String(f.get("body") ?? "").trim() || text);
+              setEditing(false);
               start(async () => {
                 const r = await editMemory(f);
                 fail(r);
-                if (r.ok) setEditing(false);
-              })
-            }
+                if (!r.ok) {
+                  setSaved(before);
+                  setEditing(true);
+                }
+              });
+            }}
             className="space-y-3"
           >
             {hidden(live)}
             <input type="hidden" name="id" value={live.id} />
-            <textarea name="body" defaultValue={body} rows={10} autoFocus className="block w-full resize-y rounded-xl border border-line bg-surface px-4 py-3 text-[1.1rem] leading-[1.8] focus:border-ink/50 focus:outline-none" />
+            <textarea name="body" defaultValue={text} rows={10} autoFocus className="block w-full resize-y rounded-xl border border-line bg-surface px-4 py-3 text-[1.1rem] leading-[1.8] focus:border-ink/50 focus:outline-none" />
             <div className="flex gap-2">
               <button type="submit" disabled={pending} className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
                 {pending ? "…" : labels.save}
               </button>
-              <button type="button" onClick={() => setEditing(false)} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 font-semibold hover:border-ink/40">
+              <button type="button" onClick={() => { setEditing(false); setError(null); }} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 font-semibold hover:border-ink/40">
                 {labels.cancel}
               </button>
             </div>
+            {error && <p role="alert" className="text-[0.95rem] text-danger">{error}</p>}
           </form>
         ) : (
           // Read like a letter: calm lines, room between paragraphs.
