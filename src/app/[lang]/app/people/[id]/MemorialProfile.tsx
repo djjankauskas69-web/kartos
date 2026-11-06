@@ -572,7 +572,7 @@ export function MemorialProfile({
                 <summary aria-label={m.more} title={m.more} className="flex h-12 w-12 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface/95 text-[1.3rem] leading-none text-ink-muted hover:border-ink/40 hover:text-ink [&::-webkit-details-marker]:hidden">
                   ⋯
                 </summary>
-                <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+                <div className="absolute right-0 z-30 mt-2 w-max min-w-56 whitespace-nowrap rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
                   {editHref && inline && (
                     <Link href={editHref} className="flex min-h-11 items-center rounded-lg px-3 hover:bg-linen">
                       {m.allDetails}
