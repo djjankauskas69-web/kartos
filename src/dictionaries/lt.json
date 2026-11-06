@@ -848,7 +848,14 @@
     "researchTitle": "Giminės kilmės tyrimas",
     "researchLocked": "Atsirakins, kai medyje bus įvykdytos sąlygos aukščiau.",
     "researchReady": "Medis paruoštas! Galėsite ištirti pavardžių kilmę, protėvių vietoves ir archyvų šaltinius.",
-    "researchSoon": "Netrukus"
+    "researchSoon": "Netrukus",
+    "needGens": "kartų",
+    "needPeople": "žmonių",
+    "needYears": "gimimo metų",
+    "needPlaces": "gimimo vietų",
+    "stripNext": "Liko: {what} dar {n} – ir atsirakins giminės kilmės tyrimas",
+    "stripReady": "✦ Medis paruoštas – galėsite ištirti giminės kilmę",
+    "stripMore": "Papildyti"
   },
   "archive": {
     "title": "Archyvas",

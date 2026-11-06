@@ -242,10 +242,10 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     return p && can.edit(current.role) ? `${base}/people/${p.id}` : undefined;
   };
   const reqs = [
-    { key: "gens", label: d.reqGens, have: gensNow, done: gensNow >= 3, href: can.edit(current.role) ? `${base}/tree` : undefined },
-    { key: "people", label: d.reqPeople, have: people.length, done: people.length >= 10, href: can.edit(current.role) ? `${base}/tree` : undefined },
-    { key: "years", label: d.reqYears, have: `${people.length ? Math.round((withYear / people.length) * 100) : 0} %`, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
-    { key: "places", label: d.reqPlaces, have: withPlace, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
+    { key: "gens", label: d.reqGens, have: gensNow, need: 3 - gensNow, what: d.needGens, done: gensNow >= 3, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "people", label: d.reqPeople, have: people.length, need: 10 - people.length, what: d.needPeople, done: people.length >= 10, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "years", label: d.reqYears, have: `${people.length ? Math.round((withYear / people.length) * 100) : 0} %`, need: Math.ceil(people.length * 0.6) - withYear, what: d.needYears, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
+    { key: "places", label: d.reqPlaces, have: withPlace, need: 3 - withPlace, what: d.needPlaces, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
   ];
   const share = (n: number, of: number) => (of ? Math.min(1, n / of) : 1);
   const completeness = Math.round(

@@ -53,7 +53,7 @@ export type DashboardData = {
   upcoming: Upcoming[];
   latestMemory?: { body: string; author?: string; at: string; name: string; thumb?: string; href: string };
   fill: Array<{ key: string; text: string; start: string; href: string }>;
-  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number | string; done: boolean; href?: string }> };
+  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number | string; need: number; what: string; done: boolean; href?: string }> };
 };
 
 const card = cls.card;
@@ -124,6 +124,96 @@ export function DashboardView(props: DashboardData) {
           </li>
         ))}
       </ul>
+
+      {/* How complete the tree is, in one thin line; opens to the conditions for the origins research */}
+      {!(tree.ready && tree.completeness >= 100) && (
+        <details className={`group ${card} ${tree.ready ? "bg-[#f1f4e8]" : ""}`}>
+          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2.5 font-semibold">
+              <span className="text-sage-deep"><IconTree size={20} /></span>
+              {d.treeTitle2}
+              <span className="tabular-nums">{tree.completeness}%</span>
+            </span>
+            <span className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-linen sm:max-w-48" role="progressbar" aria-valuenow={tree.completeness} aria-valuemin={0} aria-valuemax={100} aria-label={d.treeTitle2}>
+              <span className="block h-full rounded-full bg-olive" style={{ width: `${tree.completeness}%` }} />
+            </span>
+            <span className="min-w-0 basis-full text-[0.98rem] text-ink-muted md:basis-auto md:flex-[2]">
+              {tree.ready
+                ? d.stripReady
+                : (() => {
+                    const next = tree.reqs.find((r) => !r.done);
+                    return next ? d.stripNext.replace("{what}", next.what).replace("{n}", String(Math.max(1, next.need))) : "";
+                  })()}
+            </span>
+            <span className="ml-auto inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold group-hover:border-ink/40">
+              {d.stripMore}
+              <span aria-hidden="true" className="transition-transform group-open:rotate-180">⌄</span>
+            </span>
+          </summary>
+          <div className="border-t border-line px-5 pb-5 sm:px-6">
+            <ul className="mt-4 space-y-1">
+              {tree.reqs.map((r) => {
+                const row = (
+                  <>
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${r.done ? "bg-[#e7ebd9] text-olive-deep" : "border-2 border-line"}`}>
+                      {r.done && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
+                    </span>
+                    <span className={`min-w-0 flex-1 leading-snug ${r.done ? "text-ink-muted" : "font-semibold"}`}>{r.label}</span>
+                    <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">{d.reqHave.replace("{n}", String(r.have))}</span>
+                  </>
+                );
+                return (
+                  <li key={r.key}>
+                    {!r.done && r.href ? (
+                      <Link href={r.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-paper/70">{row}</Link>
+                    ) : (
+                      <div className="flex items-center gap-3 py-2">{row}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* The research it leads to: locked until the tree is ready */}
+            <div className={`mt-5 flex items-start gap-3 rounded-2xl px-4 py-4 ${tree.ready ? "bg-[#eef1e4]" : "bg-paper"}`}>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${tree.ready ? "bg-olive text-surface" : "bg-linen text-ink-muted"}`}>
+                {tree.ready ? (
+                  <span aria-hidden="true" className="text-[1.1rem]">✦</span>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{d.researchTitle}</p>
+                <p className="mt-0.5 text-[0.95rem] leading-snug text-ink-muted">{tree.ready ? d.researchReady : d.researchLocked}</p>
+                {tree.ready && <span className="mt-3 inline-flex min-h-10 items-center rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold text-ink-muted">{d.researchSoon}</span>}
+              </div>
+            </div>
+
+            {more.length > 0 && (
+              <>
+                <h3 className="mt-6 text-[0.95rem] font-semibold text-ink-muted">{d.moreTitle}</h3>
+                <ul className="mt-1 divide-y divide-line">
+                  {more.map((f) => (
+                    <li key={f.key}>
+                      <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-paper/70">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linen text-ink-muted">
+                          {f.key === "photo" ? <IconImage size={20} /> : f.key === "grave" || f.key === "place" ? <IconPin size={20} /> : f.key === "maiden" ? <IconPeople size={20} /> : <IconCalendar size={20} />}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-snug">
+                          <span className="block font-semibold">{f.text}</span>
+                          <span className="block truncate text-[0.92rem] text-ink-muted">{f.start}</span>
+                        </span>
+                        <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </details>
+      )}
 
       {/* The latest memory, to read right here: what the archive is for */}
       {latestMemory && (
@@ -398,83 +488,6 @@ export function DashboardView(props: DashboardData) {
             )}
           </div>
 
-          {/* How complete the tree is: the conditions for the origins research, then what else to add */}
-          <div className={`p-6 sm:p-7 ${card}`}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className={`flex items-center gap-3 ${cls.h3}`}>
-                  <span className="text-sage-deep"><IconTree size={24} /></span>
-                  {d.treeTitle2}
-                </h2>
-                <p className="mt-1 text-[0.98rem] text-ink-muted">{d.treeLead2}</p>
-              </div>
-              <span className="shrink-0 text-[2rem] font-semibold leading-none tracking-[-0.03em] tabular-nums">{tree.completeness}%</span>
-            </div>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-linen" role="progressbar" aria-valuenow={tree.completeness} aria-valuemin={0} aria-valuemax={100} aria-label={d.treeTitle2}>
-              <div className="h-full rounded-full bg-olive transition-[width] duration-700" style={{ width: `${tree.completeness}%` }} />
-            </div>
-
-            <ul className="mt-5 space-y-1">
-              {tree.reqs.map((r) => {
-                const row = (
-                  <>
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${r.done ? "bg-[#e7ebd9] text-olive-deep" : "border-2 border-line"}`}>
-                      {r.done && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
-                    </span>
-                    <span className={`min-w-0 flex-1 leading-snug ${r.done ? "text-ink-muted" : "font-semibold"}`}>{r.label}</span>
-                    <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">{d.reqHave.replace("{n}", String(r.have))}</span>
-                  </>
-                );
-                return (
-                  <li key={r.key}>
-                    {!r.done && r.href ? (
-                      <Link href={r.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-paper/70">{row}</Link>
-                    ) : (
-                      <div className="flex items-center gap-3 py-2">{row}</div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-
-            {/* The research it leads to: locked until the tree is ready */}
-            <div className={`mt-5 flex items-start gap-3 rounded-2xl px-4 py-4 ${tree.ready ? "bg-[#eef1e4]" : "bg-paper"}`}>
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${tree.ready ? "bg-olive text-surface" : "bg-linen text-ink-muted"}`}>
-                {tree.ready ? (
-                  <span aria-hidden="true" className="text-[1.1rem]">✦</span>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{d.researchTitle}</p>
-                <p className="mt-0.5 text-[0.95rem] leading-snug text-ink-muted">{tree.ready ? d.researchReady : d.researchLocked}</p>
-                {tree.ready && <span className="mt-3 inline-flex min-h-10 items-center rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold text-ink-muted">{d.researchSoon}</span>}
-              </div>
-            </div>
-
-            {more.length > 0 && (
-              <>
-                <h3 className="mt-6 text-[0.95rem] font-semibold text-ink-muted">{d.moreTitle}</h3>
-                <ul className="mt-1 divide-y divide-line">
-                  {more.map((f) => (
-                    <li key={f.key}>
-                      <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-paper/70">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linen text-ink-muted">
-                          {f.key === "photo" ? <IconImage size={20} /> : f.key === "grave" || f.key === "place" ? <IconPin size={20} /> : f.key === "maiden" ? <IconPeople size={20} /> : <IconCalendar size={20} />}
-                        </span>
-                        <span className="min-w-0 flex-1 leading-snug">
-                          <span className="block font-semibold">{f.text}</span>
-                          <span className="block truncate text-[0.92rem] text-ink-muted">{f.start}</span>
-                        </span>
-                        <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
         </div>
       </section>
     </div>

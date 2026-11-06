@@ -848,7 +848,14 @@
     "researchTitle": "Family origins research",
     "researchLocked": "Unlocks once the tree meets the conditions above.",
     "researchReady": "Your tree is ready! You will be able to research surname origins, ancestral places and archive sources.",
-    "researchSoon": "Coming soon"
+    "researchSoon": "Coming soon",
+    "needGens": "generations",
+    "needPeople": "people",
+    "needYears": "birth years",
+    "needPlaces": "birth places",
+    "stripNext": "{n} more {what} and the family origins research unlocks",
+    "stripReady": "✦ Your tree is ready for the family origins research",
+    "stripMore": "Add more"
   },
   "archive": {
     "title": "Archive",
