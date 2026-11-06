@@ -216,7 +216,7 @@ export function GraveForm({
     });
   };
 
-  const card = "rounded-[20px] border border-line/70 bg-surface";
+  const card = cls.card;
   const floatBtn =
     "inline-flex min-h-11 items-center gap-2 rounded-full border border-line/80 bg-surface/95 px-4 text-[0.95rem] font-semibold shadow-[0_8px_22px_-14px_rgb(28_29_26/0.6)] backdrop-blur hover:bg-surface disabled:opacity-70";
   const I = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };

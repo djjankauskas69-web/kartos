@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cls } from "@/components/ui";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { MapView, type MapMarker } from "@/components/map/Map";
 import { deletePersonEvent } from "./event-actions";
@@ -98,11 +99,11 @@ export function MemorialProfile({
 }) {
   const m = t.memorial;
   const ie = { locale, personId, hint: m.clickToEdit, labels: { save: m.save, cancel: m.cancel, error: m.saveError, year: m.yearError, required: m.nameRequired, saved: m.savedFlash, undo: m.undo } };
-  const card = "rounded-[18px] border border-line/80 bg-surface p-5 sm:p-6";
+  const card = `${cls.card} p-5 sm:p-6`;
   const head = (icon: React.ReactNode, title: string, count?: number, tab?: string) => (
     <div className="mb-4 flex items-center gap-3">
       <span className="text-ink-muted">{icon}</span>
-      <h2 className="flex-1 text-[1.25rem] font-semibold">
+      <h2 className={`flex-1 ${cls.h3}`}>
         {title} {count !== undefined && count > 0 && <span className="font-normal text-ink-muted">({count})</span>}
       </h2>
       {tab && (
@@ -316,7 +317,7 @@ export function MemorialProfile({
         <section className={card}>
           <div className="mb-4 flex items-center gap-3">
             <span className="text-ink-muted">{icons.people}</span>
-            <h2 className="flex-1 text-[1.25rem] font-semibold">{m.tabFamily}</h2>
+            <h2 className={`flex-1 ${cls.h3}`}>{m.tabFamily}</h2>
           </div>
           {hasFamily ? (
             <div className="@container/fam"><div className="grid gap-5">

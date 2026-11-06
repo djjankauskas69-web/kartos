@@ -54,7 +54,7 @@ export function ClaimMe({ locale, people, t, errors }: { locale: Locale; people:
       <form action={claimAction} className={`p-5 sm:p-6 ${cls.card}`}>
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="personId" value={chosen ?? ""} />
-        <h2 className="text-[1.4rem]">{t.pickTitle}</h2>
+        <h2 className={cls.h3}>{t.pickTitle}</h2>
         <p className="mb-4 mt-1 text-ink-muted">{t.pickLead}</p>
         {people.length > 6 && (
           <div className="relative mb-3">
@@ -113,7 +113,7 @@ export function ClaimMe({ locale, people, t, errors }: { locale: Locale; people:
 
       <form action={createAction} className={`p-5 sm:p-6 ${cls.card}`}>
         <input type="hidden" name="locale" value={locale} />
-        <h2 className="text-[1.3rem]">{t.notInTree}</h2>
+        <h2 className={cls.h3}>{t.notInTree}</h2>
         <p className="mb-4 mt-1 text-ink-muted">{t.notInTreeLead}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="me-given" label={t.given}>

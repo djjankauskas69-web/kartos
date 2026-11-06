@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, lifeSpan, type Person, type Role } from "@/lib/data";
+import { cls } from "@/components/ui";
 import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
@@ -54,7 +55,7 @@ export type DashboardData = {
   fill: Array<{ key: string; text: string; start: string; href: string }>;
 };
 
-const card = "rounded-[20px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03),0_14px_34px_-28px_rgb(60_45_30/0.45)]";
+const card = cls.card;
 const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.05rem] font-semibold transition-colors";
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
@@ -111,7 +112,7 @@ export function DashboardView(props: DashboardData) {
             <Link href={s.href} className={`group flex items-center gap-4 px-5 py-5 transition hover:-translate-y-0.5 hover:border-ink/30 ${card}`}>
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linen text-sage-deep transition-colors group-hover:bg-ink group-hover:text-surface">{s.icon}</span>
               <span className="min-w-0 flex-1">
-                <span className="block font-serif text-[2.1rem] leading-none tabular-nums">{s.n}</span>
+                <span className="block text-[2rem] font-semibold leading-none tracking-[-0.03em] tabular-nums">{s.n}</span>
                 <span className="mt-1 block text-[1rem] text-ink-muted">{s.label}</span>
               </span>
               <span aria-hidden="true" className="text-ink-muted opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"><IconArrow size={18} /></span>
@@ -154,7 +155,7 @@ export function DashboardView(props: DashboardData) {
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linen text-sage-deep"><IconQuote size={24} /></span>
             <div>
-              <h2 className="font-serif text-[1.45rem] leading-snug">{d.leaveTitle}</h2>
+              <h2 className={cls.h3}>{d.leaveTitle}</h2>
               <p className="mt-1 max-w-xl text-ink-muted">{d.leaveLead}</p>
             </div>
           </div>
@@ -227,7 +228,7 @@ export function DashboardView(props: DashboardData) {
           <img src="/landing/story-family.jpg" alt="" aria-hidden="true" className="absolute inset-y-0 right-0 h-full w-[62%] object-cover opacity-80" />
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-olive-deep from-40% via-olive-deep/70 to-olive-deep/10" />
           <div className="relative flex max-w-sm flex-col justify-center p-6 sm:p-8">
-            <h2 className="flex items-center gap-3 text-[1.55rem] leading-tight text-surface">
+            <h2 className={`flex items-center gap-3 text-surface ${cls.h3}`}>
               <IconPeople size={24} />
               {d.inviteTitle}
             </h2>
@@ -292,7 +293,7 @@ export function DashboardView(props: DashboardData) {
       {/* Now and then: what the family is doing, and the dates that make its story */}
       <section className="grid items-start gap-5 lg:grid-cols-[1.35fr_1fr] [&>*]:min-w-0">
         <div className={`p-6 sm:p-7 ${card}`}>
-          <h2 className="flex items-center gap-3 text-[1.45rem]">
+          <h2 className={`flex items-center gap-3 ${cls.h3}`}>
             <span className="text-sage-deep"><IconClock size={24} /></span>
             {d.recentTitle}
           </h2>
@@ -336,7 +337,7 @@ export function DashboardView(props: DashboardData) {
 
         <div className="grid content-start gap-5 [&>*]:min-w-0">
           <div className={`p-6 sm:p-7 ${card}`}>
-            <h2 className="flex items-center gap-3 text-[1.45rem]">
+            <h2 className={`flex items-center gap-3 ${cls.h3}`}>
               <span className="text-sage-deep"><IconCalendar size={24} /></span>
               {d.upcomingTitle}
             </h2>
@@ -395,7 +396,7 @@ export function DashboardView(props: DashboardData) {
 
           {fill.length > 0 && (
             <div className={`p-6 sm:p-7 ${card}`}>
-              <h2 className="flex items-center gap-3 text-[1.45rem]">
+              <h2 className={`flex items-center gap-3 ${cls.h3}`}>
                 <span className="text-sage-deep"><IconPlus size={24} /></span>
                 {d.fillTitle}
               </h2>
@@ -463,7 +464,7 @@ function CardHead({ icon, title, lead, arrow }: { icon: ReactNode; title: string
     <div className="flex items-start gap-4">
       <span className="mt-1 text-sage-deep">{icon}</span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-[1.55rem] leading-tight">{title}</h2>
+        <h2 className={cls.h3}>{title}</h2>
         <p className="mt-1.5 text-[1rem] text-ink-muted">{lead}</p>
       </div>
       {arrow && (

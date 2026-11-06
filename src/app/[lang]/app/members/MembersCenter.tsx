@@ -51,9 +51,10 @@ export function RoleIcon({ role, size = 18 }: { role: Role; size?: number }) {
 }
 
 const badgeTone: Record<Role, string> = {
-  owner: "bg-sage-deep text-surface",
-  editor: "bg-sage-wash text-sage-deep",
-  contributor: "bg-[#efe6d8] text-[#6d5434]",
+  // Roles are facts, not warnings: one calm tone for all of them.
+  owner: "bg-linen text-ink",
+  editor: "bg-linen text-ink",
+  contributor: "bg-linen text-ink",
   viewer: "bg-linen text-ink-muted",
 };
 
@@ -78,7 +79,7 @@ function Avatar({ name, src }: { name: string; src?: string }) {
     .map((w) => w[0]?.toUpperCase())
     .join("");
   return (
-    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen font-serif text-[1.1rem] text-ink">
+    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen text-[1rem] font-semibold text-ink-muted">
       {initials || "?"}
     </span>
   );
@@ -254,7 +255,7 @@ export function MembersCenter({
         {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
 
         <section className={`p-5 ${cls.card}`}>
-          <h2 className="mb-3 text-[1.25rem]">{t.levelsTitle}</h2>
+          <h2 className={`mb-3 ${cls.h3}`}>{t.levelsTitle}</h2>
           <ul className="space-y-3">
             {ROLES.map((r) => (
               <li key={r} className="flex gap-3">
@@ -328,7 +329,7 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
 
   return (
     <section id="invite" className={`scroll-mt-24 p-5 ${cls.card}`}>
-      <h2 className="text-[1.2rem]">{t.inviteGeneral}</h2>
+      <h2 className={cls.h3}>{t.inviteGeneral}</h2>
       <p className="mb-3 mt-1 text-[0.92rem] text-ink-muted">{t.inviteGeneralLead}</p>
       <form action={action} className="space-y-3" onSubmit={() => setCopy("idle")}>
         <Hidden values={{ locale }} />

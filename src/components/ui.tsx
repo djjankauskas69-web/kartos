@@ -14,9 +14,12 @@ export const cls = {
   quiet: "inline-flex min-h-10 items-center rounded-full px-3 text-[0.98rem] font-semibold text-sage-deep hover:bg-sage-wash",
   danger:
     "inline-flex min-h-11 items-center justify-center rounded-full border border-danger/40 px-5 text-[1rem] font-semibold text-danger hover:bg-danger/5",
-  card: "rounded-[var(--radius-card)] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03)]",
+  // One card everywhere in the app: soft corners and a light shadow.
+  card: "rounded-[20px] border border-line/70 bg-surface shadow-[0_1px_2px_rgb(28_29_26/0.03),0_14px_34px_-28px_rgb(60_45_30/0.45)]",
   h1: "text-[2.1rem] font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[2.5rem]",
   h2: "text-[1.5rem]",
+  /** A card's own title: the same size on every page. */
+  h3: "text-[1.35rem] leading-tight",
 };
 
 export function PendingBadge({ label }: { label: string }) {

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, lifeSpan, myPersonLinks, requireWorkspace, type Role } from "@/lib/data";
+import { can, fullName, getFamilyGraph, isUnknownParent, lifeSpan, myPersonLinks, requireWorkspace, type Role } from "@/lib/data";
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { addPanelProps } from "../people/add-data";
 import { portraitUrls } from "../portraits";
@@ -76,7 +76,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
   const connected = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
   const born = t.app.born.toLowerCase();
   const persons = people
-    .filter((p) => p.status !== "rejected")
+    .filter((p) => p.status !== "rejected" && !isUnknownParent(p))
     .map((p) => ({ id: p.id, name: fullName(p), years: lifeSpan(p, born), living: p.is_living, portrait: photos.get(p.id), loose: people.length > 1 && !connected.has(p.id), pending: p.status === "pending" }));
   const canAdd = can.add(current.role);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, photos) : null;
@@ -156,7 +156,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
         people={
           isAdmin
             ? people
-                .filter((p) => p.status !== "rejected")
+                .filter((p) => p.status !== "rejected" && !isUnknownParent(p))
                 .map((p) => ({ id: p.id, name: fullName(p), years: p.birth_year ? String(p.birth_year) : "" }))
                 .sort((a, b) => a.name.localeCompare(b.name, locale))
             : []

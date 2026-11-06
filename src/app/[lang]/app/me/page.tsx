@@ -44,13 +44,13 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
     passwordMismatch: m.passwordMismatch,
     passwordSame: m.passwordSame,
   };
-  const card = "rounded-[20px] border border-line/80 bg-surface p-5 sm:p-7";
+  const card = `${cls.card} p-5 sm:p-7`;
   const I = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
   const head = (icon: React.ReactNode, title: string, lead?: string) => (
     <div className="mb-5 flex items-start gap-3.5">
       <span className="mt-0.5 text-olive-deep">{icon}</span>
       <div>
-        <h2 className="text-[1.35rem] font-semibold leading-tight">{title}</h2>
+        <h2 className={cls.h3}>{title}</h2>
         {lead && <p className="mt-0.5 text-[0.98rem] text-ink-muted">{lead}</p>}
       </div>
     </div>

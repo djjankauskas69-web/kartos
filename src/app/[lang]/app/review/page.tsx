@@ -117,7 +117,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e7ebd9] text-olive-deep">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
           </span>
-          <h2 className="mt-5 font-serif text-[1.6rem] leading-tight">{t.review.emptyTitle}</h2>
+          <h2 className={`mt-5 ${cls.h3}`}>{t.review.emptyTitle}</h2>
           <p className="mt-2 max-w-md text-ink-muted">{t.review.emptyLead}</p>
           <Link href={`/${locale}/app/members`} className="mt-6 inline-flex items-center gap-1.5 font-semibold text-olive-deep hover:underline">
             {t.review.emptyLink} <span aria-hidden="true">→</span>
