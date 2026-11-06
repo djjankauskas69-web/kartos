@@ -127,7 +127,7 @@ export function DashboardView(props: DashboardData) {
             <IconQuote size={18} />
             {d.memoryTitle}
           </p>
-          <blockquote className="relative mt-3 line-clamp-4 max-w-4xl font-serif text-[1.35rem] leading-snug sm:text-[1.55rem]">„{latestMemory.body.trim()}“</blockquote>
+          <blockquote className="relative mt-3 line-clamp-4 max-w-[60ch] font-serif text-[1.2rem] leading-relaxed sm:text-[1.3rem]">„{latestMemory.body.trim()}“</blockquote>
           <div className="relative mt-5 flex flex-wrap items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-[0.85rem] font-semibold text-ink-muted ring-2 ring-white">
               {latestMemory.thumb ? (
