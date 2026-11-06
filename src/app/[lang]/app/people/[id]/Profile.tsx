@@ -21,7 +21,7 @@ import {
 import { Portrait } from "@/components/Portrait";
 import { cls, PendingBadge } from "@/components/ui";
 import { periodLabel } from "@/lib/archive";
-import { adoptLinkedFact, deletePhoto, removeRelationship, setPortrait, setShared } from "../../actions";
+import { adoptLinkedFact, deletePhoto, setPortrait, setShared } from "../../actions";
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
@@ -33,6 +33,7 @@ import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./Memor
 import { GraveView } from "./GraveView";
 import { PendingButton } from "./PortraitControls";
 import { PortraitPicker } from "./PortraitPicker";
+import { UnlinkRelative } from "./UnlinkRelative";
 
 export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
@@ -196,13 +197,11 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               </Link>
               {r.status === "pending" && <PendingBadge label={t.app.pending} />}
               {linkId && can.edit(role) && (
-                <form action={removeRelationship}>
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="id" value={linkId} />
-                  <button type="submit" className="rounded-full px-2 text-ink-muted hover:text-danger" aria-label={`${t.family.removeLink}: ${fullName(r)}`} title={t.family.removeLink}>
-                    ×
-                  </button>
-                </form>
+                <UnlinkRelative
+                  locale={locale}
+                  linkId={linkId}
+                  labels={{ more: t.photos.more, remove: t.family.removeLink, question: t.family.removeQuestion, hint: t.family.removeHint.replace("{name}", fullName(r)), confirm: t.family.removeConfirm, cancel: t.family.removeCancel }}
+                />
               )}
             </li>
           );

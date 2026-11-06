@@ -528,7 +528,11 @@
     "addSister": "Add sister",
     "viewTree": "Show in tree",
     "removeLink": "Remove link",
-    "fillParents": "Fill in the parents"
+    "fillParents": "Fill in the parents",
+    "removeQuestion": "Remove this link?",
+    "removeHint": "{name} stays in the family tree – only this link goes.",
+    "removeConfirm": "Remove",
+    "removeCancel": "Cancel"
   },
   "relative": {
     "newPerson": "New person",

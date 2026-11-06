@@ -528,7 +528,11 @@
     "addSister": "Pridėti seserį",
     "viewTree": "Rodyti medyje",
     "removeLink": "Pašalinti ryšį",
-    "fillParents": "Įrašyti tėvus"
+    "fillParents": "Įrašyti tėvus",
+    "removeQuestion": "Pašalinti šį ryšį?",
+    "removeHint": "{name} liks šeimos medyje – dings tik šis ryšys.",
+    "removeConfirm": "Pašalinti",
+    "removeCancel": "Atšaukti"
   },
   "relative": {
     "newPerson": "Naujas žmogus",
