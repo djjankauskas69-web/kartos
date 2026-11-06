@@ -8,6 +8,7 @@ import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
+import { FillMeter } from "@/components/FillMeter";
 
 export type Activity = {
   at: string;
@@ -132,11 +133,8 @@ export function DashboardView(props: DashboardData) {
             <span className="flex items-center gap-2.5 font-semibold">
               <span className="text-sage-deep"><IconTree size={20} /></span>
               {d.treeTitle2}
-              <span className="tabular-nums">{tree.completeness}%</span>
             </span>
-            <span className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-linen sm:max-w-48" role="progressbar" aria-valuenow={tree.completeness} aria-valuemin={0} aria-valuemax={100} aria-label={d.treeTitle2}>
-              <span className="block h-full rounded-full bg-olive" style={{ width: `${tree.completeness}%` }} />
-            </span>
+            <FillMeter value={tree.completeness} label={d.treeTitle2} />
             <span className="min-w-0 basis-full text-[0.98rem] text-ink-muted md:basis-auto md:flex-[2]">
               {tree.ready
                 ? d.stripReady

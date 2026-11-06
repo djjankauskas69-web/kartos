@@ -175,6 +175,12 @@
   .kartos-loader path { animation: none; opacity: 1; }
 }
 
+/* A soft light running over the filled part of a meter. */
+@keyframes meter-shine {
+  from { transform: translateX(0); }
+  to { transform: translateX(400%); }
+}
+
 /* A comment floating up over a photo, like a live chat. */
 @keyframes live-in {
   from {
