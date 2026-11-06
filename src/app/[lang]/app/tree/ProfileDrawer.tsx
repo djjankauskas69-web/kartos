@@ -31,9 +31,18 @@ export function ProfileDrawer({ closeHref, labels, shell = false, children }: { 
   // around the app, Next keeps it in the background (display: none) on the first profile
   // opened; show it again. Next takes over the moment you go anywhere else.
   useLayoutEffect(() => {
-    const tree = document.querySelector<HTMLElement>("#main > [data-tree-page]");
-    if (tree && tree.style.display === "none") tree.style.removeProperty("display");
-  });
+    // Next may hide it a moment after the panel appears, so keep watching while the panel is open.
+    const show = () => {
+      const tree = document.querySelector<HTMLElement>("#main > [data-tree-page]");
+      // Only while this panel is really on screen over the tree (not while leaving for another page).
+      if (tree && tree.style.display === "none" && location.pathname.includes("/people/")) tree.style.removeProperty("display");
+    };
+    show();
+    const mo = new MutationObserver(show);
+    const main = document.getElementById("main");
+    if (main) mo.observe(main, { subtree: true, childList: true, attributes: true, attributeFilter: ["style"] });
+    return () => mo.disconnect();
+  }, []);
 
   useEffect(() => {
     if (shell) {
