@@ -8,6 +8,7 @@ import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
 import { DashboardView, type Activity, type FamilyDate, type Upcoming } from "./DashboardView";
 import { PageSkeleton } from "@/components/Skeletons";
+import { plural } from "./tree/build";
 
 export default async function Overview() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -230,7 +231,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
         { key: "maiden", list: marriedWomen.filter((p) => !p.birth_surname), label: d.fillMaiden, href: (id: string) => `${base}/people/${id}` },
       ]
         .filter((x) => x.list.length > 0)
-        .map((x) => ({ key: x.key, text: x.label.replace("{n}", String(x.list.length)), start: d.fillStart.replace("{name}", fullName(x.list[0])), href: x.href(x.list[0].id) }))
+        .map((x) => ({ key: x.key, text: `${plural(locale, x.list.length, t.tree.people)} ${x.label}`, start: d.fillStart.replace("{name}", fullName(x.list[0])), href: x.href(x.list[0].id) }))
     : [];
 
   /* ---- How complete the tree is, and what opens the family origins research ---- */

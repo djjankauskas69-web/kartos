@@ -159,7 +159,14 @@ export function DashboardView(props: DashboardData) {
                       {r.done && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
                     </span>
                     <span className={`min-w-0 flex-1 leading-snug ${r.done ? "text-ink-muted" : "font-semibold"}`}>{r.label}</span>
-                    <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">{d.reqHave.replace("{n}", String(r.have))}</span>
+                    <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">
+                      {d.reqHave.replace("{n}", String(r.have))}
+                      {!r.done && r.href && (
+                        <span className="ml-2 font-semibold text-olive-deep">
+                          · {d.reqAction} →
+                        </span>
+                      )}
+                    </span>
                   </>
                 );
                 return (
@@ -192,7 +199,7 @@ export function DashboardView(props: DashboardData) {
 
             {more.length > 0 && (
               <>
-                <h3 className="mt-6 text-[0.95rem] font-semibold text-ink-muted">{d.moreTitle}</h3>
+                <h3 className="mt-6 border-t border-line pt-5 text-[0.95rem] font-semibold text-ink-muted">{d.moreTitle}</h3>
                 <ul className="mt-1 divide-y divide-line">
                   {more.map((f) => (
                     <li key={f.key}>
