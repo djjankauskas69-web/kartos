@@ -28,7 +28,7 @@ export default async function Home() {
               sizes="100vw"
               alt=""
               fetchPriority="high"
-              className="h-[115svh] w-full object-cover object-[50%_75%]"
+              className="h-[115svh] w-full object-cover object-[50%_35%]"
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
