@@ -52,7 +52,9 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   ]);
 
   type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string }[] | null };
-  const rows = (mediaRes.data ?? []) as unknown as Row[];
+  // Profile portraits are personal: they show on the person, not among the family's photos.
+  const portraitIds = new Set(people.flatMap((p) => (p.profile_photo_id ? [p.profile_photo_id] : [])));
+  const rows = ((mediaRes.data ?? []) as unknown as Row[]).filter((r) => !portraitIds.has(r.id) && !r.storage_path?.includes("/portraits/"));
   type Mem = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null; media_ids?: string[] | null; shared: boolean; status: string };
   const mems = (memRes.data ?? []) as unknown as Mem[];
   const idsOf = (m: Mem) => (m.media_ids?.length ? m.media_ids : m.media_id ? [m.media_id] : []);

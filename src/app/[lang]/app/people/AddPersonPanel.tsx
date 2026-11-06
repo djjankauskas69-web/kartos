@@ -373,7 +373,7 @@ function AddPersonPanel({
     form.delete("photoFile");
     if (file instanceof File && file.size > 0 && !existing) {
       try {
-        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, file)));
+        form.set("photo", JSON.stringify(await uploadPhoto(workspaceId, file, "portraits")));
       } catch {
         return { error: "photo" };
       }

@@ -56,7 +56,8 @@ export function PortraitWithAdd({
     setBusy(true);
     setError(false);
     try {
-      const up = await uploadPhoto(workspaceId, file);
+      // Portraits are kept apart: a person's own photo is not a family photo for the archive.
+      const up = await uploadPhoto(workspaceId, file, "portraits");
       const r = await addPortrait({ locale, personId, path: up.path, width: up.width, height: up.height });
       if (r.error) setError(true);
     } catch {

@@ -44,7 +44,7 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   const ws = current.id;
   const base = `/${locale}/app`;
   const d = t.dash;
-  const photoMedia = () => supabase.from("media").select("id, storage_path, created_at, uploader_id, folder_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%");
+  const photoMedia = () => supabase.from("media").select("id, storage_path, created_at, uploader_id, folder_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").not("storage_path", "like", "%/portraits/%");
   // All of it asked for at once, so each part waits for its slowest answer only; what a part
   // does not show is not asked for.
   const top = part === "top";
@@ -53,7 +53,7 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   const [graph, graves, photosCount, recentPhotos, recentPeople, recentMemories, folders, events, members, coverRes, mine, memCount, storyCount, { data: accessList }] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id, person_id, cemetery_name, lat, lng, created_at, created_by").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(300),
-    supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
+    supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%").not("storage_path", "like", "%/portraits/%"),
     none(photoMedia().order("created_at", { ascending: false }).limit(60)),
     none(supabase.from("persons").select("id, created_at, updated_at, created_by").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("updated_at", { ascending: false }).limit(40)),
     supabase.from("memories").select("id, person_id, created_at, author_id, body, status").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(40),
@@ -89,7 +89,12 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   /* ---- Family moments: the latest photos, with their album ---- */
   const folderRows = (folders.data ?? []) as Array<FolderRow & { created_at: string; created_by: string | null }>;
   const albumName = new Map(folderRows.map((f) => [f.id, folderLabel(t, f)]));
-  const photos = recentPhotos.data ?? [];
+  // Portraits chosen before they were kept apart: personal, so not among the family's photos.
+  const portraitIds = new Set(graph.people.flatMap((p) => (p.profile_photo_id ? [p.profile_photo_id] : [])));
+  const photos = (recentPhotos.data ?? []).filter((m) => !portraitIds.has(m.id as string));
+  const oldPortraits = portraitIds.size
+    ? (await supabase.from("media").select("id", { count: "exact", head: true }).in("id", [...portraitIds]).eq("kind", "photo").not("storage_path", "like", "%/portraits/%").not("storage_path", "like", "%/memories/%")).count ?? 0
+    : 0;
   const moments = photos.slice(0, 7);
 
   /* ---- What the family did lately, similar things joined into one line ---- */
@@ -308,7 +313,7 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
       role={current.role}
       since={since}
       cover={coverPath ? urls.get(coverPath) : undefined}
-      counts={{ people: people.length, generations: generationCount(people, rels), memories: (memCount.count ?? 0) + (storyCount.count ?? 0), photos: photosCount.count ?? 0 }}
+      counts={{ people: people.length, generations: generationCount(people, rels), memories: (memCount.count ?? 0) + (storyCount.count ?? 0), photos: Math.max(0, (photosCount.count ?? 0) - oldPortraits) }}
       head={head}
       partner={partner}
       elders={elders}
