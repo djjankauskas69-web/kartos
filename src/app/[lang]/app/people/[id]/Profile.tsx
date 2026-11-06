@@ -352,6 +352,17 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const photosNode = (
     <>
       {/* Photos */}
+      {photos.length === 0 && sharedPhotos.length === 0 ? (
+        // Nothing yet: one quiet line and one way to begin.
+        papers.length === 0 && (
+          <section className="flex flex-col items-center gap-4 rounded-[20px] border border-dashed border-line px-6 py-10 text-center">
+            <p className="max-w-md text-ink-muted">{t.photos.emptyAll}</p>
+            {can.add(role) && (
+              <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} share={{ title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked, onlyUsHint: t.shared.onlyUsHint, alsoLinkedHint: t.shared.alsoLinkedHint }} />
+            )}
+          </section>
+        )
+      ) : (
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cls.h2}>{t.photos.title}</h2>
@@ -359,9 +370,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
             <PhotoUploader t={t} locale={locale} workspaceId={current.id} personId={id} needsApproval={can.needsApproval(role)} share={{ title: t.shared.title, onlyUs: t.shared.onlyUs, alsoLinked: t.shared.alsoLinked, onlyUsHint: t.shared.onlyUsHint, alsoLinkedHint: t.shared.alsoLinkedHint }} />
           )}
         </div>
-        {photos.length === 0 && sharedPhotos.length === 0 ? (
-          <p className="mt-3 text-ink-muted">{t.photos.empty}</p>
-        ) : (
+        {(
           <PhotoLightbox
             photos={[...photos, ...sharedPhotos].flatMap((ph) => (urls.get(ph.storage_path) ? [{ url: urls.get(ph.storage_path)!, alt: fullName(person) }] : []))}
             labels={{ close: t.add.close, prev: t.photos.prev, next: t.photos.next }}
@@ -420,6 +429,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           </PhotoLightbox>
         )}
       </section>
+      )}
     </>
   );
   const docsNode = (
@@ -427,7 +437,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       {/* Documents and stories from the archive */}
       {papers.length > 0 && (
         <section className="max-w-3xl">
-          <h2 className={cls.h2}>{t.archive.docsTitle}</h2>
+          <h2 className={cls.h2}>{t.archive.typeDocuments}</h2>
           <ul className={`mt-4 divide-y divide-line ${cls.card}`}>
             {papers.map((m) => (
               <li key={m.id}>

@@ -591,7 +591,8 @@
     "next": "Next",
     "publish": "Publish",
     "more": "More",
-    "remove": "Remove"
+    "remove": "Remove",
+    "emptyAll": "This person's photos and documents will be here."
   },
   "memories": {
     "title": "Memories",
@@ -1605,13 +1606,13 @@
     "error": "Couldn't save.",
     "pending": "Waiting for approval",
     "goToTree": "Show in tree",
-    "linkFamily": "Link with another family's tree",
+    "linkFamily": "Same person in another family…",
     "savedFlash": "✓ Saved",
     "undo": "Undo",
     "clickToEdit": "Click to change",
     "addYears": "+ Years",
     "addBirthPlace": "+ Place of birth",
-    "allDetails": "All details",
+    "allDetails": "Edit all details",
     "yearError": "Check the years.",
     "nameRequired": "Enter a first name.",
     "graveMarked": "Marked on the map",

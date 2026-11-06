@@ -383,7 +383,7 @@ export function MemorialProfile({
       </div>
     ),
     photos: nodes.photos,
-    docs: <div className="space-y-4">{nodes.docs}{docs.length === 0 && <p className="text-ink-muted">{m.noDocs}</p>}</div>,
+    docs: <div className="space-y-4">{nodes.docs}</div>,
     places: (
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -434,7 +434,8 @@ export function MemorialProfile({
                 ))}
               </ol>
             )}
-            {/* A plain window for the map: the pins when there are any, otherwise a short note. */}
+            {/* The map only once there is somewhere to show; an empty frame says nothing. */}
+            {lifePlaces.length > 0 && (
             <div className="relative overflow-hidden rounded-[18px] border border-line bg-[#f3f1ea]">
               {lifeMarkers.length > 0 ? (
                 <MapView markers={lifeMarkers} maxZoom={12} layerLabels={{ map: t.grave.layerMap, satellite: t.grave.layerSatellite }} className="h-80 w-full" />
@@ -445,6 +446,7 @@ export function MemorialProfile({
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
 
@@ -564,6 +566,26 @@ export function MemorialProfile({
           <div className="flex flex-wrap gap-2 self-start sm:absolute sm:right-5 sm:top-5">
             {/* The one thing everyone can do here: leave a memory. */}
             {nodes.composer}
+            {/* Rarely needed: the full form and linking to another family, out of the way. */}
+            {((editHref && inline) || linkHref) && (
+              <details className="relative" data-menu>
+                <summary aria-label={m.more} title={m.more} className="flex h-12 w-12 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface/95 text-[1.3rem] leading-none text-ink-muted hover:border-ink/40 hover:text-ink [&::-webkit-details-marker]:hidden">
+                  ⋯
+                </summary>
+                <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+                  {editHref && inline && (
+                    <Link href={editHref} className="flex min-h-11 items-center rounded-lg px-3 hover:bg-linen">
+                      {m.allDetails}
+                    </Link>
+                  )}
+                  {linkHref && (
+                    <Link href={linkHref} className="flex min-h-11 items-center rounded-lg px-3 hover:bg-linen">
+                      {m.linkFamily}
+                    </Link>
+                  )}
+                </div>
+              </details>
+            )}
             {editHref && !inline && (
               <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
                 ✎ {m.edit}
@@ -584,13 +606,6 @@ export function MemorialProfile({
         panels={panels}
       />
 
-      {/* Rarely needed, so quiet links at the very end rather than a menu in the header. */}
-      {((editHref && inline) || linkHref) && (
-        <p className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 text-[0.95rem]">
-          {editHref && inline && <Link href={editHref} className="font-semibold text-ink-muted hover:text-ink hover:underline">{m.allDetails}</Link>}
-          {linkHref && <Link href={linkHref} className="font-semibold text-ink-muted hover:text-ink hover:underline">{m.linkFamily}</Link>}
-        </p>
-      )}
     </div>
   );
 }

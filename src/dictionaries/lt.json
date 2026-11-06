@@ -591,7 +591,8 @@
     "next": "Kita",
     "publish": "Paskelbti",
     "more": "Dar",
-    "remove": "Pašalinti"
+    "remove": "Pašalinti",
+    "emptyAll": "Čia bus šio žmogaus nuotraukos ir dokumentai."
   },
   "memories": {
     "title": "Prisiminimai",
@@ -1605,13 +1606,13 @@
     "error": "Nepavyko išsaugoti.",
     "pending": "Laukia patvirtinimo",
     "goToTree": "Rodyti medyje",
-    "linkFamily": "Susieti su kitos šeimos medžiu",
+    "linkFamily": "Tas pats žmogus kitoje šeimoje…",
     "savedFlash": "✓ Išsaugota",
     "undo": "Atšaukti",
     "clickToEdit": "Spustelėkite, kad pakeistumėte",
     "addYears": "+ Gyvenimo metai",
     "addBirthPlace": "+ Gimimo vieta",
-    "allDetails": "Visi duomenys",
+    "allDetails": "Redaguoti visus duomenis",
     "yearError": "Patikrinkite metus.",
     "nameRequired": "Įrašykite vardą.",
     "graveMarked": "Pažymėta žemėlapyje",
