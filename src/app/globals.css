@@ -263,3 +263,28 @@ img.img-in { opacity: 1; transition: opacity 0.45s ease-out; }
 #app-col:has(#main > :not([style*="display"]) [data-wide-page], #main > [data-wide-page]) :is(#main, header > div) {
   max-width: 88rem;
 }
+
+/* First visit: the tree mark grows from the root up, the name and a greeting follow, then the form. */
+@keyframes intro-part {
+  from { opacity: 0; transform: translateY(18px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-leave {
+  to { opacity: 0; transform: translateY(-28px) scale(0.97); }
+}
+.intro-mark path {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  opacity: 0;
+  animation: intro-part 0.55s cubic-bezier(0.2, 0.75, 0.2, 1) forwards;
+}
+.intro-fade { opacity: 0; animation: intro-fade 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.intro-leave { animation: intro-leave 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.intro-rise { animation: intro-fade 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-mark path, .intro-fade, .intro-leave, .intro-rise { animation: none; opacity: 1; transform: none; }
+}

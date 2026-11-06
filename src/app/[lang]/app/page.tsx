@@ -5,6 +5,7 @@ import { can, fullName, generationCount, isUnknownParent, getContext, getFamilyG
 import { folderLabel, type FolderRow } from "@/lib/archive";
 import { portraitUrls } from "./portraits";
 import { StartFamily } from "./StartFamily";
+import { WelcomeIntro } from "./WelcomeIntro";
 import { DashboardView, type Activity, type FamilyDate, type Upcoming } from "./DashboardView";
 import { PageSkeleton } from "@/components/Skeletons";
 import { plural } from "./tree/build";
@@ -35,12 +36,14 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   if (!current) {
     if (part === "rest") return null;
     return (
-      <StartFamily
-        locale={locale}
-        labels={{ ...t.start, errors: { nameRequired: t.app.errorNameRequired, year: t.app.errorYear, save: t.app.errorSave } }}
-        given={nameCase((user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0])}
-        surname={nameCase((user.meta?.family_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ").slice(1).join(" "))}
-      />
+      <WelcomeIntro locale={locale} name={nameCase((user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0])} hello={t.start.hello}>
+        <StartFamily
+          locale={locale}
+          labels={{ ...t.start, errors: { nameRequired: t.app.errorNameRequired, year: t.app.errorYear, save: t.app.errorSave } }}
+          given={nameCase((user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0])}
+          surname={nameCase((user.meta?.family_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ").slice(1).join(" "))}
+        />
+      </WelcomeIntro>
     );
   }
 

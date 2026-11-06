@@ -1788,6 +1788,10 @@
     "optional": "optional",
     "submit": "Create my tree",
     "saving": "Creating…",
-    "note": "We'll name the family after your surname – you can change it later."
+    "note": "We'll name the family after your surname – you can change it later.",
+    "hello": {
+      "named": "Welcome, {name}.",
+      "plain": "Welcome."
+    }
   }
 }

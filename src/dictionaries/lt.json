@@ -1788,6 +1788,10 @@
     "optional": "nebūtina",
     "submit": "Sukurti mano medį",
     "saving": "Kuriama…",
-    "note": "Šeimos pavadinimą sukursime pagal pavardę – vėliau jį galėsite pakeisti."
+    "note": "Šeimos pavadinimą sukursime pagal pavardę – vėliau jį galėsite pakeisti.",
+    "hello": {
+      "named": "Sveiki, {name}.",
+      "plain": "Sveiki atvykę."
+    }
   }
 }
