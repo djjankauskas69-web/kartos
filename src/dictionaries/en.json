@@ -1049,7 +1049,11 @@
     "slideNoAlbum": "Not in an album",
     "photoInfo": "Details",
     "fullscreen": "Full screen",
-    "exitFullscreen": "Exit full screen"
+    "exitFullscreen": "Exit full screen",
+    "selectAll": "Select all",
+    "clearSelection": "Clear selection",
+    "toAlbum": "To album",
+    "newAlbumShort": "New album"
   },
   "peopleList": {
     "title": "People",

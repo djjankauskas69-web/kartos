@@ -571,35 +571,30 @@ export function ArchiveHome({
 
       {tab === "albums" ? albumsView : tab === "photos" ? photosView : tab === "stories" ? storiesView : documentsView}
 
-      {/* Chosen photos: one bar for what to do with them */}
+      {/* Chosen photos: one light floating bar, like the tree's controls */}
       {selecting && selected.length > 0 && (
-        <div className="fixed bottom-5 left-1/2 z-30 flex w-[min(52rem,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-surface shadow-[var(--shadow-float)]">
-          <span className="mr-auto font-semibold">{n(t.selectedN, selected.length)}</span>
-          {albumOptions.length > 0 && (
-            <form
-              action={async (form) => {
-                await moveItems(form);
-                stopSelecting();
-              }}
-            >
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="ids" value={selected.join(",")} />
-              <select name="folderId" defaultValue="__" aria-label={t.moveToAlbum} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="min-h-10 cursor-pointer rounded-full bg-surface/15 px-4 font-semibold text-surface outline-none hover:bg-surface/25 [&>option]:text-ink">
-                <option value="__" disabled>{t.moveToAlbum}</option>
-                {[{ id: "", name: t.noAlbum }, ...(tab === "documents" ? docFolders : albumOptions)].map((f) => (
-                  <option key={f.id || "none"} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-            </form>
-          )}
-          <button type="button" onClick={() => setBulk("tag")} className="min-h-10 rounded-full bg-surface/15 px-4 font-semibold hover:bg-surface/25">{t.bulkTag}</button>
-          <button type="button" disabled={downloading} onClick={() => download(selected)} className="min-h-10 rounded-full bg-surface/15 px-4 font-semibold hover:bg-surface/25 disabled:opacity-60">
-            {downloading ? "…" : t.download}
-          </button>
-          {isEditor && (
-            <button type="button" onClick={() => setBulk("delete")} className="min-h-10 rounded-full px-4 font-semibold text-[#f3b2a4] hover:bg-surface/10">{t.delete}</button>
-          )}
-        </div>
+        <SelectionBar
+          count={selected.length}
+          label={n(t.selectedN, selected.length)}
+          allSelected={navList.length > 0 && navList.every((i) => selected.includes(i.id))}
+          onAll={() => setSelected(navList.map((i) => i.id))}
+          onClear={stopSelecting}
+          albums={albumOptions.length > 0 ? [{ id: "", name: t.noAlbum }, ...(tab === "documents" ? docFolders : albumOptions)] : []}
+          onMove={async (folderId) => {
+            const form = new FormData();
+            form.set("locale", locale);
+            form.set("ids", selected.join(","));
+            form.set("folderId", folderId);
+            await moveItems(form);
+            stopSelecting();
+          }}
+          onNewAlbum={tab === "documents" ? undefined : () => setDialog("album")}
+          onTag={() => setBulk("tag")}
+          onDownload={() => download(selected)}
+          downloading={downloading}
+          onDelete={isEditor ? () => setBulk("delete") : undefined}
+          t={t}
+        />
       )}
 
       <Dialog open={bulk === "tag"} onClose={() => setBulk(null)} title={t.bulkTagTitle}>
@@ -972,6 +967,125 @@ function SlidePicker({
           {t.slideStart.replace("{n}", String(picked.length))}
         </button>
       </div>
+    </div>
+  );
+}
+
+
+const barBtn = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 font-semibold hover:bg-paper sm:px-3.5";
+const I = { width: 19, height: 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+
+/** What to do with the chosen photos: white, round, floating at the bottom; on a phone only the icons. */
+function SelectionBar({
+  label,
+  allSelected,
+  onAll,
+  onClear,
+  albums,
+  onMove,
+  onNewAlbum,
+  onTag,
+  onDownload,
+  downloading,
+  onDelete,
+  t,
+}: {
+  count: number;
+  label: string;
+  allSelected: boolean;
+  onAll: () => void;
+  onClear: () => void;
+  albums: Array<{ id: string; name: string }>;
+  onMove: (folderId: string) => Promise<void>;
+  onNewAlbum?: () => void;
+  onTag: () => void;
+  onDownload: () => void;
+  downloading: boolean;
+  onDelete?: () => void;
+  t: L;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.("[data-album-menu]")) setMenu(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [menu]);
+  return (
+    <div role="toolbar" aria-label={label} className="fixed bottom-5 left-1/2 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full border border-line/70 bg-surface px-2 py-1.5 text-[0.98rem] shadow-[0_18px_40px_-18px_rgb(28_29_26/0.45)]">
+      <button type="button" onClick={onClear} aria-label={t.clearSelection} title={t.clearSelection} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-ink">
+        <svg {...I}><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+      <span className="shrink-0 whitespace-nowrap px-1 font-semibold tabular-nums">{label}</span>
+      {!allSelected && (
+        <button type="button" onClick={onAll} className="hidden shrink-0 whitespace-nowrap rounded-full px-3 py-2 font-semibold text-olive-deep hover:bg-paper sm:inline-flex">
+          {t.selectAll}
+        </button>
+      )}
+      <span aria-hidden="true" className="mx-1 h-6 w-px shrink-0 bg-line" />
+      {albums.length > 0 && (
+        <div className="relative" data-album-menu>
+          <button type="button" onClick={() => setMenu((v) => !v)} aria-expanded={menu} aria-haspopup="menu" disabled={moving} title={t.moveToAlbum} className={`${barBtn} disabled:opacity-60`}>
+            <svg {...I}><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" /></svg>
+            <span className="hidden md:inline">{moving ? "…" : t.toAlbum}</span>
+          </button>
+          {menu && (
+            <div role="menu" className="absolute bottom-full left-1/2 mb-3 max-h-72 w-60 -translate-x-1/2 overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+              {albums.map((a) => (
+                <button
+                  key={a.id || "none"}
+                  type="button"
+                  role="menuitem"
+                  onClick={async () => {
+                    setMenu(false);
+                    setMoving(true);
+                    await onMove(a.id);
+                    setMoving(false);
+                  }}
+                  className={`flex min-h-10 w-full items-center rounded-lg px-3 text-left hover:bg-paper ${a.id ? "" : "text-ink-muted"}`}
+                >
+                  <span className="truncate">{a.name}</span>
+                </button>
+              ))}
+              {onNewAlbum && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenu(false);
+                    onNewAlbum();
+                  }}
+                  className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-lg border-t border-line px-3 pt-1 text-left font-semibold text-olive-deep hover:bg-paper"
+                >
+                  + {t.newAlbumShort}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      <button type="button" onClick={onTag} title={t.bulkTag} className={barBtn}>
+        <svg {...I}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+        <span className="hidden md:inline">{t.bulkTag}</span>
+      </button>
+      <button type="button" onClick={onDownload} disabled={downloading} title={t.download} className={`${barBtn} disabled:opacity-60`}>
+        <svg {...I}><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14" /></svg>
+        <span className="hidden md:inline">{downloading ? "…" : t.download}</span>
+      </button>
+      {onDelete && (
+        <button type="button" onClick={onDelete} title={t.delete} className={`${barBtn} text-danger hover:bg-danger/5`}>
+          <svg {...I}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
+          <span className="hidden md:inline">{t.delete}</span>
+        </button>
+      )}
     </div>
   );
 }

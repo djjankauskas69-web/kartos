@@ -1049,7 +1049,11 @@
     "slideNoAlbum": "Be albumo",
     "photoInfo": "Informacija",
     "fullscreen": "Visas ekranas",
-    "exitFullscreen": "Išeiti iš viso ekrano"
+    "exitFullscreen": "Išeiti iš viso ekrano",
+    "selectAll": "Pažymėti visas",
+    "clearSelection": "Atšaukti pasirinkimą",
+    "toAlbum": "Į albumą",
+    "newAlbumShort": "Naujas albumas"
   },
   "peopleList": {
     "title": "Žmonės",
