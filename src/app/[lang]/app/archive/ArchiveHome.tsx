@@ -336,7 +336,7 @@ export function ArchiveHome({
                   {a.shared && <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.8rem] font-semibold text-ink shadow">{t.everyone}</span>}
                 </span>
                 <span className="mt-3 block px-1">
-                  <span className="block text-[1.3rem] font-semibold leading-snug group-hover:underline">{a.name}</span>
+                  <span className="block text-[1.3rem] font-semibold leading-snug">{a.name}</span>
                   <span className="mt-0.5 block text-[0.98rem] text-ink-muted">
                     {[a.year ? `${a.year} m.` : "", n(t.photosN, a.count), a.contributors ? n(t.contributorsN, a.contributors) : ""].filter(Boolean).join(" · ")}
                   </span>
