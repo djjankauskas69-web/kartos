@@ -32,6 +32,7 @@ import { PhotoLightbox } from "./PhotoLightbox";
 import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./MemorialProfile";
 import { GraveView } from "./GraveView";
 import { PendingButton } from "./PortraitControls";
+import { PortraitPicker } from "./PortraitPicker";
 
 export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
@@ -683,7 +684,19 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           events={ev}
           places={pl}
           eventsReady={eventsReady}
-          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) && !isMe ? composerNode : null }}
+          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) && !isMe ? composerNode : null,
+            portrait:
+              can.edit(role) && !other && !isMe ? (
+                <PortraitPicker
+                  locale={locale}
+                  workspaceId={current.id}
+                  personId={id}
+                  src={portraits.get(id)}
+                  initials={`${person.given_names[0] ?? ""}${person.surname?.[0] ?? ""}`.toUpperCase()}
+                  labels={t.portraitPicker}
+                />
+              ) : null,
+          }}
           // Writing memories about yourself is odd: on your own profile only what others wrote shows.
           memoryPreview={isMe && memoryPreview.count === 0 ? undefined : memoryPreview}
           hideMemories={isMe && memoryPreview.count === 0}

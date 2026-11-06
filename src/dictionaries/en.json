@@ -1699,5 +1699,24 @@
     "familyA": "Jankauskas",
     "familyB": "Petraukas",
     "joinedAt": "Justas and Ieva"
+  },
+  "portraitPicker": {
+    "add": "Add photo",
+    "change": "Change photo",
+    "title": "Profile photo",
+    "fromDevice": "Upload from computer or phone",
+    "fromArchive": "Choose from the family archive",
+    "adjust": "Adjust the current one",
+    "archiveTitle": "Choose a photo",
+    "noArchive": "There are no photos in the archive yet.",
+    "loading": "Loading…",
+    "cropTitle": "What shows on the profile",
+    "cropHint": "Drag the photo and zoom in so the face fills the frame.",
+    "zoom": "Zoom",
+    "save": "Save",
+    "saving": "Saving…",
+    "back": "Back",
+    "close": "Close",
+    "error": "That didn't work. Try again or pick another photo."
   }
 }

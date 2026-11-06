@@ -601,6 +601,32 @@ export async function addPortrait(input: { locale: string; personId: string; pat
   return { ok: true };
 }
 
+/** Family photos to pick a portrait from: this person's own photos first, then the rest. */
+export async function portraitChoices(input: { locale: string; personId: string }): Promise<{ id: string; url: string }[]> {
+  const locale = input.locale === "en" ? "en" : "lt";
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  if (!/^[0-9a-f-]{36}$/i.test(input.personId)) return [];
+  const [{ data: mine }, { data: all }] = await Promise.all([
+    supabase.from("media_persons").select("media_id").eq("person_id", input.personId).eq("workspace_id", workspace.id),
+    supabase
+      .from("media")
+      .select("id, storage_path")
+      .eq("workspace_id", workspace.id)
+      .eq("kind", "photo")
+      .eq("status", "approved")
+      .not("storage_path", "like", "%/portraits/%")
+      .not("storage_path", "like", "%/memories/%")
+      .order("created_at", { ascending: false })
+      .limit(120),
+  ]);
+  const own = new Set((mine ?? []).map((r) => r.media_id as string));
+  const rows = (all ?? []).filter((r) => /\.(jpe?g|png|webp)$/i.test(r.storage_path as string));
+  rows.sort((a, b) => Number(own.has(b.id as string)) - Number(own.has(a.id as string)));
+  const { data: signed } = await supabase.storage.from("family-media").createSignedUrls(rows.map((r) => r.storage_path as string), 60 * 60);
+  const byPath = new Map((signed ?? []).filter((s) => s.signedUrl && s.path).map((s) => [s.path as string, s.signedUrl as string]));
+  return rows.flatMap((r) => (byPath.get(r.storage_path as string) ? [{ id: r.id as string, url: byPath.get(r.storage_path as string)! }] : []));
+}
+
 export async function deletePhoto(form: FormData) {
   const locale = formLocale(form);
   const { supabase, workspace } = await actionContext(locale, can.edit);

@@ -1699,5 +1699,24 @@
     "familyA": "Jankauskai",
     "familyB": "Petraukai",
     "joinedAt": "Justas ir Ieva"
+  },
+  "portraitPicker": {
+    "add": "Pridėti nuotrauką",
+    "change": "Pakeisti nuotrauką",
+    "title": "Profilio nuotrauka",
+    "fromDevice": "Įkelti iš kompiuterio ar telefono",
+    "fromArchive": "Pasirinkti iš šeimos archyvo",
+    "adjust": "Pataisyti, kas matosi dabartinėje",
+    "archiveTitle": "Pasirinkite nuotrauką",
+    "noArchive": "Archyve dar nėra nuotraukų.",
+    "loading": "Kraunama…",
+    "cropTitle": "Kas matysis profilyje",
+    "cropHint": "Patempkite nuotrauką ir priartinkite, kad rėmelyje liktų veidas.",
+    "zoom": "Priartinti",
+    "save": "Išsaugoti",
+    "saving": "Išsaugoma…",
+    "back": "Atgal",
+    "close": "Uždaryti",
+    "error": "Nepavyko. Bandykite dar kartą arba kitą nuotrauką."
   }
 }

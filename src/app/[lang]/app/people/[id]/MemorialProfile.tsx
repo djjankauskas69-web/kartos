@@ -84,7 +84,7 @@ export function MemorialProfile({
   events: MemorialEvent[];
   places: MemorialPlace[];
   eventsReady: boolean;
-  nodes: { photos: React.ReactNode; docs: React.ReactNode; family: React.ReactNode; grave: React.ReactNode; memories: React.ReactNode; composer: React.ReactNode };
+  nodes: { photos: React.ReactNode; docs: React.ReactNode; family: React.ReactNode; grave: React.ReactNode; memories: React.ReactNode; composer: React.ReactNode; portrait?: React.ReactNode };
   living?: boolean;
   aliveLabel?: string;
   residence?: string | null;
@@ -500,7 +500,9 @@ export function MemorialProfile({
           className={`pointer-events-none absolute inset-y-0 right-0 h-full w-[70%] object-cover [mask-image:linear-gradient(to_left,black_35%,transparent)] ${living ? "opacity-75" : "opacity-60 sepia-[.55]"}`}
         />
         <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-7">
-          {portrait ? (
+          {nodes.portrait ? (
+            nodes.portrait
+          ) : portrait ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed private URL
             <img src={portrait} alt="" className="h-36 w-36 shrink-0 rounded-[22px] object-cover ring-4 ring-white shadow-[0_14px_30px_-16px_rgb(28_29_26/0.6)] sm:h-44 sm:w-44" />
           ) : (
