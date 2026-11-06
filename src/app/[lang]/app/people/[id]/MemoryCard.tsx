@@ -116,16 +116,17 @@ export function MemoryCard({
   const prevId = at > 0 ? group!.ids[at - 1] : null;
   const nextId = at >= 0 && at < group!.ids.length - 1 ? group!.ids[at + 1] : null;
 
-  const head = (
+  const headWith = (withBadges: boolean) => (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.95rem]">
       <Face src={authorPhoto} name={author} />
       <span className="min-w-0">
         {author && <span className="block font-semibold leading-tight">{author}</span>}
         <span className="block text-[0.88rem] text-ink-muted">{date}</span>
       </span>
-      {badges}
+      {withBadges && badges}
     </div>
   );
+  const head = headWith(true);
 
   return (
     <li className="h-full">
@@ -170,7 +171,7 @@ export function MemoryCard({
         onNext={nextId ? () => group!.setOpenId(nextId) : undefined}
         navLabels={group && groupId && group.ids.length > 1 && labels.prev && labels.next ? { prev: labels.prev, next: labels.next } : undefined}
       >
-        {open && <Reader key={groupId} head={head} title={title} body={body} pics={pics} author={author} labels={labels} actions={actions} live={live} onDeleted={close} />}
+        {open && <Reader key={groupId} head={live ? headWith(false) : head} title={title} body={body} pics={pics} author={author} labels={labels} actions={actions} live={live} onDeleted={close} />}
       </Modal>
     </li>
   );
