@@ -523,14 +523,15 @@ export function ArchiveHome({
           </button>
         )}
       </>
-    ) : !canAdd ? null : tab === "photos" ? (
+    ) : !canAdd ? null : tab === "photos" && photos.length > 0 ? (
       <button type="button" onClick={() => setDialog("upload")} className={primary}>
         <span aria-hidden="true" className="text-[1.25rem] leading-none">+</span>
         {t.uploadPhotos}
       </button>
     ) : tab === "stories" ? (
-      <button type="button" onClick={() => setDialog("story")} className={primary}>+ {t.writeStory}</button>
-    ) : tab === "documents" ? (
+      // An empty tab has its own button in the middle; one is enough.
+      stories.length + memories.length === 0 ? null : <button type="button" onClick={() => setDialog("story")} className={primary}>+ {t.writeStory}</button>
+    ) : tab === "documents" && documents.length > 0 ? (
       <button type="button" onClick={() => setDialog("uploadDoc")} className={primary}>+ {t.uploadDocs}</button>
     ) : null;
 

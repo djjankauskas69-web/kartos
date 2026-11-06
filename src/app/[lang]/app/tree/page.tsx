@@ -192,7 +192,8 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         {header(subtitleWhole)}
         {host}
         <ListView
-          people={people.map((p) => ({
+          // The "parents unknown" stand-in is only a link in the tree, not someone to list.
+          people={people.filter((p) => !isUnknownParent(p)).map((p) => ({
             id: p.id,
             name: fullName(p),
             birth: p.birth_year,
