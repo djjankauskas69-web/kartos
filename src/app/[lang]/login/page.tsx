@@ -23,7 +23,7 @@ export default async function LoginPage() {
           {/* On a phone: a thin strip of the meadow instead of the big picture. */}
           <div aria-hidden="true" className="relative mb-7 h-28 overflow-hidden rounded-[20px] lg:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element -- static landing photo */}
-            <img src={PHOTOS.heroBackgroundSmall} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_65%]" />
+            <img src={PHOTOS.loginSmall} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_65%]" />
           </div>
           <h1 className={cls.h1}>{t.login.title}</h1>
           <p className="mt-2.5 text-ink-muted">{t.login.lead}</p>
@@ -57,7 +57,7 @@ export default async function LoginPage() {
         {/* A calm picture of what waits inside, on wide screens only. */}
         <figure className="relative hidden h-full max-h-[40rem] min-h-[30rem] overflow-hidden rounded-[28px] lg:block">
           {/* eslint-disable-next-line @next/next/no-img-element -- static landing photo */}
-          <img src={PHOTOS.heroBackground} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={PHOTOS.login} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
           {/* A glimpse of what waits inside: one person, as in the tree. */}
           <div aria-hidden="true" className="absolute right-8 top-8 w-[17rem] rotate-[1.5deg] rounded-[20px] bg-surface/95 p-4 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.6)] backdrop-blur-sm">
