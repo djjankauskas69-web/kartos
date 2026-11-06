@@ -214,3 +214,46 @@
     transform: scaleX(0.9);
   }
 }
+
+
+/* ---------- Gentle motion (off when the device asks for less) ---------- */
+
+/* A page arriving: its parts rise in softly, one after another. Restarts when a kept page is shown again. */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+:where(#main > *) { animation: page-in 0.35s ease-out both; }
+:where(#main > * > *) { animation: page-in 0.4s ease-out both; }
+:where(#main > * > *:nth-child(2)) { animation-delay: 50ms; }
+:where(#main > * > *:nth-child(3)) { animation-delay: 100ms; }
+:where(#main > * > *:nth-child(4)) { animation-delay: 150ms; }
+:where(#main > * > *:nth-child(5)) { animation-delay: 200ms; }
+:where(#main > * > *:nth-child(n + 6)) { animation-delay: 250ms; }
+
+/* Pictures fade in once loaded, over their soft placeholder colour (see ImageFader). */
+img.img-wait { opacity: 0; }
+img.img-in { opacity: 1; transition: opacity 0.45s ease-out; }
+
+/* The tree: people come in generation by generation, then the lines draw between them. */
+@keyframes tree-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tree-line-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.tree-intro-card { animation: tree-card-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.tree-intro-lines > g:not([stroke-dasharray]) path { stroke-dasharray: 1; animation: tree-line-draw 0.9s ease-out 0.35s backwards; }
+.tree-intro-lines > g[stroke-dasharray] { animation: page-in 0.5s ease-out 0.8s backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  #main > *,
+  #main > * > *,
+  .tree-intro-card,
+  .tree-intro-lines > g,
+  .tree-intro-lines path { animation: none !important; }
+  img.img-wait { opacity: 1; }
+  img.img-in { transition: none; }
+}

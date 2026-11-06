@@ -182,6 +182,9 @@ const clampK = (k: number) => Math.max(MIN, Math.min(MAX, k));
  * scroll or two fingers to pan, Ctrl/⌘ + wheel or pinch to zoom where you point.
  * Tapping a card opens a small menu: profile, tree from them, grave, add a relative.
  */
+/** The tree grows in, generation by generation, once per visit (not on every redraw). */
+let introShown = false;
+
 export function TreeView({
   cards,
   boxes,
@@ -275,6 +278,10 @@ export function TreeView({
   const opening = useSyncExternalStore(drawerState.subscribe, drawerState.get, drawerState.getServer);
   // The person pointed at (or whose menu is open): their own links light up, the rest fade.
   const [hover, setHover] = useState<string | null>(null);
+  const [intro] = useState(() => !introShown);
+  useEffect(() => {
+    introShown = true;
+  }, []);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
   useEffect(() => {
@@ -813,19 +820,19 @@ export function TreeView({
           {rows.map((r, i) =>
             i % 2 === 1 ? <div key={r.y} aria-hidden="true" style={{ top: r.y - 34, height: cardH + 68, left: -4000, width: width + 8000 }} className="pointer-events-none absolute bg-[#8a7a5c]/[0.045]" /> : null,
           )}
-          <svg width={width} height={height} className="absolute inset-0 overflow-visible" aria-hidden="true">
+          <svg width={width} height={height} className={`absolute inset-0 overflow-visible ${intro ? "tree-intro-lines" : ""}`} aria-hidden="true">
             {/* parents → children: clear vertical joins; the chosen person's own links stand out */}
             <g fill="none" strokeLinejoin="round" strokeLinecap="round">
               {paths.map((l, i) => {
                 const on = lit && lineOn(l.keys);
-                return <path key={i} d={l.d} stroke={lineColor(l.keys) ?? (on ? "#4f4b41" : "#8f8a7c")} strokeOpacity={lineColor(l.keys) && !on ? 0.7 : 1} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} pathLength={intro ? 1 : undefined} stroke={lineColor(l.keys) ?? (on ? "#4f4b41" : "#8f8a7c")} strokeOpacity={lineColor(l.keys) && !on ? 0.7 : 1} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             {/* partners: darker and thicker, with ∞ on top */}
             <g fill="none" strokeLinecap="round">
               {partnerPaths.map((l, i) => {
                 const on = lit && lineOn(l.keys);
-                return <path key={i} d={l.d} stroke={lineColor(l.keys) ?? (on ? "#3f3b33" : "#6f6b60")} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
+                return <path key={i} d={l.d} pathLength={intro ? 1 : undefined} stroke={lineColor(l.keys) ?? (on ? "#3f3b33" : "#6f6b60")} strokeWidth={on ? 3.8 : 3.2} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
             <g fill="none" strokeLinecap="round" strokeDasharray="5 6">
@@ -854,10 +861,10 @@ export function TreeView({
             {cards.map((c) => (
               <li
                 key={c.key}
-                style={{ left: c.x, top: c.y, width: cardW, height: cardH }}
+                style={{ left: c.x, top: c.y, width: cardW, height: cardH, ...(intro ? { animationDelay: `${Math.max(0, rows.findIndex((r) => r.y === c.y)) * 140}ms` } : {}) }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${c.unknown ? "[&>span:first-child]:border-dashed [&>span:first-child]:bg-transparent opacity-70" : ""} ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
+                className={`group absolute transition-opacity duration-200 ${intro ? "tree-intro-card" : ""} ${c.unknown ? "[&>span:first-child]:border-dashed [&>span:first-child]:bg-transparent opacity-70" : ""} ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
               >
                 {/* The card under the portrait: the medallion sits on its top edge. */}
                 <span

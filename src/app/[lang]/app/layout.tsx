@@ -22,6 +22,7 @@ import { signOut, switchWorkspace } from "./actions";
 import { NavProgress, SideNav, TopNav, type NavItem } from "./AppNav";
 import { MenuCloser } from "./MenuCloser";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { ImageFader } from "@/components/ImageFader";
 
 export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -90,6 +91,7 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
         </header>
         <MenuCloser />
         <NavProgress />
+        <ImageFader />
         <main id="main" className="mx-auto w-full max-w-[72rem] group-data-[wide]/col:max-w-[88rem] flex-1 px-5 py-6 sm:px-8 lg:py-8">
           {children}
         </main>
