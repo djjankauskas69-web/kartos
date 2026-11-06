@@ -306,7 +306,7 @@
     "search": "Search by name",
     "stLoose": "Not joined to the tree",
     "stNotJoined": "Not signed up",
-    "stNoPerson": "Not matched to anyone in the tree",
+    "stNoPerson": "Not in the tree",
     "connect": "Join to tree",
     "invite": "Invite",
     "inviteCopied": "Link copied",
@@ -317,7 +317,8 @@
       "few": "members",
       "many": "members",
       "other": "members"
-    }
+    },
+    "linkToTree": "Link to the tree"
   },
   "review": {
     "title": "Approvals",

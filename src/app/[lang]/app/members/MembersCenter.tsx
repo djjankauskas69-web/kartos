@@ -145,6 +145,7 @@ export function MembersCenter({
   type F = (typeof FILTERS)[number];
   const [filter, setFilter] = useState<F>((FILTERS as readonly string[]).includes(initialFilter) ? (initialFilter as F) : "all");
   const [q, setQ] = useState("");
+  const [linkFor, setLinkFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const inFilter = (e: Entry, f: F) => f === "all" || (f === "members" ? e.status === "member" || e.status === "account" : e.status === f);
   const terms = fold(q).split(/\s+/).filter(Boolean);
@@ -208,6 +209,19 @@ export function MembersCenter({
                           {e.status === "loose" && chip(t.stLoose, "bg-[#fbf0d9] text-[#8a6413]")}
                           {e.status === "invite" && chip(t.stNotJoined, "bg-linen text-ink-muted")}
                           {e.status === "account" && chip(t.stNoPerson, "bg-[#fbf0d9] text-[#8a6413]")}
+                          {/* Not in the tree yet: the one place where linking is needed, so the button sits right here. */}
+                          {e.status === "account" && m && isAdmin && linkReady && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLinkFor(m.id);
+                                setOpenId(m.id);
+                              }}
+                              className="inline-flex items-center rounded-full border border-[#e3cf9f] px-2.5 py-0.5 text-[0.85rem] font-semibold text-[#8a6413] hover:bg-[#fbf0d9]"
+                            >
+                              {t.linkToTree}
+                            </button>
+                          )}
                           {m && m.email && !m.isSelf && isAdmin && <FoggyEmail email={m.email} label={t.showEmail} />}
                         </div>
                       </div>
@@ -222,7 +236,8 @@ export function MembersCenter({
                       )}
                       {m && (isAdmin || m.isSelf) && (
                         <MemberMenu
-                          key={`${m.id}-${m.role}`}
+                          key={`${m.id}-${m.role}-${linkFor === m.id ? "link" : ""}`}
+                          startLink={linkFor === m.id}
                           locale={locale}
                           member={m}
                           isAdmin={isAdmin}
@@ -458,7 +473,9 @@ function MemberMenu({
   onOpen,
   t,
   errors,
+  startLink = false,
 }: {
+  startLink?: boolean;
   locale: Locale;
   member: MemberRow;
   isAdmin: boolean;
@@ -469,7 +486,7 @@ function MemberMenu({
   t: Labels;
   errors: Errors;
 }) {
-  const [view, setView] = useState<View>("menu");
+  const [view, setView] = useState<View>(startLink ? "link" : "menu");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -526,7 +543,8 @@ function MemberMenu({
                   </button>
                 </li>
               )}
-              {isAdmin && linkReady && (
+              {/* Only for a member not yet in the tree (normally they pick themselves when joining). */}
+              {isAdmin && linkReady && !member.personId && (
                 <li>
                   <button type="button" onClick={() => setView("link")}>
                     {t.me.linkPerson}

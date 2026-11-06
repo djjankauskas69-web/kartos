@@ -306,7 +306,7 @@
     "search": "Ieškoti pagal vardą ar pavardę",
     "stLoose": "Neprijungtas prie medžio",
     "stNotJoined": "Neprisijungęs",
-    "stNoPerson": "Nepriskirtas žmogui medyje",
+    "stNoPerson": "Nėra medyje",
     "connect": "Prijungti",
     "invite": "Pakviesti",
     "inviteCopied": "Nuoroda nukopijuota",
@@ -317,7 +317,8 @@
       "few": "nariai",
       "many": "nario",
       "other": "narių"
-    }
+    },
+    "linkToTree": "Susieti su medžiu"
   },
   "review": {
     "title": "Tvirtinimas",
