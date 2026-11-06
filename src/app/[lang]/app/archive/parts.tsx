@@ -115,7 +115,7 @@ export function Dialog({ open, onClose, title, children, wide = false, photo = f
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-label={title}
-      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] outline-none border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#1c1d1a]/75 backdrop:backdrop-blur-[2px]" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
+      className={`m-auto w-[calc(100%-2rem)] overflow-y-auto rounded-[20px] outline-none border border-line bg-surface p-0 text-ink shadow-[0_30px_80px_-20px_rgb(40_30_20/0.5)] backdrop:bg-[#1c1d1a]/45 ${photo ? "max-h-[96dvh] max-w-[min(calc(100vw-2rem),100rem)] !border-0 !bg-transparent !shadow-none backdrop:bg-[#191814]/90 backdrop:backdrop-blur-md" : wide ? "max-h-[92dvh] max-w-5xl" : "max-h-[92dvh] max-w-2xl"}`}
     >
       {open && children}
     </dialog>
@@ -161,7 +161,10 @@ export function Detail({
   onPrev,
   onNext,
   onClose,
+  position,
 }: {
+  /** Where this photo is in what is being looked through: "3 / 26". */
+  position?: { n: number; total: number };
   canCover?: boolean;
   canComment?: boolean;
   /** The photos either side, fetched ahead so moving on is instant. */
@@ -399,8 +402,10 @@ export function Detail({
       </div>
     );
 
-  // A photo or a document: the picture on a calm backdrop, the details in a narrow column beside it.
-  const arrow = "absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_6px_18px_-8px_rgb(28_29_26/0.5)] backdrop-blur transition hover:bg-white focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ink/40 sm:opacity-0 sm:group-hover/pic:opacity-100";
+  // A photo or a document: one calm column around the picture: a line above it (where it is,
+  // when it was, the buttons), the picture, the comment line below; the arrows either side.
+  const roundBtn = "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60";
+  const arrow = "hidden h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:pointer-events-none disabled:opacity-20 sm:flex";
   const title = item.title && !looksLikeFileName(item.title) ? item.title : "";
   const details = [
     item.dateLabel && [t.date ?? "", item.dateLabel],
@@ -408,6 +413,8 @@ export function Detail({
     item.folderId && folderName.get(item.folderId) && [t.folder, folderName.get(item.folderId)!],
     item.uploader && [t.uploadedBy, item.uploader],
   ].filter(Boolean) as Array<[string, string]>;
+  const where = [position && position.total > 1 ? `${position.n} / ${position.total}` : "", item.dateLabel || (item.folderId ? folderName.get(item.folderId) : "") || ""].filter(Boolean);
+  const isPicture = !!item.url && !item.pdf;
   return (
     <div
       // A click on the dim page around the photo closes it.
@@ -416,80 +423,78 @@ export function Detail({
       }}
       className="relative flex flex-col md:block md:h-[min(94dvh,64rem)]"
     >
-      {/* First in the page, so the dialog's focus lands on close and not on an arrow. */}
-      <div className="absolute right-3 top-3 z-30 flex items-center gap-2">
-        {onExpand && (
-          <button
-            type="button"
-            onClick={onExpand}
-            aria-label={t.fullscreen}
-            title={t.fullscreen}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-white focus:outline-none"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setInfo(!info)}
-          aria-expanded={info}
-          aria-label={t.photoInfo}
-          title={t.photoInfo}
-          className={`flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition-colors focus:outline-none ${info ? "bg-ink text-white" : "bg-white/90 text-ink hover:bg-white"}`}
-        >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
-        </button>
-        <div className="rounded-full bg-white/90 shadow-sm">{closeBtn}</div>
-      </div>
-      {/* The page shows dimmed behind the photo; only the details column is a card. */}
       {/* The photo stays in the middle of the screen; with the details open, the same room is left on both sides. */}
-      <div className="flex min-w-0 flex-col md:h-full">
       <div
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className={`group/pic relative flex min-h-[40dvh] flex-1 items-center justify-center transition-[padding] duration-300 px-2 pb-2 pt-16 sm:px-16 ${info ? "md:px-[21.5rem]" : ""}`}
+        className={`relative flex min-h-[40dvh] items-center justify-center gap-4 px-2 pb-2 pt-2 transition-[padding] duration-300 sm:gap-6 sm:px-4 md:h-full ${info ? "md:px-[21.5rem]" : ""}`}
       >
-        {item.url && !item.pdf ? (
-          // The comment line sits under the photo, starting at its left edge.
-          <>
-          {!loaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 shadow-sm">
-                <LogoLoader size={44} />
-              </span>
+        <button type="button" onClick={onPrev} disabled={!onPrev} aria-label={t.slidePrev} title={t.slidePrev} className={arrow}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+
+        {/* The column: exactly as wide as the picture (never narrower than its buttons). */}
+        <div className="flex min-w-0 max-w-full flex-col gap-3">
+          <div className="flex min-w-[min(20rem,calc(100vw-1rem))] items-center gap-2 text-white">
+            <p className="min-w-0 flex-1 truncate text-[0.98rem] text-white/80">
+              {where.map((w, i) => (
+                <span key={i} className={i === 0 && position && position.total > 1 ? "font-semibold tabular-nums text-white" : ""}>
+                  {i > 0 && <span aria-hidden="true" className="px-2 text-white/40">·</span>}
+                  {w}
+                </span>
+              ))}
+            </p>
+            {onExpand && (
+              <button type="button" onClick={onExpand} aria-label={t.fullscreen} title={t.fullscreen} className={`${roundBtn} bg-white/10 text-white hover:bg-white/20`}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setInfo(!info)}
+              aria-expanded={info}
+              aria-label={t.photoInfo}
+              title={t.photoInfo}
+              className={`${roundBtn} ${info ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/20"}`}
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.6v.1" /></svg>
+            </button>
+            <button type="button" onClick={onClose} aria-label={t.close} title={t.close} className={`${roundBtn} bg-white/10 text-white hover:bg-white/20`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+
+          {isPicture ? (
+            <div className="relative">
+              {!loaded && (
+                <div className="absolute inset-0 flex min-h-40 items-center justify-center">
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 shadow-sm">
+                    <LogoLoader size={44} />
+                  </span>
+                </div>
+              )}
+              {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
+              <div data-keep className={`relative mx-auto w-fit max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+                <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain max-h-[62dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-9.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]"}`} />
+                {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
+              </div>
+            </div>
+          ) : (
+            <div data-keep className="aspect-[3/4] h-[44dvh] md:h-[calc(min(94dvh,64rem)-5.5rem)]">
+              <Preview item={item} large />
             </div>
           )}
-          <div className={`flex max-w-full flex-col items-start gap-2.5 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
-            {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
-            <div data-keep className={`relative max-w-full overflow-hidden shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] rounded-[10px]`}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain max-h-[66dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-8.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5rem)]"}`}
-              />
-              {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
-            </div>
-            {item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
-          </div>
-          </>
-        ) : (
-          <div data-keep className="aspect-[3/4] h-[44dvh] md:h-full">
-            <Preview item={item} large />
-          </div>
-        )}
-        {onPrev && (
-          <button type="button" onClick={onPrev} aria-label={t.slidePrev} title={t.slidePrev} className={`${arrow} left-3 sm:left-5`}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-          </button>
-        )}
-        {onNext && (
-          <button type="button" onClick={onNext} aria-label={t.slideNext} title={t.slideNext} className={`${arrow} right-3 sm:right-5 ${info ? "md:right-[21.5rem]" : ""}`}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
-          </button>
-        )}
-      </div>
+          {isPicture && item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
+        </div>
+
+        <button type="button" onClick={onNext} disabled={!onNext} aria-label={t.slideNext} title={t.slideNext} className={arrow}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
 
       <aside className={`w-full flex-col rounded-[20px] bg-surface md:absolute md:bottom-0 md:right-0 md:top-0 md:w-[20rem] ${info ? "flex animate-[fade-in_200ms_ease-out_both]" : "hidden"}`}>
-        <div className={`items-start justify-between gap-3 py-1 pl-5 pr-28 pt-4 md:flex md:min-h-16 ${title || item.pending ? "flex" : "hidden"}`}>
+        <div className={`items-start justify-between gap-3 py-1 pl-5 pr-5 pt-4 md:flex md:min-h-16 ${title || item.pending ? "flex" : "hidden"}`}>
           <div className="min-w-0 pt-1.5">
             {title && <h2 className="break-words text-[1.25rem] font-semibold leading-snug">{title}</h2>}
             {item.pending && <p className="mt-1 w-fit rounded-full bg-[#f3ead8] px-3 py-1 text-[0.85rem] font-semibold text-[#7a5a1e]">{t.pending}</p>}
@@ -556,7 +561,7 @@ function CommentInput({ item, t, locale }: { item: ArchiveItem; t: L; locale: Lo
   return (
     <div>
       <form
-        className="flex w-[min(26rem,calc(100vw-3rem))] items-center gap-1 rounded-full bg-white/95 pl-4 pr-1 shadow-[0_6px_18px_-10px_rgb(0_0_0/0.5)] focus-within:bg-white"
+        className="flex w-full items-center gap-1 rounded-full bg-white/95 pl-4 pr-1 shadow-[0_6px_18px_-10px_rgb(0_0_0/0.5)] focus-within:bg-white"
         action={async (form) => {
           setBusy(true);
           setError(null);

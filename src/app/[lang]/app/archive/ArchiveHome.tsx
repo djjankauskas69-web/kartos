@@ -646,6 +646,7 @@ export function ArchiveHome({
             item={open}
             onPrev={prevItem ? () => setOpenId(prevItem.id) : undefined}
             onNext={nextItem ? () => setOpenId(nextItem.id) : undefined}
+            position={at >= 0 ? { n: at + 1, total: navList.length } : undefined}
             preload={[nextItem?.url, prevItem?.url]}
             onExpand={
               open.kind === "photo"
