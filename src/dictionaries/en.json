@@ -1152,7 +1152,9 @@
     "switchTo": "Switch",
     "moreActions": "More actions",
     "photoHint": "Click the photo to change it",
-    "families": "My families"
+    "families": "My families",
+    "menuProfileTree": "My profile in the tree",
+    "menuSettings": "Account settings"
   },
   "add": {
     "title": "New person",

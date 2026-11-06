@@ -21,6 +21,7 @@ import { portraitUrls } from "./portraits";
 import { signOut, switchWorkspace } from "./actions";
 import { NavProgress, SideNav, TopNav, type NavItem } from "./AppNav";
 import { MenuCloser } from "./MenuCloser";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -125,7 +126,7 @@ async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Local
 }
 
 const menu =
-  "absolute z-30 mt-2 min-w-64 rounded-xl border border-line bg-surface p-2 shadow-[var(--shadow-float)] [&_a]:flex [&_a]:min-h-11 [&_a]:items-center [&_a]:rounded-lg [&_a]:px-3 [&_a]:transition-colors [&_a:hover]:bg-linen [&_button]:cursor-pointer";
+  "absolute z-30 mt-2 min-w-64 rounded-xl border border-line bg-surface p-2 shadow-[var(--shadow-float)] [&_a:not([hreflang])]:flex [&_a:not([hreflang])]:min-h-11 [&_a:not([hreflang])]:items-center [&_a:not([hreflang])]:rounded-lg [&_a:not([hreflang])]:px-3 [&_a:not([hreflang])]:transition-colors [&_a:not([hreflang]):hover]:bg-linen [&_button]:cursor-pointer";
 
 async function WorkspaceMenu({ t, locale, wide = false }: { t: Dictionary; locale: Locale; wide?: boolean }) {
   const { current, memberships } = await getContext(locale);
@@ -187,34 +188,61 @@ async function AccountBar({ t, locale, side = false }: { t: Dictionary; locale: 
   const given = mine.me?.given_names.trim().split(/\s+/)[0];
   const sur = mine.me?.surname?.trim();
   const name = given ? `${given}${sur ? ` ${sur[0]}.` : ""}` : email.split("@")[0];
+  const fullName = given ? [mine.me?.given_names.trim(), sur].filter(Boolean).join(" ") : name;
+  const role = current ? t.roles[current.role] : "";
   const initials = given ? `${given[0]}${sur?.[0] ?? ""}`.toUpperCase() : name.slice(0, 2).toUpperCase();
+  const face = (size: string) =>
+    avatar ? (
+      // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+      <img src={avatar} alt="" className={`${size} shrink-0 rounded-full object-cover`} />
+    ) : (
+      <span className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-sage-deep font-semibold text-surface`}>{initials}</span>
+    );
   const icon = "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink hover:bg-linen";
 
   return (
     <div className={`flex items-center gap-1 ${side ? "flex-wrap" : "ml-auto sm:gap-2"}`}>
       <details className={`relative ${side ? "order-last w-full" : "order-last"}`} data-menu>
-        <summary className={`flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-xl p-1 pr-2 hover:bg-linen [&::-webkit-details-marker]:hidden ${side ? "w-full" : ""}`} aria-label={t.dash.account}>
-          {avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-            <img src={avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-          ) : (
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-deep text-[0.95rem] font-semibold text-surface">{initials}</span>
-          )}
-          <span className={`min-w-0 flex-1 truncate font-semibold ${side ? "" : "hidden sm:inline"}`}>{name}</span>
-          <span className={side ? "" : "hidden sm:inline"}>
+        <summary className={`flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl p-1.5 pr-2 transition-colors hover:bg-linen [&::-webkit-details-marker]:hidden ${side ? "w-full" : ""}`} aria-label={t.dash.account}>
+          {face("h-10 w-10 text-[0.95rem]")}
+          <span className={`min-w-0 flex-1 leading-tight ${side ? "" : "hidden sm:block"}`}>
+            <span className="block truncate font-semibold">{side ? fullName : name}</span>
+            {side && role && <span className="block truncate text-[0.85rem] text-ink-muted">{role}</span>}
+          </span>
+          <span className={side ? "text-ink-muted" : "hidden sm:inline"}>
             <IconChevron size={18} />
           </span>
         </summary>
-        <div className={`${menu} ${side ? "bottom-full left-0 mb-2 mt-0" : "right-0"}`}>
-          <p className="truncate px-3 pb-2 pt-1 text-[0.92rem] text-ink-muted">{email}</p>
-          {current && (
-            <Link href={`${base}/me`} className="font-semibold">
-              {t.me.menu}
+        <div className={`${menu} ${side ? "bottom-full left-0 mb-2 mt-0 w-full min-w-72" : "right-0 min-w-72"}`}>
+          {/* Who is signed in: a small card */}
+          <div className="mb-1 flex items-center gap-3 border-b border-line px-2 pb-3 pt-1">
+            {face("h-12 w-12 text-[1.05rem]")}
+            <div className="min-w-0">
+              <p className="truncate font-semibold leading-tight">{fullName}</p>
+              <p className="truncate text-[0.88rem] text-ink-muted">{email}</p>
+            </div>
+          </div>
+          {current && mine.me && (
+            <Link href={`${base}/people/${mine.me.id}`} className="gap-3">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-muted"><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+              {t.me.menuProfileTree}
             </Link>
           )}
-          <form action={signOut}>
+          {current && (
+            <Link href={`${base}/me`} className="gap-3">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-muted"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></svg>
+              {t.me.menuSettings}
+            </Link>
+          )}
+          <div className="flex min-h-11 items-center gap-3 px-3">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-muted"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>
+            <span className="min-w-0 flex-1">{t.nav.language}</span>
+            <LanguageSwitch current={locale} label={t.nav.language} />
+          </div>
+          <form action={signOut} className="mt-1 border-t border-line pt-1">
             <input type="hidden" name="locale" value={locale} />
-            <button type="submit" className="flex min-h-11 w-full items-center rounded-lg px-3 text-left font-semibold text-sage-deep hover:bg-paper">
+            <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-ink-muted transition-colors hover:bg-linen hover:text-ink">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-muted"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" /></svg>
               {t.app.signOut}
             </button>
           </form>

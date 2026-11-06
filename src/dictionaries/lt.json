@@ -1152,7 +1152,9 @@
     "switchTo": "Pereiti",
     "moreActions": "Daugiau veiksmų",
     "photoHint": "Paspauskite nuotrauką, kad ją pakeistumėte",
-    "families": "Mano šeimos"
+    "families": "Mano šeimos",
+    "menuProfileTree": "Mano profilis medyje",
+    "menuSettings": "Paskyros nustatymai"
   },
   "add": {
     "title": "Naujas žmogus",
