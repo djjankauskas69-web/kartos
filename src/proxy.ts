@@ -25,8 +25,22 @@ function pickLocale(request: NextRequest): Locale {
 }
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const locale = locales.find((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
+
+  // Supabase sends a sign-in back to the site's main address when the exact return address isn't on
+  // its allowed list (e.g. "/?code=…"): finish the sign-in anyway instead of landing signed out.
+  if (!pathname.includes("/auth/callback") && (searchParams.has("code") || searchParams.has("error_description"))) {
+    const url = request.nextUrl.clone();
+    const l = locale ?? pickLocale(request);
+    if (searchParams.has("code")) {
+      url.pathname = `/${l}/auth/callback`;
+    } else {
+      url.pathname = `/${l}/login`;
+      url.search = "?error=1";
+    }
+    return NextResponse.redirect(url);
+  }
 
   if (!locale) {
     const url = request.nextUrl.clone();
