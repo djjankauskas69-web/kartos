@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, requireWorkspace, familyLinks, myPersonLinks, type Person, type Relationship } from "@/lib/data";
+import { can, fullName, getFamilyGraph, generationCount, isUnknownParent, requireWorkspace, familyLinks, myPersonLinks, type Person, type Relationship } from "@/lib/data";
 import { linkedBranch } from "./linked-branch";
 
 type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner" };
@@ -163,10 +163,12 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   }
 
   const gens = generations(people, rels);
-  const totalGens = Math.max(...gens.values());
+  // The "parents unknown" stand-in is not counted (same numbers as on the overview).
+  const real = people.filter((p) => !isUnknownParent(p));
+  const totalGens = generationCount(real, rels);
   const subtitleWhole = (
     <>
-      {plural(locale, people.length, t.tree.people)} · {plural(locale, totalGens, t.tree.gen)}
+      {plural(locale, real.length, t.tree.people)} · {plural(locale, totalGens, t.tree.gen)}
     </>
   );
 
