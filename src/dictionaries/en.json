@@ -856,7 +856,8 @@
     "stripNext": "{n} more {what} and the family origins research unlocks",
     "stripReady": "✦ Your tree is ready for the family origins research",
     "stripMore": "Add more",
-    "reqAction": "Add"
+    "reqAction": "Add",
+    "reqOf": "{have} of {target}"
   },
   "archive": {
     "title": "Archive",

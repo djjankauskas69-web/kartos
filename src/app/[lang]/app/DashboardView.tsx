@@ -8,7 +8,7 @@ import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
-import { FillMeter } from "@/components/FillMeter";
+import { FillMeter, ProgressRing } from "@/components/FillMeter";
 
 export type Activity = {
   at: string;
@@ -54,7 +54,7 @@ export type DashboardData = {
   upcoming: Upcoming[];
   latestMemory?: { body: string; author?: string; at: string; name: string; thumb?: string; href: string };
   fill: Array<{ key: string; text: string; start: string; href: string }>;
-  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number | string; need: number; what: string; done: boolean; href?: string }> };
+  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number; target: number; unit: string; need: number; what: string; done: boolean; href?: string }> };
 };
 
 const card = cls.card;
@@ -153,18 +153,20 @@ export function DashboardView(props: DashboardData) {
               {tree.reqs.map((r) => {
                 const row = (
                   <>
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${r.done ? "bg-[#e7ebd9] text-olive-deep" : "border-2 border-line"}`}>
-                      {r.done && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
-                    </span>
+                    {r.done ? (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e7ebd9] text-olive-deep">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                      </span>
+                    ) : (
+                      <ProgressRing value={r.have / r.target} />
+                    )}
                     <span className={`min-w-0 flex-1 leading-snug ${r.done ? "text-ink-muted" : "font-semibold"}`}>{r.label}</span>
-                    <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">
-                      {d.reqHave.replace("{n}", String(r.have))}
-                      {!r.done && r.href && (
-                        <span className="ml-2 font-semibold text-olive-deep">
-                          · {d.reqAction} →
-                        </span>
-                      )}
-                    </span>
+                    {!r.done && (
+                      <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">
+                        {d.reqOf.replace("{have}", `${r.have}${r.unit}`).replace("{target}", `${r.target}${r.unit}`)}
+                        {r.href && <span className="ml-2 font-semibold text-olive-deep">· {d.reqAction} →</span>}
+                      </span>
+                    )}
                   </>
                 );
                 return (

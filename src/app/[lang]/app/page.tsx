@@ -243,10 +243,10 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     return p && can.edit(current.role) ? `${base}/people/${p.id}` : undefined;
   };
   const reqs = [
-    { key: "gens", label: d.reqGens, have: gensNow, need: 3 - gensNow, what: d.needGens, done: gensNow >= 3, href: can.edit(current.role) ? `${base}/tree` : undefined },
-    { key: "people", label: d.reqPeople, have: people.length, need: 10 - people.length, what: d.needPeople, done: people.length >= 10, href: can.edit(current.role) ? `${base}/tree` : undefined },
-    { key: "years", label: d.reqYears, have: `${people.length ? Math.round((withYear / people.length) * 100) : 0} %`, need: Math.ceil(people.length * 0.6) - withYear, what: d.needYears, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
-    { key: "places", label: d.reqPlaces, have: withPlace, need: 3 - withPlace, what: d.needPlaces, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
+    { key: "gens", label: d.reqGens, have: gensNow, target: 3, unit: "", need: 3 - gensNow, what: d.needGens, done: gensNow >= 3, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "people", label: d.reqPeople, have: people.length, target: 10, unit: "", need: 10 - people.length, what: d.needPeople, done: people.length >= 10, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "years", label: d.reqYears, have: people.length ? Math.round((withYear / people.length) * 100) : 0, target: 60, unit: " %", need: Math.ceil(people.length * 0.6) - withYear, what: d.needYears, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
+    { key: "places", label: d.reqPlaces, have: withPlace, target: 3, unit: "", need: 3 - withPlace, what: d.needPlaces, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
   ];
   // Every detail counts the same: each field filled in on anyone moves the number a little.
   const wives = new Set(marriedWomen.map((p) => p.id));

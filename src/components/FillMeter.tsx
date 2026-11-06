@@ -66,3 +66,41 @@ export function FillMeter({ value, label }: { value: number; label: string }) {
     </>
   );
 }
+
+/** A small ring for one condition: filled as far as it has come (0–1), drawn in when shown. */
+export function ProgressRing({ value }: { value: number }) {
+  const [on, setOn] = useState(false);
+  const box = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        setOn(true);
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const r = 13;
+  const c = 2 * Math.PI * r;
+  const part = Math.max(0, Math.min(1, value));
+  return (
+    <svg ref={box} width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" className="shrink-0 -rotate-90">
+      <circle cx="16" cy="16" r={r} fill="none" stroke="var(--color-line, #e6e1d6)" strokeWidth="3.5" />
+      <circle
+        cx="16"
+        cy="16"
+        r={r}
+        fill="none"
+        stroke="var(--color-olive, #5f6b3c)"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={on ? c * (1 - part) : c}
+        className="transition-[stroke-dashoffset] duration-[1400ms] ease-out motion-reduce:transition-none"
+      />
+    </svg>
+  );
+}

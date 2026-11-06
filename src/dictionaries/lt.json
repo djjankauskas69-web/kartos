@@ -856,7 +856,8 @@
     "stripNext": "Liko: {what} dar {n} – ir atsirakins giminės kilmės tyrimas",
     "stripReady": "✦ Medis paruoštas – galėsite ištirti giminės kilmę",
     "stripMore": "Papildyti",
-    "reqAction": "Įrašyti"
+    "reqAction": "Įrašyti",
+    "reqOf": "{have} iš {target}"
   },
   "archive": {
     "title": "Archyvas",
