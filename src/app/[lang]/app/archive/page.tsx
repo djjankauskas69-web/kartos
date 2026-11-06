@@ -119,7 +119,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const byId = new Map(people.map((p) => [p.id, p]));
   const shownMems = mems.filter((m) => byId.has(m.person_id));
   const [{ extras, ready: extrasReady }, authorPhotos, aboutPhotos] = await Promise.all([
-    memoryExtras(locale, current.id, shownMems.map((m) => m.id), user.id),
+    memoryExtras(locale, current.id, shownMems.map((m) => m.id)),
     authorPortraits(locale, current.id, shownMems.map((m) => m.author_id as string)),
     portraitUrls(locale, [...new Set(shownMems.map((m) => m.person_id))].map((id) => byId.get(id)!).filter(Boolean)),
   ]);
@@ -150,12 +150,8 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
           locale,
           person: { id: m.person_id, name: fullName(byId.get(m.person_id)!), href: `${base}/people/${m.person_id}`, photo: aboutPhotos.get(m.person_id) },
           tagged: (extras.get(m.id)?.tagged ?? []).flatMap((pid) => (byId.get(pid) ? [{ id: pid, name: fullName(byId.get(pid)!), href: `${base}/people/${pid}` }] : [])),
-          comments: extras.get(m.id)?.comments ?? [],
-          thanks: extras.get(m.id)?.thanks ?? 0,
-          thanked: extras.get(m.id)?.thanked ?? false,
           canEdit: isEditor || m.author_id === user.id,
           canDelete: isEditor || m.author_id === user.id,
-          canComment: can.add(current.role),
           canTag: isEditor || m.author_id === user.id,
           tagOptions,
           ready: extrasReady,

@@ -154,7 +154,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     signedUrls(locale, [...photos.map((p) => p.storage_path), ...sharedPhotos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
     portraitUrls(locale, [person, ...[...new Set([...relativeIds, ...(memories ?? []).map((m) => m.person_id)])].map((r) => byId.get(r)!).filter(Boolean)]),
     profileNames(locale, memoryAuthorIds),
-    memoryExtras(locale, current.id, (memories ?? []).map((m) => m.id), user.id),
+    memoryExtras(locale, current.id, (memories ?? []).map((m) => m.id)),
     authorPortraits(locale, current.id, memoryAuthorIds),
   ]);
 
@@ -283,12 +283,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     locale,
                     person: { id: about.id, name: fullName(about), href: `${base}/people/${about.id}`, photo: portraits.get(about.id) },
                     tagged: (x?.tagged ?? []).flatMap((pid) => (byId.get(pid) ? [{ id: pid, name: fullName(byId.get(pid)!), href: `${base}/people/${pid}` }] : [])),
-                    comments: x?.comments ?? [],
-                    thanks: x?.thanks ?? 0,
-                    thanked: x?.thanked ?? false,
                     canEdit: mine,
                     canDelete: mine,
-                    canComment: can.add(role) && !other,
                     canTag: mine,
                     tagOptions: tagOptions,
                     ready: extrasReady,

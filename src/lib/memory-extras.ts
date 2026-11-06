@@ -1,52 +1,21 @@
 import "server-only";
 import type { Locale } from "@/i18n/config";
-import { profileNames, requireUser, signedUrls } from "@/lib/data";
+import { requireUser, signedUrls } from "@/lib/data";
 
-export type MemoryComment = { id: string; author: string; authorPhoto?: string; body: string; date: string; mine: boolean };
 export type MemoryExtra = {
-  comments: MemoryComment[];
-  thanks: number;
-  thanked: boolean;
   /** Other people the memory is about (besides its main person). */
   tagged: string[];
 };
 
-/**
- * What goes with each memory when it is read: the replies, the thanks, the other people it is
- * about. Tolerates a database without update 0019 (then everything is simply empty).
- */
-export async function memoryExtras(locale: Locale, workspaceId: string, memoryIds: string[], userId: string) {
+/** The other people each memory is about. Without database update 0019 it is simply empty. */
+export async function memoryExtras(locale: Locale, _workspaceId: string, memoryIds: string[]) {
   const out = new Map<string, MemoryExtra>();
-  for (const id of memoryIds) out.set(id, { comments: [], thanks: 0, thanked: false, tagged: [] });
+  for (const id of memoryIds) out.set(id, { tagged: [] });
   if (memoryIds.length === 0) return { extras: out, ready: true };
   const { supabase } = await requireUser(locale);
-  const [comments, thanks, tagged] = await Promise.all([
-    supabase.from("memory_comments").select("id, memory_id, author_id, body, created_at").in("memory_id", memoryIds).order("created_at", { ascending: true }),
-    supabase.from("memory_thanks").select("memory_id, user_id").in("memory_id", memoryIds),
-    supabase.from("memory_persons").select("memory_id, person_id").in("memory_id", memoryIds),
-  ]);
-  const ready = !comments.error && !thanks.error && !tagged.error;
-  const authorIds = [...new Set((comments.data ?? []).map((c) => c.author_id as string).filter(Boolean))];
-  const [names, photos] = await Promise.all([profileNames(locale, authorIds), authorPortraits(locale, workspaceId, authorIds)]);
-  const fmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { month: "long", day: "numeric" });
-  for (const c of comments.data ?? []) {
-    out.get(c.memory_id as string)?.comments.push({
-      id: c.id as string,
-      author: names.get(c.author_id as string) ?? "",
-      authorPhoto: photos.get(c.author_id as string),
-      body: c.body as string,
-      date: fmt.format(new Date(c.created_at as string)),
-      mine: c.author_id === userId,
-    });
-  }
-  for (const t of thanks.data ?? []) {
-    const x = out.get(t.memory_id as string);
-    if (!x) continue;
-    x.thanks += 1;
-    if (t.user_id === userId) x.thanked = true;
-  }
+  const tagged = await supabase.from("memory_persons").select("memory_id, person_id").in("memory_id", memoryIds);
   for (const t of tagged.data ?? []) out.get(t.memory_id as string)?.tagged.push(t.person_id as string);
-  return { extras: out, ready };
+  return { extras: out, ready: !tagged.error };
 }
 
 /** The photo of each account's own person in the tree, for showing who wrote something. */

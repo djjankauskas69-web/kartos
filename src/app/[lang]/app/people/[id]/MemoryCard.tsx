@@ -4,17 +4,13 @@ import Link from "next/link";
 import { createContext, useCallback, useContext, useState, useTransition } from "react";
 import { Modal } from "./Modal";
 import { PhotoLightbox } from "./PhotoLightbox";
-import { addMemoryComment, deleteMemoryComment, editMemory, setMemoryPerson, toggleThanks } from "./memory-actions";
+import { editMemory, setMemoryPerson } from "./memory-actions";
 import { deleteMemory } from "../../actions";
 
 export type MemoryLabels = {
   read: string;
   close: string;
   enlarge: string;
-  thanks?: string;
-  comments?: string;
-  commentPh?: string;
-  send?: string;
   edit?: string;
   delete?: string;
   deleteConfirm?: string;
@@ -29,18 +25,14 @@ export type MemoryLabels = {
   next?: string;
 };
 
-/** Everything a memory can do when opened: who it is about, replies, thanks, corrections. */
+/** Everything a memory can do when opened: who it is about, and corrections. */
 export type MemoryLive = {
   id: string;
   locale: string;
   person: { id: string; name: string; href: string; photo?: string };
   tagged: Array<{ id: string; name: string; href: string }>;
-  comments: Array<{ id: string; author: string; authorPhoto?: string; body: string; date: string; mine: boolean }>;
-  thanks: number;
-  thanked: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  canComment: boolean;
   canTag: boolean;
   tagOptions: Array<{ id: string; name: string }>;
   ready: boolean;
@@ -142,12 +134,6 @@ export function MemoryCard({
           <span className="mt-auto flex items-end justify-between gap-3 pt-1">
             <span className="flex items-center gap-3 text-[0.95rem] font-semibold text-olive-deep">
               <span className="group-hover:underline">{labels.read} →</span>
-              {live && (live.thanks > 0 || live.comments.length > 0) && (
-                <span className="flex items-center gap-2.5 text-[0.88rem] font-normal text-ink-muted">
-                  {live.thanks > 0 && <span>♥ {live.thanks}</span>}
-                  {live.comments.length > 0 && <span>💬 {live.comments.length}</span>}
-                </span>
-              )}
             </span>
             {pics.length > 0 && (
               <span className="flex shrink-0 gap-1.5">
@@ -177,7 +163,7 @@ export function MemoryCard({
   );
 }
 
-/** The opened memory: read like a letter, with who it is about, thanks and replies under it. */
+/** The opened memory: read like a letter, with who it is about. */
 function Reader({
   head,
   title,
@@ -364,87 +350,7 @@ function Reader({
 
         {actions && <div className="flex flex-wrap items-center justify-end gap-3 text-[0.95rem] text-ink-muted">{actions}</div>}
 
-        {/* Thanks and replies: the family answering the one who wrote it (with database update 0019). */}
-        {live && live.ready && (
-          <div className="space-y-4 border-t border-line pt-5">
-            <button
-              type="button"
-              disabled={pending}
-              aria-pressed={live.thanked}
-              onClick={() =>
-                start(async () => {
-                  const f = new FormData();
-                  f.set("locale", live.locale);
-                  f.set("memoryId", live.id);
-                  f.set("on", live.thanked ? "0" : "1");
-                  fail(await toggleThanks(f));
-                })
-              }
-              className={`inline-flex min-h-10 items-center gap-2 rounded-full px-4 font-semibold transition-colors ${live.thanked ? "bg-[#f6e3dd] text-[#9b3d2b]" : "border border-line bg-surface text-ink hover:border-ink/40"}`}
-            >
-              <span aria-hidden="true">{live.thanked ? "♥" : "♡"}</span>
-              {labels.thanks}
-              {live.thanks > 0 && <span className="tabular-nums text-[0.9rem] opacity-80">{live.thanks}</span>}
-            </button>
-
-            {live.comments.length > 0 && (
-              <ul className="space-y-3">
-                {live.comments.map((c) => (
-                  <li key={c.id} className="group/c flex items-start gap-3">
-                    <Face src={c.authorPhoto} name={c.author} size="h-8 w-8 text-[0.75rem]" />
-                    <div className="min-w-0 flex-1 rounded-2xl bg-paper px-4 py-2.5">
-                      <p className="text-[0.88rem]">
-                        <span className="font-semibold">{c.author}</span> <span className="text-ink-muted">· {c.date}</span>
-                      </p>
-                      <p className="mt-0.5 whitespace-pre-line leading-relaxed">{c.body}</p>
-                    </div>
-                    {(c.mine || live.canDelete) && (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        aria-label={labels.delete}
-                        title={labels.delete}
-                        onClick={() =>
-                          start(async () => {
-                            const f = new FormData();
-                            f.set("locale", live.locale);
-                            f.set("id", c.id);
-                            fail(await deleteMemoryComment(f));
-                          })
-                        }
-                        className="mt-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted opacity-0 transition hover:bg-linen hover:text-danger focus:opacity-100 group-hover/c:opacity-100"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {live.canComment && (
-              <form
-                action={(f) =>
-                  start(async () => {
-                    const r = await addMemoryComment(f);
-                    fail(r);
-                    if (r.ok) (document.getElementById(`mc-${live.id}`) as HTMLTextAreaElement | null)?.form?.reset();
-                  })
-                }
-                className="flex items-end gap-2 rounded-2xl border border-line bg-surface p-1.5 pl-4 focus-within:border-ink/40"
-              >
-                {hidden(live)}
-                <input type="hidden" name="memoryId" value={live.id} />
-                <label htmlFor={`mc-${live.id}`} className="sr-only">{labels.comments}</label>
-                <textarea id={`mc-${live.id}`} name="body" rows={1} maxLength={1000} required placeholder={labels.commentPh} className="min-h-10 flex-1 resize-none bg-transparent py-2 leading-snug placeholder:text-ink-muted/70 focus:outline-none [field-sizing:content]" />
-                <button type="submit" disabled={pending} className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-ink px-4 font-semibold text-surface hover:bg-olive-deep disabled:opacity-60">
-                  {labels.send}
-                </button>
-              </form>
-            )}
-            {error && <p role="alert" className="text-[0.95rem] text-danger">{error}</p>}
-          </div>
-        )}
+        {error && <p role="alert" className="text-[0.95rem] text-danger">{error}</p>}
       </div>
       {pics.length > 0 && (
         <div className="md:order-last md:pt-10">
