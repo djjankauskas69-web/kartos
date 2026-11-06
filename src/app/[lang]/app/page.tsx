@@ -24,6 +24,9 @@ export default async function Overview() {
   );
 }
 
+/** Google names can come in lower case: "justas" → "Justas". */
+const nameCase = (v?: string) => v?.trim().replace(/(^|[\s-])(\p{L})/gu, (_, a: string, b: string) => a + b.toUpperCase()) || undefined;
+
 const DAY = (iso: string) => iso.slice(0, 10);
 
 async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; part: "top" | "rest" }) {
@@ -35,8 +38,8 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
       <StartFamily
         locale={locale}
         labels={{ ...t.start, errors: { nameRequired: t.app.errorNameRequired, year: t.app.errorYear, save: t.app.errorSave } }}
-        given={(user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0]}
-        surname={(user.meta?.family_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ").slice(1).join(" ")}
+        given={nameCase((user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0])}
+        surname={nameCase((user.meta?.family_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ").slice(1).join(" "))}
       />
     );
   }
