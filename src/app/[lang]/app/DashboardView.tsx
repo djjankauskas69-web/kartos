@@ -128,7 +128,7 @@ export function DashboardView(props: DashboardData) {
       {/* How complete the tree is, in one thin line; opens to the conditions for the origins research */}
       {!(tree.ready && tree.completeness >= 100) && (
         <details className={`group ${card} ${tree.ready ? "bg-[#f1f4e8]" : ""}`}>
-          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] px-5 py-4 outline-none focus-visible:ring-2 focus-visible:ring-olive/40 sm:px-6 [&::-webkit-details-marker]:hidden">
             <span className="flex items-center gap-2.5 font-semibold">
               <span className="text-sage-deep"><IconTree size={20} /></span>
               {d.treeTitle2}
@@ -197,27 +197,6 @@ export function DashboardView(props: DashboardData) {
               </div>
             </div>
 
-            {more.length > 0 && (
-              <>
-                <h3 className="mt-6 border-t border-line pt-5 text-[0.95rem] font-semibold text-ink-muted">{d.moreTitle}</h3>
-                <ul className="mt-1 divide-y divide-line">
-                  {more.map((f) => (
-                    <li key={f.key}>
-                      <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-paper/70">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linen text-ink-muted">
-                          {f.key === "photo" ? <IconImage size={20} /> : f.key === "grave" || f.key === "place" ? <IconPin size={20} /> : f.key === "maiden" ? <IconPeople size={20} /> : <IconCalendar size={20} />}
-                        </span>
-                        <span className="min-w-0 flex-1 leading-snug">
-                          <span className="block font-semibold">{f.text}</span>
-                          <span className="block truncate text-[0.92rem] text-ink-muted">{f.start}</span>
-                        </span>
-                        <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
           </div>
         </details>
       )}
@@ -497,6 +476,33 @@ export function DashboardView(props: DashboardData) {
 
         </div>
       </section>
+
+      {/* Optional: what would make the tree richer (not needed for the research) */}
+      {more.length > 0 && (
+        <section className={`p-6 sm:p-7 ${card}`}>
+          <h2 className={`flex items-center gap-3 ${cls.h3}`}>
+            <span className="text-sage-deep"><IconPlus size={24} /></span>
+            {d.moreTitle}
+          </h2>
+          <p className="mt-1 text-[0.98rem] text-ink-muted">{d.fillLead}</p>
+                <ul className="mt-3 grid gap-x-8 divide-y divide-line md:grid-cols-2 md:divide-y-0">
+                  {more.map((f) => (
+                    <li key={f.key}>
+                      <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-paper/70">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linen text-ink-muted">
+                          {f.key === "photo" ? <IconImage size={20} /> : f.key === "grave" || f.key === "place" ? <IconPin size={20} /> : f.key === "maiden" ? <IconPeople size={20} /> : <IconCalendar size={20} />}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-snug">
+                          <span className="block font-semibold">{f.text}</span>
+                          <span className="block truncate text-[0.92rem] text-ink-muted">{f.start}</span>
+                        </span>
+                        <span aria-hidden="true" className="shrink-0 text-ink-muted"><IconArrow size={16} /></span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+        </section>
+      )}
     </div>
   );
 }
