@@ -113,7 +113,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     .map((r) => r.media as unknown as MediaRow | null)
     .filter((m): m is MediaRow => !!m && m.status !== "rejected")
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
-  const photos = linked.filter((m): m is MediaRow & { storage_path: string } => m.kind === "photo" && !!m.storage_path);
+  // The profile picture is personal: it is shown at the top, not again among the photos.
+  const photos = linked.filter((m): m is MediaRow & { storage_path: string } => m.kind === "photo" && !!m.storage_path && !m.storage_path.includes("/portraits/"));
   // Documents stay documents; stories written in the archive are memories, shown with the others.
   const papers = linked.filter((m) => m.kind === "document");
   const storyRows = linked.filter((m) => m.kind === "story" && m.description?.trim()).sort((a, b) => b.created_at.localeCompare(a.created_at));

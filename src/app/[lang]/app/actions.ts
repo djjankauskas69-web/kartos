@@ -576,11 +576,29 @@ export async function setPortrait(form: FormData) {
   refresh();
 }
 
-/** "+" on the portrait: a photo just uploaded becomes this person's portrait (editors). */
-export async function addPortrait(input: { locale: string; personId: string; path: string; width: number; height: number }): Promise<FormState> {
+type Crop = { sx: number; sy: number; size: number };
+/** What a portrait was cut from, kept in the portrait's description: the original photo and the frame. */
+type PortraitMeta = { original: string; crop: Crop };
+const portraitMeta = (description: string | null | undefined): PortraitMeta | null => {
+  try {
+    const m = JSON.parse(description ?? "");
+    return typeof m?.original === "string" && m.crop ? (m as PortraitMeta) : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * A portrait just cut becomes this person's picture (editors). The original photo stays as it was
+ * (in the archive, or kept aside for an upload), so the frame can be moved again later.
+ */
+export async function addPortrait(input: { locale: string; personId: string; path: string; width: number; height: number; original?: string; crop?: Crop }): Promise<FormState> {
   const locale = input.locale === "en" ? "en" : "lt";
   const { supabase, workspace } = await actionContext(locale, can.edit);
-  if (!/^[0-9a-f-]{36}$/i.test(input.personId) || !input.path.startsWith(`${workspace.id}/`)) return { error: "save" };
+  const mine = (p?: string) => !!p && p.startsWith(`${workspace.id}/`) && !p.includes("..");
+  if (!/^[0-9a-f-]{36}$/i.test(input.personId) || !mine(input.path)) return { error: "save" };
+  const meta = mine(input.original) && input.crop ? JSON.stringify({ original: input.original, crop: input.crop }) : null;
+  const { data: before } = await supabase.from("persons").select("profile_photo_id").eq("id", input.personId).eq("workspace_id", workspace.id).maybeSingle();
   const id = crypto.randomUUID();
   const { error } = await supabase.from("media").insert({
     id,
@@ -590,6 +608,7 @@ export async function addPortrait(input: { locale: string; personId: string; pat
     width: Math.round(input.width) || null,
     height: Math.round(input.height) || null,
     mime_type: "image/jpeg",
+    description: meta,
   });
   if (error) {
     console.error("addPortrait", error);
@@ -597,12 +616,44 @@ export async function addPortrait(input: { locale: string; personId: string; pat
   }
   await supabase.from("media_persons").insert({ media_id: id, person_id: input.personId, workspace_id: workspace.id });
   await supabase.from("persons").update({ profile_photo_id: id }).eq("id", input.personId).eq("workspace_id", workspace.id);
+  // The previous cut-out is not needed any more (its original is kept, unless the new one is cut from another).
+  const prevId = before?.profile_photo_id as string | null | undefined;
+  if (prevId) {
+    const { data: prev } = await supabase.from("media").select("storage_path, description").eq("id", prevId).maybeSingle();
+    const prevPath = prev?.storage_path as string | undefined;
+    if (prevPath?.includes("/portraits/") && prevPath !== input.original) {
+      const prevOriginal = portraitMeta(prev?.description as string | null)?.original;
+      const drop = [prevPath, ...(prevOriginal && prevOriginal !== input.original && prevOriginal.includes("/portraits/") ? [prevOriginal] : [])];
+      await supabase.storage.from("family-media").remove(drop);
+      await supabase.from("media").delete().eq("id", prevId).eq("workspace_id", workspace.id);
+    }
+  }
   refresh();
   return { ok: true };
 }
 
+/** The current portrait's original photo and frame, to move the frame again. */
+export async function portraitSource(input: { locale: string; personId: string }): Promise<{ url?: string; original?: string; crop?: Crop }> {
+  const locale = input.locale === "en" ? "en" : "lt";
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  if (!/^[0-9a-f-]{36}$/i.test(input.personId)) return {};
+  const { data: person } = await supabase.from("persons").select("profile_photo_id").eq("id", input.personId).eq("workspace_id", workspace.id).maybeSingle();
+  if (!person?.profile_photo_id) return {};
+  const { data: media } = await supabase.from("media").select("storage_path, description").eq("id", person.profile_photo_id).maybeSingle();
+  if (!media?.storage_path) return {};
+  const meta = portraitMeta(media.description as string | null);
+  const path = meta?.original ?? (media.storage_path as string);
+  const { data: signed } = await supabase.storage.from("family-media").createSignedUrl(path, 60 * 60);
+  if (!signed?.signedUrl && meta) {
+    // The original is gone: start again from the picture itself.
+    const { data: own } = await supabase.storage.from("family-media").createSignedUrl(media.storage_path as string, 60 * 60);
+    return own?.signedUrl ? { url: own.signedUrl, original: media.storage_path as string } : {};
+  }
+  return signed?.signedUrl ? { url: signed.signedUrl, original: path, crop: meta?.crop } : {};
+}
+
 /** Family photos to pick a portrait from: this person's own photos first, then the rest. */
-export async function portraitChoices(input: { locale: string; personId: string }): Promise<{ id: string; url: string }[]> {
+export async function portraitChoices(input: { locale: string; personId: string }): Promise<{ id: string; url: string; path: string }[]> {
   const locale = input.locale === "en" ? "en" : "lt";
   const { supabase, workspace } = await actionContext(locale, can.edit);
   if (!/^[0-9a-f-]{36}$/i.test(input.personId)) return [];
@@ -624,7 +675,7 @@ export async function portraitChoices(input: { locale: string; personId: string 
   rows.sort((a, b) => Number(own.has(b.id as string)) - Number(own.has(a.id as string)));
   const { data: signed } = await supabase.storage.from("family-media").createSignedUrls(rows.map((r) => r.storage_path as string), 60 * 60);
   const byPath = new Map((signed ?? []).filter((s) => s.signedUrl && s.path).map((s) => [s.path as string, s.signedUrl as string]));
-  return rows.flatMap((r) => (byPath.get(r.storage_path as string) ? [{ id: r.id as string, url: byPath.get(r.storage_path as string)! }] : []));
+  return rows.flatMap((r) => (byPath.get(r.storage_path as string) ? [{ id: r.id as string, url: byPath.get(r.storage_path as string)!, path: r.storage_path as string }] : []));
 }
 
 export async function deletePhoto(form: FormData) {

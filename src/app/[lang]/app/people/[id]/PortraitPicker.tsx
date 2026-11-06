@@ -4,7 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { isImage } from "@/lib/upload";
-import { addPortrait, portraitChoices } from "../../actions";
+import { uploadPhoto } from "@/lib/upload";
+import { addPortrait, portraitChoices, portraitSource } from "../../actions";
 
 export type PortraitPickerLabels = {
   add: string;
@@ -28,7 +29,9 @@ export type PortraitPickerLabels = {
 
 const OUT = 900; // saved portrait: a 900 px square
 
-type Img = { src: string; w: number; h: number };
+type Crop = { sx: number; sy: number; size: number };
+/** The picture being framed: its original (a path in storage, or a file still to upload) and the frame it had. */
+type Img = { src: string; w: number; h: number; original?: string; file?: File; crop?: Crop };
 
 /** The big portrait on a person's page: click → upload or pick from the archive → place the face → save. */
 export function PortraitPicker({
@@ -48,14 +51,14 @@ export function PortraitPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"choose" | "archive" | "crop">("choose");
-  const [choices, setChoices] = useState<{ id: string; url: string }[] | null>(null);
+  const [choices, setChoices] = useState<{ id: string; url: string; path: string }[] | null>(null);
   const [img, setImg] = useState<Img | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  const [shown, setShown] = useState(src);
+  // The new face shows at once, until the page brings the saved one.
+  const [local, setLocal] = useState<{ for?: string; url: string } | null>(null);
+  const shown = local && local.for === src ? local.url : src;
   const file = useRef<HTMLInputElement>(null);
-
-  useEffect(() => setShown(src), [src]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -76,22 +79,22 @@ export function PortraitPicker({
   }, [open, busy, close]);
 
   /** Loads a picture as a local blob, so the canvas can read it when saving. */
-  async function load(blob: Blob) {
+  async function load(blob: Blob, from: { original?: string; file?: File; crop?: Crop }) {
     const url = URL.createObjectURL(blob);
     const el = new Image();
     el.src = url;
     await el.decode();
-    setImg({ src: url, w: el.naturalWidth, h: el.naturalHeight });
+    setImg({ src: url, w: el.naturalWidth, h: el.naturalHeight, ...from });
     setStep("crop");
   }
 
-  async function fromUrl(url: string) {
+  async function fromUrl(url: string, original: string, crop?: Crop) {
     setBusy(true);
     setError(false);
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error("fetch");
-      await load(await res.blob());
+      await load(await res.blob(), { original, crop });
     } catch {
       setError(true);
     } finally {
@@ -105,7 +108,7 @@ export function PortraitPicker({
     if (!isImage(f)) return setError(true);
     setError(false);
     try {
-      await load(f);
+      await load(f, { file: f });
     } catch {
       setError(true);
     }
@@ -121,7 +124,21 @@ export function PortraitPicker({
     }
   }
 
-  async function save(crop: { sx: number; sy: number; size: number }) {
+  /** The current portrait, framed again from its original photo. */
+  async function adjust() {
+    setBusy(true);
+    setError(false);
+    try {
+      const s = await portraitSource({ locale, personId });
+      if (!s.url || !s.original) throw new Error("none");
+      await fromUrl(s.url, s.original, s.crop);
+    } catch {
+      setError(true);
+      setBusy(false);
+    }
+  }
+
+  async function save(crop: Crop) {
     if (!img) return;
     setBusy(true);
     setError(false);
@@ -140,13 +157,22 @@ export function PortraitPicker({
       if (!blob) throw new Error("encode");
       const supabase = createClient();
       if (!supabase) throw new Error("config");
+      // A new upload: the whole photo is kept too (apart from the archive), so the frame can move later.
+      let original = img.original;
+      let kept = crop;
+      if (img.file) {
+        const up = await uploadPhoto(workspaceId, img.file, "portraits");
+        original = up.path;
+        const k = up.width / img.w;
+        kept = { sx: crop.sx * k, sy: crop.sy * k, size: crop.size * k };
+      }
       // Portraits are kept apart: a person's own photo is not a family photo for the archive.
       const path = `${workspaceId}/portraits/${crypto.randomUUID()}.jpg`;
       const { error: upErr } = await supabase.storage.from("family-media").upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (upErr) throw upErr;
-      const r = await addPortrait({ locale, personId, path, width: OUT, height: OUT });
+      const r = await addPortrait({ locale, personId, path, width: OUT, height: OUT, original, crop: kept });
       if (r.error) throw new Error(r.error);
-      setShown(URL.createObjectURL(blob)); // show the new face straight away
+      setLocal({ for: src, url: URL.createObjectURL(blob) }); // show the new face straight away
       close();
     } catch {
       setError(true);
@@ -197,7 +223,7 @@ export function PortraitPicker({
                 <div className="space-y-2.5">
                   <Option onClick={() => file.current?.click()} icon={<UploadIcon />} text={labels.fromDevice} />
                   <Option onClick={openArchive} icon={<ArchiveIcon />} text={labels.fromArchive} />
-                  {shown && <Option onClick={() => fromUrl(shown)} icon={<MoveIcon />} text={labels.adjust} busy={busy} />}
+                  {src && <Option onClick={adjust} icon={<MoveIcon />} text={labels.adjust} busy={busy} />}
                   <input ref={file} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => fromFile(e.target.files?.[0])} />
                 </div>
               )}
@@ -212,7 +238,7 @@ export function PortraitPicker({
                     <ul className="grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                       {choices.map((c) => (
                         <li key={c.id}>
-                          <button type="button" disabled={busy} onClick={() => fromUrl(c.url)} className="block aspect-square w-full overflow-hidden rounded-xl bg-linen ring-offset-2 hover:ring-2 hover:ring-ink/60 disabled:cursor-wait">
+                          <button type="button" disabled={busy} onClick={() => fromUrl(c.url, c.path)} className="block aspect-square w-full overflow-hidden rounded-xl bg-linen ring-offset-2 hover:ring-2 hover:ring-ink/60 disabled:cursor-wait">
                             {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                             <img src={c.url} alt="" loading="lazy" className="h-full w-full object-cover" />
                           </button>
@@ -286,6 +312,14 @@ function Cropper({
     if (!el) return;
     const size = el.clientWidth;
     setV(size);
+    // Moving the frame again: start where it was left.
+    if (img.crop && img.crop.size > 0) {
+      const z = Math.min(4, Math.max(1, Math.min(img.w, img.h) / img.crop.size));
+      const sc = (size / Math.min(img.w, img.h)) * z;
+      setZoom(z);
+      setOff({ x: Math.min(0, Math.max(size - img.w * sc, -img.crop.sx * sc)), y: Math.min(0, Math.max(size - img.h * sc, -img.crop.sy * sc)) });
+      return;
+    }
     // Start centred, a little above the middle (faces sit high in old photos).
     const s = size / Math.min(img.w, img.h);
     const w = img.w * s;
