@@ -1,3 +1,7 @@
+"use client";
+
+import { useLayoutEffect, useRef } from "react";
+
 /**
  * The tree mark drawn as a loader: each part appears in turn, from the root and the trunk
  * up to the crown, holds a moment and fades, again and again. Still for reduced motion.
@@ -23,11 +27,17 @@ const PARTS: Array<[number, string]> = [
 ];
 
 export function LogoLoader({ size = 64, label }: { size?: number; label?: string }) {
+  // Every loader keeps time with one shared clock, so when one replaces another (page frame →
+  // map veil) the mark goes on building instead of starting over.
+  const ref = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    ref.current?.style.setProperty("--sync", `${(performance.now() % 2200) / 1000}s`);
+  }, []);
   return (
-    <svg role="img" aria-label={label ?? "…"} width={size} height={Math.round((size * 1435) / 1770)} viewBox="110 265 1770 1435" className="kartos-loader">
+    <svg ref={ref} role="img" aria-label={label ?? "…"} width={size} height={Math.round((size * 1435) / 1770)} viewBox="110 265 1770 1435" className="kartos-loader">
       <g fill="#0f1904">
         {PARTS.map(([step, d], i) => (
-          <path key={i} d={d} style={{ animationDelay: `${step * 0.11}s` }} />
+          <path key={i} d={d} style={{ animationDelay: `calc(${step * 0.11}s - var(--sync, 0s))` }} />
         ))}
       </g>
     </svg>
