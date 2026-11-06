@@ -32,14 +32,14 @@ export default async function Home() {
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
-          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[85%] bg-[radial-gradient(ellipse_55%_60%_at_50%_42%,rgb(255_255_255/0.8),rgb(255_255_255/0.35)_55%,transparent_78%)]" />
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[85%] bg-[radial-gradient(ellipse_50%_42%_at_50%_34%,rgb(255_255_255/0.75),rgb(255_255_255/0.3)_55%,transparent_80%)]" />
           {/* fog: the photo blurs and melts into the white page */}
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 -z-10 h-[38%] backdrop-blur-[6px]"
+            className="absolute inset-x-0 bottom-0 -z-10 h-[20%] backdrop-blur-[6px]"
             style={{ WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 55%)", maskImage: "linear-gradient(to bottom, transparent, #000 55%)" }}
           />
-          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-[42%] bg-gradient-to-b from-transparent via-white/70 to-white" />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-[24%] bg-gradient-to-b from-transparent via-white/70 to-white" />
 
           <SiteHeader t={t} locale={locale} />
 
