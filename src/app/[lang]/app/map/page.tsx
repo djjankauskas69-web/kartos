@@ -33,6 +33,13 @@ export default async function MapPage({ searchParams }: PageProps<"/[lang]/app/m
   );
 }
 
+const wi = { width: 17, height: 17, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+const WAY_ICONS = [
+  <svg key="phone" {...wi}><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18.5h2" /></svg>,
+  <svg key="map" {...wi}><path d="M12 21s-6-5.3-6-10.5a6 6 0 0 1 12 0C18 15.7 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.2" /></svg>,
+  <svg key="text" {...wi}><path d="M5 6h14M5 12h14M5 18h9" /></svg>,
+];
+
 function plotText(t: Dictionary, b: { section: string | null; row_label: string | null; plot: string | null }) {
   return [b.section && `${t.grave.section} ${b.section}`, b.row_label && `${t.grave.row} ${b.row_label}`, b.plot && `${t.grave.plot} ${b.plot}`]
     .filter(Boolean)
@@ -146,7 +153,7 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
         title={t.map.title}
         meta={items.length ? plural(locale, items.length, t.map.countGraves) : undefined}
         actions={
-          can.add(current.role) && (
+          can.add(current.role) && items.length > 0 && (
             <Link href={`${base}/map/new`} className="inline-flex min-h-12 items-center gap-2 rounded-full bg-ink px-5 text-[1.02rem] font-semibold text-surface hover:bg-olive-deep">
               <IconPlus size={20} />
               {t.map.addGrave}
@@ -159,14 +166,41 @@ async function Graves({ t, locale, personPromise }: { t: Dictionary; locale: Loc
         <EmptyState
           title={t.map.emptyTitle}
           lead={t.map.emptyLead}
-          picture={<SatelliteThumb {...QUIET_CEMETERY} pin={false} className="absolute inset-0 h-full w-full" />}
+          picture={
+            <>
+              <SatelliteThumb {...QUIET_CEMETERY} pin={false} className="absolute inset-0 h-full w-full" />
+              {/* What it will look like: a few soft name pins. */}
+              <span aria-hidden="true" className="absolute inset-0 bg-black/10" />
+              {[
+                { x: "28%", y: "34%", n: t.map.samplePins[0] },
+                { x: "58%", y: "52%", n: t.map.samplePins[1] },
+                { x: "40%", y: "72%", n: t.map.samplePins[2] },
+              ].map((pin) => (
+                <span key={pin.n} aria-hidden="true" className="absolute flex -translate-x-1/2 -translate-y-full flex-col items-center" style={{ left: pin.x, top: pin.y }}>
+                  <span className="rounded-full bg-surface/95 px-3 py-1 text-[0.85rem] font-semibold text-ink shadow-[0_6px_18px_-8px_rgb(0_0_0/0.6)]">{pin.n}</span>
+                  <span className="mt-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-ink shadow" />
+                </span>
+              ))}
+            </>
+          }
           action={
-            can.add(current.role) ? (
-              <Link href={`${base}/map/new`} className={`${cls.primary} gap-2`}>
-                <IconPlus size={20} />
-                {t.map.markGrave}
-              </Link>
-            ) : undefined
+            <>
+              <ul className="mb-7 space-y-2.5 text-[0.98rem]">
+                {t.map.ways.map((w, i) => (
+                  <li key={w} className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linen text-ink">{WAY_ICONS[i]}</span>
+                    {w}
+                  </li>
+                ))}
+              </ul>
+              {can.add(current.role) && (
+                // Nobody who has passed away is in the tree yet: add them first, the grave comes next.
+                <Link href={`${base}/tree?add=1&deceased=1`} className={`${cls.primary} gap-2`}>
+                  <IconPlus size={20} />
+                  {t.map.addDeceased}
+                </Link>
+              )}
+            </>
           }
         />
       ) : (

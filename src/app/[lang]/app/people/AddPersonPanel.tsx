@@ -151,11 +151,13 @@ export function AddPersonHost({
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const [toast, setToast] = useState<{ id: string; name: string; linked: boolean } | null>(null);
+  const [toast, setToast] = useState<{ id: string; name: string; linked: boolean; grave?: boolean } | null>(null);
   const kind = params.get("add");
   const to = params.get("to");
   // "Join to tree" from the people list: someone already in the archive, to connect.
   const existingParam = params.get("existing");
+  // From the graves page: the person to add has passed away.
+  const deceasedParam = params.get("deceased") === "1";
   const open = kind !== null;
 
   const [round, setRound] = useState(0);
@@ -171,10 +173,11 @@ export function AddPersonHost({
     q.delete("to");
     q.delete("new");
     q.delete("existing");
+    q.delete("deceased");
     if (added?.id && after === "people") q.set("new", added.id);
     const s = q.toString();
     router.replace(`${pathname}${s ? `?${s}` : ""}`, { scroll: false });
-    if (added?.id && added.name) setToast({ id: added.id, name: added.name, linked: !!added.linked });
+    if (added?.id && added.name) setToast({ id: added.id, name: added.name, linked: !!added.linked, grave: deceasedParam });
   };
 
   return (
@@ -188,6 +191,7 @@ export function AddPersonHost({
           initialAnchor={to && people.some((p) => p.id === to) ? to : null}
           initialExisting={existingParam && people.some((p) => p.id === existingParam) ? existingParam : null}
           initialKind={initialKindFor(kind, people.find((p) => p.id === to))}
+          initialDeceased={deceasedParam}
           locale={pathname.split("/")[1] ?? "lt"}
           onClose={close}
           t={t}
@@ -199,9 +203,15 @@ export function AddPersonHost({
         <div role="status" className="fixed bottom-5 left-1/2 z-40 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink px-5 py-3.5 text-surface shadow-[var(--shadow-float)]">
           <IconCheck size={20} />
           <span className="min-w-0 flex-1">{(toast.linked ? t.linked : t.added).replace("{name}", toast.name)}</span>
-          <Link href={`/${pathname.split("/")[1]}/app/people/${toast.id}`} className="shrink-0 font-semibold underline underline-offset-2">
-            {t.openProfile}
-          </Link>
+          {toast.grave ? (
+            <Link href={`/${pathname.split("/")[1]}/app/people/${toast.id}/grave?back=map`} className="shrink-0 font-semibold underline underline-offset-2">
+              {t.markGrave}
+            </Link>
+          ) : (
+            <Link href={`/${pathname.split("/")[1]}/app/people/${toast.id}`} className="shrink-0 font-semibold underline underline-offset-2">
+              {t.openProfile}
+            </Link>
+          )}
           <button type="button" onClick={() => setToast(null)} aria-label={t.dismiss} className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-surface/10">
             ×
           </button>
@@ -315,6 +325,7 @@ function AddPersonPanel({
   initialAnchor,
   initialExisting = null,
   initialKind,
+  initialDeceased = false,
   locale,
   onClose,
   t,
@@ -328,6 +339,7 @@ function AddPersonPanel({
   initialAnchor: string | null;
   initialExisting?: string | null;
   initialKind: Kind | null;
+  initialDeceased?: boolean;
   locale: string;
   onClose: (added?: AddState, again?: boolean) => void;
   t: L;
@@ -343,7 +355,7 @@ function AddPersonPanel({
   const [given, setGiven] = useState("");
   const [surname, setSurname] = useState("");
   const [surnameTouched, setSurnameTouched] = useState(false);
-  const [living, setLiving] = useState(true);
+  const [living, setLiving] = useState(!initialDeceased);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [bornStr, setBornStr] = useState("");
   const [exactBirth, setExactBirth] = useState(false);

@@ -747,8 +747,8 @@
     "addPersonFirst": "Not in the archive yet? Add the person first.",
     "marked": "already marked",
     "noDeceased": "There are no deceased people in the archive yet. Add a person first.",
-    "emptyTitle": "Mark the first grave",
-    "emptyLead": "Open a person's page or press “Mark a grave” – you can set the spot with your phone while standing at the grave.",
+    "emptyTitle": "Mark where your loved ones rest",
+    "emptyLead": "Your family will find the grave even on a first visit. Start with a relative who has passed away – add them to the tree and mark the grave right after.",
     "pageLead": "Family graves, where they are and the memories around them.",
     "addGrave": "Add a grave",
     "filterMarked": "Marked",
@@ -782,7 +782,18 @@
     "listHide": "Hide list",
     "onMap": "Marked on the map",
     "close": "Close",
-    "markShort": "Mark"
+    "markShort": "Mark",
+    "ways": [
+      "Standing at the grave – your phone finds the spot",
+      "Or by tapping the spot on the map",
+      "Or just by writing the cemetery, section and row"
+    ],
+    "addDeceased": "Add a relative who has passed away",
+    "samplePins": [
+      "Grandma Ona",
+      "Grandpa Jonas",
+      "Great-grandma Marija"
+    ]
   },
   "dash": {
     "subtitle": "Generations and memories in one place.",
@@ -1314,7 +1325,8 @@
     "saveAgain": "Save + another",
     "saveAgainHint": "Save and right away add another to: {name}",
     "titleLink": "Join to the tree",
-    "step2Name": "What are they to {name}?"
+    "step2Name": "What are they to {name}?",
+    "markGrave": "Mark the grave"
   },
   "landing": {
     "reveal": "Who was who. Who is in that old photo. What grandmother used to tell at the table. All of it is often lost within one generation — MyKartos helps keep it for your children and grandchildren.",

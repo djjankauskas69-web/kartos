@@ -747,8 +747,8 @@
     "addPersonFirst": "Žmogaus dar nėra medyje? Pirmiausia pridėkite jį.",
     "marked": "jau pažymėta",
     "noDeceased": "Medyje dar nėra mirusių žmonių. Pirmiausia pridėkite žmogų.",
-    "emptyTitle": "Pažymėkite pirmą kapavietę",
-    "emptyLead": "Atidarykite žmogaus kortelę arba spauskite „Pažymėti kapavietę“ – vietą galite nustatyti telefonu stovėdami prie kapo.",
+    "emptyTitle": "Pažymėkite, kur ilsisi artimieji",
+    "emptyLead": "Šeima ras kapą net ir pirmą kartą atvykusi. Pradėkite nuo mirusio artimojo – įrašykite jį į medį, o kapavietę pažymėsite iš karto po to.",
     "pageLead": "Šeimos narių kapavietės, jų vietos ir prisiminimai.",
     "addGrave": "Pridėti kapavietę",
     "filterMarked": "Pažymėtos",
@@ -782,7 +782,18 @@
     "listHide": "Slėpti sąrašą",
     "onMap": "Pažymėta žemėlapyje",
     "close": "Uždaryti",
-    "markShort": "Pažymėti"
+    "markShort": "Pažymėti",
+    "ways": [
+      "Stovėdami prie kapo – telefonas vietą nustatys pats",
+      "Arba paspausdami vietą žemėlapyje",
+      "Arba tiesiog įrašydami kapines, sektorių ir eilę"
+    ],
+    "addDeceased": "Įrašyti mirusį artimąjį",
+    "samplePins": [
+      "Močiutė Ona",
+      "Senelis Jonas",
+      "Prosenelė Marija"
+    ]
   },
   "dash": {
     "subtitle": "Kartos ir prisiminimai vienoje vietoje.",
@@ -1314,7 +1325,8 @@
     "saveAgain": "Išsaugoti ir dar",
     "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}",
     "titleLink": "Prijungti prie medžio",
-    "step2Name": "Kas jis {name}?"
+    "step2Name": "Kas jis {name}?",
+    "markGrave": "Pažymėti kapavietę"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kas yra toje senoje nuotraukoje. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — MyKartos padeda tai išsaugoti vaikams ir anūkams.",
