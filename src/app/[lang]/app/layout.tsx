@@ -150,11 +150,6 @@ async function WorkspaceMenu({ t, locale, wide = false }: { t: Dictionary; local
               className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-left hover:bg-paper ${m.id === current.id ? "font-semibold" : ""}`}
             >
               <span className="truncate">{m.name}</span>
-              {m.role === "owner" && (
-                <span className="shrink-0 text-ink-muted" title={t.roles.owner} aria-label={t.roles.owner}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" /></svg>
-                </span>
-              )}
             </button>
           </form>
         ))}
