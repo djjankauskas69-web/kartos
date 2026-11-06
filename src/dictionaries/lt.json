@@ -126,7 +126,7 @@
   },
   "login": {
     "title": "Prisijunkite",
-    "lead": "Įveskite el. paštą ir slaptažodį. Jei čia pirmą kartą, paskyra susikurs iškart – jokio patvirtinimo laiško nereikia.",
+    "lead": "Pirmą kartą? Paskyra susikurs iškart – patvirtinimo laiško nereikia.",
     "email": "El. pašto adresas",
     "emailPlaceholder": "vardas@pavyzdys.lt",
     "submit": "Siųsti prisijungimo nuorodą",
@@ -156,7 +156,13 @@
       "error": "Nepavyko prisijungti. Bandykite dar kartą.",
       "invite": "Prisijungėte, bet kvietimo priimti nepavyko – galbūt jis nebegalioja.",
       "notConfirmed": "Ši paskyra sukurta, bet dar nepatvirtinta (ji atsirado, kol Supabase reikalavo patvirtinimo laiško). Administratoriui: Supabase → Authentication → Users → ištrinkite šį vartotoją ir bandykite iš naujo."
-    }
+    },
+    "orEmail": "arba el. paštu",
+    "googleError": "Nepavyko prisijungti per Google. Bandykite dar kartą arba įveskite el. paštą.",
+    "linkToggle": "Nenorite slaptažodžio? Gaukite prisijungimo nuorodą el. paštu",
+    "linkLead": "Atsiųsime nuorodą – paspaudę ją būsite prisijungę.",
+    "sideTitle": "Jūsų šeimos atminties namai",
+    "sideLead": "Medis, nuotraukos, prisiminimai ir kapavietės – vienoje vietoje, visai šeimai."
   },
   "app": {
     "loading": "Įkeliama…",

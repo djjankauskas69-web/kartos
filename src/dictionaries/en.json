@@ -126,7 +126,7 @@
   },
   "login": {
     "title": "Sign in",
-    "lead": "Enter your email and a password. If you're new, your account is created straight away – no confirmation email needed.",
+    "lead": "First time here? Your account is created at once – no confirmation email.",
     "email": "Email address",
     "emailPlaceholder": "name@example.com",
     "submit": "Email me a sign-in link",
@@ -156,7 +156,13 @@
       "error": "Couldn't sign in. Please try again.",
       "invite": "You're signed in, but the invitation couldn't be accepted – it may have expired.",
       "notConfirmed": "This account exists but isn't confirmed (it was created while Supabase required a confirmation email). For the administrator: Supabase → Authentication → Users → delete this user and try again."
-    }
+    },
+    "orEmail": "or with email",
+    "googleError": "Google sign-in didn't work. Try again or use your email.",
+    "linkToggle": "Rather not use a password? Get a sign-in link by email",
+    "linkLead": "We'll send a link – open it and you're signed in.",
+    "sideTitle": "Your family's home for memories",
+    "sideLead": "The tree, photos, memories and graves – in one place, for the whole family."
   },
   "app": {
     "loading": "Loading…",
