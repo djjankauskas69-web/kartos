@@ -28,6 +28,8 @@ type Props = {
   fitKey?: number;
   /** How close to come when showing the markers (17 = a single grave; ~11 = the town around a place). */
   maxZoom?: number;
+  /** Told once, when the map is drawn and ready to look at. */
+  onReady?: () => void;
 };
 
 const LITHUANIA = { lat: 55.25, lng: 23.9, zoom: 7 };
@@ -153,6 +155,7 @@ export default function GoogleMap({
   layerAt = "left",
   fitKey = 0,
   maxZoom = 17,
+  onReady,
   padLeft = 0,
 }: Props) {
   // Every grave in view, clear of the panel and the buttons along the top.
@@ -172,11 +175,13 @@ export default function GoogleMap({
   const onPickRef = useRef(onPick);
   const onSelectRef = useRef(onSelect);
   const onCenterRef = useRef(onCenter);
+  const readyRef = useRef(onReady);
   useEffect(() => {
     onPickRef.current = onPick;
     onSelectRef.current = onSelect;
     onCenterRef.current = onCenter;
-  }, [onPick, onSelect, onCenter]);
+    readyRef.current = onReady;
+  }, [onPick, onSelect, onCenter, onReady]);
 
   // Load Google and create the map once.
   useEffect(() => {
@@ -203,6 +208,8 @@ export default function GoogleMap({
         if (c) onCenterRef.current?.(c.lat(), c.lng());
       });
       map.current = m;
+      // The first full set of tiles: the map is there to look at.
+      w.google.maps.event.addListenerOnce(m, "tilesloaded", () => readyRef.current?.());
       info.current = new w.google.maps.InfoWindow();
       setG(w.google);
     });

@@ -51,6 +51,8 @@ type Props = {
   fitKey?: number;
   /** How close to come when showing the markers (17 = a single grave; ~11 = the town around a place). */
   maxZoom?: number;
+  /** Told once, when the map is drawn and ready to look at. */
+  onReady?: () => void;
 };
 
 export type BaseLayer = "map" | "satellite";
@@ -130,6 +132,7 @@ export default function LeafletMap({
   layerAt = "left",
   fitKey = 0,
   maxZoom = 17,
+  onReady,
   padLeft = 0,
 }: Props) {
   const [layer, setLayer] = useState<BaseLayer>(baseLayer);
@@ -145,11 +148,13 @@ export default function LeafletMap({
   // Fitting needs the map's real size; if it isn't laid out yet, fit as soon as it is.
   const pendingFit = useRef<(() => void) | null>(null);
 
+  const readyRef = useRef(onReady);
   useEffect(() => {
     onPickRef.current = onPick;
     onSelectRef.current = onSelect;
     onCenterRef.current = onCenter;
-  }, [onPick, onSelect, onCenter]);
+    readyRef.current = onReady;
+  }, [onPick, onSelect, onCenter, onReady]);
 
   // Create the map once.
   useEffect(() => {
@@ -159,6 +164,8 @@ export default function LeafletMap({
       fallbackCenter.zoom,
     );
     L.control.zoom({ position: "topright" }).addTo(m);
+    // Leaflet draws at once; its tiles follow, so "ready" is right after the first paint.
+    window.setTimeout(() => readyRef.current?.(), 300);
     m.on("click", (e: L.LeafletMouseEvent) => onPickRef.current?.(e.latlng.lat, e.latlng.lng));
     m.on("moveend", () => {
       const c = m.getCenter();

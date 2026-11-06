@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { MapView } from "@/components/map/Map";
+import { LogoLoader } from "@/components/LogoLoader";
 import { DirectionsMenu } from "@/components/map/Directions";
 
 export type GraveItem = {
@@ -85,6 +86,19 @@ export function GravesExplorer({
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(initialId);
   const [listOpen, setListOpen] = useState(true);
+  // The loader stays until the map is drawn and has built up the mark once (about 1.5 s).
+  const [mapReady, setMapReady] = useState(false);
+  const [minDone, setMinDone] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMinDone(true), 1500);
+    // Never stuck behind the veil if the map service is slow or fails.
+    const late = window.setTimeout(() => setMapReady(true), 6000);
+    return () => {
+      window.clearTimeout(id);
+      window.clearTimeout(late);
+    };
+  }, []);
+  const veil = !(mapReady && minDone);
   const [fitKey, setFitKey] = useState(0);
   const [copied, setCopied] = useState(false);
 
@@ -145,8 +159,17 @@ export function GravesExplorer({
         layerAt="right"
         layerLabels={{ map: labels.layerMap, satellite: labels.layerSatellite }}
         scrollZoom
+        onReady={() => setMapReady(true)}
         className="absolute inset-0 h-full w-full"
       />
+
+      {/* Until the map is drawn, the tree mark builds up in full at least once, then the veil lifts. */}
+      <div
+        aria-hidden={!veil}
+        className={`pointer-events-none absolute inset-0 z-[600] flex items-center justify-center bg-[#faf8f4] transition-opacity duration-500 ${veil ? "opacity-100" : "opacity-0"}`}
+      >
+        <LogoLoader size={56} />
+      </div>
 
       {/* Back to every grave */}
       {markers.length > 1 && (
