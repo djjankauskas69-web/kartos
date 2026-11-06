@@ -972,7 +972,7 @@ function SlidePicker({
 }
 
 
-const barBtn = "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 font-semibold hover:bg-paper sm:px-3.5";
+const barBtn = "inline-flex min-h-10 shrink-0 items-center whitespace-nowrap gap-2 rounded-full px-3 font-semibold hover:bg-paper sm:px-3.5";
 const I = { width: 19, height: 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 
 /** What to do with the chosen photos: white, round, floating at the bottom; on a phone only the icons. */
