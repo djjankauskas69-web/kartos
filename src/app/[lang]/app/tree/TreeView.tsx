@@ -278,9 +278,13 @@ export function TreeView({
   const opening = useSyncExternalStore(drawerState.subscribe, drawerState.get, drawerState.getServer);
   // The person pointed at (or whose menu is open): their own links light up, the rest fade.
   const [hover, setHover] = useState<string | null>(null);
-  const [intro] = useState(() => !introShown);
+  const [intro, setIntro] = useState(() => !introShown);
   useEffect(() => {
     introShown = true;
+    // Once grown in, the animation classes go: the tree is hidden and shown again when a
+    // profile opens over it, and a leftover animation would then play once more.
+    const id = window.setTimeout(() => setIntro(false), 2600);
+    return () => window.clearTimeout(id);
   }, []);
   const menuRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 800, h: 600 });
@@ -575,6 +579,8 @@ export function TreeView({
         // A faint paper grain, like a family album page.
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .22 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
       }}
+      // The page around the tree does not rise in again each time a profile opens over it.
+      data-still
       className={`overflow-hidden transition-colors duration-300 ${full ? "fixed inset-0 z-40 h-dvh" : "relative rounded-[18px] border border-line/60"}`}>
       {/* Top left: generations (one menu button) and which families are shown */}
       <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
