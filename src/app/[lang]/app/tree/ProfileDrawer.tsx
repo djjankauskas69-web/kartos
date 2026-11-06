@@ -2,7 +2,7 @@
 
 import { LogoLoader } from "@/components/LogoLoader";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 
 const noop = () => () => {};
@@ -26,6 +26,14 @@ export function ProfileDrawer({ closeHref, labels, shell = false, children }: { 
   const [gone, setGone] = useState(false);
   // Slide in once: not again when the real panel takes over from the loading shell.
   const [slide] = useState(() => shell || !drawerState.shellShown);
+
+  // The tree must stay visible under the panel. When the tree was itself reached by moving
+  // around the app, Next keeps it in the background (display: none) on the first profile
+  // opened; show it again. Next takes over the moment you go anywhere else.
+  useLayoutEffect(() => {
+    const tree = document.querySelector<HTMLElement>("#main > [data-tree-page]");
+    if (tree && tree.style.display === "none") tree.style.removeProperty("display");
+  });
 
   useEffect(() => {
     if (shell) {

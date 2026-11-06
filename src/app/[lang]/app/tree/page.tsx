@@ -187,7 +187,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       }),
     );
     return (
-      <div className="tree-wide">
+      <div className="tree-wide" data-tree-page>
         <WideMain />
         {header(subtitleWhole)}
         {host}
@@ -345,7 +345,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   );
 
   return (
-    <div className="tree-wide">
+    <div className="tree-wide" data-tree-page>
       <WideMain />
       {header(subtitle)}
       {host}
