@@ -118,7 +118,7 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-[0.98rem] font-semibold text-ink-muted underline-offset-4 hover:text-ink hover:underline">
+      <button type="button" onClick={() => setOpen(true)} className="w-full text-center text-[0.95rem] text-ink-muted underline-offset-4 hover:text-ink hover:underline">
         {t.linkToggle}
       </button>
     );
