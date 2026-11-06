@@ -32,7 +32,7 @@ export default async function Home() {
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
-          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[85%] bg-[radial-gradient(ellipse_50%_42%_at_50%_34%,rgb(255_255_255/0.75),rgb(255_255_255/0.3)_55%,transparent_80%)]" />
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[85%] bg-[radial-gradient(ellipse_50%_42%_at_50%_32%,rgb(255_255_255/0.55),rgb(255_255_255/0.2)_55%,transparent_80%)]" />
           {/* fog: the photo blurs and melts into the white page */}
           <div
             aria-hidden="true"
