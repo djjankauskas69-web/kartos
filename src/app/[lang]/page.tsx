@@ -28,7 +28,7 @@ export default async function Home() {
               sizes="100vw"
               alt=""
               fetchPriority="high"
-              className="h-[115svh] w-full object-cover object-[50%_92%]"
+              className="h-[115svh] w-full object-cover object-[50%_84%]"
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
@@ -36,10 +36,10 @@ export default async function Home() {
           {/* fog: the photo blurs and melts into the white page */}
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 -z-10 h-[20%] backdrop-blur-[6px]"
+            className="absolute inset-x-0 bottom-0 -z-10 h-[14%] backdrop-blur-[6px]"
             style={{ WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 55%)", maskImage: "linear-gradient(to bottom, transparent, #000 55%)" }}
           />
-          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-[24%] bg-gradient-to-b from-transparent via-white/70 to-white" />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-[16%] bg-gradient-to-b from-transparent via-white/70 to-white" />
 
           <SiteHeader t={t} locale={locale} />
 
