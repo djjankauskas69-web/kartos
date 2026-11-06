@@ -16,5 +16,6 @@ export function WideMain() {
       delete main.dataset.wide;
     };
   }, []);
-  return null;
+  // Also a mark the stylesheet sees before any script runs (no jump from narrow to wide).
+  return <span data-wide-page hidden />;
 }

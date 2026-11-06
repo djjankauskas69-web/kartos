@@ -257,3 +257,9 @@ img.img-in { opacity: 1; transition: opacity 0.45s ease-out; }
   img.img-wait { opacity: 1; }
   img.img-in { transition: none; }
 }
+
+/* Wide pages (tree, map): the column widens as soon as such a page is shown, before scripts run.
+   Pages kept in the background are hidden with an inline display:none, so they do not count. */
+#app-col:has(#main > :not([style*="display"]) [data-wide-page], #main > [data-wide-page]) :is(#main, header > div) {
+  max-width: 88rem;
+}

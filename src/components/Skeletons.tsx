@@ -1,4 +1,5 @@
 import { PageHeader } from "./PageHeader";
+import { LogoLoader } from "./LogoLoader";
 
 /**
  * What a page looks like while its data is on the way: the real title straight away and soft
@@ -9,6 +10,8 @@ const block = "rounded-[14px] bg-linen/80 animate-[soft-pulse_1.8s_ease-in-out_i
 export function PageSkeleton({ title, kind }: { title?: string; kind: "dashboard" | "tree" | "grid" | "list" | "profile" | "map" }) {
   return (
     <div role="status" aria-busy="true" className="animate-[fade-in_250ms_ease-out_both]">
+      {/* The tree and the map use the whole width from the very first moment. */}
+      {(kind === "tree" || kind === "map") && <span data-wide-page hidden />}
       {title && <PageHeader title={title} className={kind === "tree" ? "mb-4" : "mb-6"} />}
       {kind === "dashboard" && (
         <div className="space-y-6">
@@ -24,7 +27,11 @@ export function PageSkeleton({ title, kind }: { title?: string; kind: "dashboard
           </div>
         </div>
       )}
-      {kind === "tree" && <div className={`h-[calc(100dvh-11rem)] min-h-[24rem] rounded-[18px] border border-line/60 bg-[#faf8f4]`} />}
+      {kind === "tree" && (
+        <div className="flex h-[calc(100dvh-11rem)] min-h-[24rem] items-center justify-center rounded-[18px] border border-line/60 bg-[#faf8f4]">
+          <LogoLoader size={56} />
+        </div>
+      )}
       {kind === "grid" && (
         <>
           <div className="mb-6 flex gap-2">
