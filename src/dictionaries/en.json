@@ -142,7 +142,7 @@
     "linkError": "The sign-in link has expired or was opened in a different browser. Request a new one.",
     "rateLimit": "Too many emails in a short time. Wait a few minutes and try again.",
     "password": "Password",
-    "passwordHint": "At least 6 characters. First time here – make one up.",
+    "passwordHint": "At least 6 characters.",
     "passwordSubmit": "Sign in",
     "showPassword": "Show",
     "hidePassword": "Hide",
@@ -162,7 +162,14 @@
     "linkToggle": "Or get a sign-in link by email",
     "linkLead": "We'll send a link – open it and you're signed in.",
     "sideTitle": "Your family's home for memories",
-    "sideLead": "The tree, photos, memories and graves – in one place, for the whole family."
+    "sideLead": "The tree, photos, memories and graves – in one place, for the whole family.",
+    "termsBefore": "By signing in you agree to the terms of use and the ",
+    "termsLink": "privacy policy",
+    "termsAfter": ".",
+    "sampleName": "Ona Jankauskienė",
+    "sampleYears": "1921 – 1998",
+    "sampleMemory": "Grandma always said: as long as you remember, they live on.",
+    "sampleAuthor": "A memory · granddaughter Rūta"
   },
   "app": {
     "loading": "Loading…",

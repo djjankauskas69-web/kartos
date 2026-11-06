@@ -142,7 +142,7 @@
     "linkError": "Prisijungimo nuoroda nebegalioja arba buvo atidaryta kitoje naršyklėje. Užsisakykite naują.",
     "rateLimit": "Per daug laiškų per trumpą laiką. Palaukite kelias minutes ir bandykite vėl.",
     "password": "Slaptažodis",
-    "passwordHint": "Bent 6 simboliai. Pirmą kartą – sugalvokite naują.",
+    "passwordHint": "Bent 6 simboliai.",
     "passwordSubmit": "Prisijungti",
     "showPassword": "Rodyti",
     "hidePassword": "Slėpti",
@@ -162,7 +162,14 @@
     "linkToggle": "Arba gaukite prisijungimo nuorodą el. paštu",
     "linkLead": "Atsiųsime nuorodą – paspaudę ją būsite prisijungę.",
     "sideTitle": "Jūsų šeimos atminties namai",
-    "sideLead": "Medis, nuotraukos, prisiminimai ir kapavietės – vienoje vietoje, visai šeimai."
+    "sideLead": "Medis, nuotraukos, prisiminimai ir kapavietės – vienoje vietoje, visai šeimai.",
+    "termsBefore": "Prisijungdami sutinkate su naudojimo sąlygomis ir ",
+    "termsLink": "privatumo politika",
+    "termsAfter": ".",
+    "sampleName": "Ona Jankauskienė",
+    "sampleYears": "1921 – 1998",
+    "sampleMemory": "Močiutė visada sakydavo: kol prisimeni, tol žmogus gyvas.",
+    "sampleAuthor": "Prisiminimas · anūkė Rūta"
   },
   "app": {
     "loading": "Įkeliama…",

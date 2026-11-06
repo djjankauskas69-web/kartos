@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { createClient, supabaseConfigured } from "@/lib/supabase/client";
+import { cls } from "@/components/ui";
 
 type Status = "idle" | "sending" | "sent" | "error" | "invalid" | "rateLimit";
 
@@ -145,7 +146,7 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
             }}
             aria-invalid={status === "invalid"}
             aria-describedby={message ? "login-message" : undefined}
-            className="block min-h-13 w-full rounded-xl border border-line bg-surface px-4 text-[1.1rem] text-ink placeholder:text-ink-muted/60 focus:border-sage-deep focus:outline-none focus:ring-2 focus:ring-sage/30"
+            className={cls.input}
           />
         </div>
         {message && (
@@ -159,7 +160,7 @@ export function LoginForm({ t, locale }: { t: Dictionary["login"]; locale: Local
         <button
           type="submit"
           disabled={status === "sending"}
-          className="flex min-h-13 w-full items-center justify-center rounded-full border border-line bg-surface px-6 text-[1.05rem] font-semibold text-ink transition-colors hover:border-ink/40 disabled:opacity-60"
+          className={`${cls.secondary} min-h-13 w-full`}
         >
           {status === "sending" ? t.sending : t.submit}
         </button>

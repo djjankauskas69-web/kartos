@@ -3,10 +3,10 @@
 import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { cls } from "@/components/ui";
 import { passwordSignIn } from "./actions";
 
-const input =
-  "block min-h-13 w-full rounded-xl border border-line bg-surface px-4 text-[1.1rem] text-ink placeholder:text-ink-muted/60 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15";
+const input = cls.input;
 
 /** Email + password; a new address gets its account at once (no confirmation email). */
 export function PasswordForm({ t, locale, token, submit }: { t: Dictionary["login"]; locale: string; token?: string; submit?: string }) {
@@ -20,13 +20,13 @@ export function PasswordForm({ t, locale, token, submit }: { t: Dictionary["logi
       <input type="hidden" name="next" value={params.get("next") ?? ""} />
       {token && <input type="hidden" name="token" value={token} />}
       <div>
-        <label htmlFor="pw-email" className="mb-1.5 block font-semibold">
+        <label htmlFor="pw-email" className={cls.label}>
           {t.email}
         </label>
         <input id="pw-email" name="email" type="email" inputMode="email" autoComplete="email" required placeholder={t.emailPlaceholder} className={input} />
       </div>
       <div>
-        <label htmlFor="pw-password" className="mb-1.5 block font-semibold">
+        <label htmlFor="pw-password" className={cls.label}>
           {t.password}
         </label>
         <div className="relative">
@@ -43,7 +43,7 @@ export function PasswordForm({ t, locale, token, submit }: { t: Dictionary["logi
           {state.detail && <span className="mt-1 block font-mono text-[0.8rem] text-ink-muted">{state.detail}</span>}
         </p>
       )}
-      <button type="submit" disabled={pending} className="flex min-h-13 w-full items-center justify-center rounded-full bg-ink px-6 text-[1.08rem] font-semibold text-surface transition-colors hover:bg-olive-deep disabled:opacity-60">
+      <button type="submit" disabled={pending} className={`${cls.primary} min-h-13 w-full`}>
         {pending ? t.sending : (submit ?? t.passwordSubmit)}
       </button>
     </form>
