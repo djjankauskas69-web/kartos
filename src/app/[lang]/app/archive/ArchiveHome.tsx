@@ -8,6 +8,7 @@ import { createAlbum, deleteFolder, deleteItems, moveItems, setAlbumCover, tagIt
 import { fieldCls, labelCls, PeoplePicker, type PersonOption } from "./fields";
 import { Detail, Dialog, DialogHead, Preview, StoryForm, UploadForm, Visibility, type ArchiveItem, type L, type PeriodLabels } from "./parts";
 import { Slideshow, type Slide } from "./Slideshow";
+import { useOnLeave } from "@/components/useOnLeave";
 import { isImage, uploadPhoto } from "@/lib/upload";
 
 export type Album = { id: string; preset: string | null; name: string; description: string | null; year: number | null; coverId: string | null; people: string[]; shared: boolean; createdBy: string | null };
@@ -69,6 +70,17 @@ export function ArchiveHome({
   const [selected, setSelected] = useState<string[]>([]);
   const [bulk, setBulk] = useState<null | "tag" | "delete">(null);
   const [downloading, setDownloading] = useState(false);
+  // Back on this page later: as it is first shown, with nothing left open.
+  useOnLeave(() => {
+    setOpenId(null);
+    setDialog(null);
+    setShow(null);
+    setSelecting(false);
+    setSelected([]);
+    setBulk(null);
+    setAlbumId(null);
+    setTab(initialTab);
+  });
 
   const personName = useMemo(() => new Map(people.map((p) => [p.id, p.name])), [people]);
   const folderName = useMemo(() => new Map(albums.map((a) => [a.id, a.name])), [albums]);

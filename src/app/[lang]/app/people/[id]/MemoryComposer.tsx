@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useRef, useState } from "react";
+import { useOnLeave } from "@/components/useOnLeave";
 import { Modal } from "./Modal";
 import { ShareChoice } from "@/components/ShareChoice";
 import { cls } from "@/components/ui";
@@ -16,6 +17,7 @@ const MAX_PHOTOS = 3;
 export function MemoryComposer({ locale, workspaceId, personId, needsApproval, labels, share }: { locale: string; workspaceId: string; personId: string; needsApproval: boolean; labels: L; share?: Share }) {
   const [shared, setShared] = useState(false);
   const [open, setOpen] = useState(false);
+  useOnLeave(() => setOpen(false));
   const close = useCallback(() => setOpen(false), []);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);

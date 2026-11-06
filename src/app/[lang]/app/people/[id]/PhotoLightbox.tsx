@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useOnLeave } from "@/components/useOnLeave";
 import { createPortal } from "react-dom";
 
 type Photo = { url: string; alt: string };
@@ -11,6 +12,7 @@ type Photo = { url: string; alt: string };
  */
 export function PhotoLightbox({ photos, labels, children }: { photos: Photo[]; labels: { close: string; prev: string; next: string }; children: React.ReactNode }) {
   const [open, setOpen] = useState<number | null>(null);
+  useOnLeave(() => setOpen(null));
   const touch = useRef<number | null>(null);
   const n = photos.length;
   const go = useCallback((d: number) => setOpen((i) => (i === null ? i : (i + d + n) % n)), [n]);

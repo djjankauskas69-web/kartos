@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useOnLeave } from "@/components/useOnLeave";
 
 /**
  * Tabs for the memorial profile. Any element inside with data-tab-target="photos" (the → links
@@ -8,6 +9,7 @@ import { useState } from "react";
  */
 export function MemorialTabs({ tabs, panels }: { tabs: Array<{ id: string; label: string; count?: number; icon: React.ReactNode }>; panels: Record<string, React.ReactNode> }) {
   const [tab, setTab] = useState(tabs[0]?.id ?? "overview");
+  useOnLeave(() => setTab(tabs[0]?.id ?? "overview"));
   return (
     <div
       onClick={(e) => {

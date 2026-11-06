@@ -6,6 +6,7 @@ import { Modal } from "./Modal";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { editMemory, setMemoryPerson } from "./memory-actions";
 import { deleteMemory } from "../../actions";
+import { useOnLeave } from "@/components/useOnLeave";
 
 export type MemoryLabels = {
   read: string;
@@ -43,6 +44,7 @@ type Group = { ids: string[]; openId: string | null; setOpenId: (id: string | nu
 const GroupCtx = createContext<Group | null>(null);
 export function MemoryGroup({ ids, children }: { ids: string[]; children: React.ReactNode }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  useOnLeave(() => setOpenId(null));
   return <GroupCtx.Provider value={{ ids, openId, setOpenId }}>{children}</GroupCtx.Provider>;
 }
 
@@ -99,6 +101,7 @@ export function MemoryCard({
 }) {
   const group = useContext(GroupCtx);
   const [ownOpen, setOwnOpen] = useState(false);
+  useOnLeave(() => setOwnOpen(false));
   const open = group && groupId ? group.openId === groupId : ownOpen;
   const setOpen = (v: boolean) => (group && groupId ? group.setOpenId(v ? groupId : null) : setOwnOpen(v));
   const pics = many?.length ? many : photo ? [photo] : [];
