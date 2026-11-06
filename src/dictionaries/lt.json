@@ -614,7 +614,19 @@
     "addButton": "Pridėti prisiminimą",
     "read": "Skaityti",
     "emptyTitle": "Neleiskite prisiminimams užsimiršti",
-    "emptyLead": "Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms."
+    "emptyLead": "Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms.",
+    "thanks": "Ačiū, kad pasidalinai",
+    "comments": "Atsiliepimai",
+    "commentPh": "Ir aš tai prisimenu…",
+    "send": "Siųsti",
+    "edit": "Redaguoti",
+    "deleteConfirm": "Ištrinti šį prisiminimą?",
+    "tagPerson": "Pažymėti, apie ką dar",
+    "removePerson": "Nuimti žymą",
+    "more": "Daugiau",
+    "setup": "Atsiliepimams reikia atnaujinti duomenų bazę (0019).",
+    "prev": "Ankstesnis prisiminimas",
+    "next": "Kitas prisiminimas"
   },
   "grave": {
     "title": "Kapo vieta",

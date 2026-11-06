@@ -614,7 +614,19 @@
     "addButton": "Add a memory",
     "read": "Read",
     "emptyTitle": "Don't let the memories fade",
-    "emptyLead": "What do you remember? Even one sentence will be precious to the generations to come."
+    "emptyLead": "What do you remember? Even one sentence will be precious to the generations to come.",
+    "thanks": "Thank you for sharing",
+    "comments": "Replies",
+    "commentPh": "I remember that too…",
+    "send": "Send",
+    "edit": "Edit",
+    "deleteConfirm": "Delete this memory?",
+    "tagPerson": "Also about",
+    "removePerson": "Remove tag",
+    "more": "More",
+    "setup": "Replies need a database update (0019).",
+    "prev": "Previous memory",
+    "next": "Next memory"
   },
   "grave": {
     "title": "Resting place",

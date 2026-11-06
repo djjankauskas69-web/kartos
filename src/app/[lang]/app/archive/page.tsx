@@ -1,13 +1,16 @@
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
+import { can, fullName, getFamilyGraph, isUnknownParent, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { folderLabel, looksLikeFileName, periodLabel, type FolderRow } from "@/lib/archive";
 import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
 import { PageSkeleton } from "@/components/Skeletons";
 import { portraitUrls } from "../portraits";
+import { authorPortraits, memoryExtras } from "@/lib/memory-extras";
+import { memoryLabels } from "../people/[id]/memory-labels";
+
 
 export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/app/archive">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -114,6 +117,14 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   }));
 
   const byId = new Map(people.map((p) => [p.id, p]));
+  const shownMems = mems.filter((m) => byId.has(m.person_id));
+  const [{ extras, ready: extrasReady }, authorPhotos, aboutPhotos] = await Promise.all([
+    memoryExtras(locale, current.id, shownMems.map((m) => m.id), user.id),
+    authorPortraits(locale, current.id, shownMems.map((m) => m.author_id as string)),
+    portraitUrls(locale, [...new Set(shownMems.map((m) => m.person_id))].map((id) => byId.get(id)!).filter(Boolean)),
+  ]);
+  const tagOptions = people.filter((p) => !isUnknownParent(p)).map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name, locale));
+  const base = `/${locale}/app`;
   const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
   const memories: MemoryStory[] = mems
     .filter((m) => byId.has(m.person_id))
@@ -133,6 +144,22 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
         personName: fullName(byId.get(m.person_id)!),
         photos,
         shared: !!m.shared,
+        authorPhoto: authorPhotos.get(m.author_id as string),
+        live: {
+          id: m.id,
+          locale,
+          person: { id: m.person_id, name: fullName(byId.get(m.person_id)!), href: `${base}/people/${m.person_id}`, photo: aboutPhotos.get(m.person_id) },
+          tagged: (extras.get(m.id)?.tagged ?? []).flatMap((pid) => (byId.get(pid) ? [{ id: pid, name: fullName(byId.get(pid)!), href: `${base}/people/${pid}` }] : [])),
+          comments: extras.get(m.id)?.comments ?? [],
+          thanks: extras.get(m.id)?.thanks ?? 0,
+          thanked: extras.get(m.id)?.thanked ?? false,
+          canEdit: isEditor || m.author_id === user.id,
+          canDelete: isEditor || m.author_id === user.id,
+          canComment: can.add(current.role),
+          canTag: isEditor || m.author_id === user.id,
+          tagOptions,
+          ready: extrasReady,
+        },
       };
     });
 
@@ -163,6 +190,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
         items={items}
         albums={albums}
         memories={memories}
+        memoryLabels={memoryLabels(t)}
         people={personOptions}
         workspaceId={current.id}
         locale={locale}

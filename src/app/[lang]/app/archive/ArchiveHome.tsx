@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "@/i18n/config";
-import { MemoryCard } from "../people/[id]/MemoryCard";
+import { MemoryCard, MemoryGroup, type MemoryLabels, type MemoryLive } from "../people/[id]/MemoryCard";
 import { createAlbum, deleteFolder, deleteItems, moveItems, setAlbumCover, tagItems, updateAlbum } from "./actions";
 import { fieldCls, labelCls, PeoplePicker, type PersonOption } from "./fields";
 import { Detail, Dialog, DialogHead, Preview, StoryForm, UploadForm, Visibility, type ArchiveItem, type L, type PeriodLabels } from "./parts";
@@ -11,7 +11,7 @@ import { Slideshow, type Slide } from "./Slideshow";
 import { isImage, uploadPhoto } from "@/lib/upload";
 
 export type Album = { id: string; preset: string | null; name: string; description: string | null; year: number | null; coverId: string | null; people: string[]; shared: boolean; createdBy: string | null };
-export type MemoryStory = { id: string; body: string; author: string; date: string; createdAt: string; personId: string; personName: string; photos: string[]; shared: boolean };
+export type MemoryStory = { id: string; body: string; author: string; authorPhoto?: string; date: string; createdAt: string; personId: string; personName: string; photos: string[]; shared: boolean; live?: MemoryLive };
 
 type Tab = "albums" | "photos" | "stories" | "documents";
 
@@ -23,6 +23,7 @@ export function ArchiveHome({
   items,
   albums,
   memories,
+  memoryLabels: mLabels,
   people,
   workspaceId,
   locale,
@@ -43,6 +44,7 @@ export function ArchiveHome({
   items: ArchiveItem[];
   albums: Album[];
   memories: MemoryStory[];
+  memoryLabels: MemoryLabels;
   people: PersonOption[];
   workspaceId: string;
   locale: Locale;
@@ -425,17 +427,19 @@ export function ArchiveHome({
       {stories.length + memories.length === 0 ? (
         empty(t.noStories, t.noStoriesLead, canAdd ? <button type="button" onClick={() => setDialog("story")} className={primary}>+ {t.writeStory}</button> : undefined)
       ) : (
+        <MemoryGroup ids={[...stories.map((s) => ({ id: s.id, at: s.createdAt })), ...memories.map((m) => ({ id: m.id, at: m.createdAt }))].sort((a, b) => b.at.localeCompare(a.at)).map((x) => x.id)}>
         <ul className="grid items-stretch gap-5 [grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))]">
           {[
             ...stories.map((s) => ({ key: s.id, at: s.createdAt, node: (
               <MemoryCard
                 key={s.id}
+                groupId={s.id}
                 title={s.title}
                 author={s.uploader}
                 date={s.dateLabel || new Date(s.createdAt).toLocaleDateString(locale)}
                 body={s.description ?? ""}
                 photo={s.url}
-                labels={{ read: t.read, close: t.close, enlarge: t.openFile }}
+                labels={{ ...mLabels, read: t.read, close: t.close, enlarge: t.openFile }}
                 badges={
                   <>
                     {s.people.slice(0, 2).map((id) => (
@@ -450,19 +454,22 @@ export function ArchiveHome({
             ...memories.map((m) => ({ key: m.id, at: m.createdAt, node: (
               <MemoryCard
                 key={m.id}
+                groupId={m.id}
                 author={m.author}
+                authorPhoto={m.authorPhoto}
                 date={m.date}
                 body={m.body}
                 photos={m.photos}
-                labels={{ read: t.read, close: t.close, enlarge: t.openFile }}
-                badges={<span className="rounded-full bg-sage-wash px-2.5 py-0.5 text-[0.85rem] font-semibold">{t.memoryOf.replace("{name}", m.personName)}</span>}
-                actions={<Link href={`/${locale}/app/people/${m.personId}`} className="rounded-full px-3 py-1 font-semibold hover:text-ink">{t.openPerson} →</Link>}
+                labels={{ ...mLabels, read: t.read, close: t.close, enlarge: t.openFile }}
+                badges={<span className="rounded-full bg-sage-wash px-2.5 py-0.5 text-[0.85rem] font-semibold">{m.personName}</span>}
+                live={m.live}
               />
             ) })),
           ]
             .sort((a, b) => b.at.localeCompare(a.at))
             .map((x) => x.node)}
         </ul>
+        </MemoryGroup>
       )}
     </section>
   );

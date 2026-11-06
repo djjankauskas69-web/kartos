@@ -21,11 +21,13 @@ import {
 import { Portrait } from "@/components/Portrait";
 import { cls, PendingBadge } from "@/components/ui";
 import { periodLabel } from "@/lib/archive";
-import { adoptLinkedFact, deleteMemory, deletePhoto, removeRelationship, setPortrait, setShared } from "../../actions";
+import { adoptLinkedFact, deletePhoto, removeRelationship, setPortrait, setShared } from "../../actions";
 import { portraitUrls } from "../../portraits";
 import { PhotoUploader } from "./PhotoUploader";
 import { MemoryComposer } from "./MemoryComposer";
-import { MemoryCard } from "./MemoryCard";
+import { MemoryCard, MemoryGroup } from "./MemoryCard";
+import { memoryLabels } from "./memory-labels";
+import { authorPortraits, memoryExtras } from "@/lib/memory-extras";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./MemorialProfile";
 import { GraveView } from "./GraveView";
@@ -147,10 +149,13 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const memoryMedia = (extraMedia ?? []).filter((m) => memoryMediaIds.includes(m.id as string));
   const memoryPath = new Map((memoryMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
-  const [urls, portraits, authors] = await Promise.all([
+  const memoryAuthorIds = [...(memories ?? []), ...sharedMemories].map((m) => m.author_id as string);
+  const [urls, portraits, authors, { extras, ready: extrasReady }, authorPhotos] = await Promise.all([
     signedUrls(locale, [...photos.map((p) => p.storage_path), ...sharedPhotos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
-    portraitUrls(locale, [person, ...relativeIds.map((r) => byId.get(r)!).filter(Boolean)]),
-    profileNames(locale, [...(memories ?? []), ...sharedMemories].map((m) => m.author_id as string)),
+    portraitUrls(locale, [person, ...[...new Set([...relativeIds, ...(memories ?? []).map((m) => m.person_id)])].map((r) => byId.get(r)!).filter(Boolean)]),
+    profileNames(locale, memoryAuthorIds),
+    memoryExtras(locale, current.id, (memories ?? []).map((m) => m.id), user.id),
+    authorPortraits(locale, current.id, memoryAuthorIds),
   ]);
 
   const dateFmt = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { year: "numeric", month: "long", day: "numeric" });
@@ -238,7 +243,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       {label}
     </span>
   );
-  const cardLabels = { read: t.memories.read, close: t.add.close, enlarge: t.memories.openPhoto };
+  const cardLabels = memoryLabels(t);
+  // Everyone in the family, for naming who else a memory is about.
+  const tagOptions = [...byId.values()].filter((p) => !isUnknownParent(p) && p.status !== "rejected").map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name, locale));
   const memoriesNode = (
     <>
       {/* Stories and memories: a button opens the writing window; each memory is a card that opens to read. */}
@@ -254,6 +261,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
             <p className="mx-auto mt-1.5 max-w-md text-ink-muted">{t.memories.emptyLead}</p>
           </div>
         ) : (
+          <MemoryGroup ids={[...(memories ?? []).map((m) => m.id), ...sharedMemories.map((m) => m.id)]}>
           <ul className="mt-5 grid items-stretch gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {(memories ?? []).map((m) => {
               const phUrls = photoIdsOf(m).flatMap((mid) => {
@@ -262,10 +270,29 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 return u ? [u] : [];
               });
               const mine = (can.edit(role) || m.author_id === user.id) && !other;
+              const x = extras.get(m.id);
+              const about = byId.get(m.person_id ?? id) ?? person;
               return (
                 <MemoryCard
                   key={m.id}
+                  groupId={m.id}
                   author={authors.get(m.author_id as string) ?? ""}
+                  authorPhoto={authorPhotos.get(m.author_id as string)}
+                  live={{
+                    id: m.id,
+                    locale,
+                    person: { id: about.id, name: fullName(about), href: `${base}/people/${about.id}`, photo: portraits.get(about.id) },
+                    tagged: (x?.tagged ?? []).flatMap((pid) => (byId.get(pid) ? [{ id: pid, name: fullName(byId.get(pid)!), href: `${base}/people/${pid}` }] : [])),
+                    comments: x?.comments ?? [],
+                    thanks: x?.thanks ?? 0,
+                    thanked: x?.thanked ?? false,
+                    canEdit: mine,
+                    canDelete: mine,
+                    canComment: can.add(role) && !other,
+                    canTag: mine,
+                    tagOptions: tagOptions,
+                    ready: extrasReady,
+                  }}
                   date={dateFmt.format(new Date(m.created_at))}
                   body={m.body}
                   photos={phUrls}
@@ -280,11 +307,6 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     mine ? (
                       <>
                         {m.shared !== undefined && shareToggle("memory", m.id, !!m.shared)}
-                        <form action={deleteMemory}>
-                          <input type="hidden" name="locale" value={locale} />
-                          <input type="hidden" name="id" value={m.id} />
-                          <button type="submit" className="rounded-full px-2 py-1 hover:text-danger">{t.memories.delete}</button>
-                        </form>
                       </>
                     ) : undefined
                   }
@@ -296,6 +318,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               return (
                 <MemoryCard
                   key={m.id}
+                  groupId={m.id}
                   dashed
                   author={authors.get(m.author_id as string) ?? ""}
                   date={dateFmt.format(new Date(m.created_at))}
@@ -307,6 +330,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               );
             })}
           </ul>
+          </MemoryGroup>
         )}
       </section>
     </>
@@ -659,17 +683,27 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   }
 }
 
-type MemoryRow = { id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null; media_ids?: string[] | null; shared?: boolean };
+type MemoryRow = { id: string; person_id: string; body: string; author_id: string | null; created_at: string; status: Status; media_id?: string | null; media_ids?: string[] | null; shared?: boolean };
 
-/** Memories, newest first, with the photo that goes with each (media_id comes with database update 0010). */
+/**
+ * Memories about this person, newest first: their own, and those about someone else that also
+ * name them (database update 0019). Older databases miss some columns, so it steps down.
+ */
 async function loadMemories(supabase: Awaited<ReturnType<typeof requireWorkspace>>["supabase"], id: string): Promise<{ data: MemoryRow[] | null }> {
-  const q = (cols: string) => supabase.from("memories").select(cols).eq("person_id", id).neq("status", "rejected").order("created_at", { ascending: false });
-  const withMany = await q("id, body, author_id, created_at, status, media_id, media_ids, shared");
-  if (!withMany.error) return { data: withMany.data as unknown as MemoryRow[] };
-  const withShared = await q("id, body, author_id, created_at, status, media_id, shared");
-  if (!withShared.error) return { data: withShared.data as unknown as MemoryRow[] };
-  const first = await q("id, body, author_id, created_at, status, media_id");
-  if (!first.error) return { data: first.data as unknown as MemoryRow[] };
-  const plain = await q("id, body, author_id, created_at, status");
-  return { data: (plain.data as unknown as MemoryRow[] | null) ?? null };
+  const tagRes = await supabase.from("memory_persons").select("memory_id").eq("person_id", id);
+  const tagIds = tagRes.error ? [] : (tagRes.data ?? []).map((r) => r.memory_id as string);
+  const q = (cols: string) => {
+    const base = supabase.from("memories").select(cols).neq("status", "rejected").order("created_at", { ascending: false });
+    return tagIds.length ? base.or(`person_id.eq.${id},id.in.(${tagIds.join(",")})`) : base.eq("person_id", id);
+  };
+  for (const cols of [
+    "id, person_id, body, author_id, created_at, status, media_id, media_ids, shared",
+    "id, person_id, body, author_id, created_at, status, media_id, shared",
+    "id, person_id, body, author_id, created_at, status, media_id",
+    "id, person_id, body, author_id, created_at, status",
+  ]) {
+    const r = await q(cols);
+    if (!r.error) return { data: r.data as unknown as MemoryRow[] };
+  }
+  return { data: null };
 }
