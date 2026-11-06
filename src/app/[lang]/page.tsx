@@ -28,7 +28,7 @@ export default async function Home() {
               sizes="100vw"
               alt=""
               fetchPriority="high"
-              className="h-[115svh] w-full object-cover object-[50%_58%]"
+              className="h-[115svh] w-full object-cover object-[50%_70%]"
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}
@@ -43,7 +43,7 @@ export default async function Home() {
 
           <SiteHeader t={t} locale={locale} />
 
-          <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-5 pb-40 pt-[9vh] text-center sm:px-8 sm:pt-[12vh]">
+          <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-5 pb-40 pt-[6vh] text-center sm:px-8 sm:pt-[8vh]">
             <h1 className="text-[3rem] [text-shadow:0_0_24px_rgb(255_255_255/0.7)] sm:text-[4.4rem] lg:text-[5.4rem]">{t.hero.title}</h1>
             <Scribble className="mx-auto mt-1 h-5 w-52 text-ink/80 sm:w-72" />
             <p className="mx-auto mt-6 max-w-[34rem] text-[1.18rem] font-medium leading-relaxed text-ink [text-shadow:0_0_14px_rgb(255_255_255/0.95),0_0_3px_rgb(255_255_255/0.9)]">{t.hero.lead}</p>
