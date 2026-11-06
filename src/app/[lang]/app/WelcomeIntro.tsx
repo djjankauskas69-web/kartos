@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { PARTS } from "@/components/LogoLoader";
 
 const SEEN = "kartos-intro-seen";
@@ -25,6 +26,7 @@ function vocLt(name: string) {
  */
 export function WelcomeIntro({ locale, name, hello, children }: { locale: string; name?: string; hello: { named: string; plain: string }; children: ReactNode }) {
   const [phase, setPhase] = useState<"intro" | "leaving" | "done">("intro");
+  const [mounted, setMounted] = useState(false);
   const greeting = name ? hello.named.replace("{name}", locale === "lt" ? vocLt(name) : name) : hello.plain;
 
   const finish = useCallback(() => {
@@ -41,6 +43,7 @@ export function WelcomeIntro({ locale, name, hello, children }: { locale: string
     } catch {}
     // Before the first paint, so a returning visitor never sees the intro flash.
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     if (seen || window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPhase("done");
   }, []);
 
@@ -62,7 +65,10 @@ export function WelcomeIntro({ locale, name, hello, children }: { locale: string
 
   if (phase === "done") return <div className="intro-rise">{children}</div>;
 
-  return (
+  // On the page itself, above everything: the app column moves in with a transform, which would
+  // otherwise hold a "fixed" layer inside it.
+  if (!mounted) return <div className="fixed inset-0 z-[90] bg-surface" />;
+  return createPortal(
     <div
       role="presentation"
       onPointerDown={finish}
@@ -82,6 +88,7 @@ export function WelcomeIntro({ locale, name, hello, children }: { locale: string
           {greeting}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
