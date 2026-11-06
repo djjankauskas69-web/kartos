@@ -28,7 +28,7 @@ export function MemorialTabs({ tabs, panels }: { tabs: Array<{ id: string; label
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-[0.98rem] ${tab === t.id ? "border-olive font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}
+            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 text-[0.98rem] outline-none focus-visible:ring-2 focus-visible:ring-olive/40 ${tab === t.id ? "border-olive font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}
           >
             <span className={tab === t.id ? "text-olive" : ""}>{t.icon}</span>
             {t.label}

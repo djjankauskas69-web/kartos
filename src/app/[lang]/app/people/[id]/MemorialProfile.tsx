@@ -503,7 +503,7 @@ export function MemorialProfile({
               {initials}
             </span>
           )}
-          <div className={`min-w-0 flex-1 ${nodes.composer || meHref || (editHref && !inline) ? "sm:pr-60" : ""}`}>
+          <div className={`min-w-0 flex-1 ${nodes.composer || (editHref && !inline) ? "sm:pr-60" : ""}`}>
             {inline ? (
               <InlineEdit
                 {...ie}
@@ -561,11 +561,6 @@ export function MemorialProfile({
           <div className="flex flex-wrap gap-2 self-start sm:absolute sm:right-5 sm:top-5">
             {/* The one thing everyone can do here: leave a memory. */}
             {nodes.composer}
-            {meHref && (
-              <Link href={meHref} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
-                {m.editMine}
-              </Link>
-            )}
             {editHref && !inline && (
               <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
                 ✎ {m.edit}
