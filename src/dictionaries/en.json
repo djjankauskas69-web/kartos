@@ -1767,5 +1767,20 @@
     "back": "Back",
     "close": "Close",
     "error": "That didn't work. Try again or pick another photo."
+  },
+  "start": {
+    "title": "Welcome! Let's start with you",
+    "lead": "You'll be the first person in your family tree – from you, you'll add parents, grandparents and other relatives.",
+    "given": "First name",
+    "surname": "Last name",
+    "birthYear": "Year of birth",
+    "birthPh": "e.g. 1990",
+    "exactDate": "exact date",
+    "month": "Month",
+    "day": "Day",
+    "optional": "optional",
+    "submit": "Create my tree",
+    "saving": "Creating…",
+    "note": "We'll name the family after your surname – you can change it later."
   }
 }

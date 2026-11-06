@@ -36,6 +36,57 @@ export async function createWorkspace(_: FormState, form: FormData): Promise<For
   redirect(`/${locale}/app`);
 }
 
+/** "Jankauskas" / "Jankauskienė" / "Jankauskaitė" → "Jankauskų šeima"; English "The Jankauskas family". */
+function familyName(surname: string, locale: string) {
+  const s = surname.trim();
+  if (!s) return locale === "en" ? "My family" : "Mano šeima";
+  if (locale === "en") return `The ${s} family`;
+  const rules: Array<[RegExp, string]> = [
+    [/ienė$/, "ų"],
+    [/(ytė|iūtė)$/, "ių"],
+    [/(aitė|utė)$/, "ų"],
+    [/(ius|ys|is)$/, "ių"],
+    [/(as|us|a|ė)$/, "ų"],
+  ];
+  for (const [re, end] of rules) if (re.test(s)) return `${s.replace(re, "")}${end} šeima`;
+  return `${s} šeima`;
+}
+
+/**
+ * First visit: a few words about yourself start the family. The family is named after the surname
+ * (renamed any time later) and you are the first person in its tree.
+ */
+export async function startFamily(_: FormState, form: FormData): Promise<FormState> {
+  const locale = formLocale(form);
+  const given = text(form, "given", 120);
+  const surname = text(form, "surname", 120) ?? "";
+  const born = year(form, "birthYear");
+  if (!given) return { error: "nameRequired" };
+  if (born === "bad") return { error: "year" };
+  const month = Number(form.get("birthMonth") ?? "") || null;
+  const dayRaw = Number(form.get("birthDay") ?? "") || null;
+  const day = month && dayRaw && dayRaw >= 1 && dayRaw <= 31 ? dayRaw : null;
+
+  const supabase = await createClient();
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  if (!supabase || !user) redirect(`/${locale}/login`);
+
+  const id = crypto.randomUUID();
+  // The administrator membership is added by a database trigger.
+  const { error } = await supabase.from("workspaces").insert({ id, name: familyName(surname, locale), created_by: user.id });
+  if (error) {
+    console.error("startFamily", error);
+    return { error: "save" };
+  }
+  (await cookies()).set(WS_COOKIE, id, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  const { data: personId, error: meError } = await supabase.rpc("create_my_person", { ws: id, p_given: given, p_surname: surname || null, p_birth_year: born });
+  if (meError) console.error("startFamily me", meError);
+  else if (personId && month && month >= 1 && month <= 12) {
+    await supabase.from("persons").update({ birth_month: month, birth_day: day }).eq("id", personId as string).eq("workspace_id", id);
+  }
+  redirect(`/${locale}/app/tree`);
+}
+
 export async function switchWorkspace(form: FormData) {
   const locale = formLocale(form);
   const id = uuid(form, "workspaceId");

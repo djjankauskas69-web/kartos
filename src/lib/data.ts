@@ -46,7 +46,7 @@ export type Membership = Workspace & { role: Role };
 
 export const WS_COOKIE = "ws";
 
-export type SignedInUser = { id: string; email?: string };
+export type SignedInUser = { id: string; email?: string; meta?: Record<string, unknown> };
 
 /** Signed-in Supabase client and user (once per request). Sends anyone signed out to sign-in. */
 export const requireUser = cache(async (locale: Locale) => {
@@ -56,7 +56,7 @@ export const requireUser = cache(async (locale: Locale) => {
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (!claims?.sub) redirect(`/${locale}/login`);
-  const user: SignedInUser = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : undefined };
+  const user: SignedInUser = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : undefined, meta: (claims.user_metadata as Record<string, unknown> | undefined) ?? undefined };
   return { supabase, user };
 });
 

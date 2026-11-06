@@ -1767,5 +1767,20 @@
     "back": "Atgal",
     "close": "Uždaryti",
     "error": "Nepavyko. Bandykite dar kartą arba kitą nuotrauką."
+  },
+  "start": {
+    "title": "Sveiki! Pradėkime nuo jūsų",
+    "lead": "Jūs būsite pirmas žmogus šeimos medyje – nuo jūsų toliau pridėsite tėvus, senelius ir kitus artimuosius.",
+    "given": "Vardas",
+    "surname": "Pavardė",
+    "birthYear": "Gimimo metai",
+    "birthPh": "pvz. 1990",
+    "exactDate": "tiksli data",
+    "month": "Mėnuo",
+    "day": "Diena",
+    "optional": "nebūtina",
+    "submit": "Sukurti mano medį",
+    "saving": "Kuriama…",
+    "note": "Šeimos pavadinimą sukursime pagal pavardę – vėliau jį galėsite pakeisti."
   }
 }

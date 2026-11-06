@@ -3,9 +3,8 @@ import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, generationCount, isUnknownParent, getContext, getFamilyGraph, relativesOf, signedUrls, type Person, myPersonLinks, profileNames } from "@/lib/data";
 import { folderLabel, type FolderRow } from "@/lib/archive";
-import { cls } from "@/components/ui";
-import { CreateWorkspaceForm } from "./forms";
 import { portraitUrls } from "./portraits";
+import { StartFamily } from "./StartFamily";
 import { DashboardView, type Activity, type FamilyDate, type Upcoming } from "./DashboardView";
 import { PageSkeleton } from "@/components/Skeletons";
 import { plural } from "./tree/build";
@@ -33,11 +32,12 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   if (!current) {
     if (part === "rest") return null;
     return (
-      <section className="max-w-xl py-6">
-        <h1 className={cls.h1}>{t.app.createTitle}</h1>
-        <p className="mb-8 mt-3 text-ink-muted">{t.app.createLead}</p>
-        <CreateWorkspaceForm t={t} locale={locale} />
-      </section>
+      <StartFamily
+        locale={locale}
+        labels={{ ...t.start, errors: { nameRequired: t.app.errorNameRequired, year: t.app.errorYear, save: t.app.errorSave } }}
+        given={(user.meta?.given_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ")[0]}
+        surname={(user.meta?.family_name as string | undefined) ?? (user.meta?.full_name as string | undefined)?.split(" ").slice(1).join(" ")}
+      />
     );
   }
 
