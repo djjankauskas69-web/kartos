@@ -1776,7 +1776,7 @@
     "error": "That didn't work. Try again or pick another photo."
   },
   "start": {
-    "title": "Welcome! Let's start with you",
+    "title": "Let's start with you",
     "lead": "You'll be the first person in your family tree – from you, you'll add parents, grandparents and other relatives.",
     "given": "First name",
     "surname": "Last name",
