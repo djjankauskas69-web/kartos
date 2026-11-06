@@ -218,16 +218,46 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const latest = (recentMemories.data ?? []).find((m) => m.status !== "pending" && byId.has(m.person_id) && (m.body as string | null)?.trim());
 
   /* ---- What could be filled in (for the people who look after the tree) ---- */
+  const partnered = new Set((rels as Array<{ type: string; person_a: string; person_b: string }>).flatMap((r) => (r.type === "partner" ? [r.person_a, r.person_b] : [])));
+  const marriedWomen = people.filter((p) => p.sex === "female" && partnered.has(p.id));
   const buried = new Set((graves.data ?? []).map((g) => g.person_id as string));
   const fill = can.edit(current.role)
     ? [
         { key: "photo", list: people.filter((p) => !p.profile_photo_id), label: d.fillPhoto, href: (id: string) => `${base}/people/${id}` },
         { key: "year", list: people.filter((p) => !p.birth_year), label: d.fillYear, href: (id: string) => `${base}/people/${id}` },
         { key: "grave", list: people.filter((p) => !p.is_living && !buried.has(p.id)), label: d.fillGrave, href: (id: string) => `${base}/people/${id}/grave` },
+        { key: "place", list: people.filter((p) => !p.birth_place), label: d.fillPlace, href: (id: string) => `${base}/people/${id}` },
+        { key: "maiden", list: marriedWomen.filter((p) => !p.birth_surname), label: d.fillMaiden, href: (id: string) => `${base}/people/${id}` },
       ]
         .filter((x) => x.list.length > 0)
         .map((x) => ({ key: x.key, text: x.label.replace("{n}", String(x.list.length)), start: d.fillStart.replace("{name}", fullName(x.list[0])), href: x.href(x.list[0].id) }))
     : [];
+
+  /* ---- How complete the tree is, and what opens the family origins research ---- */
+  const gensNow = generationCount(people, rels);
+  const withYear = people.filter((p) => p.birth_year).length;
+  const withPlace = people.filter((p) => p.birth_place).length;
+  const firstMissing = (pred: (p: Person) => boolean) => {
+    const p = people.find(pred);
+    return p && can.edit(current.role) ? `${base}/people/${p.id}` : undefined;
+  };
+  const reqs = [
+    { key: "gens", label: d.reqGens, have: gensNow, done: gensNow >= 3, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "people", label: d.reqPeople, have: people.length, done: people.length >= 10, href: can.edit(current.role) ? `${base}/tree` : undefined },
+    { key: "years", label: d.reqYears, have: `${people.length ? Math.round((withYear / people.length) * 100) : 0} %`, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
+    { key: "places", label: d.reqPlaces, have: withPlace, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
+  ];
+  const share = (n: number, of: number) => (of ? Math.min(1, n / of) : 1);
+  const completeness = Math.round(
+    (100 *
+      (Math.min(1, gensNow / 3) +
+        Math.min(1, people.length / 10) +
+        share(withYear, people.length) +
+        share(withPlace, people.length) +
+        share(people.filter((p) => p.profile_photo_id).length, people.length) +
+        share(marriedWomen.filter((p) => p.birth_surname).length, marriedWomen.length))) /
+      6,
+  );
 
   /* ---- Living people in the tree who are not members yet ---- */
   const linked = new Set(((members.data ?? []) as Array<{ person_id: string | null }>).flatMap((m) => (m.person_id ? [m.person_id] : [])));
@@ -290,6 +320,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
           : undefined
       }
       fill={fill}
+      tree={{ completeness, reqs, ready: reqs.every((r) => r.done) }}
     />
   );
 }

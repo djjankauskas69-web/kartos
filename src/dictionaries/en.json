@@ -833,7 +833,22 @@
     "fillPhoto": "Without a photo: {n}",
     "fillYear": "Without a birth year: {n}",
     "fillGrave": "Graves not marked: {n}",
-    "fillStart": "Start with {name}"
+    "fillStart": "Start with {name}",
+    "treeTitle2": "Tree completeness",
+    "treeLead2": "The fuller the tree, the more there is to learn about where the family comes from.",
+    "reqGens": "At least 3 generations",
+    "reqPeople": "At least 10 people",
+    "reqYears": "Birth years for most people",
+    "reqPlaces": "Birth places for at least 3 people",
+    "reqHave": "{n} now",
+    "reqDone": "Done",
+    "moreTitle": "More to add",
+    "fillPlace": "Without a birth place: {n}",
+    "fillMaiden": "Without a maiden name: {n}",
+    "researchTitle": "Family origins research",
+    "researchLocked": "Unlocks once the tree meets the conditions above.",
+    "researchReady": "Your tree is ready! You will be able to research surname origins, ancestral places and archive sources.",
+    "researchSoon": "Coming soon"
   },
   "archive": {
     "title": "Archive",

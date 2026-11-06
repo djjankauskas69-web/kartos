@@ -833,7 +833,22 @@
     "fillPhoto": "Be nuotraukos: {n}",
     "fillYear": "Be gimimo metų: {n}",
     "fillGrave": "Nepažymėtos kapavietės: {n}",
-    "fillStart": "Pradėti: {name}"
+    "fillStart": "Pradėti: {name}",
+    "treeTitle2": "Medžio pilnumas",
+    "treeLead2": "Kuo pilnesnis medis, tuo daugiau galima sužinoti apie giminės kilmę.",
+    "reqGens": "Bent 3 kartos",
+    "reqPeople": "Bent 10 žmonių",
+    "reqYears": "Gimimo metai daugumai žmonių",
+    "reqPlaces": "Gimimo vietos bent 3 žmonėms",
+    "reqHave": "yra {n}",
+    "reqDone": "Atlikta",
+    "moreTitle": "Dar galima papildyti",
+    "fillPlace": "Be gimimo vietos: {n}",
+    "fillMaiden": "Be mergautinės pavardės: {n}",
+    "researchTitle": "Giminės kilmės tyrimas",
+    "researchLocked": "Atsirakins, kai medyje bus įvykdytos sąlygos aukščiau.",
+    "researchReady": "Medis paruoštas! Galėsite ištirti pavardžių kilmę, protėvių vietoves ir archyvų šaltinius.",
+    "researchSoon": "Netrukus"
   },
   "archive": {
     "title": "Archyvas",
