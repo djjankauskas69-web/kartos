@@ -3,7 +3,8 @@
 import { refresh } from "next/cache";
 import { can } from "@/lib/data";
 import { actionContext, formLocale, text, uuid, year } from "@/lib/action-context";
-import type { FormState } from "../actions";
+import { removeMember, type FormState } from "../actions";
+import { redirect } from "next/navigation";
 
 const rpcError = (message: string): string => {
   if (/already linked/.test(message)) return "taken";
@@ -144,4 +145,12 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: /different from the old/i.test(error.message) ? "passwordSame" : "save" };
   return { ok: true };
+}
+
+
+/** Leave the family you are in now; back to the overview of the next one. */
+export async function leaveFamily(form: FormData): Promise<void> {
+  const locale = formLocale(form);
+  const res = await removeMember({}, form);
+  if (!res?.error) redirect(`/${locale}/app`);
 }

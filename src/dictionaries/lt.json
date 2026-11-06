@@ -233,7 +233,7 @@
     "changeRole": "Pakeisti",
     "remove": "Pašalinti",
     "confirmRemove": "Taip, pašalinti",
-    "leave": "Palikti archyvą",
+    "leave": "Palikti šeimą",
     "confirmLeave": "Taip, palikti",
     "inviteTitle": "Pakviesti giminaičius",
     "inviteLead": "Sukurkite nuorodą ir nusiųskite ją Messenger, Viber ar el. paštu. Nuoroda galioja 14 dienų ir tinka keliems žmonėms.",
@@ -285,7 +285,7 @@
     "renameSelf": "Pakeisti savo vardą",
     "save": "Išsaugoti",
     "settingsTitle": "Archyvo nustatymai",
-    "leaveWarning": "Nebematysite šio archyvo, kol vėl nebūsite pakviesti.",
+    "leaveWarning": "Nebematysite šios šeimos, kol vėl nebūsite pakviesti.",
     "menuFor": "Veiksmai: {name}",
     "empty": "Šiame filtre narių nėra.",
     "daysAgo": "prieš {n} d.",
@@ -1155,7 +1155,8 @@
     "photoHint": "Paspauskite nuotrauką, kad ją pakeistumėte",
     "families": "Mano šeimos",
     "menuProfileTree": "Mano profilis medyje",
-    "menuSettings": "Paskyros nustatymai"
+    "menuSettings": "Paskyros nustatymai",
+    "viewingNow": "Dabar matote"
   },
   "add": {
     "title": "Naujas žmogus",

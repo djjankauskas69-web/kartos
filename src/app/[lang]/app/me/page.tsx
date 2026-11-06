@@ -4,12 +4,11 @@ import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { fullName, getPerson, listPeople, myPersonLinks, requireWorkspace, signedUrls } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
-import { switchWorkspace } from "../actions";
 import { cls, errorMessage } from "@/components/ui";
 import { Portrait } from "@/components/Portrait";
 import { ConfirmAction } from "../forms";
 import { portraitUrls } from "../portraits";
-import { unlinkMe } from "./actions";
+import { leaveFamily, unlinkMe } from "./actions";
 import { AccountRows, ClaimMe, MyDetailsForm, PortraitUpload } from "./MyProfile";
 import { PageSkeleton } from "@/components/Skeletons";
 import { FixedLanguageSwitch } from "@/components/LanguageSwitch";
@@ -121,12 +120,16 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
                     <img src="/landing/hero-hills.jpg" alt="" aria-hidden="true" className="h-20 w-24 shrink-0 rounded-xl object-cover opacity-80 sepia-[.3]" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-[1.15rem] font-semibold">{ws.name}</h3>
-                    <p className="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#e7ebd9] px-2.5 py-0.5 text-[0.88rem] text-olive-deep">
+                    <h3 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[1.15rem] font-semibold">
+                      <span className="truncate">{ws.name}</span>
+                      {here && <span className="rounded-full bg-[#e7ebd9] px-2.5 py-0.5 text-[0.8rem] font-semibold text-olive-deep">{m.viewingNow}</span>}
+                    </h3>
+                    <p className="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-linen px-2.5 py-0.5 text-[0.88rem] text-ink-muted">
                       {m.yourRole} <strong className="font-semibold">{t.roles[ws.role]}</strong>
                     </p>
                   </div>
-                  {here ? (
+                  {/* The family open right now; switching families is done in the menu at the top left. */}
+                  {here && (
                     <div className="flex items-center gap-1">
                       <Link href={`${base}/people/${me.id}`} className={`${cls.secondary} gap-2`}>
                         {m.openCard} <span aria-hidden="true">→</span>
@@ -136,19 +139,12 @@ async function Me({ t, locale }: { t: Dictionary; locale: Locale }) {
                         <summary aria-label={m.moreActions} title={m.moreActions} className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full text-[1.2rem] text-ink-muted hover:bg-linen hover:text-ink [&::-webkit-details-marker]:hidden">
                           ⋯
                         </summary>
-                        <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-line bg-surface p-3 shadow-[var(--shadow-float)]">
+                        <div className="absolute right-0 z-30 mt-2 w-72 space-y-2 rounded-xl border border-line bg-surface p-3 shadow-[var(--shadow-float)]">
                           <ConfirmAction action={unlinkMe} values={{ locale }} label={m.unlink} confirmLabel={m.unlinkConfirm} cancelLabel={t.app.cancel} warning={m.unlinkWarning} />
+                          <ConfirmAction action={leaveFamily} values={{ locale, userId: user.id }} label={t.members.leave} confirmLabel={t.members.confirmLeave} cancelLabel={t.app.cancel} warning={t.members.leaveWarning} />
                         </div>
                       </details>
                     </div>
-                  ) : (
-                    <form action={switchWorkspace}>
-                      <input type="hidden" name="locale" value={locale} />
-                      <input type="hidden" name="workspaceId" value={ws.id} />
-                      <button type="submit" className={cls.secondary}>
-                        {m.switchTo} <span aria-hidden="true">→</span>
-                      </button>
-                    </form>
                   )}
                 </li>
               );

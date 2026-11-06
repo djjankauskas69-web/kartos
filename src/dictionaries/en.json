@@ -233,7 +233,7 @@
     "changeRole": "Change",
     "remove": "Remove",
     "confirmRemove": "Yes, remove",
-    "leave": "Leave archive",
+    "leave": "Leave the family",
     "confirmLeave": "Yes, leave",
     "inviteTitle": "Invite relatives",
     "inviteLead": "Create a link and send it by Messenger, WhatsApp or email. It's valid for 14 days and works for several people.",
@@ -285,7 +285,7 @@
     "renameSelf": "Change your name",
     "save": "Save",
     "settingsTitle": "Archive settings",
-    "leaveWarning": "You won't see this archive until you're invited again.",
+    "leaveWarning": "You will no longer see this family until you are invited again.",
     "menuFor": "Actions for {name}",
     "empty": "No members in this filter.",
     "daysAgo": "{n} days ago",
@@ -1155,7 +1155,8 @@
     "photoHint": "Click the photo to change it",
     "families": "My families",
     "menuProfileTree": "My profile in the tree",
-    "menuSettings": "Account settings"
+    "menuSettings": "Account settings",
+    "viewingNow": "Viewing now"
   },
   "add": {
     "title": "New person",
