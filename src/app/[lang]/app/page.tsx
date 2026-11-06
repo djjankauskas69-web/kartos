@@ -12,19 +12,26 @@ import { plural } from "./tree/build";
 
 export default async function Overview() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  // The top (cover, numbers, the latest memory) comes first; the rest follows as soon as it is ready.
   return (
-    <Suspense fallback={<PageSkeleton kind="dashboard" />}>
-      <Dashboard t={t} locale={locale} />
-    </Suspense>
+    <div className="space-y-7">
+      <Suspense fallback={<PageSkeleton kind="dashboard" />}>
+        <Dashboard t={t} locale={locale} part="top" />
+      </Suspense>
+      <Suspense fallback={null}>
+        <Dashboard t={t} locale={locale} part="rest" />
+      </Suspense>
+    </div>
   );
 }
 
 const DAY = (iso: string) => iso.slice(0, 10);
 
-async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
+async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; part: "top" | "rest" }) {
   const { supabase, user, current, memberships: ctxMemberships = [] } = await getContext(locale);
 
   if (!current) {
+    if (part === "rest") return null;
     return (
       <section className="max-w-xl py-6">
         <h1 className={cls.h1}>{t.app.createTitle}</h1>
@@ -38,17 +45,21 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
   const base = `/${locale}/app`;
   const d = t.dash;
   const photoMedia = () => supabase.from("media").select("id, storage_path, created_at, uploader_id, folder_id").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%");
-  // All of it asked for at once, so the overview waits for the slowest answer only.
+  // All of it asked for at once, so each part waits for its slowest answer only; what a part
+  // does not show is not asked for.
+  const top = part === "top";
+  // An unrun query answers as if it found nothing.
+  const none = <T,>(q: PromiseLike<T>) => (top ? Promise.resolve({ data: [], error: null, count: 0 } as unknown as T) : q);
   const [graph, graves, photosCount, recentPhotos, recentPeople, recentMemories, folders, events, members, coverRes, mine, memCount, storyCount, { data: accessList }] = await Promise.all([
     getFamilyGraph(locale, ws),
     supabase.from("burials").select("id, person_id, cemetery_name, lat, lng, created_at, created_by").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(300),
     supabase.from("media").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/memories/%"),
-    photoMedia().order("created_at", { ascending: false }).limit(60),
-    supabase.from("persons").select("id, created_at, updated_at, created_by").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("updated_at", { ascending: false }).limit(40),
+    none(photoMedia().order("created_at", { ascending: false }).limit(60)),
+    none(supabase.from("persons").select("id, created_at, updated_at, created_by").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("updated_at", { ascending: false }).limit(40)),
     supabase.from("memories").select("id, person_id, created_at, author_id, body, status").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(40),
-    supabase.from("media_folders").select("id, preset, name, sort, created_at, created_by").eq("workspace_id", ws),
-    supabase.from("person_events").select("id, person_id, year, title, kind").eq("workspace_id", ws).eq("kind", "event").not("year", "is", null).limit(200),
-    supabase.from("workspace_members").select("person_id").eq("workspace_id", ws),
+    none(supabase.from("media_folders").select("id, preset, name, sort, created_at, created_by").eq("workspace_id", ws)),
+    none(supabase.from("person_events").select("id, person_id, year, title, kind").eq("workspace_id", ws).eq("kind", "event").not("year", "is", null).limit(200)),
+    none(supabase.from("workspace_members").select("person_id").eq("workspace_id", ws)),
     supabase.from("workspaces").select("cover_path").eq("id", ws).maybeSingle(),
     myPersonLinks(locale),
     supabase.from("memories").select("id", { count: "exact", head: true }).eq("workspace_id", ws).neq("status", "rejected"),
@@ -289,6 +300,7 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <DashboardView
+      part={part}
       t={t}
       locale={locale}
       workspaceId={ws}

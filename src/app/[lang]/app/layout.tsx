@@ -35,7 +35,15 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
         </div>
         {/* Which family archive you're in */}
         <div className="mt-6">
-          <Suspense fallback={<div className="h-11" />}>
+          <Suspense
+            fallback={
+              // The family button's outline, so nothing shifts when it arrives.
+              <div aria-hidden="true" className="flex min-h-12 items-center gap-3 rounded-xl border border-line/70 px-3">
+                <span className="text-ink-muted/50"><IconPeople size={20} /></span>
+                <span className="h-3 w-32 rounded-full bg-linen" />
+              </div>
+            }
+          >
             <WorkspaceMenu t={t} locale={locale} wide />
           </Suspense>
         </div>
@@ -57,13 +65,32 @@ export default async function AppLayout({ children }: LayoutProps<"/[lang]/app">
         </div>
         {/* Graves sit apart from the family sections, just above the language switch. */}
         <div className="mb-4">
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <nav aria-label={t.appNav.map}>
+                <Link href={`/${locale}/app/map`} className="flex min-h-12 items-center gap-3.5 rounded-xl px-4 text-[1.05rem] text-ink/85 hover:bg-linen/70">
+                  <span className="text-ink-muted"><IconPin /></span>
+                  {t.appNav.map}
+                </Link>
+              </nav>
+            }
+          >
             <Navigation t={t} locale={locale} variant="bottom" />
           </Suspense>
         </div>
         {/* You: search, notifications and your account menu */}
         <div className="border-t border-line/70 pt-4">
-          <Suspense fallback={<div className="h-12" />}>
+          <Suspense
+            fallback={
+              <div aria-hidden="true" className="flex min-h-12 items-center gap-3 p-1.5">
+                <span className="h-10 w-10 shrink-0 rounded-full bg-linen" />
+                <span className="flex-1 space-y-1.5">
+                  <span className="block h-3 w-28 rounded-full bg-linen" />
+                  <span className="block h-2.5 w-20 rounded-full bg-linen/70" />
+                </span>
+              </div>
+            }
+          >
             <AccountBar t={t} locale={locale} side />
           </Suspense>
         </div>

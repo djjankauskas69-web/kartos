@@ -28,6 +28,8 @@ export type FamilyDate = { key: string; year: number; kind: "birth" | "death" | 
 export type Upcoming = { key: string; days: number; month: number; day: number; kind: "birthday" | "death"; text: string; href: string; personId: string; thumb?: string };
 
 export type DashboardData = {
+  /** Which half to draw: the top comes first, the rest streams in after it. */
+  part?: "top" | "rest" | "all";
   t: Dictionary;
   locale: Locale;
   workspaceId: string;
@@ -62,7 +64,7 @@ const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
 export function DashboardView(props: DashboardData) {
-  const { t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
+  const { part = "all", t, locale, workspaceId, name, role, since, cover, counts, head, partner, elders, shownKids, moreKids, welcomeHref, welcomeJoin, accessRequests, portraits, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
   // What a condition above already asks for is not repeated below it.
   const openReq = new Set(tree.reqs.filter((r) => !r.done).map((r) => (r.key === "years" ? "year" : r.key === "places" ? "place" : r.key)));
   const more = fill.filter((f) => !openReq.has(f.key));
@@ -78,6 +80,8 @@ export function DashboardView(props: DashboardData) {
 
   return (
     <div className="space-y-7">
+      {part !== "rest" && (
+      <>
       {/* Cover: the family's name over a landscape (or their own photo) */}
       <section className="relative isolate overflow-hidden rounded-[24px] px-6 py-9 sm:px-10 sm:py-12 md:min-h-[22rem]">
         {/* eslint-disable-next-line @next/next/no-img-element -- cover photo */}
@@ -245,6 +249,11 @@ export function DashboardView(props: DashboardData) {
         </section>
       )}
 
+      </>
+      )}
+
+      {part !== "top" && (
+      <>
       {/* Tree and graves */}
       <section className="grid gap-5 lg:grid-cols-[1.3fr_1fr] [&>*]:min-w-0">
         <div className={`flex flex-col p-6 sm:p-7 ${card}`}>
@@ -502,6 +511,8 @@ export function DashboardView(props: DashboardData) {
                   ))}
                 </ul>
         </section>
+      )}
+      </>
       )}
     </div>
   );
