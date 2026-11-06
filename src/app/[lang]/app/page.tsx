@@ -248,17 +248,25 @@ async function Dashboard({ t, locale }: { t: Dictionary; locale: Locale }) {
     { key: "years", label: d.reqYears, have: `${people.length ? Math.round((withYear / people.length) * 100) : 0} %`, need: Math.ceil(people.length * 0.6) - withYear, what: d.needYears, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
     { key: "places", label: d.reqPlaces, have: withPlace, need: 3 - withPlace, what: d.needPlaces, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
   ];
-  const share = (n: number, of: number) => (of ? Math.min(1, n / of) : 1);
-  const completeness = Math.round(
-    (100 *
-      (Math.min(1, gensNow / 3) +
-        Math.min(1, people.length / 10) +
-        share(withYear, people.length) +
-        share(withPlace, people.length) +
-        share(people.filter((p) => p.profile_photo_id).length, people.length) +
-        share(marriedWomen.filter((p) => p.birth_surname).length, marriedWomen.length))) /
-      6,
-  );
+  // Every detail counts the same: each field filled in on anyone moves the number a little.
+  const wives = new Set(marriedWomen.map((p) => p.id));
+  let filledFields = 0;
+  let allFields = 0;
+  for (const p of people) {
+    const fields = [
+      !!p.given_names?.trim(),
+      !!p.surname?.trim(),
+      !!p.sex && p.sex !== "unknown",
+      !!p.birth_year,
+      !!p.birth_place,
+      !!p.profile_photo_id,
+      ...(p.is_living ? [] : [!!p.death_year]),
+      ...(wives.has(p.id) ? [!!p.birth_surname] : []),
+    ];
+    allFields += fields.length;
+    filledFields += fields.filter(Boolean).length;
+  }
+  const completeness = allFields ? Math.round((100 * filledFields) / allFields) : 0;
 
   /* ---- Living people in the tree who are not members yet ---- */
   const linked = new Set(((members.data ?? []) as Array<{ person_id: string | null }>).flatMap((m) => (m.person_id ? [m.person_id] : [])));
