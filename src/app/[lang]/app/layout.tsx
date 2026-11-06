@@ -125,7 +125,7 @@ async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Local
 }
 
 const menu =
-  "absolute z-30 mt-2 min-w-64 rounded-xl border border-line bg-surface p-2 shadow-[var(--shadow-float)] [&_a]:flex [&_a]:min-h-11 [&_a]:items-center [&_a]:rounded-lg [&_a]:px-3 [&_a:hover]:bg-paper";
+  "absolute z-30 mt-2 min-w-64 rounded-xl border border-line bg-surface p-2 shadow-[var(--shadow-float)] [&_a]:flex [&_a]:min-h-11 [&_a]:items-center [&_a]:rounded-lg [&_a]:px-3 [&_a]:transition-colors [&_a:hover]:bg-linen [&_button]:cursor-pointer";
 
 async function WorkspaceMenu({ t, locale, wide = false }: { t: Dictionary; locale: Locale; wide?: boolean }) {
   const { current, memberships } = await getContext(locale);
@@ -147,9 +147,14 @@ async function WorkspaceMenu({ t, locale, wide = false }: { t: Dictionary; local
             <input type="hidden" name="workspaceId" value={m.id} />
             <button
               type="submit"
-              className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-left hover:bg-paper ${m.id === current.id ? "font-semibold" : ""}`}
+              aria-current={m.id === current.id ? "true" : undefined}
+              className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 text-left transition-colors hover:bg-linen ${m.id === current.id ? "font-semibold" : ""}`}
             >
               <span className="truncate">{m.name}</span>
+              {/* The family you are in now. */}
+              {m.id === current.id && (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-olive-deep"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+              )}
             </button>
           </form>
         ))}
