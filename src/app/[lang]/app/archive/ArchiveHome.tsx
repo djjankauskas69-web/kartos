@@ -90,8 +90,9 @@ export function ArchiveHome({
       .sort((x, y) => (y.latest || "").localeCompare(x.latest || ""));
   }, [albums, photos]);
   const album = albumList.find((a) => a.id === albumId) ?? null;
-  const albumOptions = albums.filter((a) => !DOC_PRESETS.has(a.preset ?? "")).map((a) => ({ id: a.id, name: a.name }));
-  const docFolders = albums.map((a) => ({ id: a.id, name: a.name }));
+  // Pickers offer the albums one can see in the Albums tab (empty built-in ones stay out).
+  const albumOptions = albumList.map((a) => ({ id: a.id, name: a.name }));
+  const docFolders = [...albums.filter((a) => DOC_PRESETS.has(a.preset ?? "")), ...albumList].map((a) => ({ id: a.id, name: a.name }));
 
   const uploaders = useMemo(() => {
     const m = new Map<string, string>();

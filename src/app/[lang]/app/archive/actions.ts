@@ -43,6 +43,17 @@ async function tag(
     .insert(mediaIds.flatMap((media_id) => people.map((person_id) => ({ media_id, person_id, workspace_id: workspaceId }))));
 }
 
+/** The album chosen in a form, or a new one named there ("+ New album…"). */
+async function folderFrom(form: FormData, supabase: Awaited<ReturnType<typeof actionContext>>["supabase"], workspaceId: string): Promise<string | null> {
+  const chosen = uuid(form, "folderId");
+  if (chosen) return chosen;
+  const name = text(form, "newFolder", 80);
+  if (!name) return null;
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("media_folders").insert({ id, workspace_id: workspaceId, name });
+  return error ? null : id;
+}
+
 /** Files the browser already uploaded: record them with the shared details and the people in them. */
 export async function recordFiles(form: FormData): Promise<ArchiveResult> {
   const locale = formLocale(form);
@@ -61,7 +72,7 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
   if (!items.length) return { error: "save" };
 
   const common = {
-    folder_id: uuid(form, "folderId"),
+    folder_id: await folderFrom(form, supabase, workspace.id),
     place: text(form, "place", 200),
     description: text(form, "description", 20000),
     ...period,
@@ -94,10 +105,10 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
 export async function createStory(form: FormData): Promise<ArchiveResult> {
   const locale = formLocale(form);
   const { supabase, workspace } = await actionContext(locale, can.add);
-  const title = text(form, "title", 200);
   const body = text(form, "description", 50000);
+  // No title given: the first words of the memory, so the list still reads well.
+  const title = text(form, "title", 200) ?? (body ? body.split(/\s+/).slice(0, 6).join(" ").slice(0, 80) + (body.split(/\s+/).length > 6 ? "…" : "") : null);
   const period = readPeriod(form);
-  if (!title) return { error: "title" };
   if (!body) return { error: "text" };
   if (period === "bad") return { error: "year" };
 
@@ -116,7 +127,7 @@ export async function createStory(form: FormData): Promise<ArchiveResult> {
     description: body,
     storage_path: photoPath,
     mime_type: photoPath ? "image/jpeg" : null,
-    folder_id: uuid(form, "folderId"),
+    folder_id: await folderFrom(form, supabase, workspace.id),
     place: text(form, "place", 200),
     ...period,
     ...(form.get("shared") === "1" ? { shared: true } : {}),
@@ -147,7 +158,7 @@ export async function updateItem(form: FormData): Promise<ArchiveResult> {
     .update({
       title,
       description: text(form, "description", 50000),
-      folder_id: uuid(form, "folderId"),
+      folder_id: await folderFrom(form, supabase, workspace.id),
       place: text(form, "place", 200),
       ...period,
       ...(form.has("shared") ? { shared: form.get("shared") === "1" } : {}),

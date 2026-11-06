@@ -63,7 +63,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       .order("created_at", { ascending: true }),
     supabase
       .from("media_persons")
-      .select("media:media(id, kind, title, file_name, taken_year, year_qualifier, year_to, storage_path, status, uploader_id, created_at)")
+      .select("media:media(id, kind, title, description, file_name, taken_year, year_qualifier, year_to, storage_path, status, uploader_id, created_at)")
       .eq("person_id", id),
     loadMemories(supabase, id),
     // Life events and places (database update 0011); missing table → none, and the forms say so.
@@ -98,6 +98,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     id: string;
     kind: string;
     title: string | null;
+    description?: string | null;
     file_name: string | null;
     taken_year: number | null;
     year_qualifier: string | null;
@@ -112,7 +113,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     .filter((m): m is MediaRow => !!m && m.status !== "rejected")
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const photos = linked.filter((m): m is MediaRow & { storage_path: string } => m.kind === "photo" && !!m.storage_path);
-  const papers = linked.filter((m) => m.kind !== "photo");
+  // Documents stay documents; stories written in the archive are memories, shown with the others.
+  const papers = linked.filter((m) => m.kind === "document");
+  const storyRows = linked.filter((m) => m.kind === "story" && m.description?.trim()).sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   // What the linked families share about this person, their differing facts, and which of ours are shared.
   type SharedMemory = { id: string; body: string; author_id: string | null; created_at: string; person_id: string; media_id: string | null };
@@ -149,9 +152,9 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
   const memoryMedia = (extraMedia ?? []).filter((m) => memoryMediaIds.includes(m.id as string));
   const memoryPath = new Map((memoryMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
 
-  const memoryAuthorIds = [...(memories ?? []), ...sharedMemories].map((m) => m.author_id as string);
+  const memoryAuthorIds = [...(memories ?? []), ...sharedMemories].map((m) => m.author_id as string).concat(storyRows.map((s) => s.uploader_id as string));
   const [urls, portraits, authors, { extras, ready: extrasReady }, authorPhotos] = await Promise.all([
-    signedUrls(locale, [...photos.map((p) => p.storage_path), ...sharedPhotos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
+    signedUrls(locale, [...storyRows.flatMap((s) => (s.storage_path ? [s.storage_path] : [])), ...photos.map((p) => p.storage_path), ...sharedPhotos.map((p) => p.storage_path), ...memoryPath.values(), ...(gravePhoto ? [gravePhoto.storage_path as string] : [])]),
     portraitUrls(locale, [person, ...[...new Set([...relativeIds, ...(memories ?? []).map((m) => m.person_id)])].map((r) => byId.get(r)!).filter(Boolean)]),
     profileNames(locale, memoryAuthorIds),
     memoryExtras(locale, current.id, (memories ?? []).map((m) => m.id)),
@@ -254,14 +257,14 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
           {can.add(role) && !isMe && composerNode}
         </div>
-        {(memories ?? []).length === 0 && sharedMemories.length === 0 ? (
+        {(memories ?? []).length === 0 && sharedMemories.length === 0 && storyRows.length === 0 ? (
           // Nothing written yet: a gentle nudge rather than an empty line.
           <div className="mt-4 rounded-[18px] border border-dashed border-line bg-paper/60 px-6 py-7 text-center">
             <p className="font-serif text-[1.3rem] leading-snug">{t.memories.emptyTitle}</p>
             <p className="mx-auto mt-1.5 max-w-md text-ink-muted">{t.memories.emptyLead}</p>
           </div>
         ) : (
-          <MemoryGroup ids={[...(memories ?? []).map((m) => m.id), ...sharedMemories.map((m) => m.id)]}>
+          <MemoryGroup ids={[...(memories ?? []).map((m) => m.id), ...sharedMemories.map((m) => m.id), ...storyRows.map((s) => s.id)]}>
           <ul className="mt-5 grid items-stretch gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {(memories ?? []).map((m) => {
               const phUrls = photoIdsOf(m).flatMap((mid) => {
@@ -325,6 +328,21 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                 />
               );
             })}
+            {/* Memories written in the archive (with a title, date and place) that name this person. */}
+            {storyRows.map((s) => (
+              <MemoryCard
+                key={s.id}
+                groupId={s.id}
+                title={s.title ?? undefined}
+                author={authors.get(s.uploader_id as string) ?? ""}
+                authorPhoto={authorPhotos.get(s.uploader_id as string)}
+                date={periodLabel(t, s.taken_year, s.year_qualifier, s.year_to) ?? dateFmt.format(new Date(s.created_at))}
+                body={s.description ?? ""}
+                photo={s.storage_path ? urls.get(s.storage_path) : undefined}
+                labels={cardLabels}
+                badges={s.status === "pending" ? <PendingBadge label={t.app.pending} /> : undefined}
+              />
+            ))}
           </ul>
           </MemoryGroup>
         )}
@@ -589,10 +607,14 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
               ...(!hasMother ? [{ href: `${base}/people/${id}/relative?kind=mother`, label: t.family.addMother }] : []),
             ]
         : [];
-    const allMemories = [...(memories ?? []).filter((x) => x.status !== "pending"), ...sharedMemories];
+    const allMemories = [
+      ...(memories ?? []).filter((x) => x.status !== "pending").map((x) => ({ id: x.id, who: x.author_id as string, at: x.created_at, body: x.body })),
+      ...sharedMemories.map((x) => ({ id: x.id, who: x.author_id as string, at: x.created_at, body: x.body })),
+      ...storyRows.filter((s) => s.status !== "pending").map((s) => ({ id: s.id, who: s.uploader_id as string, at: s.created_at, body: s.description ?? "" })),
+    ].sort((a, b) => b.at.localeCompare(a.at));
     const memoryPreview = {
-      count: (memories ?? []).length + sharedMemories.length,
-      items: allMemories.slice(0, 2).map((x) => ({ id: x.id, author: authors.get(x.author_id as string) ?? "", date: dateFmt.format(new Date(x.created_at)), body: x.body })),
+      count: (memories ?? []).length + sharedMemories.length + storyRows.length,
+      items: allMemories.slice(0, 2).map((x) => ({ id: x.id, author: authors.get(x.who) ?? "", date: dateFmt.format(new Date(x.at)), body: x.body })),
     };
     const famCard = { parentsAdd, parents: fam.parents.filter((x) => byId.has(x) && x !== unknownParent).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
 

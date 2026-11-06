@@ -157,20 +157,26 @@ export function PeriodFields({
   );
 }
 
-export function FolderSelect({ folders, value, label, none, id }: { folders: FolderOption[]; value?: string | null; label: string; none: string; id: string }) {
+export function FolderSelect({ folders, value, label, none, id, newLabel, newName }: { folders: FolderOption[]; value?: string | null; label: string; none: string; id: string; newLabel?: string; newName?: string }) {
+  const [creating, setCreating] = useState(false);
   return (
     <div>
       <label htmlFor={id} className={labelCls}>
         {label}
       </label>
-      <select id={id} name="folderId" defaultValue={value ?? ""} className={input}>
+      <select id={id} name="folderId" defaultValue={value ?? ""} onChange={(e) => setCreating(e.target.value === "__new")} className={input}>
         <option value="">{none}</option>
         {folders.map((f) => (
           <option key={f.id} value={f.id}>
             {f.name}
           </option>
         ))}
+        {newLabel && <option value="__new">{newLabel}</option>}
       </select>
+      {/* A new album right here, without leaving the form. */}
+      {creating && newName && (
+        <input name="newFolder" aria-label={newName} placeholder={newName} required maxLength={80} autoFocus className={`${input} mt-2`} />
+      )}
     </div>
   );
 }

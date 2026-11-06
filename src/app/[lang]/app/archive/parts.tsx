@@ -259,7 +259,7 @@ export function Detail({
               </label>
               <input id="edit-place" name="place" defaultValue={item.place ?? ""} maxLength={200} className={fieldCls} />
             </div>
-            <FolderSelect id="edit-folder" folders={folders} value={item.folderId} label={t.folder} none={t.noFolder} />
+            <FolderSelect id="edit-folder" folders={folders} value={item.folderId} label={t.folder} none={t.noFolder} newLabel={t.newFolder} newName={t.newFolderName} />
           </div>
           <PeoplePicker idPrefix="edit" people={people} initial={item.people} label={t.linkPeople} hint={t.linkHint} placeholder={t.searchPeople} removeLabel={t.remove} />
           <Visibility initial={item.shared} t={t} />
@@ -778,7 +778,7 @@ export function UploadForm({
               </label>
               <input id="up-place" name="place" maxLength={200} className={fieldCls} />
             </div>
-            <FolderSelect id="up-folder" folders={folders} value={initialFolder} label={t.folder} none={t.noFolder} />
+            <FolderSelect id="up-folder" folders={folders} value={initialFolder} label={t.folder} none={t.noFolder} newLabel={t.newFolder} newName={t.newFolderName} />
           </div>
           <div>
             <label htmlFor="up-desc" className={labelCls}>
@@ -852,17 +852,18 @@ export function StoryForm({
       <DialogHead title={t.storyTitle} onClose={onDone} closeLabel={t.close} />
       <div className="space-y-5 px-6 py-5">
         <input type="hidden" name="locale" value={locale} />
+        <PeoplePicker idPrefix="story" people={people} initial={initialPeople} label={t.storyAbout} hint={t.storyAboutHint} placeholder={t.searchPeople} removeLabel={t.remove} />
         <div>
           <label htmlFor="story-title" className={labelCls}>
             {t.storyName}
           </label>
-          <input id="story-title" name="title" maxLength={200} required className={fieldCls} />
+          <input id="story-title" name="title" maxLength={200} className={fieldCls} />
         </div>
         <div>
           <label htmlFor="story-text" className={labelCls}>
             {t.storyText}
           </label>
-          <textarea id="story-text" name="description" rows={9} required placeholder={t.storyPlaceholder} className={`${fieldCls} py-3 font-serif text-[1.1rem] leading-relaxed`} />
+          <textarea id="story-text" name="description" rows={9} required placeholder={t.storyPlaceholder} className={`${fieldCls} py-3 text-[1.1rem] leading-relaxed`} />
         </div>
         <div>
           <p className={labelCls}>{t.storyPhoto}</p>
@@ -881,7 +882,6 @@ export function StoryForm({
             </label>
           )}
         </div>
-        <PeoplePicker idPrefix="story" people={people} initial={initialPeople} label={t.linkPeople} hint={t.linkHint} placeholder={t.searchPeople} removeLabel={t.remove} />
         <PeriodFields idPrefix="story" labels={periodLabels} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -890,7 +890,7 @@ export function StoryForm({
             </label>
             <input id="story-place" name="place" maxLength={200} className={fieldCls} />
           </div>
-          <FolderSelect id="story-folder" folders={folders} label={t.folder} none={t.noFolder} />
+          <FolderSelect id="story-folder" folders={folders} label={t.folder} none={t.noFolder} newLabel={t.newFolder} newName={t.newFolderName} />
         </div>
         <Visibility t={t} disabled={busy} />
         {error && (
