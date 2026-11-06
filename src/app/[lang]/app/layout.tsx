@@ -117,7 +117,9 @@ async function Navigation({ t, locale, variant }: { t: Dictionary; locale: Local
   const graves: NavItem = { href: `${base}/map`, label: t.appNav.map, icon: <IconPin /> };
   if (variant === "bottom") return <SideNav items={[graves]} label={t.appNav.map} />;
   if (can.admin(current.role)) {
-    items.push({ href: `${base}/review`, label: t.appNav.review, icon: <IconCheck />, badge: await pendingCount(locale, current.id) });
+    // Only when something is waiting: most days the menu stays short.
+    const waiting = await pendingCount(locale, current.id);
+    if (waiting) items.push({ href: `${base}/review`, label: t.appNav.review, icon: <IconCheck />, badge: waiting });
   }
   return variant === "side" ? <SideNav items={items} label={t.dash.menu} /> : <TopNav items={[...items, graves]} label={t.dash.menu} />;
 }

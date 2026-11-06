@@ -6,7 +6,7 @@ import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, lifeSpan, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
 import { cls } from "@/components/ui";
-import { review } from "../actions";
+import { review, reviewAll } from "../actions";
 import { PageSkeleton } from "@/components/Skeletons";
 
 export default async function ReviewPage() {
@@ -26,11 +26,11 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
   const ws = current.id;
 
   const [persons, rels, memories, media, burials] = await Promise.all([
-    supabase.from("persons").select("id, given_names, surname, birth_year, death_year, is_living, created_by").eq("workspace_id", ws).eq("status", "pending").is("deleted_at", null),
-    supabase.from("relationships").select("id, person_a, person_b, type, created_by").eq("workspace_id", ws).eq("status", "pending"),
-    supabase.from("memories").select("id, person_id, body, author_id").eq("workspace_id", ws).eq("status", "pending"),
-    supabase.from("media").select("id, kind, title, description, file_name, mime_type, storage_path, uploader_id, media_persons(person_id)").eq("workspace_id", ws).eq("status", "pending"),
-    supabase.from("burials").select("id, person_id, cemetery_name, section, row_label, plot, lat, lng, photo_id, created_by").eq("workspace_id", ws).eq("status", "pending"),
+    supabase.from("persons").select("id, given_names, surname, birth_year, death_year, is_living, created_by, created_at").eq("workspace_id", ws).eq("status", "pending").is("deleted_at", null),
+    supabase.from("relationships").select("id, person_a, person_b, type, created_by, created_at").eq("workspace_id", ws).eq("status", "pending"),
+    supabase.from("memories").select("id, person_id, body, author_id, created_at").eq("workspace_id", ws).eq("status", "pending"),
+    supabase.from("media").select("id, kind, title, description, file_name, mime_type, storage_path, uploader_id, created_at, media_persons(person_id)").eq("workspace_id", ws).eq("status", "pending"),
+    supabase.from("burials").select("id, person_id, cemetery_name, section, row_label, plot, lat, lng, photo_id, created_by, created_at").eq("workspace_id", ws).eq("status", "pending"),
   ]);
 
   // Photos attached to a pending grave are reviewed with the grave.
@@ -71,12 +71,13 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
       </button>
     </form>
   );
-  const by = (id: string | null) =>
-    id && authors.get(id) ? (
-      <p className="text-[0.92rem] text-ink-muted">
-        {t.review.addedBy}: {authors.get(id)}
-      </p>
-    ) : null;
+  const when = new Intl.DateTimeFormat(locale === "lt" ? "lt-LT" : "en-GB", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  // Who added it and when, on every line.
+  const by = (id: string | null, at?: string | null) => {
+    const who = id ? authors.get(id) : undefined;
+    const parts = [who && `${t.review.addedBy}: ${who}`, at && when.format(new Date(at))].filter(Boolean);
+    return parts.length ? <p className="mt-1 text-[0.92rem] text-ink-muted">{parts.join(" · ")}</p> : null;
+  };
   const personLink = (id: string) => (
     <Link href={`/${locale}/app/people/${id}`} className="font-semibold text-sage-deep hover:underline">
       {nameOf.get(id) ?? "—"}
@@ -94,10 +95,35 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
   const row = "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between";
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader title={t.review.title} className="mb-2" />
+    <div>
+      <PageHeader
+        title={t.review.title}
+        className="mb-2"
+        actions={
+          total > 1 ? (
+            <form action={reviewAll}>
+              <input type="hidden" name="locale" value={locale} />
+              <button type="submit" className={cls.primary}>
+                ✓ {t.review.approveAll.replace("{n}", String(total))}
+              </button>
+            </form>
+          ) : undefined
+        }
+      />
       <p className="text-ink-muted">{t.review.lead}</p>
-      {total === 0 && <p className={`mt-8 px-5 py-6 ${cls.card}`}>{t.review.empty}</p>}
+      {total === 0 && (
+        // Nothing waiting: say so warmly, and what would show up here.
+        <section className={`mt-8 flex flex-col items-center px-6 py-14 text-center ${cls.card}`}>
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e7ebd9] text-olive-deep">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+          </span>
+          <h2 className="mt-5 font-serif text-[1.6rem] leading-tight">{t.review.emptyTitle}</h2>
+          <p className="mt-2 max-w-md text-ink-muted">{t.review.emptyLead}</p>
+          <Link href={`/${locale}/app/members`} className="mt-6 inline-flex items-center gap-1.5 font-semibold text-olive-deep hover:underline">
+            {t.review.emptyLink} <span aria-hidden="true">→</span>
+          </Link>
+        </section>
+      )}
 
       {group(t.review.people, persons.data?.length ?? 0, <>
         {(persons.data ?? []).map((p) => (
@@ -107,7 +133,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
                 {fullName(p)}
               </Link>
               <p className="text-ink-muted">{lifeSpan(p, t.app.born.toLowerCase()) || (p.is_living ? t.app.alive : "")}</p>
-              {by(p.created_by)}
+              {by(p.created_by, p.created_at)}
             </div>
             {decide("persons", p.id)}
           </li>
@@ -127,7 +153,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
                   {personLink(r.person_a)} · {t.review.partnerLabel}: {personLink(r.person_b)}
                 </p>
               )}
-              {by(r.created_by)}
+              {by(r.created_by, r.created_at)}
             </div>
             {decide("relationships", r.id)}
           </li>
@@ -142,7 +168,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
                 {t.review.person}: {personLink(m.person_id)}
               </p>
               <p className="mt-1 whitespace-pre-line font-serif text-[1.08rem]">{m.body}</p>
-              {by(m.author_id)}
+              {by(m.author_id, m.created_at)}
             </div>
             {decide("memories", m.id)}
           </li>
@@ -157,9 +183,9 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
               <div className="flex min-w-0 items-center gap-4">
                 {m.storage_path && urls.get(m.storage_path) && m.mime_type !== "application/pdf" ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                  <img src={urls.get(m.storage_path)} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />
+                  <img src={urls.get(m.storage_path)} alt="" className="h-32 w-32 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-[#efe8d8] p-2 text-center text-[0.85rem] text-bronze">
+                  <span className="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl bg-[#efe8d8] p-2 text-center text-[0.85rem] text-bronze">
                     {m.kind === "story" ? t.archive.kind.story : "PDF"}
                   </span>
                 )}
@@ -176,7 +202,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
                       {t.review.person}: {personLink(tp.person_id)}
                     </p>
                   ))}
-                  {by(m.uploader_id)}
+                  {by(m.uploader_id, m.created_at)}
                 </div>
               </div>
               {decide("media", m.id)}
@@ -205,7 +231,7 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
                   </>
                 )}
               </p>
-              {by(b.created_by)}
+              {by(b.created_by, b.created_at)}
             </div>
             {decide("burials", b.id)}
           </li>

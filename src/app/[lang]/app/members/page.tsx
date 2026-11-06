@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
@@ -124,7 +125,17 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
 
   return (
     <div>
-      <PageHeader title={m.title} />
+      <PageHeader
+        title={m.title}
+        actions={
+          isAdmin ? (
+            <Link href={`/${locale}/app/review`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 font-semibold hover:border-ink/40">
+              <span aria-hidden="true">✓</span>
+              {t.review.title}
+            </Link>
+          ) : undefined
+        }
+      />
 
       {panel && <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={mine.links.get(current.id)} />}
       <MembersCenter

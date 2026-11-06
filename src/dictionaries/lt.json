@@ -320,7 +320,7 @@
     }
   },
   "review": {
-    "title": "Laukia patvirtinimo",
+    "title": "Tvirtinimas",
     "lead": "Narių įkelta informacija. Kol nepatvirtinsite, ją matote tik jūs ir autorius.",
     "empty": "Viskas patvirtinta. Naujos narių informacijos nėra.",
     "approve": "Patvirtinti",
@@ -329,11 +329,15 @@
     "relationships": "Ryšiai",
     "memories": "Prisiminimai",
     "photos": "Nuotraukos",
-    "graves": "Kapai",
+    "graves": "Kapavietės",
     "addedBy": "Pridėjo",
     "parentLabel": "tėvas ar motina",
     "partnerLabel": "sutuoktinis ar partneris",
-    "person": "Žmogus"
+    "person": "Žmogus",
+    "emptyTitle": "Viskas patvirtinta",
+    "emptyLead": "Čia atsiranda nauji žmonės, nuotraukos, prisiminimai ir kapavietės, kuriuos įkelia nariai. Kol nepatvirtinsite, juos matote tik jūs ir autorius.",
+    "emptyLink": "Kas turi laukti patvirtinimo? Šeimos nariai",
+    "approveAll": "Patvirtinti viską ({n})"
   },
   "invite": {
     "title": "Jus kviečia į šeimos archyvą",

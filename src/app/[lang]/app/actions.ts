@@ -248,6 +248,14 @@ export async function review(form: FormData) {
   refresh();
 }
 
+/** Everything waiting, approved at once (people first, so their links can follow). */
+export async function reviewAll(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.admin);
+  for (const kind of REVIEWABLE) await supabase.from(kind).update({ status: "approved" }).eq("workspace_id", workspace.id).eq("status", "pending");
+  refresh();
+}
+
 /* ---------- People ---------- */
 
 type PersonFields = {

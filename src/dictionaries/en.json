@@ -320,7 +320,7 @@
     }
   },
   "review": {
-    "title": "Awaiting approval",
+    "title": "Approvals",
     "lead": "What members have added. Until you approve it, only you and the author can see it.",
     "empty": "All caught up. Nothing new from members.",
     "approve": "Approve",
@@ -333,7 +333,11 @@
     "addedBy": "Added by",
     "parentLabel": "parent",
     "partnerLabel": "spouse or partner",
-    "person": "Person"
+    "person": "Person",
+    "emptyTitle": "All approved",
+    "emptyLead": "New people, photos, memories and graves added by members show up here. Until you approve them, only you and the author can see them.",
+    "emptyLink": "Who needs approval? Family members",
+    "approveAll": "Approve all ({n})"
   },
   "invite": {
     "title": "You're invited to a family archive",
