@@ -252,7 +252,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       <section id="memories" className="scroll-mt-24">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className={cls.h2}>{t.memories.storiesTitle}</h2>
-          {can.add(role) && composerNode}
+          {can.add(role) && !isMe && composerNode}
         </div>
         {(memories ?? []).length === 0 && sharedMemories.length === 0 ? (
           // Nothing written yet: a gentle nudge rather than an empty line.
@@ -651,8 +651,10 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           events={ev}
           places={pl}
           eventsReady={eventsReady}
-          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) ? composerNode : null }}
-          memoryPreview={memoryPreview}
+          nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) && !isMe ? composerNode : null }}
+          // Writing memories about yourself is odd: on your own profile only what others wrote shows.
+          memoryPreview={isMe && memoryPreview.count === 0 ? undefined : memoryPreview}
+          hideMemories={isMe && memoryPreview.count === 0}
           living={person.is_living}
           aliveLabel={person.sex === "female" ? mt.aliveF : mt.aliveM}
           residence={residence}

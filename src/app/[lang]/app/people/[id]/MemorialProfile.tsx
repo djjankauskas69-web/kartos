@@ -61,6 +61,7 @@ export function MemorialProfile({
   inDrawer = false,
   inline,
   memoryPreview,
+  hideMemories = false,
 }: {
   t: Dictionary;
   locale: string;
@@ -90,6 +91,8 @@ export function MemorialProfile({
   family: { parents: ProfileRelative[]; partners: ProfileRelative[]; children: ProfileRelative[]; parentsAdd?: Array<{ href: string; label: string }> };
   /** The newest memories, shown first on the overview. */
   memoryPreview?: MemoryPreview;
+  /** No memories tab (your own profile, before anyone has written about you). */
+  hideMemories?: boolean;
   treeHref?: string;
   meHref?: string;
   /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
@@ -576,7 +579,7 @@ export function MemorialProfile({
           { id: "life", label: m.tabLife, icon: icons.calendar },
           { id: "archive", label: m.tabArchive, count: photoCount + docs.length, icon: icons.photo },
           { id: "family", label: m.tabFamily, icon: icons.people },
-          { id: "memories", label: m.tabMemories, count: memoryPreview?.count, icon: icons.quote },
+          ...(hideMemories ? [] : [{ id: "memories", label: m.tabMemories, count: memoryPreview?.count, icon: icons.quote }]),
         ]}
         panels={panels}
       />
