@@ -81,14 +81,6 @@ export function HeaderEdit({
       requestAnimationFrame(() => requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus()));
     };
     window.addEventListener("kartos:edit-header", open);
-    // From the dashboard's "+ birth place": arrive with that field ready to type in.
-    const q = new URLSearchParams(window.location.search);
-    const field = q.get("edit");
-    if (field && /^[a-zA-Z]+$/.test(field)) {
-      q.delete("edit");
-      window.history.replaceState(window.history.state, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
-      open(new CustomEvent("kartos:edit-header", { detail: field }));
-    }
     return () => window.removeEventListener("kartos:edit-header", open);
   }, []);
 
@@ -101,6 +93,16 @@ export function HeaderEdit({
   useEffect(() => {
     startRef.current = start;
   });
+
+  // From the dashboard's "+ birth place": arrive with that field ready to type in.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const field = q.get("edit");
+    if (!field || !/^[a-zA-Z]+$/.test(field)) return;
+    q.delete("edit");
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    window.dispatchEvent(new CustomEvent("kartos:edit-header", { detail: field }));
+  }, []);
 
   useEffect(() => {
     if (!editing) return;
