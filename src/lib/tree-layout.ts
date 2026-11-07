@@ -329,7 +329,10 @@ export function generations(people: TreePerson[], rels: TreeRel[]) {
   return gen;
 }
 
-/** The oldest ancestor with the most descendants: where the whole-family view starts. */
+/**
+ * Where the whole-family view starts: the ancestor whose line goes down the most generations
+ * (so the oldest person anyone has added is always on top), then the one with the most descendants.
+ */
 export function mainRoot(people: TreePerson[], rels: TreeRel[]) {
   const ids = new Set(people.map((p) => p.id));
   const kids = new Map<string, string[]>();
@@ -350,8 +353,18 @@ export function mainRoot(people: TreePerson[], rels: TreeRel[]) {
     }
     return seen.size;
   };
+  const depthMemo = new Map<string, number>();
+  const depth = (id: string, path = new Set<string>()): number => {
+    if (depthMemo.has(id)) return depthMemo.get(id)!;
+    if (path.has(id)) return 0;
+    path.add(id);
+    const d = 1 + Math.max(0, ...(kids.get(id) ?? []).map((k) => depth(k, path)));
+    path.delete(id);
+    depthMemo.set(id, d);
+    return d;
+  };
   const sexOrder = (p: TreePerson) => (p.sex === "male" ? 0 : p.sex === "female" ? 1 : 2);
   const roots = people.filter((p) => !hasParent.has(p.id));
   const pool = roots.length ? roots : people;
-  return [...pool].sort((a, b) => count(b.id) - count(a.id) || (a.birth_year ?? 9999) - (b.birth_year ?? 9999) || sexOrder(a) - sexOrder(b))[0]?.id ?? null;
+  return [...pool].sort((a, b) => depth(b.id) - depth(a.id) || count(b.id) - count(a.id) || (a.birth_year ?? 9999) - (b.birth_year ?? 9999) || sexOrder(a) - sexOrder(b))[0]?.id ?? null;
 }
