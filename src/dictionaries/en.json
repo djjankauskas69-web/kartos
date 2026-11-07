@@ -1954,6 +1954,9 @@
     "leadM": "He is the only partner recorded for the mother.",
     "lead": "The only partner recorded for the other parent.",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "surname": "Change the surname to {name}?",
+    "surnameLead": "{maiden} stays as the maiden name.",
+    "surnameYes": "Change"
   }
 }

@@ -12,6 +12,8 @@ import { addPersonFromPanel, type AddState } from "./add-actions";
 export type AddOption = {
   id: string;
   name: string;
+  /** Born-with surname, so a search for it finds her too. */
+  maiden?: string | null;
   given: string;
   surname: string | null;
   years: string;
@@ -265,7 +267,7 @@ function PersonSearch({
   const shown = useMemo(() => {
     const terms = fold(q).split(/\s+/).filter(Boolean);
     if (!terms.length) return options.slice(0, 6);
-    return options.filter((o) => terms.every((term) => fold(o.name).includes(term))).slice(0, 6);
+    return options.filter((o) => terms.every((term) => fold(`${o.name} ${o.maiden ?? ""}`).includes(term))).slice(0, 6);
   }, [options, q]);
 
   if (chosen) {

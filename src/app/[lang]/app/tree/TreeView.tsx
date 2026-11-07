@@ -90,6 +90,8 @@ export type TreeCard = {
   x: number;
   y: number;
   name: string;
+  /** "gim. Bagdonaitė": the surname she was born with, when it differs. */
+  nee?: string;
   years: string;
   portrait?: string;
   initials: string;
@@ -927,6 +929,7 @@ export function TreeView({
                     )}
                   </span>
                   <span title={c.foreign} className="relative mt-3.5 line-clamp-2 break-words text-[1.25rem] font-semibold leading-[1.25] text-ink">{c.name}</span>
+                  {c.nee && <span className="relative -mt-0.5 truncate text-[1rem] italic leading-tight text-ink-muted">{c.nee}</span>}
                   <span className="relative mt-0.5 flex items-center gap-1.5 text-[1.2rem] font-semibold tabular-nums text-ink/85">
                     {!c.living && c.years && <span aria-label={labels.legendDeceased} className="text-[0.9em]">✝</span>}
                     {c.years}
@@ -934,7 +937,7 @@ export function TreeView({
                   </span>
                   {(() => {
                     const rel = !showRelations ? undefined : relationTo ? (c.id === from ? undefined : relationTo.get(c.id)) : c.me ? undefined : c.relation;
-                    return rel ? <span className="relative mt-1 line-clamp-2 break-words text-[0.92rem] font-semibold leading-snug text-olive-deep first-letter:uppercase">{rel}</span> : null;
+                    return rel ? <span className={`relative mt-1 ${c.nee ? "line-clamp-1" : "line-clamp-2"} break-words text-[0.92rem] font-semibold leading-snug text-olive-deep first-letter:uppercase`}>{rel}</span> : null;
                   })()}
                 </CardLink>
                 {(
@@ -1094,6 +1097,7 @@ function CardMenu({
           {(
             <>
               <p className="truncate text-[1.08rem] font-semibold leading-tight">{card.name}</p>
+              {card.nee && <p className="truncate text-[0.88rem] italic text-ink-muted">{card.nee}</p>}
               {card.years && <p className="text-[0.88rem] tabular-nums text-ink-muted">{card.years}</p>}
               {card.relation && <p className="mt-1.5 inline-block rounded-full bg-linen px-2.5 py-0.5 text-[0.85rem] font-semibold first-letter:uppercase">{card.relation}</p>}
             </>

@@ -224,6 +224,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           people={people.filter((p) => !isUnknownParent(p)).map((p) => ({
             id: p.id,
             name: fullName(p),
+            nee: (p.birth_surname && p.birth_surname !== p.surname ? `${t.person.nee} ${p.birth_surname}` : undefined),
             birth: p.birth_year,
             death: p.death_year,
             living: p.is_living,

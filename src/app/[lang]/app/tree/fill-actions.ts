@@ -81,3 +81,17 @@ export async function confirmOtherParent(form: FormData) {
   if (error) console.error("confirmOtherParent", error);
   refresh();
 }
+
+/** She takes her husband's surname; the one she was born with is kept as her maiden name. */
+export async function adoptMarriedSurname(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const id = uuid(form, "child");
+  const surname = text(form, "parent", 120);
+  if (!id || !surname) return;
+  const { data: p } = await supabase.from("persons").select("surname, birth_surname").eq("id", id).eq("workspace_id", workspace.id).maybeSingle();
+  if (!p || p.birth_surname || !p.surname || p.surname === surname) return;
+  const { error } = await supabase.from("persons").update({ surname, birth_surname: p.surname }).eq("id", id).eq("workspace_id", workspace.id);
+  if (error) console.error("adoptMarriedSurname", error);
+  refresh();
+}

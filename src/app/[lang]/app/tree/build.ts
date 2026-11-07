@@ -7,6 +7,7 @@ export type BuildPerson = {
   id: string;
   given_names: string;
   surname: string | null;
+  birth_surname?: string | null;
   sex: "female" | "male" | "unknown" | null;
   is_living: boolean;
   birth_year: number | null;
@@ -196,6 +197,7 @@ export function buildTree({
       y: n.y,
       name: unknown ? t.tree.unknownParent : [p.given_names, p.surname].filter(Boolean).join(" "),
       unknown,
+      nee: unknown ? undefined : (p.birth_surname && p.birth_surname !== p.surname ? `${t.person.nee} ${p.birth_surname}` : undefined),
       years: years(p),
       portrait: portraits[n.id],
       initials: unknown ? "?" : `${p.given_names.trim()[0] ?? ""}${p.surname?.trim()[0] ?? ""}`.toUpperCase(),

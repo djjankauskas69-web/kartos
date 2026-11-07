@@ -7,6 +7,7 @@ import { BACKGROUNDS, bgStore } from "./tree-bg";
 export type ListPerson = {
   id: string;
   name: string;
+  nee?: string;
   birth: number | null;
   death: number | null;
   living: boolean;
@@ -98,7 +99,7 @@ export function ListView({
 
   const groups = useMemo(() => {
     const terms = fold(q).split(/\s+/).filter(Boolean);
-    const shown = people.filter((p) => (who === "all" || (who === "living") === p.living) && terms.every((t) => fold(p.name).includes(t)));
+    const shown = people.filter((p) => (who === "all" || (who === "living") === p.living) && terms.every((t) => fold(`${p.name} ${p.nee ?? ""}`).includes(t)));
     const by = new Map<number, ListPerson[]>();
     for (const p of shown) by.set(p.gen, [...(by.get(p.gen) ?? []), p]);
     return [...by.entries()].sort((a, b) => a[0] - b[0]);
@@ -218,7 +219,10 @@ export function ListView({
                         </span>
                       )}
                       <span className="min-w-0">
-                        <span className="block truncate font-serif text-[1.08rem] leading-tight">{p.name}</span>
+                        <span className="block truncate font-serif text-[1.08rem] leading-tight">
+                          {p.name}
+                          {p.nee && <span className="ml-1.5 font-sans text-[0.88rem] italic text-ink-muted">{p.nee}</span>}
+                        </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[0.88rem] text-ink-muted">
                           {y && <span className={p.living ? "" : "text-ink-muted/80"}>{p.living ? y : `† ${y}`}</span>}
                           {y && p.relation && <span aria-hidden="true">·</span>}

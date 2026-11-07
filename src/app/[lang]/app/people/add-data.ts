@@ -19,6 +19,7 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
       return {
         id: p.id,
         name: fullName(p),
+        maiden: p.birth_surname,
         given: p.given_names,
         surname: p.surname,
         years: p.is_living ? (p.birth_year ? `${p.birth_year} –` : t.app.alive) : p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",

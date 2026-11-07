@@ -8,6 +8,7 @@ import {
   fullName,
   getFamilyGraph,
   isUnknownParent,
+  marriedSurname,
   lifeSpan,
   profileNames,
   relativesOf,
@@ -604,6 +605,13 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     const soleParentPartners = soleParent ? relativesOf(soleParent, rels).partners.filter((x) => byId.has(x) && x !== id && !isUnknownParent(byId.get(x)!)) : [];
     const suggested = can.edit(role) && !other && soleParentPartners.length === 1 ? byId.get(soleParentPartners[0])! : null;
     const ps = t.parentSuggest;
+    // A wife still under her maiden name, with one husband: offer his surname, keeping hers as maiden.
+    const husbands = person.sex === "female" ? fam.partners.filter((x) => byId.get(x)?.sex === "male") : [];
+    const takeSurname =
+      can.edit(role) && !other && !person.birth_surname && person.surname && !/ienė$/i.test(person.surname) && husbands.length === 1
+        ? marriedSurname(byId.get(husbands[0])!.surname)
+        : null;
+    const surnameSuggest = takeSurname && takeSurname !== person.surname ? takeSurname : null;
     return (
       <div className="space-y-4">
         {suggested && (
@@ -617,6 +625,21 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
             title={(suggested.sex === "female" ? ps.mother : suggested.sex === "male" ? ps.father : ps.parent).replace("{name}", fullName(suggested))}
             lead={suggested.sex === "female" ? ps.leadF : suggested.sex === "male" ? ps.leadM : ps.lead}
             yes={ps.yes}
+            no={ps.no}
+          />
+        )}
+        {surnameSuggest && (
+          <ParentSuggest
+            kind="surname"
+            locale={locale}
+            child={id}
+            parent={surnameSuggest}
+            given={person.given_names}
+            surname={surnameSuggest}
+            portrait={portraits.get(id)}
+            title={ps.surname.replace("{name}", surnameSuggest)}
+            lead={ps.surnameLead.replace("{maiden}", person.surname ?? "")}
+            yes={ps.surnameYes}
             no={ps.no}
           />
         )}

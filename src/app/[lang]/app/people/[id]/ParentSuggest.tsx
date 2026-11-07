@@ -2,11 +2,12 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Portrait } from "@/components/Portrait";
-import { confirmOtherParent } from "../../tree/fill-actions";
+import { confirmOtherParent, adoptMarriedSurname } from "../../tree/fill-actions";
 import { PendingButton } from "./PortraitControls";
 
 /** "Is X the mother?" — one tap links the only partner of the single known parent. "No" hides it here. */
 export function ParentSuggest({
+  kind = "parent",
   locale,
   child,
   parent,
@@ -18,6 +19,8 @@ export function ParentSuggest({
   yes,
   no,
 }: {
+  /** "parent": link the other parent; "surname": take the married surname (parent = the new surname). */
+  kind?: "parent" | "surname";
   locale: string;
   child: string;
   parent: string;
@@ -29,7 +32,7 @@ export function ParentSuggest({
   yes: string;
   no: string;
 }) {
-  const key = `kartos:no-parent:${child}:${parent}`;
+  const key = `kartos:no-${kind}:${child}:${parent}`;
   const [dismissed, setDismissed] = useState(false);
   const saidNo = useSyncExternalStore(
     () => () => {},
@@ -52,7 +55,7 @@ export function ParentSuggest({
         <p className="text-[0.92rem] text-ink-muted">{lead}</p>
       </div>
       <div className="flex gap-2">
-        <form action={confirmOtherParent}>
+        <form action={kind === "surname" ? adoptMarriedSurname : confirmOtherParent}>
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="child" value={child} />
           <input type="hidden" name="parent" value={parent} />
