@@ -151,7 +151,9 @@ export function DashboardView(props: DashboardData) {
               <IconQuote size={18} />
               {d.memoryTitle}
             </p>
-            <blockquote className="mt-3 line-clamp-3 flex-1 font-serif text-[1.18rem] leading-relaxed">„{latestMemory.body.trim()}“</blockquote>
+            <div className="flex-1">
+              <blockquote className="mt-3 line-clamp-3 font-serif text-[1.18rem] leading-relaxed">„{latestMemory.body.trim()}“</blockquote>
+            </div>
             <div className="mt-5 flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-[0.85rem] font-semibold text-ink-muted">
                 {latestMemory.thumb ? (
