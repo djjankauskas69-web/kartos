@@ -46,8 +46,8 @@ export default async function Home() {
           <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-5 pb-40 pt-[6vh] text-center sm:px-8 sm:pt-[8vh]">
             <h1 className="text-[3rem] [text-shadow:0_0_24px_rgb(255_255_255/0.7)] sm:text-[4.4rem] lg:text-[5.4rem]">{t.hero.title}</h1>
             <Scribble className="mx-auto mt-1 h-5 w-52 text-ink/80 sm:w-72" />
-            <p className="mx-auto mt-6 max-w-[34rem] text-[1.18rem] font-medium leading-relaxed text-ink [text-shadow:0_0_14px_rgb(255_255_255/0.95),0_0_3px_rgb(255_255_255/0.9)]">{t.hero.lead}</p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <p className="mx-auto mt-5 max-w-[34rem] text-[1.18rem] font-medium leading-relaxed text-ink [text-shadow:0_0_14px_rgb(255_255_255/0.95),0_0_3px_rgb(255_255_255/0.9)]">{t.hero.lead}</p>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               <Link href={signup} className="inline-flex min-h-12 items-center rounded-full bg-night px-7 text-[1.02rem] font-medium text-surface shadow-[0_10px_30px_-12px_rgb(28_29_26/0.5)] transition-colors hover:bg-olive-deep">
                 {t.hero.cta}
               </Link>
@@ -55,7 +55,7 @@ export default async function Home() {
                 {t.hero.secondary}
               </a>
             </div>
-            <p className="mt-4 rounded-full bg-white/70 px-4 py-1 text-[0.95rem] font-medium text-ink/85 backdrop-blur-sm">{t.hero.note}</p>
+            <p className="mt-3.5 text-[0.95rem] font-medium text-ink/70 [text-shadow:0_0_10px_rgb(255_255_255/0.9)]">{t.hero.note}</p>
           </FadeIn>
         </section>
 
