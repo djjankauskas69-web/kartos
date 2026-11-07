@@ -109,9 +109,15 @@ export function layoutTree(
   };
 
   /* ---- Descendants ---- */
+  /** A person's children, and also children only their partner had (so nobody drawn as a partner loses a child). */
+  const familyKids = (id: string) => {
+    const own = childrenOf(id);
+    const step = partnersOf(id).flatMap((p) => childrenOf(p).filter((c) => !own.includes(c) && !parentsOf(c).some((x) => x !== p && byId.has(x))));
+    return [...new Set([...own, ...step])];
+  };
   const descWidth = (id: string, depth: number, seen: Set<string>): number => {
     const unit = 1 + partnersOf(id).length;
-    const kids = depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : [];
+    const kids = depth < down ? familyKids(id).filter((c) => !seen.has(c)) : [];
     const next = new Set(seen).add(id);
     const kidsW = kids.reduce((s, c) => s + descWidth(c, depth + 1, next), 0);
     return Math.max(unit, kidsW);
@@ -153,7 +159,8 @@ export function layoutTree(
       const p = partnersOf(c).find((q) => outward.has(q));
       return p ? (leftPartners.has(p) ? -1 : 1) : 0;
     };
-    const kids = (depth < down ? childrenOf(id).filter((c) => !seen.has(c)) : []).sort((a, b) => xOf(a) - xOf(b) || edge(a) - edge(b) || born(a) - born(b));
+    const mine = new Set(childrenOf(id));
+    const kids = (depth < down ? familyKids(id).filter((c) => !seen.has(c)) : []).sort((a, b) => xOf(a) - xOf(b) || edge(a) - edge(b) || born(a) - born(b));
     if (kids.length === 0) return;
     const next = new Set(seen).add(id);
     const widths = kids.map((c) => descWidth(c, depth + 1, next));
@@ -167,11 +174,13 @@ export function layoutTree(
       const { cx, keyOf } = placeCouple(c, ck, x + (w - unit) / 2, depth + 1, { role: "descendant", moreAbove: false, moreBelow: bottom && childrenOf(c).length > 0 });
       const px = new Map([...keyOf.keys()].map((p) => [p, placed.find((n) => n.key === keyOf.get(p))!.cx]));
       placeChildren(c, ck, keyOf, px, cx, depth + 1, x + w / 2, next);
-      const g = otherOf(c);
+      // A child only the partner had hangs from the partner alone.
+      const g = mine.has(c) ? otherOf(c) : `only:${otherOf(c)}`;
       groups.set(g, [...(groups.get(g) ?? []), ck]);
       x += w;
     });
-    for (const [other, childKeys] of groups) edges.push({ kind: "parents", parents: other ? [key, partnerKeys.get(other)!] : [key], children: childKeys });
+    for (const [other, childKeys] of groups)
+      edges.push({ kind: "parents", parents: other.startsWith("only:") ? [partnerKeys.get(other.slice(5))!] : other ? [key, partnerKeys.get(other)!] : [key], children: childKeys });
   };
 
   /* ---- Middle row: brothers and sisters, the person, partners ---- */
