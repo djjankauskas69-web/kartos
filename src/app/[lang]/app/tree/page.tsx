@@ -18,6 +18,7 @@ import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
+import { treeLabels } from "./labels";
 import { PageSkeleton } from "@/components/Skeletons";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -148,7 +149,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree${s ? `?${s}` : ""}`;
   };
   // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
-  const header = (subtitle: React.ReactNode) => <PageHeader title={t.tree.title} meta={subtitle} className="mb-4" />;
+  const shareAction = can.admin(current.role) ? (
+    <Link href={`${base}/share`} className={`${cls.secondary} gap-2`}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+      </svg>
+      {t.shareLink.button}
+    </Link>
+  ) : null;
+  const header = (subtitle: React.ReactNode) => <PageHeader title={t.tree.title} meta={subtitle} actions={shareAction} className="mb-4" />;
 
   if (people.length === 0) {
     return (
@@ -392,51 +401,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
             .map((l) => ({ label: l.other.name, on: shown.has(l.id), href: families.get(l.mine)?.find((f) => f.label === l.other.name)?.branchHref, side: sideOf(l.mine) }))
             .sort((a, b) => ["mine", "partner", "other"].indexOf(a.side) - ["mine", "partner", "other"].indexOf(b.side)),
         ]}
-        labels={{
-          zoomIn: t.tree.zoomIn,
-          zoomOut: t.tree.zoomOut,
-          fit: t.tree.fit,
-          fitShort: t.tree.fitShort,
-          background: t.tree.background,
-          centre: t.tree.centre,
-          fullscreen: t.tree.fullscreen,
-          exitFullscreen: t.tree.exitFullscreen,
-          showFrom: t.tree.showFrom,
-          menuProfile: t.tree.menuProfile,
-          menuGrave: t.tree.menuGrave,
-          menuDirections: t.tree.menuDirections,
-          menuAdd: t.tree.menuAdd,
-          menuClose: t.tree.menuClose,
-          menuMore: t.tree.menuMore,
-          menuLink: t.familyLink.menuLink,
-          menuOpenFamily: t.familyLink.menuOpen,
-          menuShowBranch: t.familyLink.showBranch,
-          menuHideBranch: t.familyLink.hideBranch,
-          menuCompare: t.merge.compare,
-          navGoogle: t.grave.navGoogle,
-          navWaze: t.grave.navWaze,
-          navApple: t.grave.navApple,
-          addMenu: t.tree.addMenu,
-          moreAbove: t.tree.moreAbove,
-          moreBelow: t.tree.moreBelow,
-          pending: t.app.pending,
-          allGenerations: t.tree.allGenerations,
-          families: t.tree.familiesShown,
-          depth: t.tree.depth,
-          branch: t.tree.branch,
-          legendLiving: t.tree.legendLiving,
-          legendDeceased: t.tree.legendDeceased,
-          me: t.tree.me,
-          genRel: t.tree.genRel,
-          addGroup: t.tree.addGroup,
-          show: t.tree.show,
-          elsewhere: t.tree.elsewhere,
-          sides: t.tree.sides,
-          which: t.tree.which,
-          viewTree: t.tree.viewTree,
-          viewList: t.tree.viewList,
-          unlink: t.tree.unlink,
-        }}
+        labels={treeLabels(t)}
         locale={locale}
         loose={looseInfo}
         listHref={viewHrefFor("list")}
