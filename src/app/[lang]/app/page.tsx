@@ -284,6 +284,18 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
     if (gensNow < 3) steps.push({ key: "gens", what: d.stepGens.replace("{n}", String(3 - gensNow)), href: `${base}/tree` });
     if (people.length < 10) steps.push({ key: "people", what: d.stepPeople.replace("{n}", plural(locale, 10 - people.length, t.tree.people)), href: `${base}/tree` });
   }
+  // The one next thing, in words, and where it is done.
+  const nextReq = reqs.find((r) => !r.done);
+  const nextText = !nextReq
+    ? ""
+    : nextReq.key === "places"
+      ? d.nextPlaces.replace("{n}", plural(locale, Math.max(1, nextReq.need), d.placeForms))
+      : nextReq.key === "years"
+        ? d.nextYears.replace("{n}", plural(locale, Math.max(1, nextReq.need), t.tree.people))
+        : nextReq.key === "people"
+          ? d.nextPeople.replace("{n}", plural(locale, Math.max(1, nextReq.need), t.tree.people))
+          : d.nextGens.replace("{n}", plural(locale, Math.max(1, nextReq.need), d.genForms));
+  const nextHref = steps.find((st) => (nextReq?.key === "places" ? st.key.startsWith("pl-") : nextReq?.key === "years" ? st.key.startsWith("yr-") : st.key === nextReq?.key))?.href;
   const unitsAll = reqs.reduce((n, r) => n + (r.key === "years" ? Math.max(1, Math.ceil(people.length * 0.6)) : r.target), 0);
   const unitsLeft = reqs.reduce((n, r) => n + (r.done ? 0 : Math.max(1, r.need)), 0);
   // Every detail counts the same: each field filled in on anyone moves the number a little.
@@ -368,7 +380,7 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
           : undefined
       }
       fill={fill}
-      tree={{ completeness, reqs, ready: reqs.every((r) => r.done), steps, left: unitsLeft, progress: unitsAll ? Math.round((100 * (unitsAll - unitsLeft)) / unitsAll) : 0 }}
+      tree={{ completeness, reqs, ready: reqs.every((r) => r.done), steps, left: unitsLeft, nextText, nextHref, progress: unitsAll ? Math.round((100 * (unitsAll - unitsLeft)) / unitsAll) : 0 }}
     />
   );
 }

@@ -104,3 +104,67 @@ export function ProgressRing({ value }: { value: number }) {
     </svg>
   );
 }
+
+/**
+ * The big ring on the way to the origins research: it fills up when it comes into view, the
+ * number in the middle says how many steps are left, and a finished ring gets a tick and a glow.
+ */
+export function ResearchRing({ value, left, leftLabel, label }: { value: number; left: number; leftLabel: string; label: string }) {
+  const [on, setOn] = useState(false);
+  const box = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          setOn(true);
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const r = 42;
+  const c = 2 * Math.PI * r;
+  const done = left <= 0;
+  const filled = done ? 1 : Math.min(0.97, value / 100);
+  return (
+    <span className="relative flex h-[6.5rem] w-[6.5rem] shrink-0 items-center justify-center" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+      {done && on && <span aria-hidden="true" className="absolute inset-1 animate-[ring-glow_2.2s_ease-out_1.2s_both] rounded-full" />}
+      <svg ref={box} viewBox="0 0 100 100" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
+        <defs>
+          <linearGradient id="rr-fill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#9aa66c" />
+            <stop offset="100%" stopColor="#4f5a2e" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#ece8dc" strokeWidth="9" />
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          stroke="url(#rr-fill)"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={on ? c * (1 - filled) : c}
+          className="transition-[stroke-dashoffset] duration-[1600ms] ease-[cubic-bezier(0.2,0.75,0.2,1)] motion-reduce:transition-none"
+        />
+      </svg>
+      {done ? (
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#4f5a2e" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={on ? "animate-[intro-fade_0.5s_ease-out_1.3s_both]" : "opacity-0"}>
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
+        </svg>
+      ) : (
+        <span className="relative flex flex-col items-center leading-none">
+          <span className="text-[2.1rem] font-semibold tabular-nums tracking-[-0.03em]">{left}</span>
+          <span className="mt-1 text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-ink-muted">{leftLabel}</span>
+        </span>
+      )}
+    </span>
+  );
+}

@@ -934,7 +934,26 @@
     "stepYear": "+ birth year",
     "stepGens": "+ {n} more generations (parents or grandparents)",
     "stepPeople": "+ {n} more in the tree",
-    "readyTitle": "The tree is ready for the family origins research"
+    "readyTitle": "The tree is ready for the family origins research",
+    "leftWord": "left",
+    "nextPlaces": "Add {n}",
+    "placeForms": {
+      "one": "more birth place",
+      "few": "more birth places",
+      "many": "more birth places",
+      "other": "more birth places"
+    },
+    "nextYears": "Add birth years – {n} to go",
+    "nextPeople": "Add {n} more to the tree",
+    "nextGens": "Add {n} more",
+    "genForms": {
+      "one": "generation",
+      "few": "generations",
+      "many": "generations",
+      "other": "generations"
+    },
+    "nextWhy": "…and you'll be able to find out where your family comes from.",
+    "startResearch": "Start the research"
   },
   "archive": {
     "title": "Archive",

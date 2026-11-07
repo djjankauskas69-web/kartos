@@ -288,3 +288,9 @@ img.img-in { opacity: 1; transition: opacity 0.45s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   .intro-mark path, .intro-fade, .intro-leave, .intro-rise { animation: none; opacity: 1; transform: none; }
 }
+
+/* The research ring when the tree is ready: a soft light spreads out once. */
+@keyframes ring-glow {
+  0% { box-shadow: 0 0 0 0 rgb(125 139 85 / 0.55); }
+  100% { box-shadow: 0 0 0 22px rgb(125 139 85 / 0); }
+}

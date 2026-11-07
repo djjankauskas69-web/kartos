@@ -934,7 +934,26 @@
     "stepYear": "+ gimimo metai",
     "stepGens": "+ dar {n} kartos (tėvai ar seneliai)",
     "stepPeople": "+ dar {n} medyje",
-    "readyTitle": "Medis paruoštas giminės kilmės tyrimui"
+    "readyTitle": "Medis paruoštas giminės kilmės tyrimui",
+    "leftWord": "liko",
+    "nextPlaces": "Įrašykite dar {n}",
+    "placeForms": {
+      "one": "gimimo vietą",
+      "few": "gimimo vietas",
+      "many": "gimimo vietas",
+      "other": "gimimo vietų"
+    },
+    "nextYears": "Įrašykite gimimo metus – liko {n}",
+    "nextPeople": "Pridėkite į medį dar {n}",
+    "nextGens": "Pridėkite dar {n}",
+    "genForms": {
+      "one": "kartą",
+      "few": "kartas",
+      "many": "kartas",
+      "other": "kartų"
+    },
+    "nextWhy": "…ir galėsite sužinoti, iš kur kilusi jūsų giminė.",
+    "startResearch": "Pradėti tyrimą"
   },
   "archive": {
     "title": "Archyvas",
