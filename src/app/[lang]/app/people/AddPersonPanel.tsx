@@ -706,7 +706,7 @@ function DateRow({ id, prefix, label, hint, locale, t, year, onYear }: { id: str
   return (
     <fieldset>
       <legend className="mb-1.5 block text-[0.98rem]">{label}</legend>
-      <div className="grid grid-cols-[6.5rem_1fr_5.5rem] gap-2">
+      <div className="grid grid-cols-[minmax(0,6rem)_minmax(0,1fr)_minmax(0,6.5rem)] gap-2">
         <input
           id={id}
           name={`${prefix}Year`}
