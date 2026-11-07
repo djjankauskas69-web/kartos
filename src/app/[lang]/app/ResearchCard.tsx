@@ -28,7 +28,7 @@ export function ResearchCard({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`relative overflow-hidden px-5 py-5 sm:px-7 sm:py-6 ${cls.card} bg-gradient-to-br from-[#fbf8f1] via-surface to-[#f1f4e8]`}>
+    <div className={`relative overflow-clip px-5 py-5 sm:px-7 sm:py-6 ${cls.card} bg-gradient-to-br from-[#fbf8f1] via-surface to-[#f1f4e8]`}>
       <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgb(154_166_108/0.18),transparent_70%)]" />
       <div className="relative flex flex-wrap items-center gap-x-6 gap-y-4">
         <ResearchRing value={ready ? 100 : progress} left={ready ? 0 : left} leftLabel={d.leftWord} label={d.researchTitle} />
