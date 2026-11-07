@@ -124,7 +124,11 @@ export function layoutTree(
    */
   const placeCouple = (id: string, key: string, unitLeft: number, row: number, node: Omit<Placed, "key" | "id" | "cx" | "row">) => {
     const partners = partnersOf(id);
-    const onLeft = (p: string, i: number) => (partners.length === 1 ? leftPartners.has(p) : i % 2 === 1);
+    // The usual order in a family tree: the husband on the left, the wife on the right. A partner
+    // whose own family is drawn beside the tree keeps the side facing it, so no lines cross.
+    const male = (x: string) => byId.get(x)?.sex === "male";
+    const onLeft = (p: string, i: number) =>
+      partners.length === 1 ? leftPartners.has(p) || (!outward.has(p) && male(p) && !male(id)) : male(id) || !male(partners[0]) ? i % 2 === 1 : i % 2 === 0;
     const lefts = partners.filter(onLeft);
     const rights = partners.filter((p, i) => !onLeft(p, i));
     const cx = unitLeft + lefts.length + 0.5;
