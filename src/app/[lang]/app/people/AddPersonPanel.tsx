@@ -351,15 +351,13 @@ function AddPersonPanel({
   const [anchor, setAnchor] = useState<string | null>(initialAnchor ?? (meId && meId !== initialExisting && people.some((p) => p.id === meId) ? meId : null));
   const [kind, setKind] = useState<Kind | null>(initialKind);
   const [existing, setExisting] = useState<string | null>(initialExisting);
-  const [again, setAgain] = useState(false);
+  const again = false;
   const [given, setGiven] = useState("");
   const [surname, setSurname] = useState("");
   const [surnameTouched, setSurnameTouched] = useState(false);
   const [living, setLiving] = useState(!initialDeceased);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [bornStr, setBornStr] = useState("");
-  const [exactBirth, setExactBirth] = useState(false);
-  const [exactDeath, setExactDeath] = useState(false);
   const againRef = useRef(false);
   // Opened from a card's + menu: person and relationship are already known, so steps 1–2 fold into one line.
   const [locked, setLocked] = useState(!!initialAnchor && !!initialKind);
@@ -582,56 +580,28 @@ function AddPersonPanel({
                   </section>
                 )}
 
-                <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-[1rem]">
-                  <input type="checkbox" checked={!living} onChange={(e) => setLiving(!e.target.checked)} className="h-5 w-5 accent-[#1c1d1a]" />
-                  {t.deceased}
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="add-born" className="mb-1.5 block text-[0.98rem]">
-                      {t.birthYear}
-                    </label>
-                    <input id="add-born" name="birthYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.birthPh} value={bornStr} onChange={(e) => setBornStr(e.target.value)} className={cls.input} />
-                    {exactBirth ? (
-                      <div className="mt-2 grid grid-cols-[1fr_5rem] gap-2">
-                        <select name="birthMonth" aria-label={t.month} defaultValue="" className={cls.input}>
-                          <option value="">{t.month}</option>
-                          {MONTHS(locale).map((m, i) => (
-                            <option key={i} value={i + 1}>{m}</option>
-                          ))}
-                        </select>
-                        <input name="birthDay" inputMode="numeric" maxLength={2} placeholder={t.day} aria-label={t.day} className={cls.input} />
-                      </div>
-                    ) : (
-                      <button type="button" onClick={() => setExactBirth(true)} className="mt-1.5 text-[0.9rem] font-semibold text-ink-muted hover:text-ink hover:underline">
-                        + {t.exactDate}
+                <div>
+                  <span className="mb-1.5 block text-[0.98rem]">{t.lifeState}</span>
+                  <div role="radiogroup" className="inline-flex rounded-full border border-line bg-surface p-1">
+                    {[
+                      [true, t.livingYes],
+                      [false, t.deceased],
+                    ].map(([v, label]) => (
+                      <button
+                        key={String(v)}
+                        type="button"
+                        role="radio"
+                        aria-checked={living === v}
+                        onClick={() => setLiving(v as boolean)}
+                        className={`min-h-10 rounded-full px-5 font-semibold transition-colors ${living === v ? "bg-night text-surface" : "text-ink-muted hover:text-ink"}`}
+                      >
+                        {label as string}
                       </button>
-                    )}
+                    ))}
                   </div>
-                  {!living && (
-                    <div>
-                      <label htmlFor="add-died" className="mb-1.5 block text-[0.98rem]">
-                        {t.deathYear}
-                      </label>
-                      <input id="add-died" name="deathYear" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder={t.deathPh} className={cls.input} />
-                      {exactDeath ? (
-                        <div className="mt-2 grid grid-cols-[1fr_5rem] gap-2">
-                          <select name="deathMonth" aria-label={t.month} defaultValue="" className={cls.input}>
-                            <option value="">{t.month}</option>
-                            {MONTHS(locale).map((m, i) => (
-                              <option key={i} value={i + 1}>{m}</option>
-                            ))}
-                          </select>
-                          <input name="deathDay" inputMode="numeric" maxLength={2} placeholder={t.day} aria-label={t.day} className={cls.input} />
-                        </div>
-                      ) : (
-                        <button type="button" onClick={() => setExactDeath(true)} className="mt-1.5 text-[0.9rem] font-semibold text-ink-muted hover:text-ink hover:underline">
-                          + {t.exactDate}
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
+                <DateRow id="add-born" prefix="birth" label={t.birthDate} hint={t.dateHint} locale={locale} t={t} year={bornStr} onYear={setBornStr} />
+                {!living && <DateRow id="add-died" prefix="death" label={t.deathDate} locale={locale} t={t} />}
                 {!living && (
                   <div>
                     <label htmlFor="add-death-place" className={cls.label}>
@@ -712,18 +682,57 @@ function AddPersonPanel({
             <button type="button" onClick={() => onClose()} className="min-h-12 rounded-full px-3 font-semibold text-ink-muted hover:text-ink">
               {t.cancel}
             </button>
-            {anchorP && !first && !existing && (
-              <label className="ml-auto flex cursor-pointer items-center gap-2 text-[0.95rem] text-ink-muted" title={t.saveAgainHint.replace("{name}", anchorP.name)}>
-                <input type="checkbox" checked={again} onChange={(e) => setAgain(e.target.checked)} className="h-4 w-4 accent-[#1c1d1a]" />
-                {t.addAnother}
-              </label>
-            )}
-            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} min-h-12 ${anchorP && !first && !existing ? "" : "ml-auto"}`}>
+            <button type="submit" disabled={pending || !ready || (!existing && !given.trim())} className={`${cls.primary} ml-auto min-h-12`}>
               {pending ? t.saving : existing ? t.submitLink : t.submit}
             </button>
           </div>
         </footer>
       </form>
     </div>
+  );
+}
+
+/**
+ * A date as people know it: the year is enough, the month and the day can follow when known.
+ * One row (year · month · day), the day waiting for the month and limited to that month's days.
+ */
+function DateRow({ id, prefix, label, hint, locale, t, year, onYear }: { id: string; prefix: "birth" | "death"; label: string; hint?: string; locale: string; t: L; year?: string; onYear?: (v: string) => void }) {
+  const [y, setY] = useState(year ?? "");
+  const [m, setM] = useState("");
+  const [d, setD] = useState("");
+  const yearNow = onYear ? (year ?? "") : y;
+  const yn = Number(yearNow) || 2000;
+  const days = m ? new Date(yn, Number(m), 0).getDate() : 31;
+  return (
+    <fieldset>
+      <legend className="mb-1.5 block text-[0.98rem]">{label}</legend>
+      <div className="grid grid-cols-[6.5rem_1fr_5.5rem] gap-2">
+        <input
+          id={id}
+          name={`${prefix}Year`}
+          inputMode="numeric"
+          pattern="[0-9]{4}"
+          maxLength={4}
+          placeholder={t.yearPh}
+          aria-label={t.year}
+          value={yearNow}
+          onChange={(e) => (onYear ? onYear(e.target.value) : setY(e.target.value))}
+          className={cls.input}
+        />
+        <select name={`${prefix}Month`} aria-label={t.month} value={m} onChange={(e) => setM(e.target.value)} className={`${cls.input} ${m ? "" : "text-ink-muted"}`}>
+          <option value="">{t.month}</option>
+          {MONTHS(locale).map((name, i) => (
+            <option key={i} value={i + 1}>{name}</option>
+          ))}
+        </select>
+        <select name={`${prefix}Day`} aria-label={t.day} value={Number(d) > days ? "" : d} onChange={(e) => setD(e.target.value)} disabled={!m} className={`${cls.input} ${d ? "" : "text-ink-muted"} disabled:opacity-50`}>
+          <option value="">{t.day}</option>
+          {Array.from({ length: days }, (_, i) => (
+            <option key={i} value={i + 1}>{i + 1}</option>
+          ))}
+        </select>
+      </div>
+      {hint && <p className="mt-1.5 text-[0.88rem] text-ink-muted">{hint}</p>}
+    </fieldset>
   );
 }

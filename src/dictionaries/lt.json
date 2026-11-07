@@ -1380,7 +1380,14 @@
     "saveAgainHint": "Išsaugoti ir iškart pridėti dar vieną prie: {name}",
     "titleLink": "Prijungti prie medžio",
     "step2Name": "Kas jis {name}?",
-    "markGrave": "Pažymėti kapavietę"
+    "markGrave": "Pažymėti kapavietę",
+    "lifeState": "Gyvas ar miręs",
+    "livingYes": "Gyvas",
+    "birthDate": "Gimimo data",
+    "deathDate": "Mirties data",
+    "dateHint": "Užtenka metų – mėnuo ir diena nebūtini.",
+    "year": "Metai",
+    "yearPh": "Metai"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kas yra toje senoje nuotraukoje. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — MyKartos padeda tai išsaugoti vaikams ir anūkams.",

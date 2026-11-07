@@ -1380,7 +1380,14 @@
     "saveAgainHint": "Save and right away add another to: {name}",
     "titleLink": "Join to the tree",
     "step2Name": "What are they to {name}?",
-    "markGrave": "Mark the grave"
+    "markGrave": "Mark the grave",
+    "lifeState": "Living or passed away",
+    "livingYes": "Living",
+    "birthDate": "Date of birth",
+    "deathDate": "Date of death",
+    "dateHint": "The year is enough – month and day are optional.",
+    "year": "Year",
+    "yearPh": "Year"
   },
   "landing": {
     "reveal": "Who was who. Who is in that old photo. What grandmother used to tell at the table. All of it is often lost within one generation — MyKartos helps keep it for your children and grandchildren.",
