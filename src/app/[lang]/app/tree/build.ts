@@ -1,5 +1,6 @@
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import { surnames } from "@/lib/data";
 import { edgePaths, generations, layoutTree, mainRoot, type TreeSize } from "@/lib/tree-layout";
 import type { TreeBox, TreeCard, TreePlus } from "./TreeView";
 
@@ -197,7 +198,7 @@ export function buildTree({
       y: n.y,
       name: unknown ? t.tree.unknownParent : [p.given_names, p.surname].filter(Boolean).join(" "),
       unknown,
-      nee: unknown ? undefined : (p.birth_surname && p.birth_surname !== p.surname ? `${t.person.nee} ${p.birth_surname}` : undefined),
+      nee: unknown ? undefined : ((m) => (m ? `${t.person.nee} ${m}` : undefined))(surnames(p, (x) => byId.get(x), rels).maiden),
       years: years(p),
       portrait: portraits[n.id],
       initials: unknown ? "?" : `${p.given_names.trim()[0] ?? ""}${p.surname?.trim()[0] ?? ""}`.toUpperCase(),

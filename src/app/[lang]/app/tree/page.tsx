@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { can, fullName, getFamilyGraph, generationCount, isUnknownParent, requireWorkspace, familyLinks, myPersonLinks, type Person, type Relationship } from "@/lib/data";
+import { can, fullName, surnames, getFamilyGraph, generationCount, isUnknownParent, requireWorkspace, familyLinks, myPersonLinks, type Person, type Relationship } from "@/lib/data";
 import { linkedBranch } from "./linked-branch";
 
 type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner"; virtual?: boolean };
@@ -224,7 +224,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
           people={people.filter((p) => !isUnknownParent(p)).map((p) => ({
             id: p.id,
             name: fullName(p),
-            nee: (p.birth_surname && p.birth_surname !== p.surname ? `${t.person.nee} ${p.birth_surname}` : undefined),
+            nee: ((m) => (m ? `${t.person.nee} ${m}` : undefined))(surnames(p, (x) => byId.get(x), rels).maiden),
             birth: p.birth_year,
             death: p.death_year,
             living: p.is_living,

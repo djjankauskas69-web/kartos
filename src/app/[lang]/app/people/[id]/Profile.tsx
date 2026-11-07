@@ -8,7 +8,7 @@ import {
   fullName,
   getFamilyGraph,
   isUnknownParent,
-  marriedSurname,
+  surnames,
   lifeSpan,
   profileNames,
   relativesOf,
@@ -571,7 +571,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
       if (exact && (now.getMonth() + 1 < person.birth_month! || (now.getMonth() + 1 === person.birth_month && now.getDate() < person.birth_day!))) age--;
       years = `${born} (${mt.ageYears.replace("{n}", String(age))})`;
     }
-    if (person.birth_surname && person.birth_surname !== person.surname) years = [years, `${t.person.nee} ${person.birth_surname}`].filter(Boolean).join(" · ");
+    const names = surnames(person, (x) => byId.get(x), rels);
+    years = [years, names.maiden ? `${t.person.nee} ${names.maiden}` : "", names.previous.length ? `${t.person.formerly} ${names.previous.join(", ")}` : ""].filter(Boolean).join(" · ");
     const diffs = ((factsRes.data ?? []) as Facts[]).flatMap((f) =>
       FACT_FIELDS.flatMap((field) => {
         const theirs = f[field];
@@ -605,13 +606,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     const soleParentPartners = soleParent ? relativesOf(soleParent, rels).partners.filter((x) => byId.has(x) && x !== id && !isUnknownParent(byId.get(x)!)) : [];
     const suggested = can.edit(role) && !other && soleParentPartners.length === 1 ? byId.get(soleParentPartners[0])! : null;
     const ps = t.parentSuggest;
-    // A wife still under her maiden name, with one husband: offer his surname, keeping hers as maiden.
-    const husbands = person.sex === "female" ? fam.partners.filter((x) => byId.get(x)?.sex === "male") : [];
-    const takeSurname =
-      can.edit(role) && !other && !person.birth_surname && person.surname && !/ienė$/i.test(person.surname) && husbands.length === 1
-        ? marriedSurname(byId.get(husbands[0])!.surname)
-        : null;
-    const surnameSuggest = takeSurname && takeSurname !== person.surname ? takeSurname : null;
+    const surnameSuggest = can.edit(role) && !other ? names.suggest : null;
     return (
       <div className="space-y-4">
         {suggested && (
@@ -638,7 +633,8 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
             surname={surnameSuggest}
             portrait={portraits.get(id)}
             title={ps.surname.replace("{name}", surnameSuggest)}
-            lead={ps.surnameLead.replace("{maiden}", person.surname ?? "")}
+            lead={(person.surname && /ienė$/i.test(person.surname) ? ps.surnameLeadPrev : ps.surnameLead).replace("{maiden}", person.surname ?? "")}
+            maiden={names.maiden ?? undefined}
             yes={ps.surnameYes}
             no={ps.no}
           />

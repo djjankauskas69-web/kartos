@@ -618,7 +618,8 @@
     "delete": "Delete person",
     "deleteConfirm": "Yes, delete",
     "deleteWarning": "The person will be removed from the tree and lists.",
-    "nee": "née"
+    "nee": "née",
+    "formerly": "formerly"
   },
   "photos": {
     "title": "Photos",
@@ -1957,6 +1958,7 @@
     "no": "No",
     "surname": "Change the surname to {name}?",
     "surnameLead": "{maiden} stays as the maiden name.",
-    "surnameYes": "Change"
+    "surnameYes": "Change",
+    "surnameLeadPrev": "{maiden} stays as an earlier surname."
   }
 }

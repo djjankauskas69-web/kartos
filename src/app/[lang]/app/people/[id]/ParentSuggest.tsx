@@ -8,6 +8,7 @@ import { PendingButton } from "./PortraitControls";
 /** "Is X the mother?" — one tap links the only partner of the single known parent. "No" hides it here. */
 export function ParentSuggest({
   kind = "parent",
+  maiden,
   locale,
   child,
   parent,
@@ -21,6 +22,8 @@ export function ParentSuggest({
 }: {
   /** "parent": link the other parent; "surname": take the married surname (parent = the new surname). */
   kind?: "parent" | "surname";
+  /** Her maiden name, kept when the surname she gives up is already a married one. */
+  maiden?: string;
   locale: string;
   child: string;
   parent: string;
@@ -59,6 +62,7 @@ export function ParentSuggest({
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="child" value={child} />
           <input type="hidden" name="parent" value={parent} />
+          {maiden && <input type="hidden" name="maiden" value={maiden} />}
           <PendingButton label={yes} busyLabel="…" className="rounded-full bg-ink px-4 py-1.5 text-[0.95rem] font-semibold text-white hover:bg-ink/85" />
         </form>
         <button

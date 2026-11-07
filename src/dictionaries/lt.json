@@ -618,7 +618,8 @@
     "delete": "Ištrinti žmogų",
     "deleteConfirm": "Taip, ištrinti",
     "deleteWarning": "Žmogus bus pašalintas iš medžio ir sąrašų.",
-    "nee": "gim."
+    "nee": "gim.",
+    "formerly": "anksčiau"
   },
   "photos": {
     "title": "Nuotraukos",
@@ -1957,6 +1958,7 @@
     "no": "Ne",
     "surname": "Pakeisti pavardę į {name}?",
     "surnameLead": "{maiden} liks kaip mergautinė pavardė.",
-    "surnameYes": "Pakeisti"
+    "surnameYes": "Pakeisti",
+    "surnameLeadPrev": "{maiden} liks kaip ankstesnė pavardė."
   }
 }

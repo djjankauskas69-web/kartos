@@ -1,7 +1,7 @@
 import "server-only";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
-import { fullName, type Person, type Relationship } from "@/lib/data";
+import { fullName, surnames, type Person, type Relationship } from "@/lib/data";
 import type { AddOption } from "./AddPersonPanel";
 
 /** Everything the "Add a person" panel needs, built from the family graph already loaded by the page. */
@@ -19,7 +19,7 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
       return {
         id: p.id,
         name: fullName(p),
-        maiden: p.birth_surname,
+        maiden: surnames(p, (x) => byId.get(x), rels).maiden,
         given: p.given_names,
         surname: p.surname,
         years: p.is_living ? (p.birth_year ? `${p.birth_year} –` : t.app.alive) : p.birth_year || p.death_year ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}` : "",

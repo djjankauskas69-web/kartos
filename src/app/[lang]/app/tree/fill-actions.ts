@@ -90,8 +90,10 @@ export async function adoptMarriedSurname(form: FormData) {
   const surname = text(form, "parent", 120);
   if (!id || !surname) return;
   const { data: p } = await supabase.from("persons").select("surname, birth_surname").eq("id", id).eq("workspace_id", workspace.id).maybeSingle();
-  if (!p || p.birth_surname || !p.surname || p.surname === surname) return;
-  const { error } = await supabase.from("persons").update({ surname, birth_surname: p.surname }).eq("id", id).eq("workspace_id", workspace.id);
+  if (!p || !p.surname || p.surname === surname) return;
+  // Giving up a married surname: the maiden one stays whatever it was (or what her father's gives).
+  const maiden = p.birth_surname ?? (/ienė$/i.test(p.surname) ? text(form, "maiden", 120) : p.surname);
+  const { error } = await supabase.from("persons").update({ surname, birth_surname: maiden }).eq("id", id).eq("workspace_id", workspace.id);
   if (error) console.error("adoptMarriedSurname", error);
   refresh();
 }

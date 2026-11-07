@@ -179,6 +179,49 @@ export function marriedSurname(husband: string | null) {
   return m[1] + (m[2].toLowerCase() === "us" ? "uvienė" : "ienė");
 }
 
+/** A daughter's surname from her father's: Bagdonas → Bagdonaitė, Kairys → Kairytė, Butkus → Butkutė, Mickevičius → Mickevičiūtė. */
+export function daughterSurname(father: string | null) {
+  const s = father?.trim();
+  if (!s) return null;
+  const rules: Array<[RegExp, string]> = [
+    [/ius$/i, "iūtė"],
+    [/as$/i, "aitė"],
+    [/(is|ys)$/i, "ytė"],
+    [/us$/i, "utė"],
+  ];
+  for (const [re, end] of rules) if (re.test(s) && s.replace(re, "").length >= 2) return s.replace(re, end);
+  return null;
+}
+
+type NamePerson = { id: string; given_names: string; surname: string | null; sex: string | null; is_living?: boolean; birth_surname?: string | null };
+type NameRel = { person_a: string; person_b: string; type: string; subtype?: string | null; start_year?: number | null };
+
+/**
+ * A woman's surnames: the one she was born with (written down, or worked out from her father's),
+ * earlier married ones, and the surname of the husband she is with now, when she doesn't carry it yet.
+ */
+export function surnames(p: NamePerson, get: (id: string) => NamePerson | undefined, rels: NameRel[]) {
+  const none = { maiden: null as string | null, previous: [] as string[], suggest: null as string | null };
+  if (p.sex !== "female" || (p.given_names.trim() === "?" && !p.surname)) return none;
+  const father = rels.filter((r) => r.type === "parent_child" && r.person_b === p.id).map((r) => get(r.person_a)).find((x) => x?.sex === "male" && x.surname);
+  const fromFather = daughterSurname(father?.surname ?? null);
+  const maiden = p.birth_surname?.trim() || fromFather;
+  const husbands = rels
+    .filter((r) => r.type === "partner" && (r.person_a === p.id || r.person_b === p.id))
+    .map((r, i) => ({ h: get(r.person_a === p.id ? r.person_b : r.person_a), r, i }))
+    .filter((x): x is { h: NamePerson; r: NameRel; i: number } => x.h?.sex === "male");
+  // The husband she is with now: not divorced, alive if one is, the latest marriage.
+  const current = [...husbands]
+    .filter((x) => x.r.subtype !== "divorced")
+    .sort((a, b) => Number(b.h.is_living ?? false) - Number(a.h.is_living ?? false) || (b.r.start_year ?? 0) - (a.r.start_year ?? 0) || b.i - a.i)[0];
+  const married = (x: { h: NamePerson }) => marriedSurname(x.h.surname);
+  const previous = [...new Set(husbands.filter((x) => x !== current).map(married).filter((m): m is string => !!m && m !== p.surname && m !== maiden))];
+  const want = current ? married(current) : null;
+  const suggest =
+    want && p.surname && want !== p.surname && (husbands.length > 1 ? /ienė$/i.test(p.surname) || !p.birth_surname : !p.birth_surname && !/ienė$/i.test(p.surname)) ? want : null;
+  return { maiden: maiden && maiden !== p.surname ? maiden : null, previous, suggest };
+}
+
 export function fullName(p: Pick<Person, "given_names" | "surname">, locale?: string) {
   // The "unknown parent" made when adding a brother or sister before the parents are known.
   if (p.given_names.trim() === "?" && !p.surname) return locale === "en" ? "Parents unknown" : "Tėvai nežinomi";
