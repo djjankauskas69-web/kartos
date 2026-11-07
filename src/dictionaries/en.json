@@ -956,7 +956,12 @@
     "startResearch": "Start the research",
     "showMissing": "Who's missing",
     "hideMissing": "Close",
-    "missingTitle": "Tap a person – their profile opens, ready to fill in."
+    "missingTitle": "Tap a person – their profile opens, ready to fill in.",
+    "uploadShort": "Upload",
+    "inviteLine": "{n} relatives in the tree haven't joined yet.",
+    "inviteCta": "Invite",
+    "extrasTitle": "Optional, but it makes the tree richer",
+    "extrasButton": "What else to add"
   },
   "archive": {
     "title": "Archive",

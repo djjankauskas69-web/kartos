@@ -956,7 +956,12 @@
     "startResearch": "Pradėti tyrimą",
     "showMissing": "Kam trūksta",
     "hideMissing": "Suskleisti",
-    "missingTitle": "Paspauskite žmogų – atsidarys jo profilis, kur galėsite įrašyti."
+    "missingTitle": "Paspauskite žmogų – atsidarys jo profilis, kur galėsite įrašyti.",
+    "uploadShort": "Įkelti",
+    "inviteLine": "Medyje {n} giminaičiai dar neprisijungę.",
+    "inviteCta": "Pakviesti",
+    "extrasTitle": "Neprivaloma, bet praturtins medį",
+    "extrasButton": "Ką dar papildyti"
   },
   "archive": {
     "title": "Archyvas",
