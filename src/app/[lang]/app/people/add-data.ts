@@ -25,7 +25,8 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
         portrait: photo(p.id),
         sex: p.sex,
         born: p.birth_year,
-        parents: parents.length,
+        // "Parents unknown" is a place for a parent, not a parent: it can still be named.
+        parents: parents.filter((x) => !(x.given_names.trim() === "?" && !x.surname)).length,
         hasFather: parents.some((x) => x.sex === "male"),
         hasMother: parents.some((x) => x.sex === "female"),
         partners: partners.map((x) => ({ id: x.id, name: fullName(x) })),
@@ -48,6 +49,8 @@ export function addPanelProps(t: Dictionary, locale: Locale, people: Person[], r
     needAnchor: t.add.errorNeedAnchor,
     noParents: t.add.errorNoParents,
     impossible: t.add.errorImpossible,
+    ageParent: t.add.errorAgeParent,
+    ageChild: t.add.errorAgeChild,
   };
   const labels = { ...t.add, female: t.add.female, male: t.add.male, unknown: t.add.unknown } as Record<string, string>;
   return { people: options, errors, t: labels };

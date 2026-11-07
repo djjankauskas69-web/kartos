@@ -44,6 +44,7 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
 
   // Rules for the connection, checked before anything is written.
   let rels: { person_a: string; person_b: string; type: string }[] = [];
+  let placeholder: string | null = null;
   if (anchor && kind) {
     const { data } = await supabase
       .from("relationships")
@@ -53,7 +54,13 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     // The whole family: the other parent's partners and the children's parents are needed too.
     rels = data ?? [];
     const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === anchor);
-    if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2) return { error: "twoParents" };
+    // "Parents unknown" (made when a brother or sister was added) stands for a parent the siblings
+    // share: naming the father or mother fills it in, so every sibling gets that parent too.
+    if (parents.length) {
+      const { data: ph } = await supabase.from("persons").select("id, given_names, surname").in("id", parents.map((r) => r.person_a)).eq("workspace_id", workspace.id);
+      placeholder = (ph ?? []).find((p) => (p.given_names as string).trim() === "?" && !p.surname)?.id ?? null;
+    }
+    if ((link!.rel === "father" || link!.rel === "mother") && parents.length >= 2 && !placeholder) return { error: "twoParents" };
     // A brother or sister with no parents known yet: an "unknown parent" joins them (below).
     // An existing person can't become a partner, parent or child of their own close family.
     const existingId = mode === "existing" ? uuid(form, "existingId") : null;
@@ -101,7 +108,15 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     const dDay = dMonth ? md("deathDay", 31) : null;
     const sexRaw = String(form.get("sex") ?? "");
     const sex = link?.sex ?? (["female", "male"].includes(sexRaw) ? sexRaw : "unknown");
-    personId = crypto.randomUUID();
+    // Years that cannot be: a parent younger than the child, a child older than the parent.
+    if (anchor && born && link && (link.rel === "father" || link.rel === "mother" || link.rel === "child")) {
+      const { data: a } = await supabase.from("persons").select("birth_year").eq("id", anchor).eq("workspace_id", workspace.id).maybeSingle();
+      const ab = a?.birth_year as number | null | undefined;
+      if (ab && link.rel !== "child" && born > ab - 12) return { error: "ageParent" };
+      if (ab && link.rel === "child" && born < ab + 12) return { error: "ageChild" };
+    }
+    const fillPlaceholder = !!placeholder && !!link && (link.rel === "father" || link.rel === "mother");
+    personId = fillPlaceholder ? placeholder! : crypto.randomUUID();
     name = [given, text(form, "surname", 200)].filter(Boolean).join(" ");
 
     // Photo uploaded by the browser just before submitting.
@@ -128,9 +143,7 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       photoId = null;
     }
 
-    const { error } = await supabase.from("persons").insert({
-      id: personId,
-      workspace_id: workspace.id,
+    const fields = {
       given_names: given,
       surname: text(form, "surname", 200),
       birth_surname: text(form, "birthSurname", 200),
@@ -146,7 +159,10 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
       death_place: living ? null : text(form, "deathPlace", 200),
       biography: text(form, "biography", 20000),
       profile_photo_id: photoId,
-    });
+    };
+    const { error } = fillPlaceholder
+      ? await supabase.from("persons").update(fields).eq("id", personId).eq("workspace_id", workspace.id)
+      : await supabase.from("persons").insert({ id: personId, workspace_id: workspace.id, ...fields });
     if (error) {
       console.error("addPersonFromPanel person", error);
       return { error: "save" };
@@ -160,7 +176,14 @@ export async function addPersonFromPanel(_: AddState, form: FormData): Promise<A
     const links: Array<Record<string, unknown>> = [];
     const parentsOf = (id: string) => rels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a);
     const partnersOf = (id: string) => rels.filter((r) => r.type === "partner" && (r.person_a === id || r.person_b === id)).map((r) => (r.person_a === id ? r.person_b : r.person_a));
-    if (link.rel === "father" || link.rel === "mother") {
+    if ((link.rel === "father" || link.rel === "mother") && personId === placeholder) {
+      // The placeholder was filled in: it already is the parent of the siblings. The other
+      // parent, if alone, becomes this one's partner.
+      const other = parentsOf(anchor).filter((p) => p !== personId);
+      if (other.length === 1 && partnersOf(other[0]).length === 0 && !partnersOf(personId).includes(other[0])) {
+        links.push({ person_a: other[0], person_b: personId, type: "partner", subtype: "married" });
+      }
+    } else if (link.rel === "father" || link.rel === "mother") {
       links.push({ person_a: personId, person_b: anchor, type: "parent_child", subtype: "biological" });
       // The child's other parent, if they have no partner yet, becomes this person's partner.
       const other = parentsOf(anchor).filter((p) => p !== personId);

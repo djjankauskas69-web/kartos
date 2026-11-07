@@ -1387,7 +1387,9 @@
     "deathDate": "Mirties data",
     "dateHint": "Užtenka metų – mėnuo ir diena nebūtini.",
     "year": "Metai",
-    "yearPh": "Metai"
+    "yearPh": "Metai",
+    "errorAgeParent": "Patikrinkite metus: tėvai turi būti bent 12 metų vyresni už vaiką.",
+    "errorAgeChild": "Patikrinkite metus: vaikas turi būti bent 12 metų jaunesnis už tėvą ar mamą."
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kas yra toje senoje nuotraukoje. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — MyKartos padeda tai išsaugoti vaikams ir anūkams.",

@@ -1387,7 +1387,9 @@
     "deathDate": "Date of death",
     "dateHint": "The year is enough – month and day are optional.",
     "year": "Year",
-    "yearPh": "Year"
+    "yearPh": "Year",
+    "errorAgeParent": "Check the years: a parent must be at least 12 years older than the child.",
+    "errorAgeChild": "Check the years: a child must be at least 12 years younger than the parent."
   },
   "landing": {
     "reveal": "Who was who. Who is in that old photo. What grandmother used to tell at the table. All of it is often lost within one generation — MyKartos helps keep it for your children and grandchildren.",
