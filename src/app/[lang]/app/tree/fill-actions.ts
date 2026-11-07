@@ -56,3 +56,28 @@ export async function fillUnknownParent(_: FillState, form: FormData): Promise<F
   refresh();
   return { ok: true };
 }
+
+/**
+ * "Is this the mother/father?" answered yes: the only partner of someone's single known parent
+ * becomes their other parent. Checked again here, so nothing else can be linked this way.
+ */
+export async function confirmOtherParent(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const child = uuid(form, "child");
+  const parent = uuid(form, "parent");
+  if (!child || !parent || child === parent) return;
+  const { data } = await supabase
+    .from("relationships")
+    .select("person_a, person_b, type")
+    .eq("workspace_id", workspace.id)
+    .or(`person_b.eq.${child},person_a.eq.${parent},person_b.eq.${parent}`);
+  const rels = (data ?? []) as Array<{ person_a: string; person_b: string; type: string }>;
+  const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === child).map((r) => r.person_a);
+  if (parents.length !== 1 || parents.includes(parent)) return;
+  const isPartner = rels.some((r) => r.type === "partner" && ((r.person_a === parent && r.person_b === parents[0]) || (r.person_b === parent && r.person_a === parents[0])));
+  if (!isPartner) return;
+  const { error } = await supabase.from("relationships").insert({ workspace_id: workspace.id, person_a: parent, person_b: child, type: "parent_child", subtype: "biological" });
+  if (error) console.error("confirmOtherParent", error);
+  refresh();
+}

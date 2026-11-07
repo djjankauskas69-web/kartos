@@ -33,6 +33,7 @@ import { MemorialProfile, type MemorialEvent, type MemorialPlace } from "./Memor
 import { GraveView } from "./GraveView";
 import { PendingButton } from "./PortraitControls";
 import { PortraitPicker } from "./PortraitPicker";
+import { ParentSuggest } from "./ParentSuggest";
 
 export /**
  * A person's profile. `compact` lays it out in one column, for the side panel that opens over
@@ -597,8 +598,28 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     };
     const famCard = { manageHref: can.add(role) && !other ? `${base}/tree?p=${id}` : undefined, parents: fam.parents.filter((x) => byId.has(x) && x !== unknownParent).map(relItem), partners: fam.partners.filter((x) => byId.has(x)).map(relItem), children: fam.children.filter((x) => byId.has(x)).map(relItem) };
 
+    // One known parent with exactly one partner: that partner is very likely the other parent.
+    const knownParents = fam.parents.filter((x) => byId.has(x) && !isUnknownParent(byId.get(x)!));
+    const soleParent = fam.parents.length === 1 && knownParents.length === 1 ? knownParents[0] : null;
+    const soleParentPartners = soleParent ? relativesOf(soleParent, rels).partners.filter((x) => byId.has(x) && x !== id && !isUnknownParent(byId.get(x)!)) : [];
+    const suggested = can.edit(role) && !other && soleParentPartners.length === 1 ? byId.get(soleParentPartners[0])! : null;
+    const ps = t.parentSuggest;
     return (
       <div className="space-y-4">
+        {suggested && (
+          <ParentSuggest
+            locale={locale}
+            child={id}
+            parent={suggested.id}
+            given={suggested.given_names}
+            surname={suggested.surname}
+            portrait={portraits.get(suggested.id)}
+            title={(suggested.sex === "female" ? ps.mother : suggested.sex === "male" ? ps.father : ps.parent).replace("{name}", fullName(suggested))}
+            lead={suggested.sex === "female" ? ps.leadF : suggested.sex === "male" ? ps.leadM : ps.lead}
+            yes={ps.yes}
+            no={ps.no}
+          />
+        )}
         {!compact && (
           <Link href={fromMap ? `${base}/map` : `${base}/tree`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold hover:border-ink/40">
             <span aria-hidden="true">←</span>

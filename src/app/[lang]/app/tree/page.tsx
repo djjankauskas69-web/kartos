@@ -5,7 +5,7 @@ import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, generationCount, isUnknownParent, requireWorkspace, familyLinks, myPersonLinks, type Person, type Relationship } from "@/lib/data";
 import { linkedBranch } from "./linked-branch";
 
-type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner" };
+type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner"; virtual?: boolean };
 import { AddPersonHost } from "../people/AddPersonPanel";
 import { FillUnknown, type FillInfo } from "./FillUnknown";
 import { addPanelProps } from "../people/add-data";
@@ -328,14 +328,15 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       sides.push(theirs);
     }
   }
-  // A child with one parent shown, whose parent has exactly one partner: drawn as theirs too.
-  if (sides.length) {
+  // A child with one parent shown, whose parent has exactly one partner: drawn as theirs too
+  // (only in the drawing; the profile asks whether to record it).
+  {
     const parentsIn = (id: string) => mainRels.filter((r) => r.type === "parent_child" && r.person_b === id).map((r) => r.person_a);
     const partnersIn = (id: string) => mainRels.filter((r) => r.type === "partner" && (r.person_a === id || r.person_b === id)).map((r) => (r.person_a === id ? r.person_b : r.person_a));
     for (const r of [...mainRels]) {
       if (r.type !== "parent_child") continue;
       const partners = partnersIn(r.person_a);
-      if (parentsIn(r.person_b).length === 1 && partners.length === 1) mainRels.push({ ...r, id: `v-${partners[0]}-${r.person_b}`, person_a: partners[0] });
+      if (parentsIn(r.person_b).length === 1 && partners.length === 1) mainRels.push({ ...r, id: `v-${partners[0]}-${r.person_b}`, person_a: partners[0], virtual: true });
     }
   }
   const treeRelations = foreignPeople.length ? kinship(treePeople, [...rels, ...foreignRels], me, locale) : relations;

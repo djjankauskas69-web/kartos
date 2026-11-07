@@ -13,7 +13,7 @@ export type BuildPerson = {
   death_year: number | null;
   status: "pending" | "approved" | "rejected";
 };
-export type BuildRel = { person_a: string; person_b: string; type: "parent_child" | "partner" };
+export type BuildRel = { person_a: string; person_b: string; type: "parent_child" | "partner"; virtual?: boolean };
 
 type AddOption = { label: string; href: string; group: "parent" | "partner" | "child" | "sibling" };
 
@@ -123,8 +123,8 @@ export function buildTree({
   const treeHref = (id: string) => `${base}/tree?p=${id}`;
   const addOptions = (id: string) => {
     if (!canAdd) return [];
-    const parentCount = rels.filter((r) => r.type === "parent_child" && r.person_b === id && byId.has(r.person_a) && !(byId.get(r.person_a)!.given_names.trim() === "?" && !byId.get(r.person_a)!.surname)).length;
-    const hasSex = (sex: string) => rels.some((r) => r.type === "parent_child" && r.person_b === id && byId.get(r.person_a)?.sex === sex);
+    const parentCount = rels.filter((r) => r.type === "parent_child" && !r.virtual && r.person_b === id && byId.has(r.person_a) && !(byId.get(r.person_a)!.given_names.trim() === "?" && !byId.get(r.person_a)!.surname)).length;
+    const hasSex = (sex: string) => rels.some((r) => r.type === "parent_child" && !r.virtual && r.person_b === id && byId.get(r.person_a)?.sex === sex);
     const rel = (kind: string) => (addHref ? addHref(kind, id) : `${base}/people/${id}/relative?kind=${kind}`);
     const self = byId.get(id);
     // Each item is one exact relationship, so the panel does not ask again.

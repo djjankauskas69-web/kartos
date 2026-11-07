@@ -599,7 +599,8 @@
     "step": "Posūnis ar podukra",
     "noOthers": "Šeimoje kol kas nėra kitų žmonių.",
     "otherParent": "Kitas tėvas ar motina",
-    "notSpecified": "Nenurodyta"
+    "notSpecified": "Nenurodyta",
+    "pickOtherParent": "Pasirinkite, kas kitas iš tėvų…"
   },
   "person": {
     "edit": "Taisyti",
@@ -1395,7 +1396,8 @@
     "year": "Metai",
     "yearPh": "Metai",
     "errorAgeParent": "Patikrinkite metus: tėvai turi būti bent 12 metų vyresni už vaiką.",
-    "errorAgeChild": "Patikrinkite metus: vaikas turi būti bent 12 metų jaunesnis už tėvą ar mamą."
+    "errorAgeChild": "Patikrinkite metus: vaikas turi būti bent 12 metų jaunesnis už tėvą ar mamą.",
+    "pickOtherParent": "Pasirinkite, kas kitas iš tėvų…"
   },
   "landing": {
     "reveal": "Kas kam kuo buvo. Kas yra toje senoje nuotraukoje. Ką močiutė pasakodavo prie stalo. Visa tai dažnai pasimeta per vieną kartą — MyKartos padeda tai išsaugoti vaikams ir anūkams.",
@@ -1943,5 +1945,15 @@
     "errYear": "Patikrinkite metus.",
     "errSave": "Nepavyko išsaugoti. Bandykite dar kartą.",
     "close": "Uždaryti"
+  },
+  "parentSuggest": {
+    "mother": "Ar {name} yra mama?",
+    "father": "Ar {name} yra tėtis?",
+    "parent": "Ar {name} – vienas iš tėvų?",
+    "leadF": "Ji vienintelė įrašyta kaip tėčio partnerė.",
+    "leadM": "Jis vienintelis įrašytas kaip mamos partneris.",
+    "lead": "Tai vienintelis įrašytas kito iš tėvų partneris.",
+    "yes": "Taip",
+    "no": "Ne"
   }
 }

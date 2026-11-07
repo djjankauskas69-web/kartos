@@ -599,7 +599,8 @@
     "step": "Stepchild",
     "noOthers": "There's nobody else in the archive yet.",
     "otherParent": "Other parent",
-    "notSpecified": "Not specified"
+    "notSpecified": "Not specified",
+    "pickOtherParent": "Choose the other parent…"
   },
   "person": {
     "edit": "Edit",
@@ -1395,7 +1396,8 @@
     "year": "Year",
     "yearPh": "Year",
     "errorAgeParent": "Check the years: a parent must be at least 12 years older than the child.",
-    "errorAgeChild": "Check the years: a child must be at least 12 years younger than the parent."
+    "errorAgeChild": "Check the years: a child must be at least 12 years younger than the parent.",
+    "pickOtherParent": "Choose the other parent…"
   },
   "landing": {
     "reveal": "Who was who. Who is in that old photo. What grandmother used to tell at the table. All of it is often lost within one generation — MyKartos helps keep it for your children and grandchildren.",
@@ -1943,5 +1945,15 @@
     "errYear": "Check the years.",
     "errSave": "Couldn't save. Try again.",
     "close": "Close"
+  },
+  "parentSuggest": {
+    "mother": "Is {name} the mother?",
+    "father": "Is {name} the father?",
+    "parent": "Is {name} a parent?",
+    "leadF": "She is the only partner recorded for the father.",
+    "leadM": "He is the only partner recorded for the mother.",
+    "lead": "The only partner recorded for the other parent.",
+    "yes": "Yes",
+    "no": "No"
   }
 }

@@ -467,13 +467,18 @@ function AddPersonPanel({
                   <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
                     {t.otherParent}
                   </label>
-                  <select id="add-other-parent" name="otherParent" defaultValue={anchorP.partners[0].id} className={cls.input}>
+                  <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} className={cls.input}>
+                    {anchorP.partners.length > 1 && (
+                      <option value="" disabled>
+                        {t.pickOtherParent}
+                      </option>
+                    )}
                     {anchorP.partners.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
                       </option>
                     ))}
-                    <option value="">{t.noOtherParent}</option>
+                    <option value="none">{t.noOtherParent}</option>
                   </select>
                 </div>
               )}
@@ -501,13 +506,18 @@ function AddPersonPanel({
                     <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
                       {t.otherParent}
                     </label>
-                    <select id="add-other-parent" name="otherParent" defaultValue={anchorP.partners[0].id} className={cls.input}>
+                    <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} className={cls.input}>
+                    {anchorP.partners.length > 1 && (
+                      <option value="" disabled>
+                        {t.pickOtherParent}
+                      </option>
+                    )}
                       {anchorP.partners.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
                         </option>
                       ))}
-                      <option value="">{t.noOtherParent}</option>
+                      <option value="none">{t.noOtherParent}</option>
                     </select>
                   </div>
                 )}
