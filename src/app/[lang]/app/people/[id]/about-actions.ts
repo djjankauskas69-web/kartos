@@ -40,6 +40,11 @@ export async function savePersonFields(_: AboutState, form: FormData): Promise<A
   if (form.has("surname")) patch.surname = text(form, "surname", 200);
   if (form.has("birthSurname")) patch.birth_surname = text(form, "birthSurname", 200);
   if (form.has("birthPlace")) patch.birth_place = text(form, "birthPlace", 200);
+  if (form.has("deathPlace")) patch.death_place = text(form, "deathPlace", 200);
+  if (form.has("sex")) {
+    const sex = String(form.get("sex"));
+    if (["female", "male", "unknown"].includes(sex)) patch.sex = sex;
+  }
   if (form.has("birthYear") || form.has("deathYear")) {
     const by = form.has("birthYear") ? year(form, "birthYear") : undefined;
     const dy = form.has("deathYear") ? year(form, "deathYear") : undefined;
@@ -55,6 +60,16 @@ export async function savePersonFields(_: AboutState, form: FormData): Promise<A
       patch.death_year = dy;
       if (dy) patch.is_living = false;
     }
+  }
+  // Marked as living again: the death details no longer apply.
+  if (form.get("living") === "1") {
+    patch.is_living = true;
+    patch.death_year = null;
+    patch.death_month = null;
+    patch.death_day = null;
+    patch.death_place = null;
+  } else if (form.get("living") === "0") {
+    patch.is_living = false;
   }
   if (Object.keys(patch).length === 0) return { ok: true };
   const { error } = await supabase

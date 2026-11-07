@@ -1678,7 +1678,9 @@
     "addDocShort": "Dokumentą",
     "addPlaceShort": "Vietą",
     "memoriesEmpty": "Prisiminimų dar nėra. Ką prisimenate? Net vienas sakinys bus brangus kitoms kartoms.",
-    "manageInTree": "Tvarkyti medyje"
+    "manageInTree": "Tvarkyti medyje",
+    "livingQ": "Gyvas ar miręs",
+    "deadF": "Mirusi"
   },
   "shared": {
     "title": "Kas matys?",

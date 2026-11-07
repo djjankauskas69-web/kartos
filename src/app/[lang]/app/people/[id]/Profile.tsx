@@ -643,7 +643,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           birthPlace={person.birth_place}
           occupation={occupation}
           editHref={can.edit(role) ? `${base}/people/${id}/edit` : undefined}
-          linkHref={can.admin(role) ? `${base}/people/${id}/link` : undefined}
+          linkHref={can.admin(role) && (ctx.memberships.length > 1 || linkedPeople.length > 0) ? `${base}/people/${id}/link` : undefined}
           storyText={storyText}
           canAdd={can.add(role)}
           photos={[...photos, ...sharedPhotos].flatMap((p) => (urls.get(p.storage_path) ? [{ id: p.id, url: urls.get(p.storage_path)! }] : []))}
@@ -678,13 +678,39 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           inline={
             can.edit(role) && !other
               ? {
-                  givenNames: person.given_names ?? "",
-                  surname: person.surname ?? "",
-                  birthSurname: person.birth_surname ?? "",
-                  birthYear: person.birth_year ? String(person.birth_year) : "",
-                  deathYear: person.death_year ? String(person.death_year) : "",
-                  birthPlace: person.birth_place ?? "",
-                  withBirthSurname: person.sex === "female" || !!person.birth_surname,
+                  values: {
+                    givenNames: person.given_names ?? "",
+                    surname: person.surname ?? "",
+                    birthSurname: person.birth_surname ?? "",
+                    sex: person.sex ?? "unknown",
+                    living: person.is_living,
+                    birthYear: person.birth_year ? String(person.birth_year) : "",
+                    birthPlace: person.birth_place ?? "",
+                    deathYear: person.death_year ? String(person.death_year) : "",
+                    deathPlace: person.death_place ?? "",
+                  },
+                  labels: {
+                    edit: t.memorial.edit,
+                    save: t.memorial.save,
+                    saving: t.memorial.saving,
+                    cancel: t.memorial.cancel,
+                    givenNames: t.app.givenNames,
+                    surname: t.app.surname,
+                    birthSurname: t.person.birthSurname,
+                    sex: t.person.sex,
+                    male: t.person.male,
+                    female: t.person.female,
+                    unknown: t.person.unknown,
+                    living: t.memorial.livingQ,
+                    livingYes: t.app.livingYes,
+                    livingNo: person.sex === "female" ? t.memorial.deadF : t.app.livingNo,
+                    birthYear: t.app.birthYear,
+                    birthPlace: t.person.birthPlace,
+                    deathYear: t.app.deathYear,
+                    deathPlace: t.person.deathPlace,
+                    linkFamily: t.memorial.linkFamily,
+                    errors: { required: t.memorial.nameRequired, year: t.memorial.yearError, save: t.memorial.saveError },
+                  },
                 }
               : undefined
           }

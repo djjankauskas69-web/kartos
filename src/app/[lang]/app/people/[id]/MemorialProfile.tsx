@@ -7,7 +7,7 @@ import { EventForm } from "./EventForm";
 import { PlaceForm } from "./PlaceForm";
 import { placeIcons, type PlaceKind } from "./place-icons";
 import { AboutEditor } from "./AboutEditor";
-import { InlineEdit } from "./InlineEdit";
+import { EditPrompt, HeaderEdit, type HeaderEditLabels, type HeaderValues } from "./HeaderEdit";
 import { EventRow } from "./EventRow";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
@@ -98,10 +98,9 @@ export function MemorialProfile({
   /** In the panel over the tree, moving to a relative replaces the panel (× still goes back to the tree). */
   inDrawer?: boolean;
   /** The administrator changes name, years and birth place right here by clicking them. */
-  inline?: { givenNames: string; surname: string; birthSurname: string; birthYear: string; deathYear: string; birthPlace: string; withBirthSurname: boolean };
+  inline?: { values: HeaderValues; labels: HeaderEditLabels };
 }) {
   const m = t.memorial;
-  const ie = { locale, personId, hint: m.clickToEdit, labels: { save: m.save, cancel: m.cancel, error: m.saveError, year: m.yearError, required: m.nameRequired, saved: m.savedFlash, undo: m.undo } };
   const card = `${cls.card} p-5 sm:p-6`;
   const head = (icon: React.ReactNode, title: string, count?: number, tab?: string) => (
     <div className="mb-4 flex items-center gap-3">
@@ -510,90 +509,65 @@ export function MemorialProfile({
               {initials}
             </span>
           )}
-          <div className={`min-w-0 flex-1 ${nodes.composer || (editHref && !inline) ? "sm:pr-60" : ""}`}>
-            {inline ? (
-              <InlineEdit
-                {...ie}
-                fields={[
-                  { name: "givenNames", label: t.app.givenNames, value: inline.givenNames },
-                  { name: "surname", label: t.app.surname, value: inline.surname },
-                  ...(inline.withBirthSurname ? [{ name: "birthSurname", label: t.person.birthSurname, value: inline.birthSurname }] : []),
-                ]}
-              >
+          {(() => {
+            const view = (
+              <div className={`min-w-0 flex-1 ${nodes.composer || editHref ? "sm:pr-60" : ""}`}>
                 <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
-              </InlineEdit>
-            ) : (
-              <h1 className="text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3rem]">{name}</h1>
-            )}
-            {inline ? (
-              <div className="mt-2">
-                <InlineEdit
-                  {...ie}
-                  hidden={{ prevBirthYear: inline.birthYear }}
-                  fields={[
-                    { name: "birthYear", label: t.app.birthYear, value: inline.birthYear, kind: "year" },
-                    ...(living ? [] : [{ name: "deathYear", label: t.app.deathYear, value: inline.deathYear, kind: "year" as const }]),
-                  ]}
-                >
-                  <span className={`block text-[1.45rem] font-medium tabular-nums sm:text-[1.6rem] ${years ? "text-ink-muted" : "text-ink-muted/80"}`}>{years || m.addYears}</span>
-                </InlineEdit>
-              </div>
-            ) : (
-              years && <p className="mt-2 text-[1.45rem] font-medium tabular-nums text-ink-muted sm:text-[1.6rem]">{years}</p>
-            )}
-            {(toMe || (living && aliveLabel)) && (
-              <p className="mt-3 flex flex-wrap gap-2">
-                {living && aliveLabel && (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep">
-                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#5c8a3a]" />
-                    {aliveLabel}
-                  </span>
-                )}
-                {toMe && <span className="inline-flex items-center rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep first-letter:uppercase">{toMe}</span>}
-              </p>
-            )}
-            {((living ? residence || birthPlace : birthPlace) || occupation || inline) && (
-              <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.98rem]">
-                {inline && !(living && residence) ? (
-                  <InlineEdit {...ie} fields={[{ name: "birthPlace", label: t.person.birthPlace, value: inline.birthPlace, wide: true }]}>
-                    <span className={`flex min-h-9 items-center gap-1.5 ${birthPlace ? "" : "text-ink-muted"}`}>{icons.pin}{birthPlace || m.addBirthPlace}</span>
-                  </InlineEdit>
+                {years ? (
+                  <p className="mt-2 text-[1.45rem] font-medium tabular-nums text-ink-muted sm:text-[1.6rem]">{years}</p>
                 ) : (
-                  (living ? residence || birthPlace : birthPlace) && <span className="flex items-center gap-1.5">{icons.pin}{living ? residence || birthPlace : birthPlace}</span>
+                  inline && (
+                    <EditPrompt field="birthYear" className="mt-2 text-[1.2rem] font-medium">
+                      + {m.addYears}
+                    </EditPrompt>
+                  )
                 )}
-                {occupation && <span className="flex items-center gap-1.5">{icons.work}{occupation}</span>}
+                {(toMe || (living && aliveLabel)) && (
+                  <p className="mt-3 flex flex-wrap gap-2">
+                    {living && aliveLabel && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep">
+                        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#5c8a3a]" />
+                        {aliveLabel}
+                      </span>
+                    )}
+                    {toMe && <span className="inline-flex items-center rounded-full bg-[#e7ebd9] px-3 py-1 text-[0.95rem] font-semibold text-olive-deep first-letter:uppercase">{toMe}</span>}
+                  </p>
+                )}
+                {((living ? residence || birthPlace : birthPlace) || occupation || inline) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.98rem]">
+                    {(living ? residence || birthPlace : birthPlace) ? (
+                      <span className="flex items-center gap-1.5">{icons.pin}{living ? residence || birthPlace : birthPlace}</span>
+                    ) : (
+                      inline && (
+                        <EditPrompt field="birthPlace" className="flex min-h-9 items-center gap-1.5">
+                          {icons.pin}+ {m.addBirthPlace.replace(/^\+\s*/, "")}
+                        </EditPrompt>
+                      )
+                    )}
+                    {occupation && <span className="flex items-center gap-1.5">{icons.work}{occupation}</span>}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2 self-start sm:absolute sm:right-5 sm:top-5">
-            {/* The one thing everyone can do here: leave a memory. */}
-            {nodes.composer}
-            {/* Rarely needed: the full form and linking to another family, out of the way. */}
-            {((editHref && inline) || linkHref) && (
-              <details className="relative" data-menu>
-                <summary aria-label={m.more} title={m.more} className="flex h-12 w-12 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface/95 text-[1.3rem] leading-none text-ink-muted hover:border-ink/40 hover:text-ink [&::-webkit-details-marker]:hidden">
-                  ⋯
-                </summary>
-                <div className="absolute right-0 z-30 mt-2 w-max min-w-56 whitespace-nowrap rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-                  {editHref && inline && (
-                    <Link href={editHref} className="flex min-h-11 items-center rounded-lg px-3 hover:bg-linen">
-                      {m.allDetails}
-                    </Link>
-                  )}
-                  {linkHref && (
-                    <Link href={linkHref} className="flex min-h-11 items-center rounded-lg px-3 hover:bg-linen">
-                      {m.linkFamily}
+            );
+            if (inline) {
+              return (
+                <HeaderEdit locale={locale} personId={personId} values={inline.values} labels={inline.labels} linkHref={linkHref} view={view} actions={nodes.composer} />
+              );
+            }
+            return (
+              <>
+                {view}
+                <div className="flex flex-wrap gap-2 self-start sm:absolute sm:right-5 sm:top-5">
+                  {nodes.composer}
+                  {editHref && (
+                    <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
+                      ✎ {m.edit}
                     </Link>
                   )}
                 </div>
-              </details>
-            )}
-            {editHref && !inline && (
-              <Link href={editHref} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 text-[0.95rem] font-semibold hover:border-ink/40">
-                ✎ {m.edit}
-              </Link>
-            )}
-          </div>
+              </>
+            );
+          })()}
         </div>
       </header>
 

@@ -1678,7 +1678,9 @@
     "addDocShort": "Document",
     "addPlaceShort": "Place",
     "memoriesEmpty": "No memories yet. What do you remember? Even one sentence will be precious to the next generations.",
-    "manageInTree": "Arrange in the tree"
+    "manageInTree": "Arrange in the tree",
+    "livingQ": "Living or passed away",
+    "deadF": "Passed away"
   },
   "shared": {
     "title": "Who will see it?",
