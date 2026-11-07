@@ -425,7 +425,21 @@ export function TreeView({
       }
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    // A pinch anywhere else on the tree page (the header, an open profile…) would zoom the whole
+    // page instead, and the profile panel then opens cut off. On this page pinching only zooms the tree.
+    const noPageZoom = (e: WheelEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !el.contains(e.target as Node)) e.preventDefault();
+    };
+    const noGesture = (e: Event) => e.preventDefault();
+    window.addEventListener("wheel", noPageZoom, { passive: false });
+    document.addEventListener("gesturestart", noGesture);
+    document.addEventListener("gesturechange", noGesture);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("wheel", noPageZoom);
+      document.removeEventListener("gesturestart", noGesture);
+      document.removeEventListener("gesturechange", noGesture);
+    };
   }, [go, zoomAt]);
 
   // Pointer: one pointer drags, two pointers (touch) pinch-zoom.
