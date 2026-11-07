@@ -953,7 +953,10 @@
       "other": "generations"
     },
     "nextWhy": "…and you'll be able to find out where your family comes from.",
-    "startResearch": "Start the research"
+    "startResearch": "Start the research",
+    "showMissing": "Who's missing",
+    "hideMissing": "Close",
+    "missingTitle": "Tap a person – their profile opens, ready to fill in."
   },
   "archive": {
     "title": "Archive",

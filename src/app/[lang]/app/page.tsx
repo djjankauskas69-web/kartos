@@ -272,15 +272,15 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
   ];
   // The way to the research, as concrete steps: who needs which detail, or how many more people.
   const editable = can.edit(current.role);
-  const steps: Array<{ key: string; name?: string; what: string; href?: string }> = [];
+  const steps: Array<{ key: string; name?: string; what: string; href?: string; personId?: string; years?: string; portrait?: string }> = [];
   if (editable) {
     const placeNeed = Math.max(0, 3 - withPlace);
     const yearNeed = Math.max(0, Math.ceil(people.length * 0.6) - withYear);
     const byAge = [...people].filter((p) => !isUnknownParent(p)).sort((a, b) => (a.birth_year ?? 3000) - (b.birth_year ?? 3000));
-    for (const p of byAge.filter((p) => !p.birth_place).slice(0, placeNeed))
-      steps.push({ key: `pl-${p.id}`, name: fullName(p), what: d.stepPlace, href: `${base}/people/${p.id}?edit=birthPlace` });
-    for (const p of byAge.filter((p) => !p.birth_year).slice(0, yearNeed))
-      steps.push({ key: `yr-${p.id}`, name: fullName(p), what: d.stepYear, href: `${base}/people/${p.id}?edit=birthYear` });
+    for (const p of byAge.filter((p) => !p.birth_place).slice(0, placeNeed ? 8 : 0))
+      steps.push({ key: `pl-${p.id}`, name: fullName(p), what: d.stepPlace, href: `${base}/people/${p.id}?edit=birthPlace`, personId: p.id });
+    for (const p of byAge.filter((p) => !p.birth_year).slice(0, yearNeed ? 8 : 0))
+      steps.push({ key: `yr-${p.id}`, name: fullName(p), what: d.stepYear, href: `${base}/people/${p.id}?edit=birthYear`, personId: p.id });
     if (gensNow < 3) steps.push({ key: "gens", what: d.stepGens.replace("{n}", String(3 - gensNow)), href: `${base}/tree` });
     if (people.length < 10) steps.push({ key: "people", what: d.stepPeople.replace("{n}", plural(locale, 10 - people.length, t.tree.people)), href: `${base}/tree` });
   }
@@ -324,12 +324,18 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
 
   /* ---- Pictures ---- */
   const coverPath = (coverRes.data as { cover_path?: string | null } | null)?.cover_path ?? null;
-  const portraitPeople = [head, partner, ...elders, ...shownKids, ...recentRaw.flatMap((a) => (a.personId ? [byId.get(a.personId)!] : [])), ...dates.slice(0, 40).flatMap((x) => (x.personId ? [byId.get(x.personId)!] : [])), ...upcoming.slice(0, 6).map((x) => byId.get(x.personId)!), ...(latest ? [byId.get(latest.person_id)!] : [])].filter(Boolean) as Person[];
+  const portraitPeople = [head, partner, ...elders, ...shownKids, ...recentRaw.flatMap((a) => (a.personId ? [byId.get(a.personId)!] : [])), ...dates.slice(0, 40).flatMap((x) => (x.personId ? [byId.get(x.personId)!] : [])), ...upcoming.slice(0, 6).map((x) => byId.get(x.personId)!), ...(latest ? [byId.get(latest.person_id)!] : []), ...steps.flatMap((st) => (st.personId ? [byId.get(st.personId)!] : []))].filter(Boolean) as Person[];
   const [portraits, urls, who] = await Promise.all([
     portraitUrls(locale, [...new Map(portraitPeople.map((p) => [p.id, p])).values()]),
     signedUrls(locale, [...moments.map((m) => m.storage_path as string), ...recentRaw.flatMap((a) => (a.photoPath ? [a.photoPath] : [])), ...(coverPath ? [coverPath] : [])]),
     profileNames(locale, [...recentRaw.flatMap((a) => (a.whoId ? [a.whoId] : [])), ...(latest?.author_id ? [latest.author_id as string] : [])]),
   ]);
+  for (const st of steps) {
+    const p = st.personId ? byId.get(st.personId) : undefined;
+    if (!p) continue;
+    st.portrait = portraits.get(p.id);
+    st.years = p.birth_year ? (p.death_year ? `${p.birth_year}–${p.death_year}` : `${p.birth_year}`) : p.death_year ? `–${p.death_year}` : undefined;
+  }
   const recent: Activity[] = recentRaw.map(({ photoPath, personId, whoId, ...a }) => ({
     ...a,
     who: whoId ? (whoId === user?.id ? d.you : who.get(whoId)) : undefined,

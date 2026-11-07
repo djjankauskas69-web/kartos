@@ -953,7 +953,10 @@
       "other": "kartų"
     },
     "nextWhy": "…ir galėsite sužinoti, iš kur kilusi jūsų giminė.",
-    "startResearch": "Pradėti tyrimą"
+    "startResearch": "Pradėti tyrimą",
+    "showMissing": "Kam trūksta",
+    "hideMissing": "Suskleisti",
+    "missingTitle": "Paspauskite žmogų – atsidarys jo profilis, kur galėsite įrašyti."
   },
   "archive": {
     "title": "Archyvas",

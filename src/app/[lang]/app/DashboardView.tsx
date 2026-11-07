@@ -8,7 +8,7 @@ import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
-import { ResearchRing } from "@/components/FillMeter";
+import { ResearchCard } from "./ResearchCard";
 
 export type Activity = {
   at: string;
@@ -56,7 +56,7 @@ export type DashboardData = {
   upcoming: Upcoming[];
   latestMemory?: { body: string; author?: string; at: string; name: string; thumb?: string; href: string };
   fill: Array<{ key: string; text: string; start: string; href: string }>;
-  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number; target: number; unit: string; need: number; what: string; done: boolean; href?: string }>; steps: Array<{ key: string; name?: string; what: string; href?: string }>; left: number; nextText: string; nextHref?: string; progress: number };
+  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number; target: number; unit: string; need: number; what: string; done: boolean; href?: string }>; steps: Array<{ key: string; name?: string; what: string; href?: string; years?: string; portrait?: string }>; left: number; nextText: string; nextHref?: string; progress: number };
 };
 
 const card = cls.card;
@@ -130,30 +130,15 @@ export function DashboardView(props: DashboardData) {
         ))}
       </ul>
 
-      {/* The way to the family origins research: one ring, one sentence, one next step */}
-      <div className={`relative overflow-hidden px-5 py-5 sm:px-7 sm:py-6 ${card} bg-gradient-to-br from-[#fbf8f1] via-surface to-[#f1f4e8]`}>
-        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgb(154_166_108/0.18),transparent_70%)]" />
-        <div className="relative flex flex-wrap items-center gap-x-6 gap-y-4">
-          <ResearchRing value={tree.ready ? 100 : tree.progress} left={tree.ready ? 0 : tree.left} leftLabel={d.leftWord} label={d.researchTitle} />
-          <div className="min-w-0 flex-1 basis-64">
-            <p className="text-[0.85rem] font-semibold uppercase tracking-[0.08em] text-sage-deep">{d.researchTitle}</p>
-            <h2 className="mt-1 text-[1.45rem] font-semibold leading-snug tracking-[-0.02em]">{tree.ready ? d.readyTitle : tree.nextText}</h2>
-            <p className="mt-1 text-[0.98rem] text-ink-muted">{tree.ready ? d.researchReady : d.nextWhy}</p>
-          </div>
-          {tree.ready ? (
-            <span className="inline-flex min-h-12 items-center gap-2 rounded-full border border-line bg-surface px-5 font-semibold text-ink-muted">
-              {d.startResearch} · {d.researchSoon}
-            </span>
-          ) : (
-            tree.nextHref && (
-              <Link href={tree.nextHref} className={`${cls.primary} !min-h-12 gap-2 px-6`}>
-                {d.reqAction}
-                <span aria-hidden="true">→</span>
-              </Link>
-            )
-          )}
-        </div>
-      </div>
+      {/* The way to the family origins research: one ring, one sentence, and who is missing what */}
+      <ResearchCard
+        ready={tree.ready}
+        progress={tree.progress}
+        left={tree.left}
+        nextText={tree.nextText}
+        steps={tree.steps}
+        labels={{ leftWord: d.leftWord, researchTitle: d.researchTitle, readyTitle: d.readyTitle, researchReady: d.researchReady, nextWhy: d.nextWhy, startResearch: d.startResearch, researchSoon: d.researchSoon, reqAction: d.showMissing, hideList: d.hideMissing, missingTitle: d.missingTitle }}
+      />
 
       {/* The latest memory, to read right here: what the archive is for */}
       {latestMemory && (
