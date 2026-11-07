@@ -1909,5 +1909,31 @@
     "died": "Mirė",
     "private": "Apie gyvus žmones šioje nuorodoje informacijos nėra.",
     "readOnly": "Tik peržiūra"
+  },
+  "fill": {
+    "titleMother": "Kas yra mama?",
+    "titleFather": "Kas yra tėtis?",
+    "titleParent": "Kas yra šis tėvas ar mama?",
+    "of": "Vaikai: {names}",
+    "partnerOfHer": "Jos vyras – {name}",
+    "partnerOfHim": "Jo žmona – {name}",
+    "who": "Tai –",
+    "mother": "Mama",
+    "father": "Tėtis",
+    "given": "Vardas",
+    "surname": "Pavardė",
+    "maiden": "Mergautinė pavardė",
+    "optional": "nebūtina",
+    "alive": "Gyvas",
+    "dead": "Miręs",
+    "aliveF": "Gyva",
+    "deadF": "Mirusi",
+    "birthPlace": "Gimimo vieta",
+    "deathPlace": "Mirties vieta",
+    "save": "Išsaugoti",
+    "errName": "Įrašykite vardą.",
+    "errYear": "Patikrinkite metus.",
+    "errSave": "Nepavyko išsaugoti. Bandykite dar kartą.",
+    "close": "Uždaryti"
   }
 }

@@ -1909,5 +1909,31 @@
     "died": "Died",
     "private": "This link shows nothing about living people.",
     "readOnly": "View only"
+  },
+  "fill": {
+    "titleMother": "Who is the mother?",
+    "titleFather": "Who is the father?",
+    "titleParent": "Who is this parent?",
+    "of": "Children: {names}",
+    "partnerOfHer": "Her husband – {name}",
+    "partnerOfHim": "His wife – {name}",
+    "who": "This is –",
+    "mother": "Mother",
+    "father": "Father",
+    "given": "First name",
+    "surname": "Last name",
+    "maiden": "Maiden name",
+    "optional": "optional",
+    "alive": "Living",
+    "dead": "Passed away",
+    "aliveF": "Living",
+    "deadF": "Passed away",
+    "birthPlace": "Place of birth",
+    "deathPlace": "Place of death",
+    "save": "Save",
+    "errName": "Add a first name.",
+    "errYear": "Check the years.",
+    "errSave": "Couldn't save. Try again.",
+    "close": "Close"
   }
 }

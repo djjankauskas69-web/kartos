@@ -696,7 +696,7 @@ function AddPersonPanel({
  * A date as people know it: the year is enough, the month and the day can follow when known.
  * One row (year · month · day), the day waiting for the month and limited to that month's days.
  */
-function DateRow({ id, prefix, label, hint, locale, t, year, onYear }: { id: string; prefix: "birth" | "death"; label: string; hint?: string; locale: string; t: L; year?: string; onYear?: (v: string) => void }) {
+export function DateRow({ id, prefix, label, hint, locale, t, year, onYear }: { id: string; prefix: "birth" | "death"; label: string; hint?: string; locale: string; t: L; year?: string; onYear?: (v: string) => void }) {
   const [y, setY] = useState(year ?? "");
   const [m, setM] = useState("");
   const [d, setD] = useState("");

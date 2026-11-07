@@ -7,6 +7,7 @@ import { linkedBranch } from "./linked-branch";
 
 type BuildRelLike = { id: string; person_a: string; person_b: string; type: "parent_child" | "partner" };
 import { AddPersonHost } from "../people/AddPersonPanel";
+import { FillUnknown, type FillInfo } from "./FillUnknown";
 import { addPanelProps } from "../people/add-data";
 import { generations } from "@/lib/tree-layout";
 import { cls } from "@/components/ui";
@@ -123,9 +124,27 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     Promise.all(branches.map((b) => (b && !b.access ? portraitUrls(locale, b.original.filter((p) => [...b.originalId.values()].includes(p.id))) : Promise.resolve(new Map<string, string>())))),
   ]);
   const panel = canAdd ? addPanelProps(t, locale, people, rels, allPortraits) : null;
-  const host = panel ? (
-    <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={me} />
-  ) : null;
+  // "Parents unknown" cards: a click names them in place. A known partner tells which parent it is.
+  const fillInfo: FillInfo = {};
+  if (can.edit(current.role)) {
+    const pById = new Map(people.map((p) => [p.id, p]));
+    for (const p of people) {
+      if (!isUnknownParent(p)) continue;
+      const partner = rels.filter((r) => r.type === "partner" && (r.person_a === p.id || r.person_b === p.id)).map((r) => pById.get(r.person_a === p.id ? r.person_b : r.person_a)).find(Boolean);
+      const kids = rels.filter((r) => r.type === "parent_child" && r.person_a === p.id).flatMap((r) => (pById.get(r.person_b) ? [fullName(pById.get(r.person_b)!)] : []));
+      fillInfo[p.id] = {
+        role: partner?.sex === "male" ? "mother" : partner?.sex === "female" ? "father" : null,
+        children: kids,
+        partner: partner && !isUnknownParent(partner) ? fullName(partner) : undefined,
+      };
+    }
+  }
+  const host = (
+    <>
+      {panel && <AddPersonHost people={panel.people} workspaceId={current.id} needsApproval={can.needsApproval(current.role)} after="tree" t={panel.t} errors={panel.errors} meId={me} />}
+      {Object.keys(fillInfo).length > 0 && <FillUnknown info={fillInfo} locale={locale} t={{ ...(t.add as unknown as Record<string, string>), ...(t.fill as Record<string, string>) }} />}
+    </>
+  );
   // Keeps the current view (person, depth, list) when the panel opens.
   const addHref = (extra: Record<string, string>) => {
     const q = new URLSearchParams();
@@ -351,6 +370,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       const w = t.tree.unlink.rel[kind];
       return sex === "male" ? w.m : sex === "female" ? w.f : w.x;
     };
+    for (const c of tree.cards) if (c.unknown && fillInfo[c.id]) c.profileHref = addHref({ fill: c.id });
     for (const c of tree.cards) {
       if (c.foreign || c.unknown) continue;
       c.links = rels.flatMap((r) => {

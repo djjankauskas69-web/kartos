@@ -881,7 +881,7 @@ export function TreeView({
                   style={{ top: PHOTO / 2 }}
                   className={`pointer-events-none absolute inset-x-1.5 bottom-1 rounded-[18px] border shadow-[0_10px_24px_-18px_rgb(60_45_30/0.55)] transition-shadow group-hover:shadow-[0_14px_30px_-16px_rgb(60_45_30/0.6)] ${c.living ? "border-[#e6e1d6] bg-white/95" : "border-[#e3d8c4] bg-[#f8f2e7]/95"}`}
                 />
-                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-3.5 text-center focus-visible:outline-offset-2">
+                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !c.profileHref.includes("fill=") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-3.5 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
