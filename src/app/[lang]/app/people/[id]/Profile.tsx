@@ -702,7 +702,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     female: t.person.female,
                     unknown: t.person.unknown,
                     living: t.memorial.livingQ,
-                    livingYes: t.app.livingYes,
+                    livingYes: person.sex === "female" ? t.memorial.aliveF : t.app.livingYes,
                     livingNo: person.sex === "female" ? t.memorial.deadF : t.app.livingNo,
                     birthYear: t.app.birthYear,
                     birthPlace: t.person.birthPlace,
