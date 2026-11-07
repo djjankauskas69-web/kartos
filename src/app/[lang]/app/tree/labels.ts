@@ -46,5 +46,6 @@ export function treeLabels(t: Dictionary) {
     viewTree: t.tree.viewTree,
     viewList: t.tree.viewList,
     unlink: t.tree.unlink,
+    remove: t.tree.remove,
   };
 }

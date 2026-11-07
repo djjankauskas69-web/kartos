@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { drawerState } from "./drawer-state";
 import { requestTreeAccess } from "../tree-access-actions";
-import { removeRelationship, setOtherParent } from "../actions";
+import { deletePerson, removeRelationship, setOtherParent } from "../actions";
 import { kinGroups, SHOW_CATS, type ShowCat } from "./show-filter";
 import { kinship } from "@/lib/kinship";
 
@@ -116,6 +116,8 @@ export type TreeCard = {
   linkHref?: string;
   /** Editors: this person's links, to take one apart from the card menu. */
   links?: Array<{ id: string; kind: string; label: string }>;
+  /** Administrators: the person can be deleted from the card menu. */
+  deletable?: boolean;
   /** Shown from a linked family (its name). */
   foreign?: string;
   moreAbove: boolean;
@@ -128,6 +130,7 @@ export type TreePlus = { key: string; x: number; y: number; gen: number; options
 
 type Labels = {
   unlink: { menu: string; pick: string; question: string; hint: string; confirm: string; cancel: string; back: string; rel: Record<string, { m: string; f: string; x: string }> };
+  remove: { menu: string; question: string; hint: string; confirm: string };
   zoomIn: string;
   zoomOut: string;
   fit: string;
@@ -1044,6 +1047,7 @@ function CardMenu({
 }) {
   const [showNav, setShowNav] = useState(false);
   const [unlink, setUnlink] = useState<"off" | "pick" | { id: string; label: string }>("off");
+  const [removing, setRemoving] = useState(false);
   const whichBlock = (
       card.missingParent && (
           <div className="mb-1.5 rounded-xl bg-[#fbf3e2] px-3 py-2.5">
@@ -1204,6 +1208,33 @@ function CardMenu({
                   </button>
                   <button type="submit" className="inline-flex min-h-9 items-center rounded-full bg-danger px-3.5 text-[0.9rem] font-semibold text-white hover:opacity-90">
                     {labels.unlink.confirm}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+        {card.deletable && (
+          <div className={card.links && card.links.length > 0 ? "" : "mt-1.5 border-t border-line pt-1.5"}>
+            {!removing ? (
+              <button type="button" role="menuitem" onClick={() => setRemoving(true)} className={`${item} text-ink-muted hover:text-danger`}>
+                <svg {...ICON}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+                {labels.remove.menu}
+              </button>
+            ) : (
+              <div role="alertdialog" aria-label={labels.remove.question} className="m-1 rounded-xl bg-[#fbeeea] p-3">
+                <p className="font-semibold">{labels.remove.question}</p>
+                <p className="mt-0.5 text-[0.92rem]">{card.name}{card.years ? ` · ${card.years}` : ""}</p>
+                <p className="mt-1 text-[0.85rem] leading-snug text-ink-muted">{labels.remove.hint}</p>
+                <form action={deletePerson} className="mt-2.5 flex items-center justify-end gap-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="personId" value={card.id} />
+                  <input type="hidden" name="back" value="tree" />
+                  <button type="button" onClick={() => setRemoving(false)} className="min-h-9 rounded-full px-3 text-[0.9rem] font-semibold text-ink-muted hover:bg-white/70 hover:text-ink">
+                    {labels.unlink.cancel}
+                  </button>
+                  <button type="submit" className="inline-flex min-h-9 items-center rounded-full bg-danger px-3.5 text-[0.9rem] font-semibold text-white hover:opacity-90">
+                    {labels.remove.confirm}
                   </button>
                 </form>
               </div>

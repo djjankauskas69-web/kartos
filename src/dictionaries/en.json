@@ -546,6 +546,12 @@
           "x": "Partner"
         }
       }
+    },
+    "remove": {
+      "menu": "Delete person…",
+      "question": "Delete this person?",
+      "hint": "They leave the tree with all their links.",
+      "confirm": "Delete"
     }
   },
   "family": {

@@ -396,7 +396,7 @@ export async function deletePerson(form: FormData) {
   if (id) {
     await supabase.from("persons").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", workspace.id);
   }
-  redirect(`/${locale}/app/members`);
+  redirect(`/${locale}/app/${form.get("back") === "tree" ? "tree" : "members"}`);
 }
 
 /* ---------- Relatives ---------- */

@@ -546,6 +546,12 @@
           "x": "Sutuoktinis"
         }
       }
+    },
+    "remove": {
+      "menu": "Ištrinti žmogų…",
+      "question": "Ištrinti šį žmogų?",
+      "hint": "Jis dings iš medžio kartu su visais savo ryšiais.",
+      "confirm": "Ištrinti"
     }
   },
   "family": {

@@ -373,6 +373,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     for (const c of tree.cards) if (c.unknown && fillInfo[c.id]) c.profileHref = addHref({ fill: c.id });
     for (const c of tree.cards) {
       if (c.foreign || c.unknown) continue;
+      if (can.admin(current.role) && c.id !== me) c.deletable = true;
       c.links = rels.flatMap((r) => {
         const mine = r.person_a === c.id || r.person_b === c.id;
         if (!mine || !r.id) return [];
