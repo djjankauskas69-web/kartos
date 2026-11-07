@@ -270,6 +270,22 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
     { key: "years", label: d.reqYears, have: people.length ? Math.round((withYear / people.length) * 100) : 0, target: 60, unit: " %", need: Math.ceil(people.length * 0.6) - withYear, what: d.needYears, done: people.length > 0 && withYear / people.length >= 0.6, href: firstMissing((p) => !p.birth_year) },
     { key: "places", label: d.reqPlaces, have: withPlace, target: 3, unit: "", need: 3 - withPlace, what: d.needPlaces, done: withPlace >= 3, href: firstMissing((p) => !p.birth_place) },
   ];
+  // The way to the research, as concrete steps: who needs which detail, or how many more people.
+  const editable = can.edit(current.role);
+  const steps: Array<{ key: string; name?: string; what: string; href?: string }> = [];
+  if (editable) {
+    const placeNeed = Math.max(0, 3 - withPlace);
+    const yearNeed = Math.max(0, Math.ceil(people.length * 0.6) - withYear);
+    const byAge = [...people].filter((p) => !isUnknownParent(p)).sort((a, b) => (a.birth_year ?? 3000) - (b.birth_year ?? 3000));
+    for (const p of byAge.filter((p) => !p.birth_place).slice(0, placeNeed))
+      steps.push({ key: `pl-${p.id}`, name: fullName(p), what: d.stepPlace, href: `${base}/people/${p.id}?edit=birthPlace` });
+    for (const p of byAge.filter((p) => !p.birth_year).slice(0, yearNeed))
+      steps.push({ key: `yr-${p.id}`, name: fullName(p), what: d.stepYear, href: `${base}/people/${p.id}?edit=birthYear` });
+    if (gensNow < 3) steps.push({ key: "gens", what: d.stepGens.replace("{n}", String(3 - gensNow)), href: `${base}/tree` });
+    if (people.length < 10) steps.push({ key: "people", what: d.stepPeople.replace("{n}", plural(locale, 10 - people.length, t.tree.people)), href: `${base}/tree` });
+  }
+  const unitsAll = reqs.reduce((n, r) => n + (r.key === "years" ? Math.max(1, Math.ceil(people.length * 0.6)) : r.target), 0);
+  const unitsLeft = reqs.reduce((n, r) => n + (r.done ? 0 : Math.max(1, r.need)), 0);
   // Every detail counts the same: each field filled in on anyone moves the number a little.
   const wives = new Set(marriedWomen.map((p) => p.id));
   let filledFields = 0;
@@ -352,7 +368,7 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
           : undefined
       }
       fill={fill}
-      tree={{ completeness, reqs, ready: reqs.every((r) => r.done) }}
+      tree={{ completeness, reqs, ready: reqs.every((r) => r.done), steps, left: unitsLeft, progress: unitsAll ? Math.round((100 * (unitsAll - unitsLeft)) / unitsAll) : 0 }}
     />
   );
 }

@@ -77,9 +77,18 @@ export function HeaderEdit({
     const open = (e: Event) => {
       startRef.current();
       const field = (e as CustomEvent<string>).detail;
-      requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus());
+      // The form appears on the next frame; then the field takes the cursor.
+      requestAnimationFrame(() => requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus()));
     };
     window.addEventListener("kartos:edit-header", open);
+    // From the dashboard's "+ birth place": arrive with that field ready to type in.
+    const q = new URLSearchParams(window.location.search);
+    const field = q.get("edit");
+    if (field && /^[a-zA-Z]+$/.test(field)) {
+      q.delete("edit");
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+      open(new CustomEvent("kartos:edit-header", { detail: field }));
+    }
     return () => window.removeEventListener("kartos:edit-header", open);
   }, []);
 

@@ -8,7 +8,8 @@ import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
 import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree, IconUserPlus } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
-import { FillMeter, ProgressRing } from "@/components/FillMeter";
+import { FillMeter } from "@/components/FillMeter";
+import { plural } from "./tree/build";
 
 export type Activity = {
   at: string;
@@ -56,7 +57,7 @@ export type DashboardData = {
   upcoming: Upcoming[];
   latestMemory?: { body: string; author?: string; at: string; name: string; thumb?: string; href: string };
   fill: Array<{ key: string; text: string; start: string; href: string }>;
-  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number; target: number; unit: string; need: number; what: string; done: boolean; href?: string }> };
+  tree: { completeness: number; ready: boolean; reqs: Array<{ key: string; label: string; have: number; target: number; unit: string; need: number; what: string; done: boolean; href?: string }>; steps: Array<{ key: string; name?: string; what: string; href?: string }>; left: number; progress: number };
 };
 
 const card = cls.card;
@@ -130,79 +131,49 @@ export function DashboardView(props: DashboardData) {
         ))}
       </ul>
 
-      {/* How complete the tree is, in one thin line; opens to the conditions for the origins research */}
-      {!(tree.ready && tree.completeness >= 100) && (
-        <details className={`group ${card} ${tree.ready ? "bg-[#f1f4e8]" : ""}`}>
-          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] px-5 py-4 outline-none focus-visible:ring-2 focus-visible:ring-olive/40 sm:px-6 [&::-webkit-details-marker]:hidden">
+      {/* The way to the family origins research: how far, and the very next things to fill in */}
+      {tree.ready ? (
+        <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#f1f4e8] px-5 py-4 sm:px-6 ${card}`}>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-olive text-surface">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{d.readyTitle}</p>
+            <p className="text-[0.95rem] text-ink-muted">{d.researchReady}</p>
+          </div>
+          <span className="inline-flex min-h-10 items-center rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold text-ink-muted">{d.researchSoon}</span>
+        </div>
+      ) : (
+        <div className={`px-5 py-5 sm:px-6 ${card}`}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <span className="flex items-center gap-2.5 font-semibold">
               <span className="text-sage-deep"><IconTree size={20} /></span>
-              {d.treeTitle2}
+              {d.toResearch.replace("{n}", plural(locale, tree.left, d.stepForms))}
             </span>
-            <FillMeter value={tree.completeness} label={d.treeTitle2} />
-            <span className="min-w-0 basis-full text-[0.98rem] text-ink-muted md:basis-auto md:flex-[2]">
-              {tree.ready
-                ? d.stripReady
-                : (() => {
-                    const next = tree.reqs.find((r) => !r.done);
-                    return next ? d.stripNext.replace("{what}", next.what).replace("{n}", String(Math.max(1, next.need))) : "";
-                  })()}
-            </span>
-            <span className="ml-auto inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold group-hover:border-ink/40">
-              {d.stripMore}
-              <span aria-hidden="true" className="transition-transform group-open:rotate-180">⌄</span>
-            </span>
-          </summary>
-          <div className="border-t border-line px-5 pb-5 sm:px-6">
-            <ul className="mt-4 space-y-1">
-              {tree.reqs.map((r) => {
-                const row = (
-                  <>
-                    {r.done ? (
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e7ebd9] text-olive-deep">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-                      </span>
-                    ) : (
-                      <ProgressRing value={r.have / r.target} />
-                    )}
-                    <span className={`min-w-0 flex-1 leading-snug ${r.done ? "text-ink-muted" : "font-semibold"}`}>{r.label}</span>
-                    {!r.done && (
-                      <span className="shrink-0 text-[0.9rem] tabular-nums text-ink-muted">
-                        {d.reqOf.replace("{have}", `${r.have}${r.unit}`).replace("{target}", `${r.target}${r.unit}`)}
-                        {r.href && <span className="ml-2 font-semibold text-olive-deep">· {d.reqAction} →</span>}
-                      </span>
-                    )}
-                  </>
-                );
-                return (
-                  <li key={r.key}>
-                    {!r.done && r.href ? (
-                      <Link href={r.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-paper/70">{row}</Link>
-                    ) : (
-                      <div className="flex items-center gap-3 py-2">{row}</div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-
-            {/* The research it leads to: locked until the tree is ready */}
-            <div className={`mt-5 flex items-start gap-3 rounded-2xl px-4 py-4 ${tree.ready ? "bg-[#eef1e4]" : "bg-paper"}`}>
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${tree.ready ? "bg-olive text-surface" : "bg-linen text-ink-muted"}`}>
-                {tree.ready ? (
-                  <span aria-hidden="true" className="text-[1.1rem]">✦</span>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{d.researchTitle}</p>
-                <p className="mt-0.5 text-[0.95rem] leading-snug text-ink-muted">{tree.ready ? d.researchReady : d.researchLocked}</p>
-                {tree.ready && <span className="mt-3 inline-flex min-h-10 items-center rounded-full border border-line bg-surface px-4 text-[0.95rem] font-semibold text-ink-muted">{d.researchSoon}</span>}
-              </div>
-            </div>
-
+            <FillMeter value={tree.progress} label={d.researchTitle} />
+            <span className="ml-auto text-[0.9rem] text-ink-muted">{d.filledShort.replace("{n}", String(tree.completeness))}</span>
           </div>
-        </details>
+          {tree.steps.length > 0 && (
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {tree.steps.slice(0, 3).map((st) => (
+                <li key={st.key}>
+                  <Link href={st.href ?? "#"} className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[0.97rem] hover:border-ink/40 hover:bg-paper">
+                    {st.name && <span className="font-semibold">{st.name}</span>}
+                    <span className={st.name ? "text-olive-deep" : "font-semibold text-olive-deep"}>{st.what}</span>
+                    <span aria-hidden="true" className="text-ink-muted transition-transform group-hover:translate-x-0.5">→</span>
+                  </Link>
+                </li>
+              ))}
+              {tree.steps.length > 3 && (
+                <li>
+                  <Link href={`/${locale}/app/tree`} className="inline-flex min-h-11 items-center px-2 text-[0.95rem] font-semibold text-ink-muted hover:text-ink">
+                    {d.moreSteps.replace("{n}", String(tree.steps.length - 3))} →
+                  </Link>
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
       )}
 
       {/* The latest memory, to read right here: what the archive is for */}

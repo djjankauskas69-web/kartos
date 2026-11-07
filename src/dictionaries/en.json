@@ -920,7 +920,21 @@
     "stripReady": "✦ Your tree is ready for the family origins research",
     "stripMore": "Add more",
     "reqAction": "Add",
-    "reqOf": "{have} of {target}"
+    "reqOf": "{have} of {target}",
+    "toResearch": "{n} to go to the family origins research",
+    "stepForms": {
+      "one": "step",
+      "few": "steps",
+      "many": "steps",
+      "other": "steps"
+    },
+    "filledShort": "Tree {n}% filled in",
+    "moreSteps": "{n} more",
+    "stepPlace": "+ birth place",
+    "stepYear": "+ birth year",
+    "stepGens": "+ {n} more generations (parents or grandparents)",
+    "stepPeople": "+ {n} more in the tree",
+    "readyTitle": "The tree is ready for the family origins research"
   },
   "archive": {
     "title": "Archive",

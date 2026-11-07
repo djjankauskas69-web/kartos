@@ -920,7 +920,21 @@
     "stripReady": "✦ Medis paruoštas – galėsite ištirti giminės kilmę",
     "stripMore": "Papildyti",
     "reqAction": "Įrašyti",
-    "reqOf": "{have} iš {target}"
+    "reqOf": "{have} iš {target}",
+    "toResearch": "Iki giminės kilmės tyrimo – dar {n}",
+    "stepForms": {
+      "one": "žingsnis",
+      "few": "žingsniai",
+      "many": "žingsniai",
+      "other": "žingsnių"
+    },
+    "filledShort": "Medis užpildytas {n} %",
+    "moreSteps": "dar {n}",
+    "stepPlace": "+ gimimo vieta",
+    "stepYear": "+ gimimo metai",
+    "stepGens": "+ dar {n} kartos (tėvai ar seneliai)",
+    "stepPeople": "+ dar {n} medyje",
+    "readyTitle": "Medis paruoštas giminės kilmės tyrimui"
   },
   "archive": {
     "title": "Archyvas",
