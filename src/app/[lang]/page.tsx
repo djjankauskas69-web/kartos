@@ -24,11 +24,11 @@ export default async function Home() {
             {/* eslint-disable-next-line @next/next/no-img-element -- full-bleed background */}
             <img
               src={PHOTOS.heroBackground}
-              srcSet={`${PHOTOS.heroBackgroundSmall} 1100w, ${PHOTOS.heroBackground} 2000w`}
+              srcSet={`${PHOTOS.heroBackgroundSmall} 1300w, ${PHOTOS.heroBackground} 2600w`}
               sizes="100vw"
               alt=""
               fetchPriority="high"
-              className="h-[115svh] w-full object-cover object-[50%_74%]"
+              className="h-[115svh] w-full object-cover object-[50%_85%]"
             />
           </Parallax>
           {/* soft light behind the words, so they read well on the sky */}

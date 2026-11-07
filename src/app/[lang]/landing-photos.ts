@@ -3,8 +3,8 @@
  * public/landing/ with the same names (JPG, about 1200 px on the long side).
  */
 export const PHOTOS = {
-  heroBackground: "/landing/hero-tree-v2.jpg",
-  heroBackgroundSmall: "/landing/hero-tree-v2-sm.jpg",
+  heroBackground: "/landing/hero-tree-v3.jpg",
+  heroBackgroundSmall: "/landing/hero-tree-v3-sm.jpg",
   // The sign-in page keeps the wide meadow.
   login: "/landing/hero-meadow.jpg",
   loginSmall: "/landing/hero-meadow-sm.jpg",
