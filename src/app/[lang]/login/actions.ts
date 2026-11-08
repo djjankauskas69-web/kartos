@@ -1,6 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { after } from "next/server";
+import { sendWelcome } from "@/lib/email";
 import { redirect } from "next/navigation";
 import { hasLocale } from "@/i18n/config";
 import { WS_COOKIE } from "@/lib/data";
@@ -27,6 +29,7 @@ export async function passwordSignIn(_: AuthState, form: FormData): Promise<Auth
   const supabase = await createClient();
   if (!supabase) return { error: "notConfigured" };
 
+  let created = false;
   let { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error?.code === "email_not_confirmed") {
     // Created earlier while Supabase still wanted a confirmation email: confirm it here if we can.
@@ -47,6 +50,7 @@ export async function passwordSignIn(_: AuthState, form: FormData): Promise<Auth
       if (createError) return createError.code === "email_exists" ? { error: "wrongPassword" } : { error: "error", detail: createError.message };
       ({ error } = await supabase.auth.signInWithPassword({ email, password }));
       if (error) return { error: "error", detail: error.message };
+      created = true;
     } else {
       const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
       if (signUpError) {
@@ -59,11 +63,24 @@ export async function passwordSignIn(_: AuthState, form: FormData): Promise<Auth
     }
   }
 
+  // A new account gets a letter: it exists, which family, and how to come back.
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const welcome = (family: string | null) => {
+    if (created) after(() => sendWelcome({ to: email, locale, family, origin }));
+  };
+
   if (token) {
     const { data, error: inviteError } = await supabase.rpc("accept_invitation", { p_token: token });
-    if (inviteError || !data) return { error: "invite" };
+    if (inviteError || !data) {
+      welcome(null);
+      return { error: "invite" };
+    }
     (await cookies()).set(WS_COOKIE, String(data), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    const { data: ws } = await supabase.from("workspaces").select("name").eq("id", String(data)).maybeSingle();
+    welcome((ws?.name as string | undefined) ?? null);
     redirect(`/${locale}/app/welcome`);
   }
+  welcome(null);
   redirect(next ?? `/${locale}/app`);
 }
