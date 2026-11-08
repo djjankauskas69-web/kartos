@@ -384,9 +384,17 @@ export function TreeView({
     if (fitH === null) return;
     const id = requestAnimationFrame(() => {
       const { w, h } = size();
-      // Always the whole tree first, in the middle; zoom in from there.
       const whole = clampK(Math.min(1, (w - 80) / width, (h - TOP - BOTTOM) / height));
-      go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
+      // On a phone the whole family would be too small to read: start close, on you (or the
+      // person the tree is drawn from), with your parents and grandparents above in view.
+      const focusCard = cards.find((c) => c.me) ?? start;
+      if (w < 640 && focusCard && whole < 0.45) {
+        const k = clampK(Math.min(0.72, (w - 24) / (cardW * 2 + 120)));
+        go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y: h * 0.62 - (focusCard.y + cardH / 2) * k });
+      } else {
+        // The whole tree first, in the middle; zoom in from there.
+        go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
+      }
       requestAnimationFrame(() => setReady(true));
     });
     return () => cancelAnimationFrame(id);
@@ -458,11 +466,12 @@ export function TreeView({
 
   // Pointer: one pointer drags, two pointers (touch) pinch-zoom.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef<{ moved: boolean; startDist?: number; startK?: number } | null>(null);
+  const gesture = useRef<{ moved: boolean; startDist?: number; startK?: number; touch?: boolean; sx?: number; sy?: number } | null>(null);
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 1) gesture.current = { moved: false };
+    if (pointers.current.size === 1) gesture.current = { moved: false, touch: e.pointerType !== "mouse", sx: e.clientX, sy: e.clientY };
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
       gesture.current = { moved: true, startDist: Math.hypot(a.x - b.x, a.y - b.y), startK: viewRef.current.k };
@@ -483,7 +492,14 @@ export function TreeView({
     }
     const dx = now.x - prev.x;
     const dy = now.y - prev.y;
-    if (!gesture.current.moved && Math.hypot(dx, dy) < 2) return;
+    // A finger always wobbles a little: on touch a tap stays a tap until it really moves (8px from where it began).
+    if (!gesture.current.moved) {
+      const far = Math.hypot(now.x - (gesture.current.sx ?? now.x), now.y - (gesture.current.sy ?? now.y));
+      if (far < (gesture.current.touch ? 8 : 2)) {
+        pointers.current.set(e.pointerId, prev);
+        return;
+      }
+    }
     if (!gesture.current.moved) {
       gesture.current.moved = true;
       setMenu(null);
@@ -493,6 +509,16 @@ export function TreeView({
     go({ ...v, x: v.x + dx, y: v.y + dy });
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    // Double tap on the empty canvas (not on a card or button): zoom in there.
+    if (e.pointerType !== "mouse" && gesture.current && !gesture.current.moved && pointers.current.size === 1 && !(e.target as HTMLElement).closest("a,button")) {
+      const t = Date.now();
+      const l = lastTap.current;
+      if (l && t - l.t < 320 && Math.hypot(e.clientX - l.x, e.clientY - l.y) < 30) {
+        const r = canvas.current!.getBoundingClientRect();
+        zoomAt(e.clientX - r.left, e.clientY - r.top, viewRef.current.k * 1.8, true);
+        lastTap.current = null;
+      } else lastTap.current = { t, x: e.clientX, y: e.clientY };
+    }
     pointers.current.delete(e.pointerId);
     if (pointers.current.size === 0) {
       setGrabbing(false);
@@ -1135,7 +1161,7 @@ function CardMenu({
           </div>
         )
   );
-  const item = "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.97rem] hover:bg-linen focus-visible:bg-linen";
+  const item = "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[1.05rem] hover:bg-linen focus-visible:bg-linen sm:min-h-11 sm:text-[0.97rem]";
   const at = card.grave ? `${card.grave.lat},${card.grave.lng}` : "";
   const nav = card.grave
     ? [

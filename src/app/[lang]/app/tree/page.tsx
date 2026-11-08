@@ -171,14 +171,28 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   };
   // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
   const shareAction = can.admin(current.role) ? (
-    <Link href={`${base}/share`} className={`${cls.secondary} gap-2`}>
+    <Link href={`${base}/share`} aria-label={t.shareLink.button} className={`${cls.secondary} gap-2 max-sm:min-h-10 max-sm:px-3`}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
       </svg>
-      {t.shareLink.button}
+      <span className="max-sm:hidden">{t.shareLink.button}</span>
     </Link>
   ) : null;
-  const header = (subtitle: React.ReactNode) => <PageHeader title={t.tree.title} meta={subtitle} actions={shareAction} className="mb-4" />;
+  // On a phone: one short row (title and a share icon), so the tree gets the screen.
+  const header = (subtitle: React.ReactNode) => (
+    <>
+      <div className="mb-2 flex items-center justify-between gap-3 sm:hidden">
+        <div className="min-w-0">
+          <h1 className="text-[1.6rem] font-semibold leading-tight tracking-[-0.02em]">{t.tree.title}</h1>
+          <div className="truncate text-[0.88rem] text-ink-muted">{subtitle}</div>
+        </div>
+        {shareAction}
+      </div>
+      <div className="max-sm:hidden">
+        <PageHeader title={t.tree.title} meta={subtitle} actions={shareAction} className="mb-4" />
+      </div>
+    </>
+  );
 
   if (people.length === 0) {
     return (
