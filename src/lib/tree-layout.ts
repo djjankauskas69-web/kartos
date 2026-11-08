@@ -247,6 +247,31 @@ export function layoutTree(
     }
   }
 
+  /* ---- The parents of someone who married in, above them where there is room ---- */
+  // Without them a wife's own family would only show as "▲ more above"; when the row above is free
+  // over her, her parents stand there (a couple, joined to her), so both sides of a marriage read.
+  {
+    const isPartners = (a: string, b: string) => rels.some((r) => r.type === "partner" && ((r.person_a === a && r.person_b === b) || (r.person_a === b && r.person_b === a)));
+    const free = (row: number, cx: number) => !placed.some((n) => n.row === row && Math.abs(n.cx - cx) < 0.999);
+    const shown = new Set(placed.map((n) => n.id));
+    for (const n of [...placed].sort((a, b) => a.row - b.row)) {
+      if (n.role !== "partner" || !n.moreAbove) continue;
+      const ps = parentsOf(n.id).filter((p) => !shown.has(p)).sort((a, b) => Number(byId.get(b)?.sex === "male") - Number(byId.get(a)?.sex === "male"));
+      if (!ps.length || ps.length !== parentsOf(n.id).length) continue;
+      const row = n.row - 1;
+      const offsets = [0, 0.5, -0.5, 1, -1, 1.5, -1.5, 2, -2];
+      const spot = offsets.find((d) => ps.every((_, i) => free(row, n.cx + d + i - (ps.length - 1) / 2)));
+      if (spot === undefined) continue;
+      const keys = ps.map((pid, i) =>
+        place({ id: pid, cx: n.cx + spot + i - (ps.length - 1) / 2, row, role: "ancestor", moreAbove: parentsOf(pid).length > 0, moreBelow: false }, `il:${n.key}:${pid}`),
+      );
+      ps.forEach((pid) => shown.add(pid));
+      if (keys.length === 2 && isPartners(ps[0], ps[1])) edges.push({ kind: "partner", a: keys[0], b: keys[1] });
+      edges.push({ kind: "parents", parents: keys, children: [n.key] });
+      n.moreAbove = false;
+    }
+  }
+
   /* ---- To pixels ---- */
   const minX = Math.min(...placed.map((p) => p.cx - 0.5));
   const minRow = Math.min(...placed.map((p) => p.row));
