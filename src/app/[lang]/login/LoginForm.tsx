@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -17,8 +17,107 @@ function nextFrom(params: URLSearchParams) {
   return v && /^\/(lt|en)\/[^/]/.test(v) && !v.startsWith("//") ? v : null;
 }
 
-/** "Continue with Google": the quickest way in, first on the page. */
+/** Google's client id for the in-page button. Without it, the button goes through Google's own page. */
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
+type Gsi = {
+  accounts: {
+    id: {
+      initialize: (o: Record<string, unknown>) => void;
+      renderButton: (el: HTMLElement, o: Record<string, unknown>) => void;
+    };
+  };
+};
+
+let gsiLoading: Promise<Gsi | null> | null = null;
+function loadGsi(): Promise<Gsi | null> {
+  const w = window as unknown as { google?: Gsi };
+  if (w.google?.accounts?.id) return Promise.resolve(w.google);
+  gsiLoading ??= new Promise((resolve) => {
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true;
+    sc.onload = () => resolve((window as unknown as { google?: Gsi }).google ?? null);
+    sc.onerror = () => resolve(null);
+    document.head.appendChild(sc);
+  });
+  return gsiLoading;
+}
+
+async function sha256Hex(text: string) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * "Continue with Google", first on the page. The account is chosen in Google's window over this page,
+ * so phones never ask which app should open a Google link (Gmail would open a new letter instead).
+ */
 export function GoogleButton({ t, locale, next: nextProp }: { t: Dictionary["login"]; locale: Locale; /** Where to land after signing in (else ?next=). */ next?: string }) {
+  const params = useSearchParams();
+  const box = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<"loading" | "gsi" | "redirect">(GOOGLE_CLIENT_ID ? "loading" : "redirect");
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const target = (nextProp && /^\/(lt|en)\/[^/]/.test(nextProp) ? nextProp : nextFrom(params)) ?? `/${locale}/app`;
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    let gone = false;
+    (async () => {
+      const g = await loadGsi();
+      const supabase = createClient();
+      if (gone) return;
+      if (!g || !supabase || !box.current) return setMode("redirect");
+      // Google signs the nonce's hash into the token; Supabase checks it against the nonce itself.
+      const nonce = crypto.randomUUID().replace(/-/g, "");
+      const hashed = await sha256Hex(nonce);
+      g.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        nonce: hashed,
+        use_fedcm_for_prompt: true,
+        itp_support: true,
+        callback: async (res: { credential?: string }) => {
+          if (!res.credential) return;
+          setBusy(true);
+          const { error } = await supabase.auth.signInWithIdToken({ provider: "google", token: res.credential, nonce });
+          if (error) {
+            console.error("google id token", error);
+            setBusy(false);
+            setFailed(true);
+            return;
+          }
+          window.location.assign(target);
+        },
+      });
+      const width = Math.min(400, Math.max(240, box.current.parentElement?.clientWidth ?? 320));
+      g.accounts.id.renderButton(box.current, { type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", logo_alignment: "center", locale, width });
+      setMode("gsi");
+    })();
+    return () => {
+      gone = true;
+    };
+  }, [locale, target]);
+
+  if (mode === "redirect") return <GoogleRedirectButton t={t} locale={locale} next={nextProp} />;
+  return (
+    <div>
+      <div className={`flex min-h-13 items-center justify-center ${busy ? "pointer-events-none opacity-60" : ""}`}>
+        <div ref={box} />
+        {mode === "loading" && <span className="h-11 w-full max-w-[400px] animate-pulse rounded-full bg-paper" />}
+      </div>
+      {busy && <p className="mt-2 text-center text-[0.95rem] text-ink-muted">{t.sending}</p>}
+      {failed && (
+        <p role="alert" className="mt-2 text-[0.95rem] text-danger">
+          {t.googleError}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Google sign-in through Google's own page (fallback when the in-page button can't be shown). */
+function GoogleRedirectButton({ t, locale, next: nextProp }: { t: Dictionary["login"]; locale: Locale; /** Where to land after signing in (else ?next=). */ next?: string }) {
   const params = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
