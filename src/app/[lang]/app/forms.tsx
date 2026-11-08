@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { DateRow } from "./people/AddPersonPanel";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import type { Person } from "@/lib/data";
@@ -88,7 +89,7 @@ export function RenameWorkspaceForm({ t, locale, name }: { t: T; locale: Locale;
 /* ---------- People ---------- */
 
 /** Name, living/deceased and years: shared by "add person", "add relative" and "edit". */
-function PersonFields({ t, prefix, person, autoFocus }: { t: T; prefix: string; person?: Person; autoFocus?: boolean }) {
+function PersonFields({ t, prefix, person, autoFocus, locale = "lt" }: { t: T; prefix: string; person?: Person; autoFocus?: boolean; locale?: string }) {
   const [living, setLiving] = useState<"no" | "yes">(person?.is_living ? "yes" : "no");
   const id = (k: string) => `${prefix}-${k}`;
   return (
@@ -142,37 +143,11 @@ function PersonFields({ t, prefix, person, autoFocus }: { t: T; prefix: string; 
         {living === "yes" && <p className="mt-2 text-[0.98rem] text-ink-muted">{t.app.livingNote}</p>}
       </fieldset>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor={id("birth")} className={cls.label}>
-            {t.app.birthYear}
-            <Optional t={t} />
-          </label>
-          <input
-            id={id("birth")}
-            name="birthYear"
-            inputMode="numeric"
-            maxLength={4}
-            placeholder={t.app.yearPlaceholder}
-            defaultValue={person?.birth_year ?? ""}
-            className={cls.input}
-          />
-        </div>
+      {/* Year, and if known the month and day (day and month are optional). */}
+      <div className="space-y-4">
+        <DateRow id={id("birth")} prefix="birth" label={t.app.birthYear} locale={locale} t={t.add as unknown as Record<string, string>} year={person?.birth_year ? String(person.birth_year) : ""} month={person?.birth_month} day={person?.birth_day} />
         {living === "no" && (
-          <div>
-            <label htmlFor={id("death")} className={cls.label}>
-              {t.app.deathYear}
-              <Optional t={t} />
-            </label>
-            <input
-              id={id("death")}
-              name="deathYear"
-              inputMode="numeric"
-              maxLength={4}
-              defaultValue={person?.death_year ?? ""}
-              className={cls.input}
-            />
-          </div>
+          <DateRow id={id("death")} prefix="death" label={t.app.deathYear} locale={locale} t={t.add as unknown as Record<string, string>} year={person?.death_year ? String(person.death_year) : ""} month={person?.death_month} day={person?.death_day} />
         )}
       </div>
     </>
@@ -196,7 +171,7 @@ export function PersonForm({
   return (
     <form action={action} className="space-y-5">
       <Hidden values={{ locale }} />
-      <PersonFields t={t} prefix="person" autoFocus={autoFocus} />
+      <PersonFields t={t} prefix="person" autoFocus={autoFocus} locale={locale} />
       <ErrorText message={errorMessage(t, state.error)} />
       <div className="flex flex-wrap items-center gap-4">
         <button type="submit" disabled={pending} className={cls.primary}>
@@ -213,7 +188,7 @@ export function EditPersonForm({ t, locale, person, story = {} }: { t: T; locale
   return (
     <form action={action} className="space-y-6">
       <Hidden values={{ locale, personId: person.id }} />
-      <PersonFields t={t} prefix="edit" person={person} />
+      <PersonFields t={t} prefix="edit" person={person} locale={locale} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

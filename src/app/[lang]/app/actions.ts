@@ -315,6 +315,10 @@ type PersonFields = {
   is_living: boolean;
   birth_year: number | null;
   death_year: number | null;
+  birth_month?: number | null;
+  birth_day?: number | null;
+  death_month?: number | null;
+  death_day?: number | null;
 };
 
 function readPerson(form: FormData): PersonFields | { error: string } {
@@ -325,7 +329,21 @@ function readPerson(form: FormData): PersonFields | { error: string } {
   if (!givenNames) return { error: "required" };
   if (birthYear === "bad" || deathYear === "bad") return { error: "year" };
   if (birthYear && deathYear && deathYear < birthYear) return { error: "year" };
+  // Month and day only with a year; a day only with a month; a day that exists in that month.
+  const md = (y: number | null, pre: string) => {
+    const m = y ? Number(form.get(`${pre}Month`)) : 0;
+    const okM = Number.isInteger(m) && m >= 1 && m <= 12 ? m : null;
+    const d = okM ? Number(form.get(`${pre}Day`)) : 0;
+    const okD = okM && Number.isInteger(d) && d >= 1 && d <= new Date(y!, okM, 0).getDate() ? d : null;
+    return [okM, okD] as const;
+  };
+  const [bm, bd] = md(birthYear, "birth");
+  const [dm, dd] = md(deathYear, "death");
   return {
+    birth_month: bm,
+    birth_day: bd,
+    death_month: dm,
+    death_day: dd,
     given_names: givenNames,
     surname: text(form, "surname", 200),
     is_living: isLiving,
