@@ -180,7 +180,14 @@ export function buildTree({
   const years = (p: BuildPerson) =>
     p.is_living
       ? p.birth_year
-        ? `${p.birth_year} –`
+        ? (() => {
+            // "b. 1964 · 62": born and how old now (a birthday later this year not yet counted).
+            const now = new Date();
+            const q = p as BuildPerson & { birth_month?: number | null; birth_day?: number | null };
+            let age = now.getFullYear() - p.birth_year;
+            if (q.birth_month && (now.getMonth() + 1 < q.birth_month || (now.getMonth() + 1 === q.birth_month && q.birth_day && now.getDate() < q.birth_day))) age--;
+            return t.tree.bornAge.replace("{y}", String(p.birth_year)).replace("{a}", String(Math.max(0, age)));
+          })()
         : t.app.alive
       : p.birth_year || p.death_year
         ? `${p.birth_year ?? "?"} – ${p.death_year ?? "?"}`

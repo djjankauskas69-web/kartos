@@ -581,7 +581,8 @@
     },
     "foldClose": "Suskleisti",
     "inlawOpen": "Tėvai",
-    "inlawClose": "Slėpti tėvus"
+    "inlawClose": "Slėpti tėvus",
+    "bornAge": "g. {y} · {a} m."
   },
   "family": {
     "title": "Šeima",

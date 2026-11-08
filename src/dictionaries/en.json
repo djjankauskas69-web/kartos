@@ -581,7 +581,8 @@
     },
     "foldClose": "Fold up",
     "inlawOpen": "Parents",
-    "inlawClose": "Hide parents"
+    "inlawClose": "Hide parents",
+    "bornAge": "b. {y} · age {a}"
   },
   "family": {
     "title": "Family",
