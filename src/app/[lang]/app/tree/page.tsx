@@ -23,7 +23,7 @@ import { treeLabels } from "./labels";
 import { PageSkeleton } from "@/components/Skeletons";
 import { PageHeader } from "@/components/PageHeader";
 
-type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string; o: string };
+type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string; o: string; u: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -39,7 +39,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? ""), h: String(s.h ?? ""), o: String(s.o ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? ""), h: String(s.h ?? ""), o: String(s.o ?? ""), u: String(s.u ?? "") }))}
       />
     </Suspense>
   );
@@ -152,6 +152,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     if (search.d) q.set("d", search.d);
     if (search.view === "list") q.set("view", "list");
     if (search.o) q.set("o", search.o);
+    if (search.u) q.set("u", search.u);
     for (const [k, v] of Object.entries(extra)) q.set(k, v);
     return `${base}/tree?${q.toString()}`;
   };
@@ -250,6 +251,23 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
   /* ---- Tree ---- */
   const focusId = byId.has(search.p) ? search.p : null;
   const openGroups = new Set(search.o.split(",").filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
+  const openUp = new Set(search.u.split(",").filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
+  // Tree links that open or fold something keep everything else that is open.
+  const treeQuery = (groups: Set<string>, ups: Set<string>) => {
+    const q = new URLSearchParams();
+    if (search.p) q.set("p", search.p);
+    if (search.d) q.set("d", search.d);
+    if (groups.size) q.set("o", [...groups].join(","));
+    if (ups.size) q.set("u", [...ups].join(","));
+    const qs = q.toString();
+    return `${base}/tree${qs ? `?${qs}` : ""}`;
+  };
+  const flip = (set: Set<string>, key: string) => {
+    const next = new Set(set);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  };
   const depthValue = /^[2-6]$/.test(search.d) ? search.d : focusId ? "4" : "all";
   const depth = depthValue === "all" ? null : Number(depthValue);
   const hl = me && search.hl === me ? me : undefined;
@@ -361,18 +379,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     const mates = rels.filter((r) => r.type === "partner" && (r.person_a === me || r.person_b === me)).map((r) => (r.person_a === me ? r.person_b : r.person_a));
     return mates.some((m) => upFrom(m).has(joinId)) ? "partner" : "other";
   };
-  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }), open: openGroups, toggleHref: (key) => {
-    // Opening or folding a group of brothers and sisters keeps everything else as it is.
-    const next = new Set(openGroups);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    const q = new URLSearchParams();
-    if (search.p) q.set("p", search.p);
-    if (search.d) q.set("d", search.d);
-    if (next.size) q.set("o", [...next].join(","));
-    const qs = q.toString();
-    return `${base}/tree${qs ? `?${qs}` : ""}`;
-  } });
+  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }), open: openGroups, toggleHref: (key) => treeQuery(flip(openGroups, key), openUp), expandUp: openUp, upHref: (id) => treeQuery(openGroups, flip(openUp, id)) });
   if (!tree) return null;
   // Editors take a link apart here, on the tree, where they see what it changes.
   if (can.edit(current.role)) {

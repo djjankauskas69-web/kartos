@@ -55,6 +55,8 @@ export function buildTree({
   sides,
   open,
   toggleHref,
+  expandUp,
+  upHref,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -90,6 +92,10 @@ export function buildTree({
   open?: Set<string>;
   /** Link that opens or folds a group of brothers and sisters. */
   toggleHref?: (key: string) => string;
+  /** People who married in whose parents are opened above them. */
+  expandUp?: Set<string>;
+  /** Link that opens or closes the parents above someone who married in. */
+  upHref?: (id: string) => string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, sides?.length ? [...rels, ...sides.flat()] : rels);
@@ -155,7 +161,7 @@ export function buildTree({
   const hasParentHere = new Set(rels.filter((r) => r.type === "parent_child").map((r) => r.person_b));
   const outward = new Set((sides ?? []).flat().filter((r) => r.type === "parent_child" && !hasParentHere.has(r.person_b) && inRels.has(r.person_b)).map((r) => r.person_b));
   for (const id of people.map((p) => p.id)) if (foreign?.has(id) && rels.some((r) => r.type === "partner" && (r.person_a === id || r.person_b === id))) outward.add(id);
-  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people2, rels2, 0, span, SIZE, left, outward) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward));
+  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people2, rels2, 0, span, SIZE, left, outward, expandUp) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward, expandUp));
   // With another family beside this one, try their people standing on the left of their partner
   // here as well, and keep whichever drawing has the shorter lines between the two families.
   const layout = (() => {
@@ -303,6 +309,7 @@ export function buildTree({
       linkHref: linkHref?.(n.id),
       moreAbove: n.moreAbove,
       moreBelow: n.moreBelow,
+      inlaw: n.inlaw && upHref ? { open: n.inlaw === "open", href: upHref(n.id) } : undefined,
     };
   });
 

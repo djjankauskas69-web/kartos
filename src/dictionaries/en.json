@@ -579,7 +579,9 @@
       "many": "{n} more children",
       "other": "{n} more children"
     },
-    "foldClose": "Fold up"
+    "foldClose": "Fold up",
+    "inlawOpen": "Parents",
+    "inlawClose": "Hide parents"
   },
   "family": {
     "title": "Family",

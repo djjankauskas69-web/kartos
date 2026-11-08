@@ -579,7 +579,9 @@
       "many": "Dar {n} vaiko",
       "other": "Dar {n} vaikų"
     },
-    "foldClose": "Suskleisti"
+    "foldClose": "Suskleisti",
+    "inlawOpen": "Tėvai",
+    "inlawClose": "Slėpti tėvus"
   },
   "family": {
     "title": "Šeima",

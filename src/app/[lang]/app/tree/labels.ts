@@ -28,6 +28,8 @@ export function treeLabels(t: Dictionary) {
     navApple: t.grave.navApple,
     addMenu: t.tree.addMenu,
     moreAbove: t.tree.moreAbove,
+    inlawOpen: t.tree.inlawOpen,
+    inlawClose: t.tree.inlawClose,
     moreBelow: t.tree.moreBelow,
     pending: t.app.pending,
     allGenerations: t.tree.allGenerations,

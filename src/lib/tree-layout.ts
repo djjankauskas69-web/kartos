@@ -19,6 +19,8 @@ export type TreeNode = {
   role: "focus" | "ancestor" | "sibling" | "partner" | "descendant";
   moreAbove: boolean;
   moreBelow: boolean;
+  /** Someone who married in and has parents: "closed" (they can be opened above) or "open". */
+  inlaw?: "open" | "closed";
 };
 
 export type TreeEdge =
@@ -41,6 +43,8 @@ export function layoutTree(
   leftPartners: Set<string> = new Set(),
   /** Partners whose own family is drawn beside this tree: their couple goes to that edge of the brothers and sisters. */
   outward: Set<string> = new Set(),
+  /** People who married in whose parents the viewer opened: drawn above them, with room made. */
+  expandUp: Set<string> = new Set(),
 ) {
   const SLOT = size.cardW + size.gapX;
   const ROW = size.cardH + size.rowGap;
@@ -71,7 +75,7 @@ export function layoutTree(
       ),
     ];
 
-  type Placed = { key: string; id: string; cx: number; row: number; role: TreeNode["role"]; moreAbove: boolean; moreBelow: boolean };
+  type Placed = { key: string; id: string; cx: number; row: number; role: TreeNode["role"]; moreAbove: boolean; moreBelow: boolean; inlaw?: "open" | "closed" };
   const placed: Placed[] = [];
   const edges: TreeEdge[] = [];
   const place = (p: Omit<Placed, "key">, key: string) => {
@@ -116,7 +120,8 @@ export function layoutTree(
     return [...new Set([...own, ...step])];
   };
   const descWidth = (id: string, depth: number, seen: Set<string>): number => {
-    const unit = 1 + partnersOf(id).length;
+    // Opened parents of a partner need room above the couple: the couple's block grows to fit them.
+    const unit = Math.max(1 + partnersOf(id).length, ...partnersOf(id).filter((p) => expandUp.has(p)).map((p) => 1 + partnersOf(id).length + parentsOf(p).length - 1));
     const kids = depth < down ? familyKids(id).filter((c) => !seen.has(c)) : [];
     const next = new Set(seen).add(id);
     const kidsW = kids.reduce((s, c) => s + descWidth(c, depth + 1, next), 0);
@@ -256,10 +261,14 @@ export function layoutTree(
     const shown = new Set(placed.map((n) => n.id));
     for (const n of [...placed].sort((a, b) => a.row - b.row)) {
       if (n.role !== "partner" || !n.moreAbove) continue;
+      if (!expandUp.has(n.id)) {
+        if (parentsOf(n.id).every((p) => !shown.has(p))) n.inlaw = "closed";
+        continue;
+      }
       const ps = parentsOf(n.id).filter((p) => !shown.has(p)).sort((a, b) => Number(byId.get(b)?.sex === "male") - Number(byId.get(a)?.sex === "male"));
       if (!ps.length || ps.length !== parentsOf(n.id).length) continue;
       const row = n.row - 1;
-      const offsets = [0, 0.5, -0.5, 1, -1, 1.5, -1.5, 2, -2];
+      const offsets = Array.from({ length: 33 }, (_, i) => (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.5);
       const spot = offsets.find((d) => ps.every((_, i) => free(row, n.cx + d + i - (ps.length - 1) / 2)));
       if (spot === undefined) continue;
       const keys = ps.map((pid, i) =>
@@ -269,6 +278,7 @@ export function layoutTree(
       if (keys.length === 2 && isPartners(ps[0], ps[1])) edges.push({ kind: "partner", a: keys[0], b: keys[1] });
       edges.push({ kind: "parents", parents: keys, children: [n.key] });
       n.moreAbove = false;
+      n.inlaw = "open";
     }
   }
 
@@ -285,6 +295,7 @@ export function layoutTree(
     role: p.role,
     moreAbove: p.moreAbove,
     moreBelow: p.moreBelow,
+    inlaw: p.inlaw,
   }));
 
   return {

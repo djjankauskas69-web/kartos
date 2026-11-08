@@ -112,6 +112,8 @@ export type TreeCard = {
   unknown?: boolean;
   /** You or one of the people you come from: drawn a little stronger. */
   line?: boolean;
+  /** Married in and has parents: a toggle that opens them above (the tree makes room). */
+  inlaw?: { open: boolean; href: string };
   /** Not a person: brothers and sisters folded into one card (or the card that folds them again). */
   fold?: { open: boolean; count: number };
   /** Only one parent known, who has several partners: which one is the other parent? */
@@ -162,6 +164,8 @@ type Labels = {
   navApple: string;
   addMenu: string;
   moreAbove: string;
+  inlawOpen: string;
+  inlawClose: string;
   moreBelow: string;
   pending: string;
   allGenerations: string;
@@ -1000,7 +1004,18 @@ export function TreeView({
                     ?
                   </button>
                 )}
-                {c.moreAbove && (
+                {c.inlaw && (
+                  <Link
+                    href={c.inlaw.href}
+                    scroll={false}
+                    title={c.inlaw.open ? labels.inlawClose : labels.inlawOpen}
+                    draggable={false}
+                    className={`absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border px-2.5 text-[0.8rem] font-semibold leading-6 shadow-[0_2px_6px_-3px_rgb(28_29_26/0.4)] ${c.inlaw.open ? "-top-[30px] border-line bg-surface text-ink-muted hover:text-ink" : "-top-[30px] border-[#c4a46a] bg-[#fbf3e3] text-[#7a5a1d] hover:bg-[#f5e6c6]"}`}
+                  >
+                    {c.inlaw.open ? `▾ ${labels.inlawClose}` : `▴ ${labels.inlawOpen}`}
+                  </Link>
+                )}
+                {c.moreAbove && !c.inlaw && (
                   <Link
                     href={c.showFromHref}
                     title={labels.moreAbove}
