@@ -1,11 +1,26 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Role } from "@/lib/data";
 import { cls } from "@/components/ui";
-import { IconCheck, IconDots, IconEye, IconLink, IconMembers, IconPen, IconShield } from "@/components/icons";
+import {
+  IconCheck,
+  IconDots,
+  IconEye,
+  IconLink,
+  IconMembers,
+  IconPen,
+  IconShield,
+} from "@/components/icons";
 import {
   changeRole,
   createInvite,
@@ -17,6 +32,7 @@ import {
   type FormState,
 } from "../actions";
 import { adminLinkPerson } from "../me/actions";
+import { Modal } from "../people/[id]/Modal";
 
 export type MemberRow = {
   id: string;
@@ -34,11 +50,26 @@ export type MemberRow = {
 export type LinkOption = { id: string; name: string; years: string };
 
 /** Everyone in the tree, for the one list of people and members. */
-export type PersonRow = { id: string; name: string; years: string; living: boolean; portrait?: string; loose: boolean; pending: boolean };
+export type PersonRow = {
+  id: string;
+  name: string;
+  years: string;
+  living: boolean;
+  portrait?: string;
+  loose: boolean;
+  pending: boolean;
+};
 
-const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const fold = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
 
-type Labels = Record<string, string> & { role: Record<string, string>; me: Record<string, string> };
+type Labels = Record<string, string> & {
+  role: Record<string, string>;
+  me: Record<string, string>;
+};
 type Errors = Record<string, string>;
 
 const ROLES: Role[] = ["owner", "editor", "contributor", "viewer"];
@@ -60,7 +91,9 @@ const badgeTone: Record<Role, string> = {
 
 function RoleBadge({ role, label }: { role: Role; label: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.95rem] font-semibold ${badgeTone[role]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.95rem] font-semibold ${badgeTone[role]}`}
+    >
       <RoleIcon role={role} size={16} />
       {label}
     </span>
@@ -69,8 +102,14 @@ function RoleBadge({ role, label }: { role: Role; label: string }) {
 
 function Avatar({ name, src }: { name: string; src?: string }) {
   if (src) {
-    // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-    return <img src={src} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- signed private URL
+      <img
+        src={src}
+        alt=""
+        className="h-11 w-11 shrink-0 rounded-full object-cover"
+      />
+    );
   }
   const initials = name
     .split(/[\s.@_-]+/)
@@ -79,7 +118,10 @@ function Avatar({ name, src }: { name: string; src?: string }) {
     .map((w) => w[0]?.toUpperCase())
     .join("");
   return (
-    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen text-[1rem] font-semibold text-ink-muted">
+    <span
+      aria-hidden="true"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linen text-[1rem] font-semibold text-ink-muted"
+    >
       {initials || "?"}
     </span>
   );
@@ -134,37 +176,93 @@ export function MembersCenter({
   errors: Errors;
 }) {
   type Status = "member" | "account" | "loose" | "invite" | "deceased";
-  type Entry = { key: string; status: Status; person?: PersonRow; member?: MemberRow; name: string };
+  type Entry = {
+    key: string;
+    status: Status;
+    person?: PersonRow;
+    member?: MemberRow;
+    name: string;
+  };
   const entries = useMemo(() => {
     const out: Entry[] = persons.map((p) => {
       const member = members.find((m) => m.personId === p.id);
-      const status: Status = member ? "member" : p.loose ? "loose" : p.living ? "invite" : "deceased";
+      const status: Status = member
+        ? "member"
+        : p.loose
+          ? "loose"
+          : p.living
+            ? "invite"
+            : "deceased";
       return { key: p.id, status, person: p, member, name: p.name };
     });
-    for (const m of members) if (!m.personId || !persons.some((p) => p.id === m.personId)) out.push({ key: `u:${m.id}`, status: "account", member: m, name: m.name });
-    const order: Record<Status, number> = { member: 0, account: 1, loose: 2, invite: 3, deceased: 4 };
-    return out.sort((a, b) => (b.member?.isSelf ? 1 : 0) - (a.member?.isSelf ? 1 : 0) || order[a.status] - order[b.status] || a.name.localeCompare(b.name, locale));
+    for (const m of members)
+      if (!m.personId || !persons.some((p) => p.id === m.personId))
+        out.push({
+          key: `u:${m.id}`,
+          status: "account",
+          member: m,
+          name: m.name,
+        });
+    const order: Record<Status, number> = {
+      member: 0,
+      account: 1,
+      loose: 2,
+      invite: 3,
+      deceased: 4,
+    };
+    return out.sort(
+      (a, b) =>
+        (b.member?.isSelf ? 1 : 0) - (a.member?.isSelf ? 1 : 0) ||
+        order[a.status] - order[b.status] ||
+        a.name.localeCompare(b.name, locale),
+    );
   }, [persons, members, locale]);
   const FILTERS = ["all", "members", "invite", "loose"] as const;
   type F = (typeof FILTERS)[number];
-  const [filter, setFilter] = useState<F>((FILTERS as readonly string[]).includes(initialFilter) ? (initialFilter as F) : "all");
+  const [filter, setFilter] = useState<F>(
+    (FILTERS as readonly string[]).includes(initialFilter)
+      ? (initialFilter as F)
+      : "all",
+  );
   const [q, setQ] = useState("");
   const [linkFor, setLinkFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   // Members are the living: those with an account and those who could get one. People not yet joined
   // to the tree are a tree matter, reached from the tree's notice (?f=loose), not listed here otherwise.
   const inFilter = (e: Entry, f: F) =>
-    f === "all" ? e.status === "member" || e.status === "account" || e.status === "invite" : f === "members" ? e.status === "member" || e.status === "account" : e.status === f;
+    f === "all"
+      ? e.status === "member" || e.status === "account" || e.status === "invite"
+      : f === "members"
+        ? e.status === "member" || e.status === "account"
+        : e.status === f;
   const terms = fold(q).split(/\s+/).filter(Boolean);
-  const shown = entries.filter((e) => inFilter(e, filter) && terms.every((term) => fold(e.name).includes(term)));
-  const filterLabel: Record<F, string> = { all: t.filterAll, members: t.filterMembers, invite: t.filterInvite, loose: t.filterLoose };
+  const shown = entries.filter(
+    (e) =>
+      inFilter(e, filter) && terms.every((term) => fold(e.name).includes(term)),
+  );
+  const filterLabel: Record<F, string> = {
+    all: t.filterAll,
+    members: t.filterMembers,
+    invite: t.filterInvite,
+    loose: t.filterLoose,
+  };
   const base = `/${locale}/app`;
-  const chip = (text: string, tone: string) => <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[0.85rem] font-semibold ${tone}`}>{text}</span>;
+  const chip = (text: string, tone: string) => (
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[0.85rem] font-semibold ${tone}`}
+    >
+      {text}
+    </span>
+  );
 
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
       <section>
-        <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={t.colAccess}>
+        <div
+          className="mb-3 flex flex-wrap gap-2"
+          role="group"
+          aria-label={t.colAccess}
+        >
           {FILTERS.map((f) => {
             const count = entries.filter((e) => inFilter(e, f)).length;
             if (f !== "all" && count === 0) return null;
@@ -177,69 +275,141 @@ export function MembersCenter({
                 aria-pressed={active}
                 onClick={() => setFilter(f)}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-[1rem] font-semibold transition-colors ${
-                  active ? "border-sage-deep bg-sage-deep text-surface" : "border-line bg-surface text-ink hover:border-ink-muted"
+                  active
+                    ? "border-sage-deep bg-sage-deep text-surface"
+                    : "border-line bg-surface text-ink hover:border-ink-muted"
                 }`}
               >
                 {filterLabel[f]}
-                <span className={`rounded-full px-2 text-[0.9rem] ${active ? "bg-surface/20" : "bg-linen text-ink-muted"}`}>{count}</span>
+                <span
+                  className={`rounded-full px-2 text-[0.9rem] ${active ? "bg-surface/20" : "bg-linen text-ink-muted"}`}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
-        <label className="sr-only" htmlFor="people-search">{t.search}</label>
-        <input id="people-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} className={`${cls.input} mb-3`} autoComplete="off" />
+        <label className="sr-only" htmlFor="people-search">
+          {t.search}
+        </label>
+        <input
+          id="people-search"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t.search}
+          className={`${cls.input} mb-3`}
+          autoComplete="off"
+        />
 
         <div className={cls.card}>
-          {shown.length === 0 && <p className="border-b border-line px-5 py-8 text-ink-muted">{t.empty}</p>}
-          {(
+          {shown.length === 0 && (
+            <p className="border-b border-line px-5 py-8 text-ink-muted">
+              {t.empty}
+            </p>
+          )}
+          {
             <ul className="divide-y divide-line">
               {shown.map((e) => {
                 const m = e.member;
                 const p = e.person;
                 return (
-                  <li key={e.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+                  <li
+                    key={e.key}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5"
+                  >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar name={e.name} src={p?.portrait ?? m?.portrait} />
                       <div className="min-w-0">
                         {p ? (
-                          <Link href={`${base}/people/${p.id}`} className="block truncate text-[1.08rem] font-semibold hover:underline">
+                          <Link
+                            href={`${base}/people/${p.id}`}
+                            className="block truncate text-[1.08rem] font-semibold hover:underline"
+                          >
                             {e.name}
-                            {m?.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
+                            {m?.isSelf && (
+                              <span className="font-normal text-ink-muted">
+                                {" "}
+                                ({t.you})
+                              </span>
+                            )}
                           </Link>
                         ) : (
                           <p className="truncate text-[1.08rem] font-semibold">
                             {e.name}
-                            {m?.isSelf && <span className="font-normal text-ink-muted"> ({t.you})</span>}
+                            {m?.isSelf && (
+                              <span className="font-normal text-ink-muted">
+                                {" "}
+                                ({t.you})
+                              </span>
+                            )}
                           </p>
                         )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.92rem] text-ink-muted">
-                          {p?.years && <span>{!p.living && "✝ "}{p.years}</span>}
-                          {e.status === "loose" && chip(t.stLoose, "bg-[#fbf0d9] text-[#8a6413]")}
-                          {e.status === "invite" && chip(t.stNotJoined, "bg-linen text-ink-muted")}
-                          {e.status === "account" && chip(t.stNoPerson, "bg-[#fbf0d9] text-[#8a6413]")}
-                          {/* Not in the tree yet: the one place where linking is needed, so the button sits right here. */}
-                          {e.status === "account" && m && isAdmin && linkReady && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLinkFor(m.id);
-                                setOpenId(m.id);
-                              }}
-                              className="inline-flex items-center rounded-full border border-[#e3cf9f] px-2.5 py-0.5 text-[0.85rem] font-semibold text-[#8a6413] hover:bg-[#fbf0d9]"
-                            >
-                              {t.linkToTree}
-                            </button>
+                          {p?.years && (
+                            <span>
+                              {!p.living && "✝ "}
+                              {p.years}
+                            </span>
                           )}
-                          {m && m.email && !m.isSelf && isAdmin && <FoggyEmail email={m.email} label={t.showEmail} />}
+                          {e.status === "loose" &&
+                            chip(t.stLoose, "bg-[#fbf0d9] text-[#8a6413]")}
+                          {e.status === "invite" &&
+                            chip(t.stNotJoined, "bg-linen text-ink-muted")}
+                          {e.status === "account" &&
+                            chip(t.stNoPerson, "bg-[#fbf0d9] text-[#8a6413]")}
+                          {/* Not in the tree yet: the one place where linking is needed, so the button sits right here. */}
+                          {e.status === "account" &&
+                            m &&
+                            isAdmin &&
+                            linkReady && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLinkFor(m.id);
+                                  setOpenId(m.id);
+                                }}
+                                className="inline-flex items-center rounded-full border border-[#e3cf9f] px-2.5 py-0.5 text-[0.85rem] font-semibold text-[#8a6413] hover:bg-[#fbf0d9]"
+                              >
+                                {t.linkToTree}
+                              </button>
+                            )}
+                          {m && m.email && !m.isSelf && isAdmin && (
+                            <FoggyEmail email={m.email} label={t.showEmail} />
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {m && <RoleBadge role={m.role} label={t.role[m.role]} />}
-                      {e.status === "invite" && canInvite && p && sentTo[p.id] && <SentInvite link={sentTo[p.id].link} role={t.role[sentTo[p.id].role]} t={t} />}
-                      {e.status === "invite" && canInvite && p && !sentTo[p.id] && <InviteButton locale={locale} personId={p.id} t={t} roles={isAdmin ? ["contributor", "viewer", "editor"] : ["contributor", "viewer"]} />}
+                      {e.status === "invite" && canInvite && p && (
+                        <InviteButton
+                          sent={
+                            sentTo[p.id]
+                              ? {
+                                  link: sentTo[p.id].link,
+                                  role: t.role[sentTo[p.id].role],
+                                }
+                              : undefined
+                          }
+                          locale={locale}
+                          personId={p.id}
+                          name={p.name}
+                          t={t}
+                          roles={
+                            isAdmin
+                              ? ["contributor", "viewer", "editor"]
+                              : ["contributor", "viewer"]
+                          }
+                        />
+                      )}
                       {e.status === "loose" && canAdd && p && (
-                        <Link href={`?add=1&existing=${p.id}`} scroll={false} className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
+                        <Link
+                          href={`?add=1&existing=${p.id}`}
+                          scroll={false}
+                          className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep"
+                        >
                           {t.connect}
                         </Link>
                       )}
@@ -251,7 +421,11 @@ export function MembersCenter({
                           member={m}
                           isAdmin={isAdmin}
                           linkReady={linkReady}
-                          people={people.filter((x) => x.id === m.personId || !members.some((o) => o.personId === x.id))}
+                          people={people.filter(
+                            (x) =>
+                              x.id === m.personId ||
+                              !members.some((o) => o.personId === x.id),
+                          )}
                           open={openId === m.id}
                           onOpen={(o) => setOpenId(o ? m.id : null)}
                           t={t}
@@ -264,34 +438,60 @@ export function MembersCenter({
               })}
               {canAdd && (
                 <li>
-                  <Link href="?add=1" scroll={false} className="flex items-center gap-3 px-5 py-3.5 text-[1.08rem] font-semibold hover:bg-paper">
-                    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-ink/25 text-[1.4rem] font-normal text-ink-muted">+</span>
+                  <Link
+                    href="?add=1"
+                    scroll={false}
+                    className="flex items-center gap-3 px-5 py-3.5 text-[1.08rem] font-semibold hover:bg-paper"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-ink/25 text-[1.4rem] font-normal text-ink-muted"
+                    >
+                      +
+                    </span>
                     {t.newPerson}
                   </Link>
                 </li>
               )}
             </ul>
-          )}
+          }
         </div>
-        <Link href={`${base}/tree?view=list`} className="mt-4 inline-block text-[1rem] font-semibold text-sage-deep hover:underline">
+        <Link
+          href={`${base}/tree?view=list`}
+          className="mt-4 inline-block text-[1rem] font-semibold text-sage-deep hover:underline"
+        >
           {t.allPeopleLink} →
         </Link>
       </section>
 
       <aside className="space-y-6">
-        {canInvite ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} isAdmin={isAdmin} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
+        {canInvite ? (
+          <InviteCard
+            locale={locale}
+            activeInvites={activeInvites}
+            t={t}
+            errors={errors}
+            isAdmin={isAdmin}
+          />
+        ) : (
+          <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>
+        )}
 
         <section className={`p-5 ${cls.card}`}>
           <h2 className={`mb-3 ${cls.h3}`}>{t.levelsTitle}</h2>
           <ul className="space-y-3">
             {ROLES.map((r) => (
               <li key={r} className="flex gap-3">
-                <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${badgeTone[r]}`}>
+                <span
+                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${badgeTone[r]}`}
+                >
                   <RoleIcon role={r} size={17} />
                 </span>
                 <span>
                   <span className="block font-semibold">{t.role[r]}</span>
-                  <span className="block text-[0.95rem] leading-snug text-ink-muted">{t.role[`${r}Help`]}</span>
+                  <span className="block text-[0.95rem] leading-snug text-ink-muted">
+                    {t.role[`${r}Help`]}
+                  </span>
                 </span>
               </li>
             ))}
@@ -302,54 +502,189 @@ export function MembersCenter({
   );
 }
 
-/** Already invited: the same link, copied again with one tap. */
-function SentInvite({ link, role, t }: { link: string; role: string; t: Labels }) {
-  const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
-  if (done === "manual") return <input readOnly autoFocus value={link} onFocus={(e) => e.currentTarget.select()} aria-label={t.copyFallback} className="w-44 rounded-lg border border-line px-2 py-1.5 text-[0.85rem]" />;
+/** The invitation link, large and plain: copy it (again and again) or send it straight from the phone. */
+function InviteDialog({
+  open,
+  onClose,
+  link,
+  name,
+  role,
+  t,
+  copiedAtStart = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  link: string;
+  name: string;
+  role: string;
+  t: Labels;
+  copiedAtStart?: boolean;
+}) {
+  const [copied, setCopied] = useState(copiedAtStart);
+  // Only ever rendered after a tap, so the browser is there.
+  const canShare = typeof navigator !== "undefined" && "share" in navigator;
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+    } catch {
+      // No clipboard: select the link so the phone offers "Copy".
+      const range = document.createRange();
+      if (box.current) {
+        range.selectNodeContents(box.current);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+      }
+    }
+  };
   return (
-    <span className="flex items-center gap-2">
-      <span className="hidden text-[0.85rem] text-ink-muted sm:inline">{t.invitedAs.replace("{role}", role.toLowerCase())}</span>
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(link);
-            setDone("copied");
-          } catch {
-            setDone("manual");
-          }
-        }}
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-sage-deep/40 bg-sage-wash/50 text-sage-deep hover:border-sage-deep"}`}
+    <Modal
+      open={open}
+      onClose={onClose}
+      label={t.inviteDialogTitle}
+      closeLabel={t.cancel}
+    >
+      <h2 className="pr-10 font-serif text-[1.6rem] leading-tight">
+        {t.inviteDialogTitle}
+      </h2>
+      <p className="mt-1 text-[1.05rem] font-semibold">
+        {name} <span className="font-normal text-ink-muted">· {role}</span>
+      </p>
+      <ol className="mt-5 space-y-2 text-[1.05rem] leading-snug">
+        <li className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
+            1
+          </span>
+          {t.inviteStep1}
+        </li>
+        <li className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
+            2
+          </span>
+          {t.inviteStep2}
+        </li>
+        <li className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
+            3
+          </span>
+          {t.inviteStep3}
+        </li>
+      </ol>
+      <div
+        ref={box}
+        onClick={copy}
+        className="mt-5 cursor-pointer select-all break-all rounded-xl border-2 border-dashed border-sage-deep/40 bg-sage-wash/40 px-4 py-3 font-mono text-[0.95rem] leading-relaxed text-ink"
       >
-        {done === "copied" ? <IconCheck size={16} /> : <IconLink size={16} />}
-        {done === "copied" ? t.inviteCopied : t.copyInvite}
-      </button>
-    </span>
+        {link}
+      </div>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={copy}
+          className={`inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full px-6 text-[1.1rem] font-semibold transition-colors ${copied ? "bg-sage-deep text-surface" : "bg-ink text-surface hover:bg-olive-deep"}`}
+        >
+          {copied ? <IconCheck size={20} /> : <IconLink size={20} />}
+          {copied ? t.inviteCopied : t.copyLink}
+        </button>
+        {canShare && (
+          <button
+            type="button"
+            onClick={() =>
+              navigator
+                .share({
+                  title: t.inviteDialogTitle,
+                  text: t.inviteShareText,
+                  url: link,
+                })
+                .catch(() => {})
+            }
+            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 text-[1.1rem] font-semibold hover:border-ink/40"
+          >
+            {t.inviteSend}
+          </button>
+        )}
+      </div>
+      <p className="mt-4 text-[0.92rem] text-ink-muted">{t.inviteDialogNote}</p>
+    </Modal>
   );
 }
 
 /** "Invite": first the rights they get (member by default), then the link is made and copied. */
-function InviteButton({ locale, personId, t, roles }: { locale: Locale; personId: string; t: Labels; roles: readonly ("contributor" | "viewer" | "editor")[] }) {
+function InviteButton({
+  sent,
+  locale,
+  personId,
+  name,
+  t,
+  roles,
+}: {
+  sent?: { link: string; role: string };
+  locale: Locale;
+  personId: string;
+  name: string;
+  t: Labels;
+  roles: readonly ("contributor" | "viewer" | "editor")[];
+}) {
   const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
-    setOpen(false);
-    const result = await createInvite(prev, form);
-    if (result.link) {
-      try {
-        await navigator.clipboard.writeText(result.link);
-        setDone("copied");
-      } catch {
-        setDone("manual");
+  const [shown, setShown] = useState<{ link: string; role: string } | null>(
+    null,
+  );
+  const [, action, pending] = useActionState(
+    async (prev: FormState, form: FormData) => {
+      setOpen(false);
+      const result = await createInvite(prev, form);
+      if (result.link) {
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(result.link);
+          copied = true;
+        } catch {}
+        setDone(copied ? "copied" : "manual");
+        setShown({
+          link: result.link,
+          role: t.role[String(form.get("role"))] ?? "",
+        });
       }
-    }
-    return result;
-  }, {});
+      return result;
+    },
+    {},
+  );
   return (
     <form action={action} className="relative flex items-center gap-2">
       <Hidden values={{ locale, personId }} />
-      {done === "manual" && state.link ? (
-        <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()} aria-label={t.copyFallback} className="w-44 rounded-lg border border-line px-2 py-1.5 text-[0.85rem]" />
+      {shown && (
+        <InviteDialog
+          open
+          onClose={() => setShown(null)}
+          link={shown.link}
+          name={name}
+          role={shown.role}
+          t={t}
+          copiedAtStart={done === "copied"}
+        />
+      )}
+      {sent ? (
+        // Already invited: no new invitation, the same link shown again.
+        <>
+          <span className="hidden text-[0.85rem] text-ink-muted sm:inline">
+            {t.invitedAs.replace("{role}", sent.role.toLowerCase())}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShown(sent)}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-sage-deep/40 bg-sage-wash/50 px-4 text-[0.95rem] font-semibold text-sage-deep hover:border-sage-deep"
+          >
+            <IconLink size={16} />
+            {t.showInvite}
+          </button>
+        </>
       ) : (
         <button
           type="button"
@@ -364,17 +699,37 @@ function InviteButton({ locale, personId, t, roles }: { locale: Locale; personId
       )}
       {open && (
         <>
-          <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} className="fixed inset-0 z-30 cursor-default" />
-          <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
-            <p className="px-3 pb-1 pt-2 text-[0.85rem] font-semibold text-ink-muted">{t.inviteAs}</p>
+          <button
+            type="button"
+            aria-hidden="true"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-30 cursor-default"
+          />
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-40 mt-2 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]"
+          >
+            <p className="px-3 pb-1 pt-2 text-[0.85rem] font-semibold text-ink-muted">
+              {t.inviteAs}
+            </p>
             {roles.map((r) => (
-              <button key={r} type="submit" name="role" value={r} role="menuitem" className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-linen">
+              <button
+                key={r}
+                type="submit"
+                name="role"
+                value={r}
+                role="menuitem"
+                className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-linen"
+              >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted">
                   <RoleIcon role={r} size={15} />
                 </span>
                 <span>
                   <span className="block font-semibold">{t.role[r]}</span>
-                  <span className="block text-[0.88rem] leading-snug text-ink-muted">{t.role[`${r}Help`]}</span>
+                  <span className="block text-[0.88rem] leading-snug text-ink-muted">
+                    {t.role[`${r}Help`]}
+                  </span>
                 </span>
               </button>
             ))}
@@ -387,31 +742,59 @@ function InviteButton({ locale, personId, t, roles }: { locale: Locale; personId
 
 /* ---------- Invite card ---------- */
 
-export type ActiveInvite = { id: string; who: string | null; role: Role; expires: string; uses: number; by: string | null };
+export type ActiveInvite = {
+  id: string;
+  who: string | null;
+  role: Role;
+  expires: string;
+  uses: number;
+  by: string | null;
+};
 
-function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Locale; activeInvites: ActiveInvite[]; t: Labels; errors: Errors; isAdmin: boolean }) {
+function InviteCard({
+  locale,
+  activeInvites,
+  t,
+  errors,
+  isAdmin,
+}: {
+  locale: Locale;
+  activeInvites: ActiveInvite[];
+  t: Labels;
+  errors: Errors;
+  isAdmin: boolean;
+}) {
   const [listOpen, setListOpen] = useState(false);
   const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
-  const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
-    const result = await createInvite(prev, form);
-    if (result.link) {
-      try {
-        await navigator.clipboard.writeText(result.link);
-        setCopy("copied");
-      } catch {
-        setCopy("manual");
+  const [state, action, pending] = useActionState(
+    async (prev: FormState, form: FormData) => {
+      const result = await createInvite(prev, form);
+      if (result.link) {
+        try {
+          await navigator.clipboard.writeText(result.link);
+          setCopy("copied");
+        } catch {
+          setCopy("manual");
+        }
       }
-    }
-    return result;
-  }, {});
+      return result;
+    },
+    {},
+  );
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
 
   return (
     <section id="invite" className={`scroll-mt-24 p-5 ${cls.card}`}>
       <h2 className={cls.h3}>{t.inviteGeneral}</h2>
-      <p className="mb-3 mt-1 text-[0.92rem] text-ink-muted">{t.inviteGeneralLead}</p>
-      <form action={action} className="space-y-3" onSubmit={() => setCopy("idle")}>
+      <p className="mb-3 mt-1 text-[0.92rem] text-ink-muted">
+        {t.inviteGeneralLead}
+      </p>
+      <form
+        action={action}
+        className="space-y-3"
+        onSubmit={() => setCopy("idle")}
+      >
         <Hidden values={{ locale }} />
         {/* Rights default to "member"; changing them is one tap away. */}
         {roleOpen ? (
@@ -419,8 +802,16 @@ function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Loc
             <label htmlFor="invite-role" className={cls.label}>
               {t.inviteAs}
             </label>
-            <select id="invite-role" name="role" defaultValue="contributor" className={cls.input}>
-              {(isAdmin ? (["editor", "contributor", "viewer"] as const) : (["contributor", "viewer"] as const)).map((r) => (
+            <select
+              id="invite-role"
+              name="role"
+              defaultValue="contributor"
+              className={cls.input}
+            >
+              {(isAdmin
+                ? (["editor", "contributor", "viewer"] as const)
+                : (["contributor", "viewer"] as const)
+              ).map((r) => (
                 <option key={r} value={r}>
                   {t.role[r]}
                 </option>
@@ -430,13 +821,25 @@ function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Loc
         ) : (
           <p className="text-[0.95rem] text-ink-muted">
             <input type="hidden" name="role" value="contributor" />
-            {t.inviteAs}: <strong className="font-semibold text-ink">{t.role.contributor}</strong> ·{" "}
-            <button type="button" onClick={() => setRoleOpen(true)} className="font-semibold text-ink underline-offset-2 hover:underline">
+            {t.inviteAs}:{" "}
+            <strong className="font-semibold text-ink">
+              {t.role.contributor}
+            </strong>{" "}
+            ·{" "}
+            <button
+              type="button"
+              onClick={() => setRoleOpen(true)}
+              className="font-semibold text-ink underline-offset-2 hover:underline"
+            >
               {t.change}
             </button>
           </p>
         )}
-        <button type="submit" disabled={pending} className={`${cls.primary} w-full gap-2`}>
+        <button
+          type="submit"
+          disabled={pending}
+          className={`${cls.primary} w-full gap-2`}
+        >
           {copy === "copied" ? <IconCheck size={20} /> : <IconLink size={20} />}
           {pending ? t.loading : t.copyLink}
         </button>
@@ -445,7 +848,9 @@ function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Loc
 
       {state.link && copy !== "idle" && (
         <div className="mt-3 rounded-xl bg-sage-wash p-3" role="status">
-          <p className="mb-2 text-[0.98rem] font-semibold text-sage-deep">{copy === "copied" ? t.copiedLink : t.copyFallback}</p>
+          <p className="mb-2 text-[0.98rem] font-semibold text-sage-deep">
+            {copy === "copied" ? t.copiedLink : t.copyFallback}
+          </p>
           <input
             readOnly
             value={state.link}
@@ -459,24 +864,53 @@ function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Loc
       {activeInvites.length > 0 && (
         <div className="mt-4 border-t border-line pt-3">
           {confirmRevoke ? (
-            <form action={revokeAllInvites} className="flex flex-wrap items-center gap-2" onSubmit={() => setConfirmRevoke(false)}>
+            <form
+              action={revokeAllInvites}
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={() => setConfirmRevoke(false)}
+            >
               <Hidden values={{ locale }} />
               <button type="submit" className={cls.danger}>
                 {t.revokeAll}
               </button>
-              <button type="button" className={cls.quiet} onClick={() => setConfirmRevoke(false)}>
+              <button
+                type="button"
+                className={cls.quiet}
+                onClick={() => setConfirmRevoke(false)}
+              >
                 {t.cancel}
               </button>
             </form>
           ) : (
             <>
               <p className="flex flex-wrap items-center justify-between gap-2 text-[0.92rem] text-ink-muted">
-                <button type="button" aria-expanded={listOpen} onClick={() => setListOpen((o) => !o)} className="inline-flex items-center gap-1.5 font-semibold text-ink underline-offset-2 hover:underline">
+                <button
+                  type="button"
+                  aria-expanded={listOpen}
+                  onClick={() => setListOpen((o) => !o)}
+                  className="inline-flex items-center gap-1.5 font-semibold text-ink underline-offset-2 hover:underline"
+                >
                   {t.activeCount} {activeInvites.length}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform ${listOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                    className={`transition-transform ${listOpen ? "rotate-180" : ""}`}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
                 </button>
                 {isAdmin && (
-                  <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
+                  <button
+                    type="button"
+                    className="font-semibold text-danger underline-offset-2 hover:underline"
+                    onClick={() => setConfirmRevoke(true)}
+                  >
                     {t.revokeAll}
                   </button>
                 )}
@@ -484,18 +918,31 @@ function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Loc
               {listOpen && (
                 <ul className="mt-3 space-y-2">
                   {activeInvites.map((i) => (
-                    <li key={i.id} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
+                    <li
+                      key={i.id}
+                      className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5"
+                    >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{i.who ?? t.inviteAnyone}</span>
+                        <span className="block truncate font-semibold">
+                          {i.who ?? t.inviteAnyone}
+                        </span>
                         <span className="block text-[0.85rem] text-ink-muted">
-                          {t.role[i.role]} · {t.inviteUntil.replace("{date}", i.expires)}
-                          {i.uses > 0 ? ` · ${t.inviteUsed.replace("{n}", String(i.uses))}` : ""}
-                          {i.by ? ` · ${t.invitedBy.replace("{name}", i.by)}` : ""}
+                          {t.role[i.role]} ·{" "}
+                          {t.inviteUntil.replace("{date}", i.expires)}
+                          {i.uses > 0
+                            ? ` · ${t.inviteUsed.replace("{n}", String(i.uses))}`
+                            : ""}
+                          {i.by
+                            ? ` · ${t.invitedBy.replace("{name}", i.by)}`
+                            : ""}
                         </span>
                       </span>
                       <form action={revokeInvite}>
                         <Hidden values={{ locale, id: i.id }} />
-                        <button type="submit" className="text-[0.9rem] font-semibold text-ink-muted hover:text-danger">
+                        <button
+                          type="submit"
+                          className="text-[0.9rem] font-semibold text-ink-muted hover:text-danger"
+                        >
                           {t.inviteRevoke}
                         </button>
                       </form>
@@ -627,15 +1074,38 @@ function MemberMenu({
                 </li>
               )}
               <li className="mt-1 border-t border-line pt-1">
-                <button type="button" onClick={() => setView("remove")} className="text-danger">
+                <button
+                  type="button"
+                  onClick={() => setView("remove")}
+                  className="text-danger"
+                >
                   {self ? t.leave : t.removeMember}
                 </button>
               </li>
             </ul>
           )}
-          {view === "role" && <RolePanel values={values} current={member.role} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />}
+          {view === "role" && (
+            <RolePanel
+              values={values}
+              current={member.role}
+              onDone={close}
+              onBack={() => setView("menu")}
+              t={t}
+              errors={errors}
+            />
+          )}
           {view === "transfer" && (
-            <ConfirmPanel action={transferOwnership} values={values} warning={t.transferWarning} confirm={t.transferConfirm} danger={false} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />
+            <ConfirmPanel
+              action={transferOwnership}
+              values={values}
+              warning={t.transferWarning}
+              confirm={t.transferConfirm}
+              danger={false}
+              onDone={close}
+              onBack={() => setView("menu")}
+              t={t}
+              errors={errors}
+            />
           )}
           {view === "remove" && (
             <ConfirmPanel
@@ -650,17 +1120,44 @@ function MemberMenu({
               errors={errors}
             />
           )}
-          {view === "link" && <LinkPanel values={values} current={member.personId} people={people} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />}
-          {view === "rename" && <RenamePanel locale={locale} name={member.displayName} onDone={close} onBack={() => setView("menu")} t={t} errors={errors} />}
+          {view === "link" && (
+            <LinkPanel
+              values={values}
+              current={member.personId}
+              people={people}
+              onDone={close}
+              onBack={() => setView("menu")}
+              t={t}
+              errors={errors}
+            />
+          )}
+          {view === "rename" && (
+            <RenamePanel
+              locale={locale}
+              name={member.displayName}
+              onDone={close}
+              onBack={() => setView("menu")}
+              t={t}
+              errors={errors}
+            />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-type PanelProps = { onDone: () => void; onBack: () => void; t: Labels; errors: Errors };
+type PanelProps = {
+  onDone: () => void;
+  onBack: () => void;
+  t: Labels;
+  errors: Errors;
+};
 
-function useClosingAction(fn: (prev: FormState, form: FormData) => Promise<FormState>, onDone: () => void) {
+function useClosingAction(
+  fn: (prev: FormState, form: FormData) => Promise<FormState>,
+  onDone: () => void,
+) {
   return useActionState(async (prev: FormState, form: FormData) => {
     const result = await fn(prev, form);
     if (result.ok) onDone();
@@ -668,10 +1165,28 @@ function useClosingAction(fn: (prev: FormState, form: FormData) => Promise<FormS
   }, {});
 }
 
-function PanelFooter({ pending, label, danger, onBack, t, children }: { pending: boolean; label: string; danger?: boolean; onBack: () => void; t: Labels; children?: ReactNode }) {
+function PanelFooter({
+  pending,
+  label,
+  danger,
+  onBack,
+  t,
+  children,
+}: {
+  pending: boolean;
+  label: string;
+  danger?: boolean;
+  onBack: () => void;
+  t: Labels;
+  children?: ReactNode;
+}) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
-      <button type="submit" disabled={pending} className={danger ? cls.danger : cls.primary}>
+      <button
+        type="submit"
+        disabled={pending}
+        className={danger ? cls.danger : cls.primary}
+      >
         {pending ? t.loading : label}
       </button>
       <button type="button" onClick={onBack} className={cls.quiet}>
@@ -682,7 +1197,14 @@ function PanelFooter({ pending, label, danger, onBack, t, children }: { pending:
   );
 }
 
-function RolePanel({ values, current, onDone, onBack, t, errors }: PanelProps & { values: Record<string, string>; current: Role }) {
+function RolePanel({
+  values,
+  current,
+  onDone,
+  onBack,
+  t,
+  errors,
+}: PanelProps & { values: Record<string, string>; current: Role }) {
   const [state, action, pending] = useClosingAction(changeRole, onDone);
   return (
     <form action={action} className="p-2">
@@ -691,8 +1213,17 @@ function RolePanel({ values, current, onDone, onBack, t, errors }: PanelProps & 
         <legend className="mb-2 font-semibold">{t.changeAccess}</legend>
         <div className="space-y-1.5">
           {ROLES.map((r) => (
-            <label key={r} className="flex cursor-pointer items-center gap-3 rounded-lg border border-line px-3 py-2.5 has-[:checked]:border-sage-deep has-[:checked]:bg-sage-wash/60">
-              <input type="radio" name="role" value={r} defaultChecked={r === current} className="accent-[var(--color-sage-deep)]" />
+            <label
+              key={r}
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-line px-3 py-2.5 has-[:checked]:border-sage-deep has-[:checked]:bg-sage-wash/60"
+            >
+              <input
+                type="radio"
+                name="role"
+                value={r}
+                defaultChecked={r === current}
+                className="accent-[var(--color-sage-deep)]"
+              />
               <RoleIcon role={r} size={17} />
               <span className="font-semibold">{t.role[r]}</span>
             </label>
@@ -727,13 +1258,26 @@ function ConfirmPanel({
     <form action={action} className="p-2">
       <Hidden values={values} />
       <p className="text-[1rem] leading-snug">{warning}</p>
-      <PanelFooter pending={pending} label={confirm} danger={danger} onBack={onBack} t={t} />
+      <PanelFooter
+        pending={pending}
+        label={confirm}
+        danger={danger}
+        onBack={onBack}
+        t={t}
+      />
       <Err code={state.error} errors={errors} />
     </form>
   );
 }
 
-function RenamePanel({ locale, name, onDone, onBack, t, errors }: PanelProps & { locale: Locale; name: string }) {
+function RenamePanel({
+  locale,
+  name,
+  onDone,
+  onBack,
+  t,
+  errors,
+}: PanelProps & { locale: Locale; name: string }) {
   const [state, action, pending] = useClosingAction(renameSelf, onDone);
   return (
     <form action={action} className="p-2">
@@ -741,23 +1285,53 @@ function RenamePanel({ locale, name, onDone, onBack, t, errors }: PanelProps & {
       <label htmlFor="self-name" className={cls.label}>
         {t.yourName}
       </label>
-      <input id="self-name" name="name" defaultValue={name} required maxLength={80} autoFocus className={cls.input} />
+      <input
+        id="self-name"
+        name="name"
+        defaultValue={name}
+        required
+        maxLength={80}
+        autoFocus
+        className={cls.input}
+      />
       <PanelFooter pending={pending} label={t.save} onBack={onBack} t={t} />
       <Err code={state.error} errors={errors} />
     </form>
   );
 }
 
-function LinkPanel({ values, current, people, onDone, onBack, t, errors }: PanelProps & { values: Record<string, string>; current: string | null; people: LinkOption[] }) {
+function LinkPanel({
+  values,
+  current,
+  people,
+  onDone,
+  onBack,
+  t,
+  errors,
+}: PanelProps & {
+  values: Record<string, string>;
+  current: string | null;
+  people: LinkOption[];
+}) {
   const [state, action, pending] = useClosingAction(adminLinkPerson, onDone);
   return (
     <form action={action} className="p-2">
       <Hidden values={values} />
-      <label htmlFor={`link-${values.userId}`} className="mb-1 block font-semibold">
+      <label
+        htmlFor={`link-${values.userId}`}
+        className="mb-1 block font-semibold"
+      >
         {t.me.linkPerson}
       </label>
-      <p className="mb-3 text-[0.95rem] leading-snug text-ink-muted">{t.me.linkPersonLead}</p>
-      <select id={`link-${values.userId}`} name="personId" defaultValue={current ?? ""} className={cls.input}>
+      <p className="mb-3 text-[0.95rem] leading-snug text-ink-muted">
+        {t.me.linkPersonLead}
+      </p>
+      <select
+        id={`link-${values.userId}`}
+        name="personId"
+        defaultValue={current ?? ""}
+        className={cls.input}
+      >
         <option value="">{t.me.notLinked}</option>
         {people.map((p) => (
           <option key={p.id} value={p.id}>
