@@ -390,7 +390,8 @@ export function TreeView({
       const focusCard = cards.find((c) => c.me) ?? start;
       if (w < 640 && focusCard && whole < 0.45) {
         // Three generations tall: you, your parents and your grandparents.
-        const pitch = rows.length > 1 ? (rows[1].y - rows[0].y) : cardH + 100;
+        const ys = [...new Set(cards.map((c) => c.y))].sort((p, q) => p - q);
+        const pitch = ys.length > 1 ? ys[1] - ys[0] : cardH + 100;
         const k = clampK(Math.min(0.6, (w - 24) / (cardW * 2 + 80), (h - TOP - BOTTOM) / (pitch * 2 + cardH)));
         go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y: h - BOTTOM - (focusCard.y + cardH) * k - 8 });
       } else {
