@@ -9,6 +9,7 @@ import type { Role } from "@/lib/data";
 import { AcceptInviteForm } from "../../app/forms";
 import { signOut } from "../../app/actions";
 import { PasswordForm } from "../../login/PasswordForm";
+import { GoogleButton, googleEnabled } from "../../login/LoginForm";
 import { PageLoading } from "@/components/PageLoading";
 
 export default async function InvitePage({ params }: PageProps<"/[lang]/invite/[token]">) {
@@ -96,6 +97,18 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
         ) : (
           <>
             <p className="mb-5 text-ink-muted">{t.invite.signInFirst}</p>
+            {googleEnabled && (
+              <>
+                <Suspense fallback={null}>
+                  <GoogleButton t={t.login} locale={locale} next={next} />
+                </Suspense>
+                <div className="my-5 flex items-center gap-3 text-[0.9rem] text-ink-muted" aria-hidden="true">
+                  <span className="h-px flex-1 bg-line" />
+                  {t.login.or}
+                  <span className="h-px flex-1 bg-line" />
+                </div>
+              </>
+            )}
             <Suspense fallback={null}>
               <PasswordForm t={t.login} locale={locale} token={token} submit={t.invite.joinNow} />
             </Suspense>

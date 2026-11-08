@@ -18,7 +18,7 @@ function nextFrom(params: URLSearchParams) {
 }
 
 /** "Continue with Google": the quickest way in, first on the page. */
-export function GoogleButton({ t, locale }: { t: Dictionary["login"]; locale: Locale }) {
+export function GoogleButton({ t, locale, next: nextProp }: { t: Dictionary["login"]; locale: Locale; /** Where to land after signing in (else ?next=). */ next?: string }) {
   const params = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -26,7 +26,7 @@ export function GoogleButton({ t, locale }: { t: Dictionary["login"]; locale: Lo
     const supabase = createClient();
     if (!supabase) return setFailed(true);
     setBusy(true);
-    const next = nextFrom(params);
+    const next = nextProp && /^\/(lt|en)\/[^/]/.test(nextProp) ? nextProp : nextFrom(params);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/${locale}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}` },
