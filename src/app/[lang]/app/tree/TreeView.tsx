@@ -393,8 +393,9 @@ export function TreeView({
         const ys = [...new Set(cards.map((c) => c.y))].sort((p, q) => p - q);
         const pitch = ys.length > 1 ? ys[1] - ys[0] : cardH + 100;
         const k = clampK(Math.min(0.6, (w - 24) / (cardW * 2 + 80), (h - TOP - BOTTOM) / (pitch * 2 + cardH)));
-        // You: at the bottom, ancestors above. Someone the tree is drawn from (a shared tree): at the top, family below.
-        const y = focusCard.me ? h - BOTTOM - (focusCard.y + cardH) * k - 8 : TOP + 24 - focusCard.y * k;
+        // With ancestors drawn above: at the bottom so they show. The oldest person (a shared tree): at the top, family below.
+        const above = cards.some((c) => c.y < focusCard.y);
+        const y = focusCard.me || above ? h - BOTTOM - (focusCard.y + cardH) * k - 8 : TOP + 24 - focusCard.y * k;
         go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y });
       } else {
         // The whole tree first, in the middle; zoom in from there.
