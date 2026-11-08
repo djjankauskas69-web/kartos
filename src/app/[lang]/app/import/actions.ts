@@ -28,9 +28,13 @@ export async function importFromFamily(_: FormState, form: FormData): Promise<Fo
   const rels = (srcRels ?? []) as Array<{ person_a: string; person_b: string; type: string; subtype: string | null; start_year: number | null }>;
   const ids = new Set<string>([sourceId]);
   if (withFamily) {
+    // The closest family: parents, brothers and sisters, partners and children.
+    const parents = rels.filter((r) => r.type === "parent_child" && r.person_b === sourceId).map((r) => r.person_a);
+    parents.forEach((p) => ids.add(p));
     for (const r of rels) {
       if (r.type === "partner" && (r.person_a === sourceId || r.person_b === sourceId)) ids.add(r.person_a === sourceId ? r.person_b : r.person_a);
       if (r.type === "parent_child" && r.person_a === sourceId) ids.add(r.person_b);
+      if (r.type === "parent_child" && parents.includes(r.person_a)) ids.add(r.person_b);
     }
   }
   const { data: rows } = await supabase.from("persons").select(COPY).in("id", [...ids]).is("deleted_at", null);
@@ -41,9 +45,20 @@ export async function importFromFamily(_: FormState, form: FormData): Promise<Fo
   const meThere = mine?.find((m) => m.workspace_id === srcWs)?.person_id as string | undefined;
   const meHere = mine?.find((m) => m.workspace_id === workspace.id)?.person_id as string | undefined;
 
+  // Someone already brought here before (same name and birth year) is not copied again.
+  const { data: hereRows } = await supabase.from("persons").select("id, given_names, surname, birth_year").eq("workspace_id", workspace.id).is("deleted_at", null);
+  const key = (p: { given_names: string; surname: string | null; birth_year: number | null }) => `${p.given_names.trim().toLowerCase()}|${(p.surname ?? "").trim().toLowerCase()}|${p.birth_year ?? ""}`;
+  const here = new Map((hereRows ?? []).map((p) => [key(p), p.id as string]));
   const map = new Map<string, string>();
+  const reused = new Set<string>();
   const inserts = [];
   for (const p of people) {
+    const same = here.get(key(p));
+    if (same) {
+      map.set(p.id, same);
+      reused.add(same);
+      continue;
+    }
     if (p.id === meThere && meHere) {
       map.set(p.id, meHere);
       continue;
@@ -71,8 +86,11 @@ export async function importFromFamily(_: FormState, form: FormData): Promise<Fo
   const links = rels
     .filter((r) => map.has(r.person_a) && map.has(r.person_b) && (r.type === "partner" || r.type === "parent_child"))
     .map((r) => ({ workspace_id: workspace.id, person_a: map.get(r.person_a)!, person_b: map.get(r.person_b)!, type: r.type, subtype: r.subtype, start_year: r.start_year }));
-  if (links.length) {
-    const { error } = await supabase.from("relationships").insert(links);
+  const { data: existing } = await supabase.from("relationships").select("person_a, person_b, type").eq("workspace_id", workspace.id);
+  const has = new Set((existing ?? []).map((r) => `${r.type}|${r.person_a}|${r.person_b}`));
+  const fresh = links.filter((r) => !has.has(`${r.type}|${r.person_a}|${r.person_b}`) && !(r.type === "partner" && has.has(`partner|${r.person_b}|${r.person_a}`)));
+  if (fresh.length) {
+    const { error } = await supabase.from("relationships").insert(fresh);
     if (error) console.error("importFromFamily links", error);
   }
   // The two trees open into each other through this person (when you look after both families).

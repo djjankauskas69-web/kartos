@@ -171,13 +171,29 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     return `${base}/tree${s ? `?${s}` : ""}`;
   };
   // Just the title and a quiet line; the view switch and "not connected" live on the tree itself.
-  const shareAction = can.admin(current.role) ? (
+  // Bring someone (with their closest family) from another of your families.
+  const importAction =
+    can.edit(current.role) && memberships.length > 1 ? (
+      <Link href={`${base}/import`} aria-label={t.importFamily.button} title={t.importFamily.button} className={`${cls.secondary} gap-2 max-sm:min-h-10 max-sm:px-3`}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 19h14" />
+        </svg>
+        <span className="max-sm:hidden">{t.importFamily.button}</span>
+      </Link>
+    ) : null;
+  const shareAction0 = can.admin(current.role) ? (
     <Link href={`${base}/share`} aria-label={t.shareLink.button} className={`${cls.secondary} gap-2 max-sm:min-h-10 max-sm:px-3`}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
       </svg>
       <span className="max-sm:hidden">{t.shareLink.button}</span>
     </Link>
+  ) : null;
+  const shareAction = importAction || shareAction0 ? (
+    <div className="flex items-center gap-2">
+      {importAction}
+      {shareAction0}
+    </div>
   ) : null;
   // On a phone: one short row (title and a share icon), so the tree gets the screen.
   const header = (subtitle: React.ReactNode) => (
