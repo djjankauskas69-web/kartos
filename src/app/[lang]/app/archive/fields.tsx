@@ -110,12 +110,44 @@ export function PeriodFields({
   idPrefix,
   initial,
   labels,
+  compact = false,
 }: {
   idPrefix: string;
   initial?: { year: number | null; qualifier: "exact" | "about" | "between"; yearTo: number | null };
   labels: { date: string; exact: string; about: string; between: string; year: string; from: string; to: string; placeholder: string };
+  /** One year box with an "approximately" tick; a period only when asked for. */
+  compact?: boolean;
 }) {
   const [qualifier, setQualifier] = useState(initial?.qualifier ?? "exact");
+  if (compact)
+    return (
+      <fieldset>
+        <legend className={labelCls}>{labels.year}</legend>
+        <input type="hidden" name="yearQualifier" value={qualifier} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <input id={`${idPrefix}-year`} name="year" inputMode="numeric" maxLength={4} defaultValue={initial?.year ?? ""} placeholder={labels.placeholder} aria-label={qualifier === "between" ? labels.from : labels.year} className={`${input} w-36`} />
+          {qualifier === "between" ? (
+            <>
+              <span aria-hidden="true">–</span>
+              <input name="yearTo" inputMode="numeric" maxLength={4} defaultValue={initial?.yearTo ?? ""} aria-label={labels.to} placeholder={labels.to} className={`${input} w-36`} />
+              <button type="button" onClick={() => setQualifier("exact")} className="text-[0.95rem] font-semibold text-ink-muted underline-offset-2 hover:underline">
+                ×
+              </button>
+            </>
+          ) : (
+            <>
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-[1rem]">
+                <input type="checkbox" checked={qualifier === "about"} onChange={(e) => setQualifier(e.target.checked ? "about" : "exact")} className="h-5 w-5 accent-[var(--color-sage-deep)]" />
+                {labels.about.toLowerCase()}
+              </label>
+              <button type="button" onClick={() => setQualifier("between")} className="text-[0.95rem] font-semibold text-ink-muted underline-offset-2 hover:underline">
+                {labels.between.toLowerCase()}…
+              </button>
+            </>
+          )}
+        </div>
+      </fieldset>
+    );
   return (
     <fieldset>
       <legend className={labelCls}>{labels.date}</legend>

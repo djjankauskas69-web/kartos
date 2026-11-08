@@ -768,9 +768,18 @@ export function UploadForm({
 
         <fieldset className="space-y-4">
           <legend className="sr-only">{t.commonInfo}</legend>
-          <p className="font-semibold">{t.commonInfo}</p>
-          <PeoplePicker idPrefix="up" people={people} label={t.linkPeople} hint={t.linkHint} placeholder={t.searchPeople} removeLabel={t.remove} />
-          <PeriodFields idPrefix="up" labels={periodLabels} />
+          <PeoplePicker idPrefix="up" people={people} label={t.whoInPhoto} placeholder={t.searchPeople} removeLabel={t.remove} />
+          <PeriodFields idPrefix="up" labels={periodLabels} compact />
+        </fieldset>
+
+        {/* The rest is rarely needed: folded away, still sent with the form. */}
+        <details className="group rounded-xl border border-line px-4 [&[open]]:pb-4">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
+            <span aria-hidden="true" className="text-[1.2rem] leading-none transition-transform group-open:rotate-45">+</span>
+            {t.moreInfo}
+            <span className="font-normal text-ink-muted">· {t.moreInfoHint}</span>
+          </summary>
+          <div className="mt-2 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="up-place" className={labelCls}>
@@ -786,9 +795,9 @@ export function UploadForm({
             </label>
             <textarea id="up-desc" name="description" rows={3} className={`${fieldCls} py-3`} />
           </div>
-        </fieldset>
-
-        <Visibility t={t} disabled={busy} />
+          <Visibility t={t} disabled={busy} />
+          </div>
+        </details>
         {error && (
           <p role="alert" className="text-danger">
             {error}
