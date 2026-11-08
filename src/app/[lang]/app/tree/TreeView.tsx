@@ -114,6 +114,8 @@ export type TreeCard = {
   line?: boolean;
   /** Married in and has parents: a toggle that opens them above (the tree makes room). */
   inlaw?: { open: boolean; href: string };
+  /** The last of an opened group of brothers and sisters: a small button folds them back. */
+  foldBack?: string;
   /** Not a person: brothers and sisters folded into one card (or the card that folds them again). */
   fold?: { open: boolean; count: number };
   /** Only one parent known, who has several partners: which one is the other parent? */
@@ -165,6 +167,7 @@ type Labels = {
   addMenu: string;
   moreAbove: string;
   inlawOpen: string;
+  foldClose: string;
   inlawClose: string;
   moreBelow: string;
   pending: string;
@@ -1003,6 +1006,16 @@ export function TreeView({
                   >
                     ?
                   </button>
+                )}
+                {c.foldBack && (
+                  <Link
+                    href={c.foldBack}
+                    scroll={false}
+                    draggable={false}
+                    className="absolute -bottom-[18px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-3 text-[0.85rem] font-semibold leading-7 text-ink-muted shadow-[0_2px_6px_-3px_rgb(28_29_26/0.4)] hover:text-ink"
+                  >
+                    ▴ {labels.foldClose}
+                  </Link>
                 )}
                 {c.inlaw && (
                   <Link

@@ -29,6 +29,7 @@ export function treeLabels(t: Dictionary) {
     addMenu: t.tree.addMenu,
     moreAbove: t.tree.moreAbove,
     inlawOpen: t.tree.inlawOpen,
+    foldClose: t.tree.foldClose,
     inlawClose: t.tree.inlawClose,
     moreBelow: t.tree.moreBelow,
     pending: t.app.pending,

@@ -100,6 +100,8 @@ export function buildTree({
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, sides?.length ? [...rels, ...sides.flat()] : rels);
   const whole = !focusId || !byId.has(focusId);
+  // The whole family is many generations tall: rows sit closer, so the cards stay readable when it fits.
+  const S: TreeSize = whole && !sides?.length ? { ...SIZE, rowGap: 68 } : SIZE;
   // The base drawing starts from the oldest person among those its links join.
   const inRels = new Set(rels.flatMap((r) => [r.person_a, r.person_b]));
   const base0 = sides?.length ? people.filter((p) => inRels.has(p.id)) : people;
@@ -145,11 +147,11 @@ export function buildTree({
     if (groups.length) {
       const extra: BuildPerson[] = [];
       const extraRels: BuildRel[] = [];
-      for (const g of groups) {
+      for (const g of groups.filter((x) => !x.open)) {
         const ys = g.ids.map((id) => byId.get(id)!.birth_year).filter((y): y is number => !!y);
         const gid = `grp:${g.key}`;
         // Open: a small "fold" card after the last of them. Folded: the card stands for them all.
-        extra.push({ id: gid, given_names: "", surname: null, sex: null, birth_year: g.open ? 9998 : ys.length ? Math.min(...ys) : null, is_living: false } as unknown as BuildPerson);
+        extra.push({ id: gid, given_names: "", surname: null, sex: null, birth_year: ys.length ? Math.min(...ys) : null, is_living: false } as unknown as BuildPerson);
         for (const p of g.parents) extraRels.push({ person_a: p, person_b: gid, type: "parent_child" });
         gens.set(gid, gens.get(g.ids[0]) ?? 1);
       }
@@ -161,7 +163,7 @@ export function buildTree({
   const hasParentHere = new Set(rels.filter((r) => r.type === "parent_child").map((r) => r.person_b));
   const outward = new Set((sides ?? []).flat().filter((r) => r.type === "parent_child" && !hasParentHere.has(r.person_b) && inRels.has(r.person_b)).map((r) => r.person_b));
   for (const id of people.map((p) => p.id)) if (foreign?.has(id) && rels.some((r) => r.type === "partner" && (r.person_a === id || r.person_b === id))) outward.add(id);
-  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people2, rels2, 0, span, SIZE, left, outward, expandUp) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward, expandUp));
+  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people2, rels2, 0, span, S, left, outward, expandUp) : layoutTree(start, people, rels, Math.min(span, 4), span, S, left, outward, expandUp));
   // With another family beside this one, try their people standing on the left of their partner
   // here as well, and keep whichever drawing has the shorter lines between the two families.
   const layout = (() => {
@@ -313,6 +315,12 @@ export function buildTree({
     };
   });
 
+  // An opened group folds back from a small button under the last of them.
+  for (const g of groups.filter((x) => x.open)) {
+    const last = cards.filter((c) => g.ids.includes(c.id)).sort((a, b) => b.x - a.x)[0];
+    if (last && toggleHref) last.foldBack = toggleHref(g.key);
+  }
+
   // Lines of each other family sit at their own height, so two families' lines never merge.
   const famIndex = new Map<string, number>();
   for (const f of foreign?.values() ?? []) if (!famIndex.has(f.family)) famIndex.set(f.family, famIndex.size + 1);
@@ -326,7 +334,7 @@ export function buildTree({
     return i ? ((i % 3) - 1) * 18 : 0;
   };
   const lines = (es: typeof layout.edges) =>
-    es.map((e) => ({ d: edgePaths(layout.nodes, [e], SIZE, false, 0, { y: PHOTO_R, r: PHOTO_R }, shift, true).join(" "), keys: e.kind === "partner" ? [e.a, e.b] : [...e.parents, ...e.children] }));
+    es.map((e) => ({ d: edgePaths(layout.nodes, [e], S, false, 0, { y: PHOTO_R, r: PHOTO_R }, shift, true).join(" "), keys: e.kind === "partner" ? [e.a, e.b] : [...e.parents, ...e.children] }));
 
   /* Couples share one box: join runs of partner links. */
   const group = new Map<string, string>(layout.nodes.map((n) => [n.key, n.key]));
@@ -410,7 +418,7 @@ export function buildTree({
             if (e.kind === "partner") return line.has(idOfKey.get(e.a) ?? "") && line.has(idOfKey.get(e.b) ?? "") ? [e] : [];
             const ps = e.parents.filter((k) => line.has(idOfKey.get(k) ?? ""));
             const cs = e.children.filter((k) => line.has(idOfKey.get(k) ?? ""));
-            return ps.length && cs.length ? [{ ...e, parents: ps, children: cs }] : [];
+            return ps.length && cs.length ? [{ ...e, parents: e.parents, children: cs, of: e.children.length }] : [];
           }),
         )
       : [],

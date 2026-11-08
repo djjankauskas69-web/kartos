@@ -25,7 +25,7 @@ export type TreeNode = {
 
 export type TreeEdge =
   | { kind: "partner"; a: string; b: string; later?: boolean }
-  | { kind: "parents"; parents: string[]; children: string[] };
+  | { kind: "parents"; parents: string[]; children: string[]; /** Children of the full family, when only some are drawn (own line). */ of?: number };
 
 export type TreeSize = { cardW: number; cardH: number; gapX: number; rowGap: number; pad: number };
 export const DEFAULT_SIZE: TreeSize = { cardW: 188, cardH: 90, gapX: 20, rowGap: 76, pad: 32 };
@@ -350,6 +350,26 @@ export function edgePaths(
     const sy = ps.length === 2 && !coupleBoxes ? ps[0].y + (photo ? photo.y : cardH / 2) : parentBottom;
     const childTop = cs[0].y - (coupleBoxes ? boxPad : 0);
     const busY = childTop - (childTop - parentBottom) / 2 + (busShift?.(e) ?? 0);
+    if (curved && (e.of ?? cs.length) >= 3) {
+      // Many children: one rail under the parents, each child hanging from it (rounded corners at the ends).
+      const xs = cs.map((c) => c.x + cardW / 2).sort((a, b) => a - b);
+      const left = Math.min(sx, xs[0]);
+      const right = Math.max(sx, xs[xs.length - 1]);
+      const r = Math.min(14, (childTop - busY) / 2);
+      paths.push(`M${sx} ${sy}V${busY}`);
+      const end = (x: number, dir: 1 | -1) => `M${x} ${busY + r}Q${x} ${busY} ${x + dir * r} ${busY}`;
+      // The rail, softened where it turns down into the first and last child.
+      const l0 = xs[0] === left && left < sx ? left + r : left;
+      const r0 = xs[xs.length - 1] === right && right > sx ? right - r : right;
+      if (r0 > l0) paths.push(`M${l0} ${busY}H${r0}`);
+      for (const x of xs) {
+        const y2 = cs[0].y - (coupleBoxes ? boxPad : 0);
+        if (x === left && left < sx) paths.push(`${end(x, 1)}M${x} ${busY + r}V${y2}`);
+        else if (x === right && right > sx) paths.push(`${end(x, -1)}M${x} ${busY + r}V${y2}`);
+        else paths.push(`M${x} ${busY}V${y2}`);
+      }
+      continue;
+    }
     if (curved) {
       // Down from the parents, then one gentle S-curve to each child.
       const bend = Math.min(34, Math.max(12, (childTop - parentBottom) / 2 - 4));
