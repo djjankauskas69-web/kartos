@@ -43,12 +43,12 @@ export default async function Home() {
 
           <SiteHeader t={t} locale={locale} />
 
-          <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-5 pb-40 pt-[1.5vh] text-center sm:px-8 sm:pt-[8vh]">
+          <FadeIn stagger={120} className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-5 pb-40 pt-[1.5vh] text-center sm:px-8 sm:pt-[8vh]">
             <h1 className="text-[3rem] [text-shadow:0_0_24px_rgb(255_255_255/0.7)] sm:text-[4.4rem] lg:text-[5.4rem]">{t.hero.title}</h1>
             <Scribble className="mx-auto mt-1 h-5 w-52 text-ink/80 sm:w-72" />
             <p className="mx-auto mt-4 max-w-[34rem] text-[1.06rem] font-medium leading-relaxed text-ink sm:mt-5 sm:text-[1.18rem] [text-shadow:0_0_14px_rgb(255_255_255/0.95),0_0_3px_rgb(255_255_255/0.9)]">{t.hero.lead}</p>
             {/* Phone: one full-width button and a quiet link under it; wider screens: two buttons side by side. */}
-            <div className="mt-6 flex w-full flex-col items-center gap-1 sm:mt-7 sm:w-auto sm:flex-row sm:gap-3">
+            <div className="mt-6 flex w-full flex-col items-center gap-1 sm:mt-7 sm:flex-row sm:justify-center sm:gap-3">
               <Link href={signup} className="inline-flex min-h-13 w-full max-w-sm items-center justify-center rounded-full bg-night px-7 sm:w-auto text-[1.02rem] font-medium text-surface shadow-[0_10px_30px_-12px_rgb(28_29_26/0.5)] transition-colors hover:bg-olive-deep">
                 {t.hero.cta}
               </Link>
