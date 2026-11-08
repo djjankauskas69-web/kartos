@@ -10,6 +10,8 @@ import { portraitUrls } from "../portraits";
 import { cls } from "@/components/ui";
 import { RenameWorkspaceForm } from "../forms";
 import { MembersCenter, type MemberRow } from "./MembersCenter";
+import { headers } from "next/headers";
+import { recoverToken } from "@/lib/invite-token";
 import { PageSkeleton } from "@/components/Skeletons";
 import { decideTreeAccess, setDiscoverable } from "../tree-access-actions";
 
@@ -58,7 +60,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
     canInvite
       ? supabase
           .from("invitations")
-          .select("id, email, role, person_id, expires_at, use_count, created_at, invited_by")
+          .select("id, email, role, person_id, expires_at, use_count, created_at, invited_by, token_hash")
           .eq("workspace_id", current.id)
           .is("revoked_at", null)
           .gt("expires_at", new Date().toISOString())
@@ -70,6 +72,15 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
     myPersonLinks(locale),
   ]);
   const linkReady = !links.error;
+  // A person's newest open invitation, so its link can be copied again instead of making another.
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const sentTo: Record<string, { link: string; role: Role }> = {};
+  for (const i of (invites.data ?? []) as Array<{ id: string; person_id: string | null; role: Role; token_hash: string }>) {
+    if (!i.person_id || sentTo[i.person_id]) continue;
+    const token = recoverToken(i.id, i.token_hash);
+    if (token) sentTo[i.person_id] = { link: `${origin}/${locale}/invite/${token}`, role: i.role };
+  }
   const personOf = new Map(((links.data ?? []) as { user_id: string; person_id: string | null }[]).filter((r) => r.person_id).map((r) => [r.user_id, r.person_id as string]));
   const personById = new Map(people.map((p) => [p.id, p]));
   const photos = await portraitUrls(locale, people);
@@ -147,6 +158,7 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
         members={members}
         isAdmin={isAdmin}
         canInvite={canInvite}
+        sentTo={sentTo}
         activeInvites={((invites.data ?? []) as Array<{ id: string; email: string | null; role: Role; person_id: string | null; expires_at: string; use_count: number; invited_by: string | null }>).map((i) => ({
           by: isAdmin && i.invited_by && i.invited_by !== user.id ? (members.find((x) => x.id === i.invited_by)?.name ?? null) : null,
           id: i.id,

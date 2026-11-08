@@ -1,6 +1,7 @@
 "use server";
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { inviteToken, tokenHash as hashToken } from "@/lib/invite-token";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
@@ -203,15 +204,16 @@ export async function createInvite(_: FormState, form: FormData): Promise<FormSt
   // Editors invite only members and viewers; full rights are the administrator's to give.
   if (!can.admin(workspace.role) && role === "editor") return { error: "save" };
 
-  const token = randomBytes(24).toString("base64url");
-  const tokenHash = createHash("sha256").update(token, "utf8").digest("hex");
+  const id = randomUUID();
+  const token = inviteToken(id);
+  const tokenHash = hashToken(token);
   const personId = uuid(form, "personId");
   let { error } = await supabase
     .from("invitations")
-    .insert({ workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id, ...(personId ? { person_id: personId } : {}) });
+    .insert({ id, workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id, ...(personId ? { person_id: personId } : {}) });
   // Before database update 0009 there is no person_id column: invite without it.
   if (error && personId && /person_id/.test(error.message)) {
-    ({ error } = await supabase.from("invitations").insert({ workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id }));
+    ({ error } = await supabase.from("invitations").insert({ id, workspace_id: workspace.id, role, token_hash: tokenHash, invited_by: user.id }));
   }
   if (error) {
     console.error("createInvite", error);

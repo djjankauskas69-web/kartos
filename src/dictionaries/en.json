@@ -323,6 +323,8 @@
     "stNoPerson": "Not in the tree",
     "connect": "Join to tree",
     "invite": "Invite",
+    "invitedAs": "Invited: {role}",
+    "copyInvite": "Copy invite",
     "inviteCopied": "Link copied",
     "inviteGeneral": "General invitation link",
     "inviteGeneralLead": "For people not in the tree yet: after joining they choose who they are.",

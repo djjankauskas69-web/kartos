@@ -109,6 +109,7 @@ export function MembersCenter({
   members,
   isAdmin,
   canInvite,
+  sentTo,
   activeInvites,
   linkReady,
   people,
@@ -125,6 +126,7 @@ export function MembersCenter({
   members: MemberRow[];
   isAdmin: boolean;
   canInvite: boolean;
+  sentTo: Record<string, { link: string; role: Role }>;
   activeInvites: ActiveInvite[];
   linkReady: boolean;
   people: LinkOption[];
@@ -234,7 +236,8 @@ export function MembersCenter({
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {m && <RoleBadge role={m.role} label={t.role[m.role]} />}
-                      {e.status === "invite" && canInvite && p && <InviteButton locale={locale} personId={p.id} t={t} roles={isAdmin ? ["contributor", "viewer", "editor"] : ["contributor", "viewer"]} />}
+                      {e.status === "invite" && canInvite && p && sentTo[p.id] && <SentInvite link={sentTo[p.id].link} role={t.role[sentTo[p.id].role]} t={t} />}
+                      {e.status === "invite" && canInvite && p && !sentTo[p.id] && <InviteButton locale={locale} personId={p.id} t={t} roles={isAdmin ? ["contributor", "viewer", "editor"] : ["contributor", "viewer"]} />}
                       {e.status === "loose" && canAdd && p && (
                         <Link href={`?add=1&existing=${p.id}`} scroll={false} className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
                           {t.connect}
@@ -296,6 +299,32 @@ export function MembersCenter({
         </section>
       </aside>
     </div>
+  );
+}
+
+/** Already invited: the same link, copied again with one tap. */
+function SentInvite({ link, role, t }: { link: string; role: string; t: Labels }) {
+  const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
+  if (done === "manual") return <input readOnly autoFocus value={link} onFocus={(e) => e.currentTarget.select()} aria-label={t.copyFallback} className="w-44 rounded-lg border border-line px-2 py-1.5 text-[0.85rem]" />;
+  return (
+    <span className="flex items-center gap-2">
+      <span className="hidden text-[0.85rem] text-ink-muted sm:inline">{t.invitedAs.replace("{role}", role.toLowerCase())}</span>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(link);
+            setDone("copied");
+          } catch {
+            setDone("manual");
+          }
+        }}
+        className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-sage-deep/40 bg-sage-wash/50 text-sage-deep hover:border-sage-deep"}`}
+      >
+        {done === "copied" ? <IconCheck size={16} /> : <IconLink size={16} />}
+        {done === "copied" ? t.inviteCopied : t.copyInvite}
+      </button>
+    </span>
   );
 }
 

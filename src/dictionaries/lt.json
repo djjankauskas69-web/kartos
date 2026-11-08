@@ -323,6 +323,8 @@
     "stNoPerson": "Nėra medyje",
     "connect": "Prijungti",
     "invite": "Pakviesti",
+    "invitedAs": "Pakviestas: {role}",
+    "copyInvite": "Kopijuoti kvietimą",
     "inviteCopied": "Nuoroda nukopijuota",
     "inviteGeneral": "Bendra kvietimo nuoroda",
     "inviteGeneralLead": "Tiems, kurių dar nėra medyje: prisijungę jie patys pasirinks, kas yra.",
