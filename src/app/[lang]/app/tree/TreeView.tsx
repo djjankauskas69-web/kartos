@@ -393,7 +393,9 @@ export function TreeView({
         const ys = [...new Set(cards.map((c) => c.y))].sort((p, q) => p - q);
         const pitch = ys.length > 1 ? ys[1] - ys[0] : cardH + 100;
         const k = clampK(Math.min(0.6, (w - 24) / (cardW * 2 + 80), (h - TOP - BOTTOM) / (pitch * 2 + cardH)));
-        go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y: h - BOTTOM - (focusCard.y + cardH) * k - 8 });
+        // You: at the bottom, ancestors above. Someone the tree is drawn from (a shared tree): at the top, family below.
+        const y = focusCard.me ? h - BOTTOM - (focusCard.y + cardH) * k - 8 : TOP + 24 - focusCard.y * k;
+        go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y });
       } else {
         // The whole tree first, in the middle; zoom in from there.
         go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
