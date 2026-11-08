@@ -108,6 +108,7 @@ export function MembersCenter({
   locale,
   members,
   isAdmin,
+  canInvite,
   activeInvites,
   linkReady,
   people,
@@ -123,6 +124,7 @@ export function MembersCenter({
   initialFilter?: string;
   members: MemberRow[];
   isAdmin: boolean;
+  canInvite: boolean;
   activeInvites: ActiveInvite[];
   linkReady: boolean;
   people: LinkOption[];
@@ -232,7 +234,7 @@ export function MembersCenter({
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {m && <RoleBadge role={m.role} label={t.role[m.role]} />}
-                      {e.status === "invite" && isAdmin && p && <InviteButton locale={locale} personId={p.id} t={t} />}
+                      {e.status === "invite" && canInvite && p && <InviteButton locale={locale} personId={p.id} t={t} roles={isAdmin ? ["contributor", "viewer", "editor"] : ["contributor", "viewer"]} />}
                       {e.status === "loose" && canAdd && p && (
                         <Link href={`?add=1&existing=${p.id}`} scroll={false} className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.95rem] font-semibold text-surface hover:bg-olive-deep">
                           {t.connect}
@@ -274,7 +276,7 @@ export function MembersCenter({
       </section>
 
       <aside className="space-y-6">
-        {isAdmin ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
+        {canInvite ? <InviteCard locale={locale} activeInvites={activeInvites} t={t} errors={errors} isAdmin={isAdmin} /> : <p className={`p-5 text-ink-muted ${cls.card}`}>{t.onlyOwner}</p>}
 
         <section className={`p-5 ${cls.card}`}>
           <h2 className={`mb-3 ${cls.h3}`}>{t.levelsTitle}</h2>
@@ -298,7 +300,7 @@ export function MembersCenter({
 }
 
 /** "Invite": first the rights they get (member by default), then the link is made and copied. */
-function InviteButton({ locale, personId, t }: { locale: Locale; personId: string; t: Labels }) {
+function InviteButton({ locale, personId, t, roles }: { locale: Locale; personId: string; t: Labels; roles: readonly ("contributor" | "viewer" | "editor")[] }) {
   const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
@@ -336,7 +338,7 @@ function InviteButton({ locale, personId, t }: { locale: Locale; personId: strin
           <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} className="fixed inset-0 z-30 cursor-default" />
           <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
             <p className="px-3 pb-1 pt-2 text-[0.85rem] font-semibold text-ink-muted">{t.inviteAs}</p>
-            {(["contributor", "viewer", "editor"] as const).map((r) => (
+            {roles.map((r) => (
               <button key={r} type="submit" name="role" value={r} role="menuitem" className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-linen">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted">
                   <RoleIcon role={r} size={15} />
@@ -356,9 +358,9 @@ function InviteButton({ locale, personId, t }: { locale: Locale; personId: strin
 
 /* ---------- Invite card ---------- */
 
-export type ActiveInvite = { id: string; who: string | null; role: Role; expires: string; uses: number };
+export type ActiveInvite = { id: string; who: string | null; role: Role; expires: string; uses: number; by: string | null };
 
-function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; activeInvites: ActiveInvite[]; t: Labels; errors: Errors }) {
+function InviteCard({ locale, activeInvites, t, errors, isAdmin }: { locale: Locale; activeInvites: ActiveInvite[]; t: Labels; errors: Errors; isAdmin: boolean }) {
   const [listOpen, setListOpen] = useState(false);
   const [copy, setCopy] = useState<"idle" | "copied" | "manual">("idle");
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
@@ -389,7 +391,7 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
               {t.inviteAs}
             </label>
             <select id="invite-role" name="role" defaultValue="contributor" className={cls.input}>
-              {(["editor", "contributor", "viewer"] as const).map((r) => (
+              {(isAdmin ? (["editor", "contributor", "viewer"] as const) : (["contributor", "viewer"] as const)).map((r) => (
                 <option key={r} value={r}>
                   {t.role[r]}
                 </option>
@@ -444,9 +446,11 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
                   {t.activeCount} {activeInvites.length}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform ${listOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
                 </button>
-                <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
-                  {t.revokeAll}
-                </button>
+                {isAdmin && (
+                  <button type="button" className="font-semibold text-danger underline-offset-2 hover:underline" onClick={() => setConfirmRevoke(true)}>
+                    {t.revokeAll}
+                  </button>
+                )}
               </p>
               {listOpen && (
                 <ul className="mt-3 space-y-2">
@@ -457,6 +461,7 @@ function InviteCard({ locale, activeInvites, t, errors }: { locale: Locale; acti
                         <span className="block text-[0.85rem] text-ink-muted">
                           {t.role[i.role]} · {t.inviteUntil.replace("{date}", i.expires)}
                           {i.uses > 0 ? ` · ${t.inviteUsed.replace("{n}", String(i.uses))}` : ""}
+                          {i.by ? ` · ${t.invitedBy.replace("{name}", i.by)}` : ""}
                         </span>
                       </span>
                       <form action={revokeInvite}>

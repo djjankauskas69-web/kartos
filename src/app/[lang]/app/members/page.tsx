@@ -45,6 +45,7 @@ function lastSeenLabel(t: Dictionary, locale: Locale, iso: string | null | undef
 async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Locale; filterPromise: Promise<string> }) {
   const [{ supabase, user, current }, initialFilter] = await Promise.all([requireWorkspace(locale), filterPromise]);
   const isAdmin = can.admin(current.role);
+  const canInvite = can.edit(current.role);
 
   const [{ data: rows }, seen, invites, links, { people, rels }, mine] = await Promise.all([
     supabase
@@ -54,10 +55,10 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
       .order("joined_at", { ascending: true }),
     // Needs SQL 0004; until it runs the column simply shows "—".
     supabase.rpc("member_last_seen", { ws: current.id }),
-    isAdmin
+    canInvite
       ? supabase
           .from("invitations")
-          .select("id, email, role, person_id, expires_at, use_count, created_at")
+          .select("id, email, role, person_id, expires_at, use_count, created_at, invited_by")
           .eq("workspace_id", current.id)
           .is("revoked_at", null)
           .gt("expires_at", new Date().toISOString())
@@ -145,7 +146,9 @@ async function Members({ t, locale, filterPromise }: { t: Dictionary; locale: Lo
         initialFilter={initialFilter}
         members={members}
         isAdmin={isAdmin}
-        activeInvites={((invites.data ?? []) as Array<{ id: string; email: string | null; role: Role; person_id: string | null; expires_at: string; use_count: number }>).map((i) => ({
+        canInvite={canInvite}
+        activeInvites={((invites.data ?? []) as Array<{ id: string; email: string | null; role: Role; person_id: string | null; expires_at: string; use_count: number; invited_by: string | null }>).map((i) => ({
+          by: isAdmin && i.invited_by && i.invited_by !== user.id ? (members.find((x) => x.id === i.invited_by)?.name ?? null) : null,
           id: i.id,
           who: i.person_id && personById.get(i.person_id) ? fullName(personById.get(i.person_id)!) : i.email || null,
           role: i.role,

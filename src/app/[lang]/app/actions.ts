@@ -197,9 +197,11 @@ const roleFrom = (form: FormData): Role | null => {
 
 export async function createInvite(_: FormState, form: FormData): Promise<FormState> {
   const locale = formLocale(form);
-  const { supabase, user, workspace } = await actionContext(locale, can.admin);
+  const { supabase, user, workspace } = await actionContext(locale, can.edit);
   const role = roleFrom(form);
   if (!role || role === "owner") return { error: "save" };
+  // Editors invite only members and viewers; full rights are the administrator's to give.
+  if (!can.admin(workspace.role) && role === "editor") return { error: "save" };
 
   const token = randomBytes(24).toString("base64url");
   const tokenHash = createHash("sha256").update(token, "utf8").digest("hex");
@@ -225,7 +227,8 @@ export async function createInvite(_: FormState, form: FormData): Promise<FormSt
 
 export async function revokeInvite(form: FormData) {
   const locale = formLocale(form);
-  const { supabase, workspace } = await actionContext(locale, can.admin);
+  // An editor's revoke reaches only their own invitations (row security).
+  const { supabase, workspace } = await actionContext(locale, can.edit);
   const id = uuid(form, "id");
   if (id) await supabase.from("invitations").update({ revoked_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", workspace.id);
   refresh();

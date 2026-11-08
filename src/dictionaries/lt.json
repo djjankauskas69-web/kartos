@@ -309,6 +309,7 @@
     "change": "keisti",
     "inviteAnyone": "Bet kam su nuoroda",
     "inviteUntil": "galioja iki {date}",
+    "invitedBy": "pakvietė {name}",
     "inviteUsed": "panaudota {n} k.",
     "inviteRevoke": "Atšaukti",
     "showEmail": "Rodyti el. paštą",
