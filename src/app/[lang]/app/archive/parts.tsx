@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
 import { ShareChoice } from "@/components/ShareChoice";
-import { addComment, createStory, deleteComment, deleteItem, recordFiles, setAlbumCover, updateItem } from "./actions";
+import { addComment, clearTag, createStory, deleteComment, deleteItem, placeTag, recordFiles, setAlbumCover, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
 export type Kind = "photo" | "document" | "story";
@@ -24,6 +24,8 @@ export type ArchiveItem = {
   dateLabel: string;
   folderId: string | null;
   people: string[];
+  /** Where people are marked on the photo (0–1 across and down). */
+  tags?: Array<{ id: string; x: number; y: number }>;
   uploader: string;
   createdAt: string;
   url?: string;
@@ -231,6 +233,11 @@ export function Detail({
   };
   const [error, setError] = useState<string | null>(null);
   const base = `/${locale}/app`;
+  // Marking people on the photo: where they are, kept here so a new mark shows at once.
+  const [tags, setTags] = useState(item.tags ?? []);
+  const [tagging, setTagging] = useState(false);
+  const [spot, setSpot] = useState<{ x: number; y: number } | null>(null);
+  const canTag = canComment && item.kind === "photo" && !!item.url && !item.pdf;
 
   if (editing)
     return (
@@ -307,9 +314,13 @@ export function Detail({
     setDownloading(false);
   }
 
-  const people_ = item.people.length > 0 && (
-    <p className="flex flex-wrap gap-1.5">
-      {item.people.map((p) => (
+  // Marked people read from the left, as on the photo; the others after them.
+  const tagX = new Map(tags.map((g) => [g.id, g.x]));
+  const shownPeople = [...new Set([...item.people, ...tags.map((g) => g.id)])].sort((a, b) => (tagX.get(a) ?? 2) - (tagX.get(b) ?? 2));
+  const people_ = shownPeople.length > 0 && (
+    <p className="flex flex-wrap items-center gap-1.5">
+      {tags.length > 1 && <span className="mr-1 text-[0.92rem] text-ink-muted">{t.fromLeft}</span>}
+      {shownPeople.map((p) => (
         <Link key={p} href={`${base}/people/${p}`} className="rounded-full bg-sage-wash px-3 py-1 text-[0.92rem] font-semibold hover:underline">
           {personName.get(p) ?? "—"}
         </Link>
@@ -444,6 +455,12 @@ export function Detail({
                 </span>
               ))}
             </p>
+            {canTag && !tagging && (
+              <button type="button" onClick={() => { setTagging(true); setSpot(null); }} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-white/20">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="3.5" /><path d="M5.5 19.5c1.2-3 3.6-4.5 6.5-4.5s5.3 1.5 6.5 4.5" /><path d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M17 3h2.5A1.5 1.5 0 0 1 21 4.5V7" /></svg>
+                <span className="hidden sm:inline">{t.tagPeople}</span>
+              </button>
+            )}
             {onExpand && (
               <button type="button" onClick={onExpand} aria-label={t.fullscreen} title={t.fullscreen} className={`${roundBtn} bg-white/10 text-white hover:bg-white/20`}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
@@ -474,10 +491,11 @@ export function Detail({
                 </div>
               )}
               {/* Comments drift over the photo itself, so the frame is exactly the photo's size. */}
-              <div data-keep className={`relative mx-auto w-fit max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
+              <div data-keep className={`group/frame relative mx-auto w-fit max-w-full overflow-hidden rounded-[10px] shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)] transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                 <img ref={imgRef} onLoad={() => setLoaded(true)} onError={() => setLoaded(true)} src={item.url} alt={title} className={`block max-w-full object-contain max-h-[62dvh] ${item.kind === "photo" && canComment ? "md:max-h-[calc(min(94dvh,64rem)-9.5rem)]" : "md:max-h-[calc(min(94dvh,64rem)-5.5rem)]"}`} />
-                {item.kind === "photo" && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
+                {item.kind === "photo" && !tagging && <CommentTicker key={item.id} comments={item.comments ?? []} t={t} locale={locale} />}
+                {item.kind === "photo" && loaded && <TagLayer tags={tags} names={personName} tagging={tagging} spot={spot} onSpot={setSpot} base={base} />}
               </div>
             </div>
           ) : (
@@ -485,7 +503,30 @@ export function Detail({
               <Preview item={item} large />
             </div>
           )}
-          {isPicture && item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />}
+          {tagging ? (
+            <TagBar
+              key={item.id}
+              item={item}
+              people={people}
+              tags={tags}
+              names={personName}
+              spot={spot}
+              t={t}
+              locale={locale}
+              onCancelSpot={() => setSpot(null)}
+              onPlaced={(g) => {
+                setTags((all) => [...all.filter((x) => x.id !== g.id), g]);
+                setSpot(null);
+              }}
+              onCleared={(id) => setTags((all) => all.filter((x) => x.id !== id))}
+              onDone={() => {
+                setTagging(false);
+                setSpot(null);
+              }}
+            />
+          ) : (
+            isPicture && item.kind === "photo" && canComment && <CommentInput item={item} t={t} locale={locale} />
+          )}
         </div>
 
         <button type="button" onClick={onNext} disabled={!onNext} aria-label={t.slideNext} title={t.slideNext} className={arrow}>
@@ -518,6 +559,167 @@ export function Detail({
         </div>
         <div className="border-t border-line px-5 py-4">{actions}</div>
       </aside>
+    </div>
+  );
+}
+
+/**
+ * Names on the faces. Shown when the photo is pointed at (always on a phone) and while marking;
+ * while marking, a tap on the photo picks the spot for the next name.
+ */
+function TagLayer({ tags, names, tagging, spot, onSpot, base }: { tags: Array<{ id: string; x: number; y: number }>; names: Map<string, string>; tagging: boolean; spot: { x: number; y: number } | null; onSpot: (p: { x: number; y: number }) => void; base: string }) {
+  if (!tagging && !tags.length) return null;
+  return (
+    <div
+      onClick={(e) => {
+        if (!tagging) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        onSpot({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+      }}
+      className={`group/tags absolute inset-0 z-20 ${tagging ? "cursor-crosshair bg-black/10" : "pointer-events-none"}`}
+    >
+      {tags.map((g) => (
+        <Link
+          key={g.id}
+          href={`${base}/people/${g.id}`}
+          onClick={(e) => tagging && e.preventDefault()}
+          style={{ left: `${g.x * 100}%`, top: `${g.y * 100}%` }}
+          className={`pointer-events-auto absolute flex -translate-x-1/2 flex-col items-center transition-opacity duration-200 ${tagging ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100 [@media(hover:none)]:opacity-100"}`}
+        >
+          <span aria-hidden="true" className="h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-ink/70 shadow" />
+          <span className="-mt-0.5 max-w-[10rem] truncate rounded-full bg-white/95 px-2.5 py-0.5 text-[0.82rem] font-semibold text-ink shadow-[0_4px_12px_-4px_rgb(0_0_0/0.5)] hover:underline">
+            {names.get(g.id) ?? "—"}
+          </span>
+        </Link>
+      ))}
+      {spot && (
+        <span style={{ left: `${spot.x * 100}%`, top: `${spot.y * 100}%` }} className="pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-[0_0_0_2px_rgb(0_0_0/0.35)]" />
+      )}
+    </div>
+  );
+}
+
+/** Under the photo while marking: what to do next, then "Who is this?" with the family to pick from. */
+function TagBar({
+  item,
+  people,
+  tags,
+  names,
+  spot,
+  t,
+  locale,
+  onCancelSpot,
+  onPlaced,
+  onCleared,
+  onDone,
+}: {
+  item: ArchiveItem;
+  people: PersonOption[];
+  tags: Array<{ id: string; x: number; y: number }>;
+  names: Map<string, string>;
+  spot: { x: number; y: number } | null;
+  t: L;
+  locale: Locale;
+  onCancelSpot: () => void;
+  onPlaced: (g: { id: string; x: number; y: number }) => void;
+  onCleared: (id: string) => void;
+  onDone: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const terms = fold(q).split(/\s+/).filter(Boolean);
+  const placed = new Set(tags.map((g) => g.id));
+  // Already linked to this photo come first: most often it's one of them.
+  const pool = [...people].sort((a, b) => Number(item.people.includes(b.id)) - Number(item.people.includes(a.id)));
+  const matches = pool.filter((p) => !placed.has(p.id) && terms.every((w) => fold(p.name).includes(w))).slice(0, terms.length ? 6 : 4);
+
+  async function pick(id: string) {
+    if (!spot) return;
+    setBusy(true);
+    setError(null);
+    const r = await placeTag({ locale, mediaId: item.id, personId: id, x: spot.x, y: spot.y });
+    setBusy(false);
+    if (r.ok) {
+      onPlaced({ id, ...spot });
+      setQ("");
+    } else setError(r.error === "setup" ? t.tagSetup : t.saveError);
+  }
+
+  return (
+    <div data-keep className="w-full rounded-2xl bg-white p-3 text-ink shadow-[0_10px_30px_-12px_rgb(0_0_0/0.6)] sm:p-4">
+      {spot ? (
+        <>
+          <label htmlFor={`tag-q-${item.id}`} className="mb-2 block font-semibold">{t.whoIsThis}</label>
+          <div className="flex gap-2">
+            <input
+              id={`tag-q-${item.id}`}
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && matches[0]) {
+                  e.preventDefault();
+                  pick(matches[0].id);
+                }
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  onCancelSpot();
+                }
+              }}
+              placeholder={t.searchPeople}
+              autoComplete="off"
+              className="min-h-11 min-w-0 flex-1 rounded-xl border border-line px-3 text-[1rem] focus:border-ink/50 focus:outline-none"
+            />
+            <button type="button" onClick={onCancelSpot} className="min-h-11 shrink-0 rounded-full px-3 font-semibold text-ink-muted hover:text-ink">
+              {t.cancel}
+            </button>
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {matches.map((p) => (
+              <li key={p.id}>
+                <button type="button" disabled={busy} onClick={() => pick(p.id)} className="min-h-10 rounded-full border border-line px-3 text-left text-[0.95rem] font-semibold hover:border-ink/40 hover:bg-paper disabled:opacity-50">
+                  {p.name}
+                  {p.years && <span className="ml-1.5 font-normal text-ink-muted">{p.years}</span>}
+                </button>
+              </li>
+            ))}
+            {terms.length > 0 && matches.length === 0 && <li className="py-2 text-[0.95rem] text-ink-muted">{t.tagNotFound}</li>}
+          </ul>
+        </>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="min-w-0 flex-1 text-[1rem]">
+            <span aria-hidden="true">👆 </span>
+            {t.tapFace}
+          </p>
+          <button type="button" onClick={onDone} className="min-h-11 rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep">
+            {t.tagDone}
+          </button>
+        </div>
+      )}
+      {tags.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+          {tags.map((g) => (
+            <li key={g.id} className="inline-flex items-center gap-1 rounded-full bg-sage-wash py-0.5 pl-3 pr-1 text-[0.9rem] font-semibold">
+              {names.get(g.id) ?? "—"}
+              <button
+                type="button"
+                aria-label={`${t.remove}: ${names.get(g.id) ?? ""}`}
+                onClick={async () => {
+                  const r = await clearTag({ locale, mediaId: item.id, personId: g.id });
+                  if (r.ok) onCleared(g.id);
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted hover:bg-white hover:text-danger"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p role="alert" className="mt-2 text-[0.92rem] text-danger">{error}</p>}
     </div>
   );
 }

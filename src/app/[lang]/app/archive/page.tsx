@@ -23,6 +23,9 @@ export default async function ArchivePage({ searchParams }: PageProps<"/[lang]/a
 
 const MEDIA = "id, kind, title, description, place, taken_year, year_qualifier, year_to, folder_id, storage_path, mime_type, uploader_id, status, created_at, file_name, width, height, media_persons(person_id)";
 
+// With where each person stands on the photo (database update 0023).
+const MEDIA_XY = MEDIA.replace("media_persons(person_id)", "media_persons(person_id, x, y)");
+
 async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Locale; paramsPromise: Promise<{ item: string; tab: string; album: string; upload: boolean; play: boolean }> }) {
   const { supabase, user, current } = await requireWorkspace(locale);
   const mediaQuery = (cols: string) =>
@@ -41,7 +44,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   // Everything that does not depend on something else is asked for at once.
   const [{ people }, mediaRes, folderRes, memRes, params, { data: commentRows }, { data: memberRows }] = await Promise.all([
     getFamilyGraph(locale, current.id),
-    mediaQuery(`${MEDIA}, shared`).then(async (r) => (r.error ? mediaQuery(MEDIA) : r)),
+    mediaQuery(`${MEDIA_XY}, shared`).then(async (r) => (r.error ? mediaQuery(`${MEDIA}, shared`).then(async (r2) => (r2.error ? mediaQuery(MEDIA) : r2)) : r)),
     folderQuery("id, preset, name, sort, description, year, cover_id, people, shared, created_by").then(async (r) => (r.error ? folderQuery("id, preset, name, sort, created_by") : r)),
     memQuery("id, body, author_id, created_at, person_id, media_id, media_ids, shared, status").then(async (r) => (r.error ? memQuery("id, body, author_id, created_at, person_id, media_id, shared, status") : r)),
     paramsPromise,
@@ -51,7 +54,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
     supabase.from("workspace_members").select("user_id, person_id").eq("workspace_id", current.id).not("person_id", "is", null),
   ]);
 
-  type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string }[] | null };
+  type Row = { id: string; kind: string; title: string | null; description: string | null; place: string | null; taken_year: number | null; year_qualifier: string | null; year_to: number | null; folder_id: string | null; storage_path: string | null; mime_type: string | null; uploader_id: string | null; status: string; created_at: string; file_name: string | null; width: number | null; height: number | null; shared?: boolean; media_persons: { person_id: string; x?: number | null; y?: number | null }[] | null };
   // Profile portraits are personal: they show on the person, not among the family's photos.
   const portraitIds = new Set(people.flatMap((p) => (p.profile_photo_id ? [p.profile_photo_id] : [])));
   const rows = ((mediaRes.data ?? []) as unknown as Row[]).filter((r) => !portraitIds.has(r.id) && !r.storage_path?.includes("/portraits/"));
@@ -90,6 +93,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
       dateLabel: periodLabel(t, m.taken_year, m.year_qualifier, m.year_to),
       folderId: m.folder_id,
       people: (m.media_persons ?? []).map((r) => r.person_id),
+      tags: (m.media_persons ?? []).flatMap((r) => (r.x != null && r.y != null ? [{ id: r.person_id, x: r.x, y: r.y }] : [])),
       uploader: names.get(m.uploader_id as string) ?? "",
       uploaderId: m.uploader_id,
       createdAt: m.created_at,

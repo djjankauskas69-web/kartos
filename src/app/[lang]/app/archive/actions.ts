@@ -415,3 +415,34 @@ export async function deleteComment(form: FormData): Promise<ArchiveResult> {
   refresh();
   return { ok: true };
 }
+
+/** A person marked on a photo at a spot (0–1 across and down); links them to the photo if not yet. */
+export async function placeTag(input: { locale: string; mediaId: string; personId: string; x: number; y: number }): Promise<ArchiveResult> {
+  const locale = input.locale === "en" ? "en" : "lt";
+  const { supabase, workspace } = await actionContext(locale, can.add);
+  const ok = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
+  const x = Math.min(1, Math.max(0, Number(input.x)));
+  const y = Math.min(1, Math.max(0, Number(input.y)));
+  if (!ok(input.mediaId) || !ok(input.personId) || !Number.isFinite(x) || !Number.isFinite(y)) return { error: "save" };
+  const { data: have } = await supabase.from("media_persons").select("person_id").eq("media_id", input.mediaId).eq("person_id", input.personId).maybeSingle();
+  const { error } = have
+    ? await supabase.from("media_persons").update({ x, y }).eq("media_id", input.mediaId).eq("person_id", input.personId)
+    : await supabase.from("media_persons").insert({ media_id: input.mediaId, person_id: input.personId, workspace_id: workspace.id, x, y });
+  if (error) {
+    console.error("placeTag", error);
+    return { error: /column/.test(error.message) ? "setup" : "save" };
+  }
+  refresh();
+  return { ok: true };
+}
+
+/** The mark taken off the photo; the person stays linked to it (unlinking is in "Edit"). */
+export async function clearTag(input: { locale: string; mediaId: string; personId: string }): Promise<ArchiveResult> {
+  const locale = input.locale === "en" ? "en" : "lt";
+  const { supabase } = await actionContext(locale, can.add);
+  if (!/^[0-9a-f-]{36}$/i.test(input.mediaId) || !/^[0-9a-f-]{36}$/i.test(input.personId)) return { error: "save" };
+  const { error } = await supabase.from("media_persons").update({ x: null, y: null }).eq("media_id", input.mediaId).eq("person_id", input.personId);
+  if (error) return { error: "save" };
+  refresh();
+  return { ok: true };
+}
