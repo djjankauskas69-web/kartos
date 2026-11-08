@@ -1,30 +1,84 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { deletePersonEvent, updatePersonEvent, type EventState } from "./event-actions";
+import { deletePersonEvent, updateMarriage, updatePersonEvent, type EventState } from "./event-actions";
 
-type Ev = { id?: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; canEdit?: boolean; canDelete?: boolean; pending?: boolean };
-type L = { eventTitle: string; eventYear: string; eventYearTo: string; eventPlace: string; save: string; cancel: string; delete: string; pending: string; error: string; yearError: string; clickToEdit: string };
+type Ev = { id?: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; canEdit?: boolean; canDelete?: boolean; pending?: boolean; marriage?: { relId: string; status: string } };
+type L = { eventTitle: string; eventYear: string; eventYearTo: string; eventPlace: string; save: string; cancel: string; delete: string; pending: string; error: string; yearError: string; clickToEdit: string; marriageYear: string; marriageStatus: string; mMarried: string; mDivorced: string; mPartner: string };
 
 /** One line of the life timeline. An event someone wrote opens for changes right here when clicked. */
 export function EventRow({ locale, e, labels, showDelete }: { locale: string; e: Ev; labels: L; showDelete: boolean }) {
   const [editing, setEditing] = useState(false);
   const form = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(async (prev: EventState, data: FormData) => {
-    const res = await updatePersonEvent(prev, data);
+    const res = await (e.marriage ? updateMarriage : updatePersonEvent)(prev, data);
     if (res.ok) setEditing(false);
     return res;
   }, {});
 
   useEffect(() => {
     if (!editing) return;
-    const first = form.current?.querySelector<HTMLInputElement>("input[name=title]");
+    const first = form.current?.querySelector<HTMLInputElement>("input[name=title], input[name=year]");
     first?.focus();
     first?.select();
   }, [editing]);
 
   const yearText = e.year ? (e.yearTo ? `${e.year}–${String(e.yearTo).slice(2)}` : e.year) : "—";
   const dot = <span aria-hidden="true" className="absolute left-0 top-2 h-[0.7rem] w-[0.7rem] rounded-full border-2 border-white bg-olive ring-1 ring-olive/40" />;
+
+  if (editing && e.marriage) {
+    const err = state.error === "year" ? labels.yearError : state.error ? labels.error : null;
+    const opts = [
+      ["married", labels.mMarried],
+      ["divorced", labels.mDivorced],
+      ["partner", labels.mPartner],
+    ] as const;
+    return (
+      <li className="relative pl-6">
+        {dot}
+        <form
+          ref={form}
+          action={action}
+          className="space-y-3 rounded-xl border border-line bg-paper p-3"
+          onKeyDown={(k) => {
+            if (k.key === "Escape") {
+              k.preventDefault();
+              k.stopPropagation();
+              setEditing(false);
+            }
+          }}
+        >
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="relId" value={e.marriage.relId} />
+          <p className="font-semibold">{e.title}</p>
+          <label className="flex flex-col gap-1 text-[0.85rem] font-semibold text-ink-muted">
+            {labels.marriageYear}
+            <input name="year" inputMode="numeric" maxLength={4} defaultValue={e.year ?? ""} className="min-h-11 w-32 rounded-xl border border-line bg-surface px-3 text-[1rem] focus:border-ink/50 focus:outline-none" />
+          </label>
+          <fieldset>
+            <legend className="mb-1 text-[0.85rem] font-semibold text-ink-muted">{labels.marriageStatus}</legend>
+            <div className="flex flex-wrap gap-2">
+              {opts.map(([v, l]) => (
+                <label key={v} className="cursor-pointer">
+                  <input type="radio" name="status" value={v} defaultChecked={e.marriage!.status === v} className="peer sr-only" />
+                  <span className="inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-4 font-semibold peer-checked:border-ink peer-checked:bg-ink peer-checked:text-surface peer-focus-visible:ring-2 peer-focus-visible:ring-olive">{l}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {err && <p className="text-[0.95rem] font-semibold text-danger">{err}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="submit" disabled={pending} className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-surface hover:bg-olive-deep disabled:opacity-70">
+              {pending ? "…" : labels.save}
+            </button>
+            <button type="button" onClick={() => setEditing(false)} disabled={pending} className="inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-4 font-semibold hover:border-ink/40">
+              {labels.cancel}
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
 
   if (editing && e.id) {
     const err = state.error === "year" ? labels.yearError : state.error ? labels.error : null;
@@ -98,7 +152,7 @@ export function EventRow({ locale, e, labels, showDelete }: { locale: string; e:
   return (
     <li className="relative pl-6">
       {dot}
-      {e.canEdit && e.id ? (
+      {e.canEdit && (e.id || e.marriage) ? (
         <button type="button" onClick={() => setEditing(true)} className="group/ev cursor-text -my-1 -mr-2 flex w-[calc(100%+0.5rem)] items-start gap-4 rounded-xl py-1 pr-2 text-left hover:bg-paper">
           {body}
           <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0 text-ink-muted opacity-35 transition-opacity group-hover/ev:opacity-100 group-focus-visible/ev:opacity-100">

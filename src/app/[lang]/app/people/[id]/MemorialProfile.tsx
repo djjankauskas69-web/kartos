@@ -11,7 +11,7 @@ import { EditPrompt, HeaderEdit, type HeaderEditLabels, type HeaderValues } from
 import { EventRow } from "./EventRow";
 import { ExpandText, MemorialTabs } from "./MemorialTabs";
 
-export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; canEdit?: boolean; pending?: boolean };
+export type MemorialEvent = { key: string; year: number | null; yearTo?: number | null; title: string; sub?: string | null; id?: string; canDelete?: boolean; canEdit?: boolean; pending?: boolean; marriage?: { relId: string; status: string } };
 export type ProfileRelative = { id: string; name: string; sub: string; portrait?: string; initials: string; href: string };
 export type MemorialPlace = { key: string; kind: PlaceKind; place: string; lat?: number | null; lng?: number | null; year?: number | null; yearTo?: number | null; href?: string; id?: string; canDelete?: boolean; addLabel?: string };
 export type MemoryPreview = { count: number; items: Array<{ id: string; author: string; date: string; body: string }> };
@@ -125,7 +125,7 @@ export function MemorialProfile({
   const markers: MapMarker[] = pinned.map((p) => ({ id: p.key, lat: p.lat!, lng: p.lng!, title: kindLabel(p.kind), lines: [p.place] }));
   const center = pinned[0] ? { lat: pinned[0].lat!, lng: pinned[0].lng! } : undefined;
 
-  const evLabels = { eventTitle: m.eventTitle, eventYear: m.eventYear, eventYearTo: m.eventYearTo, eventPlace: m.eventPlace, save: m.save, cancel: m.cancel, delete: m.delete, pending: m.pending, error: m.saveError, yearError: m.yearError, clickToEdit: m.clickToEdit };
+  const evLabels = { eventTitle: m.eventTitle, eventYear: m.eventYear, eventYearTo: m.eventYearTo, eventPlace: m.eventPlace, save: m.save, cancel: m.cancel, delete: m.delete, pending: m.pending, error: m.saveError, yearError: m.yearError, clickToEdit: m.clickToEdit, marriageYear: m.marriageYear, marriageStatus: m.marriageStatus, mMarried: m.mMarried, mDivorced: m.mDivorced, mPartner: m.mPartner };
   const timeline = (list: MemorialEvent[], full: boolean) =>
     list.length === 0 ? (
       <p className="text-ink-muted">{m.noEvents}</p>

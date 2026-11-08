@@ -517,7 +517,10 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
     if (person.birth_year) ev.push({ key: "born", year: person.birth_year, title: mt.born, sub: person.birth_place });
     for (const pid of fam.partners) {
       const pp = byId.get(pid);
-      if (pp) ev.push({ key: `m-${pid}`, year: null, title: `${mt.marriage}: ${fullName(pp)}` });
+      const r = rels.find((x) => x.type === "partner" && ((x.person_a === id && x.person_b === pid) || (x.person_b === id && x.person_a === pid)));
+      const status = r?.subtype ?? "married";
+      const note = status === "divorced" ? ` (${mt.divorcedNote})` : status === "partner" ? ` (${mt.partnerNote})` : "";
+      if (pp) ev.push({ key: `m-${pid}`, year: r?.start_year ?? null, title: `${mt.marriage}: ${fullName(pp)}${note}`, canEdit: !!r && can.edit(role) && !other, marriage: r ? { relId: r.id, status } : undefined });
     }
     for (const cid of fam.children) {
       const c = byId.get(cid);

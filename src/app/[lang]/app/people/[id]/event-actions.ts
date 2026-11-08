@@ -82,3 +82,23 @@ export async function updatePersonEvent(_: EventState, form: FormData): Promise<
   refresh();
   return { ok: true };
 }
+
+/** The year and status of a marriage, set or changed after the partner was added. */
+export async function updateMarriage(_: EventState, form: FormData): Promise<EventState> {
+  const locale = formLocale(form);
+  const { supabase, workspace } = await actionContext(locale, can.edit);
+  const id = uuid(form, "relId");
+  const raw = String(form.get("year") ?? "").trim();
+  const year = yr(form, "year");
+  if (raw && year === null) return { error: "year" };
+  const st = String(form.get("status") ?? "");
+  const subtype = ["married", "divorced", "partner"].includes(st) ? st : "married";
+  if (!id) return { error: "save" };
+  const { error } = await supabase.from("relationships").update({ start_year: year, subtype }).eq("id", id).eq("workspace_id", workspace.id).eq("type", "partner");
+  if (error) {
+    console.error("updateMarriage", error);
+    return { error: "save" };
+  }
+  refresh();
+  return { ok: true };
+}
