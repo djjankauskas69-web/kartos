@@ -172,12 +172,12 @@ export function HeaderEdit({
           <Segmented value={living ? "1" : "0"} onChange={(v) => setLiving(v === "1")} options={[["1", l.livingYes], ["0", l.livingNo]]} />
         </div>
         {/* Year, and if known the month and day. */}
-        <div className="[&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
+        <div className="sm:col-span-2 sm:max-w-[26rem] [&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
           <DateRow id="he-birthYear" prefix="birth" label={l.birthYear} locale={locale} t={l.date} year={values.birthYear} month={values.birthMonth} day={values.birthDay} />
         </div>
         {field("birthPlace", l.birthPlace)}
         {!living && (
-          <div className="[&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
+          <div className="sm:col-span-2 sm:max-w-[26rem] [&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
             <DateRow id="he-deathYear" prefix="death" label={l.deathYear} locale={locale} t={l.date} year={values.deathYear} month={values.deathMonth} day={values.deathDay} />
           </div>
         )}
