@@ -130,7 +130,7 @@ export async function sharePerson(token: string, personId: string, livingLabel: 
   const { admin, link } = g;
   const [memoriesRes, photosRes, graveRes] = await Promise.all([
     link.include_stories
-      ? admin.from("memories").select("id, body, created_at, author_id").eq("person_id", personId).neq("status", "rejected").order("created_at", { ascending: false }).limit(50)
+      ? admin.from("memories").select("id, body, created_at, author_id").eq("person_id", personId).eq("shared", true).eq("status", "approved").order("created_at", { ascending: false }).limit(50)
       : Promise.resolve({ data: [] }),
     link.include_photos ? admin.from("media_persons").select("media_id").eq("person_id", personId) : Promise.resolve({ data: [] }),
     link.include_graves
@@ -145,7 +145,9 @@ export async function sharePerson(token: string, personId: string, livingLabel: 
       .select("id, storage_path, title, kind, status")
       .in("id", mediaIds)
       .eq("kind", "photo")
-      .neq("status", "rejected")
+      // Only what the family marked "Everyone".
+      .eq("shared", true)
+      .eq("status", "approved")
       .is("deleted_at", null)
       .not("storage_path", "like", "%/portraits/%")
       .not("storage_path", "like", "%/memories/%")

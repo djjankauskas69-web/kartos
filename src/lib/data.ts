@@ -104,9 +104,11 @@ const personFields =
  * and by the person themself. Everyone else gets the year (and so the age), which the tree needs.
  */
 async function hideBirthdays<T extends Pick<Person, "id" | "is_living" | "birth_month" | "birth_day">>(locale: Locale, workspaceId: string | null, rows: T[]): Promise<T[]> {
-  if (!rows.some((p) => p.is_living && (p.birth_month || p.birth_day))) return rows;
   const { memberships } = await getContext(locale);
   const role = memberships.find((m) => m.id === workspaceId)?.role;
+  // "View only": the life story written about someone is for the family, not shown here.
+  if (role === "viewer") rows = rows.map((p) => ("biography" in p ? { ...p, biography: null } : p));
+  if (!rows.some((p) => p.is_living && (p.birth_month || p.birth_day))) return rows;
   if (role && can.edit(role)) return rows;
   const { links } = await myPersonLinks(locale);
   const mine = new Set(links.values());
@@ -320,8 +322,10 @@ export const myPersonLinks = cache(async (locale: Locale) => {
 /** Answers to the "what they were like" questions. Empty until database update 0006 has run. */
 export async function getLifeStory(locale: Locale, personId: string): Promise<LifeStory> {
   const { supabase } = await requireUser(locale);
-  const { data, error } = await supabase.from("persons").select("story").eq("id", personId).maybeSingle();
+  const { data, error } = await supabase.from("persons").select("story, workspace_id").eq("id", personId).maybeSingle();
   if (error || !data?.story || typeof data.story !== "object") return {};
+  const { memberships } = await getContext(locale);
+  if (memberships.find((m) => m.id === data.workspace_id)?.role === "viewer") return {};
   const out: LifeStory = {};
   for (const k of STORY_KEYS) {
     const v = (data.story as Record<string, unknown>)[k];

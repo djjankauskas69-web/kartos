@@ -237,7 +237,7 @@
     "ownerHelp": "Manages the family, members and settings; approves what members add",
     "editorHelp": "Adds and edits people, photos and graves; shown straight away",
     "contributorHelp": "Adds information that appears once the administrator approves it",
-    "viewerHelp": "Can view the family's information"
+    "viewerHelp": "Sees the tree, names, years and what is marked “Everyone”; changes nothing"
   },
   "members": {
     "title": "Family members",
@@ -1794,8 +1794,8 @@
       "birth_place": "Birthplace",
       "death_place": "Place of death"
     },
-    "onlyUsHint": "Only members of your family archive will see it.",
-    "alsoLinkedHint": "Other families who have this person in their tree will see it too."
+    "onlyUsHint": "Seen only by family members who add or edit.",
+    "alsoLinkedHint": "Also seen by linked families, view-only members and anyone you share the tree link with."
   },
   "sharedTree": {
     "readOnly": "This is {family}'s tree. They let you see names, years, graves and what they share. Nothing can be changed.",
@@ -1902,8 +1902,8 @@
     "newLink": "New link",
     "whatShows": "What it shows",
     "alwaysTree": "The tree with names, years and portraits is always shown.",
-    "incStories": "Stories and memories",
-    "incPhotos": "Photos",
+    "incStories": "Memories marked “Everyone”",
+    "incPhotos": "Photos marked “Everyone”",
     "incGraves": "Graves",
     "howMuch": "How much of the tree",
     "wholeTree": "Whole tree",

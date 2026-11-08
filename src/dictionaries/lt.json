@@ -237,7 +237,7 @@
     "ownerHelp": "Valdo šeimą, narius ir nustatymus; tvirtina narių įkeltą informaciją",
     "editorHelp": "Prideda ir redaguoja žmones, nuotraukas, kapavietes; matoma iš karto",
     "contributorHelp": "Prideda informaciją, kuri rodoma po administratoriaus patvirtinimo",
-    "viewerHelp": "Gali peržiūrėti šeimos informaciją"
+    "viewerHelp": "Mato medį, vardus, metus ir tai, kas pažymėta „Visiems“; nieko nekeičia"
   },
   "members": {
     "title": "Šeimos nariai",
@@ -1794,8 +1794,8 @@
       "birth_place": "Gimimo vieta",
       "death_place": "Mirties vieta"
     },
-    "onlyUsHint": "Matys tik jūsų šeimos nariai.",
-    "alsoLinkedHint": "Matys ir kitos šeimos, kurių medžiuose yra šis žmogus."
+    "onlyUsHint": "Matys tik šeimos nariai, kurie prideda ar redaguoja.",
+    "alsoLinkedHint": "Matys ir susietos šeimos, peržiūros teisę turintys nariai ir tie, kuriems pasidalinsite medžio nuoroda."
   },
   "sharedTree": {
     "readOnly": "Tai {family} medis. Jie leido jums matyti vardus, metus, kapavietes ir tai, kuo dalijasi. Keisti nieko negalima.",
@@ -1902,8 +1902,8 @@
     "newLink": "Nauja nuoroda",
     "whatShows": "Ką matys",
     "alwaysTree": "Medis su vardais, metais ir portretais rodomas visada.",
-    "incStories": "Istorijos ir prisiminimai",
-    "incPhotos": "Nuotraukos",
+    "incStories": "Prisiminimai, pažymėti „Visiems“",
+    "incPhotos": "Nuotraukos, pažymėtos „Visiems“",
     "incGraves": "Kapavietės",
     "howMuch": "Kiek medžio",
     "wholeTree": "Visas medis",
