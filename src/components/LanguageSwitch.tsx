@@ -19,7 +19,7 @@ export function FixedLanguageSwitch({ current, label, path }: Props & { path: st
 
 function Switch({ current, label, rest }: Props & { rest: string }) {
   return (
-    <nav aria-label={label} className="flex items-center rounded-full border border-line bg-surface p-0.5 text-sm">
+    <nav aria-label={label} className="flex items-center text-sm sm:rounded-full sm:border sm:border-line sm:bg-surface sm:p-0.5">
       {locales.map((l: Locale) => {
         const active = l === current;
         return (
@@ -35,8 +35,9 @@ function Switch({ current, label, rest }: Props & { rest: string }) {
             }}
             className={
               active
-                ? "rounded-full bg-ink px-3 py-1.5 font-semibold text-paper"
-                : "rounded-full px-3 py-1.5 text-ink-muted hover:text-ink"
+                ? // On a phone only the other language shows, as a small word: the header stays light.
+                  "hidden rounded-full bg-ink px-3 py-1.5 font-semibold text-paper sm:inline-block"
+                : "rounded-full px-2 py-1.5 font-semibold text-ink/70 hover:text-ink sm:px-3 sm:font-normal sm:text-ink-muted"
             }
           >
             {l.toUpperCase()}

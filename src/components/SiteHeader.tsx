@@ -7,7 +7,7 @@ import { Wordmark } from "./Wordmark";
 
 export function SiteHeader({ t, locale, minimal = false, dark = false }: { t: Dictionary; locale: Locale; minimal?: boolean; dark?: boolean }) {
   return (
-    <header className={`mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8 ${dark ? "text-surface [&_a[aria-label=MyKartos]_img]:brightness-0 [&_a[aria-label=MyKartos]_img]:invert" : ""}`}>
+    <header className={`mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8 sm:py-5 ${dark ? "text-surface [&_a[aria-label=MyKartos]_img]:brightness-0 [&_a[aria-label=MyKartos]_img]:invert" : ""}`}>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2"
