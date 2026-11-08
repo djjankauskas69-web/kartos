@@ -389,8 +389,10 @@ export function TreeView({
       // person the tree is drawn from), with your parents and grandparents above in view.
       const focusCard = cards.find((c) => c.me) ?? start;
       if (w < 640 && focusCard && whole < 0.45) {
-        const k = clampK(Math.min(0.72, (w - 24) / (cardW * 2 + 120)));
-        go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y: h * 0.62 - (focusCard.y + cardH / 2) * k });
+        // Three generations tall: you, your parents and your grandparents.
+        const pitch = rows.length > 1 ? (rows[1].y - rows[0].y) : cardH + 100;
+        const k = clampK(Math.min(0.6, (w - 24) / (cardW * 2 + 80), (h - TOP - BOTTOM) / (pitch * 2 + cardH)));
+        go({ k, x: w / 2 - (focusCard.x + cardW / 2) * k, y: h - BOTTOM - (focusCard.y + cardH) * k - 8 });
       } else {
         // The whole tree first, in the middle; zoom in from there.
         go({ k: whole, x: (w - width * whole) / 2, y: middleY(h, whole) });
