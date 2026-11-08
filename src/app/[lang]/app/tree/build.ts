@@ -312,6 +312,8 @@ export function buildTree({
   const idOfKey = new Map(layout.nodes.map((n) => [n.key, n.id]));
   const shift = (e: (typeof layout.edges)[number]) => {
     if (e.kind !== "parents") return 0;
+    // An in-law's parents: their line runs a little higher, so it never merges with the family's own.
+    if (e.parents[0]?.startsWith("il:")) return -22;
     const fam = foreign?.get(idOfKey.get(e.parents[0]) ?? "")?.family;
     const i = fam ? famIndex.get(fam) ?? 0 : 0;
     return i ? ((i % 3) - 1) * 18 : 0;
