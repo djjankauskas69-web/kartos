@@ -59,6 +59,12 @@ async function SharedTree({ t, locale, params, searchParams }: { t: Dictionary; 
     c.linkHref = undefined;
     const ini = initials.get(c.id);
     if (ini) c.initials = ini;
+    // A living person shows nothing of who they are: no maiden name worked out from the parents,
+    // and "Living person" already says they're alive.
+    if (c.living) {
+      c.nee = undefined;
+      c.years = "";
+    }
   }
 
   return (

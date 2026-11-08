@@ -4,18 +4,16 @@ import { Wordmark } from "@/components/Wordmark";
 import { cls } from "@/components/ui";
 
 /** The frame of a shared tree: whose tree it is at the top, an invitation at the bottom. */
-export function SharedTop({ t, locale, family, sharer }: { t: Dictionary; locale: string; family: string; sharer: string | null }) {
+export function SharedTop({ t, locale, family }: { t: Dictionary; locale: string; family: string; sharer?: string | null }) {
   return (
-    <header className="mx-auto flex w-full max-w-[88rem] flex-wrap items-center justify-between gap-3 px-5 pb-2 pt-5 sm:px-8">
-      <div className="flex min-w-0 items-center gap-4">
+    // On a phone: the brand on one line, the family's name under it; on a wide screen side by side.
+    <header className="mx-auto flex w-full max-w-[88rem] items-center justify-between gap-3 px-4 pb-1 pt-4 sm:px-8 sm:pb-2 sm:pt-5">
+      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
         <Wordmark href={`/${locale}`} />
         <span aria-hidden="true" className="hidden h-6 w-px bg-line sm:block" />
-        <div className="min-w-0">
-          <p className="truncate text-[1.05rem] font-semibold">{t.publicTree.familyTree.replace("{family}", family)}</p>
-          {sharer && <p className="text-[0.88rem] text-ink-muted">{t.publicTree.by.replace("{name}", sharer)}</p>}
-        </div>
+        <p className="truncate text-[0.98rem] font-semibold text-ink-muted sm:text-[1.05rem] sm:text-ink">{t.publicTree.familyTree.replace("{family}", family)}</p>
       </div>
-      <span className="rounded-full bg-linen px-3 py-1 text-[0.85rem] font-semibold text-ink-muted">{t.publicTree.readOnly}</span>
+      <span className="shrink-0 rounded-full bg-linen px-3 py-1 text-[0.85rem] font-semibold text-ink-muted">{t.publicTree.readOnly}</span>
     </header>
   );
 }
