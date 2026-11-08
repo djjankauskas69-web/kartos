@@ -725,6 +725,10 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     sex: person.sex ?? "unknown",
                     living: person.is_living,
                     birthYear: person.birth_year ? String(person.birth_year) : "",
+                    birthMonth: person.birth_month ?? null,
+                    birthDay: person.birth_day ?? null,
+                    deathMonth: person.death_month ?? null,
+                    deathDay: person.death_day ?? null,
                     birthPlace: person.birth_place ?? "",
                     deathYear: person.death_year ? String(person.death_year) : "",
                     deathPlace: person.death_place ?? "",
@@ -749,6 +753,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
                     deathYear: t.app.deathYear,
                     deathPlace: t.person.deathPlace,
                     linkFamily: t.memorial.linkFamily,
+                    date: { yearPh: t.add.yearPh, year: t.add.year, month: t.add.month, day: t.add.day },
                     errors: { required: t.memorial.nameRequired, year: t.memorial.yearError, save: t.memorial.saveError },
                   },
                 }

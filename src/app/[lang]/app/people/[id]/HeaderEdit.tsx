@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { cls, ErrorText } from "@/components/ui";
 import { savePersonFields, type AboutState } from "./about-actions";
+import { DateRow } from "../AddPersonPanel";
 
 export type HeaderValues = {
   givenNames: string;
@@ -15,6 +16,10 @@ export type HeaderValues = {
   birthPlace: string;
   deathYear: string;
   deathPlace: string;
+  birthMonth?: number | null;
+  birthDay?: number | null;
+  deathMonth?: number | null;
+  deathDay?: number | null;
 };
 
 export type HeaderEditLabels = {
@@ -37,6 +42,8 @@ export type HeaderEditLabels = {
   deathYear: string;
   deathPlace: string;
   linkFamily: string;
+  /** Labels of the year · month · day fields. */
+  date: Record<string, string>;
   errors: Record<string, string>;
 };
 
@@ -164,9 +171,16 @@ export function HeaderEdit({
           <span className="mb-1 block text-[0.88rem] font-semibold text-ink-muted">{l.living}</span>
           <Segmented value={living ? "1" : "0"} onChange={(v) => setLiving(v === "1")} options={[["1", l.livingYes], ["0", l.livingNo]]} />
         </div>
-        {field("birthYear", l.birthYear, { year: true })}
+        {/* Year, and if known the month and day. */}
+        <div className="[&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
+          <DateRow id="he-birthYear" prefix="birth" label={l.birthYear} locale={locale} t={l.date} year={values.birthYear} month={values.birthMonth} day={values.birthDay} />
+        </div>
         {field("birthPlace", l.birthPlace)}
-        {!living && field("deathYear", l.deathYear, { year: true })}
+        {!living && (
+          <div className="[&_input]:!min-h-11 [&_input]:bg-white/95 [&_legend]:mb-1 [&_legend]:text-[0.88rem] [&_legend]:font-semibold [&_legend]:text-ink-muted [&_select]:!min-h-11 [&_select]:bg-white/95">
+            <DateRow id="he-deathYear" prefix="death" label={l.deathYear} locale={locale} t={l.date} year={values.deathYear} month={values.deathMonth} day={values.deathDay} />
+          </div>
+        )}
         {!living && field("deathPlace", l.deathPlace)}
       </div>
       <ErrorText message={state.error ? (l.errors[state.error] ?? l.errors.save) : null} />

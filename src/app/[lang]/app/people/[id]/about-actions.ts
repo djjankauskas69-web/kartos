@@ -50,14 +50,28 @@ export async function savePersonFields(_: AboutState, form: FormData): Promise<A
     const dy = form.has("deathYear") ? year(form, "deathYear") : undefined;
     if (by === "bad" || dy === "bad") return { error: "year" };
     if (by && dy && dy < by) return { error: "year" };
-    if (by !== undefined && String(by ?? "") !== String(form.get("prevBirthYear") ?? "")) {
-      patch.birth_year = by;
-      // A different year makes the old exact day meaningless.
-      patch.birth_month = null;
-      patch.birth_day = null;
+    // Month and day come with the year when the form has them (and only make sense with one).
+    const md = (y: number | null, pre: string) => {
+      const m = y ? Number(form.get(`${pre}Month`)) : 0;
+      const okM = Number.isInteger(m) && m >= 1 && m <= 12 ? m : null;
+      const d = okM ? Number(form.get(`${pre}Day`)) : 0;
+      const okD = okM && Number.isInteger(d) && d >= 1 && d <= new Date(y!, okM, 0).getDate() ? d : null;
+      return [okM, okD] as const;
+    };
+    if (by !== undefined) {
+      if (form.has("birthMonth")) {
+        patch.birth_year = by;
+        [patch.birth_month, patch.birth_day] = md(by, "birth");
+      } else if (String(by ?? "") !== String(form.get("prevBirthYear") ?? "")) {
+        patch.birth_year = by;
+        // A different year makes the old exact day meaningless.
+        patch.birth_month = null;
+        patch.birth_day = null;
+      }
     }
     if (dy !== undefined) {
       patch.death_year = dy;
+      if (form.has("deathMonth")) [patch.death_month, patch.death_day] = md(dy, "death");
       if (dy) patch.is_living = false;
     }
   }
