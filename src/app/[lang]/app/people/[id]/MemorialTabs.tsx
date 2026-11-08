@@ -22,7 +22,8 @@ export function MemorialTabs({ tabs, panels }: { tabs: Array<{ id: string; label
         }
       }}
     >
-      <nav role="tablist" className="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-line bg-surface/95 px-1 backdrop-blur [scrollbar-width:none]">
+      {/* Phone: all tabs side by side, icon over a short label, so none hides off the right edge. */}
+      <nav role="tablist" className="sticky top-0 z-10 -mx-1 grid border-b border-line bg-surface/95 px-1 backdrop-blur sm:flex sm:gap-1 sm:overflow-x-auto sm:[scrollbar-width:none]" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -30,11 +31,11 @@ export function MemorialTabs({ tabs, panels }: { tabs: Array<{ id: string; label
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 text-[0.98rem] outline-none focus-visible:ring-2 focus-visible:ring-olive/40 ${tab === t.id ? "border-olive font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}
+            className={`-mb-px flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-t-lg border-b-2 px-0.5 text-[0.74rem] leading-tight outline-none focus-visible:ring-2 focus-visible:ring-olive/40 sm:min-h-12 sm:shrink-0 sm:flex-row sm:gap-2 sm:px-3 sm:text-[0.98rem] ${tab === t.id ? "border-olive font-semibold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}
           >
             <span className={tab === t.id ? "text-olive" : ""}>{t.icon}</span>
-            {t.label}
-            {t.count !== undefined && t.count > 0 && <span className="text-ink-muted">({t.count})</span>}
+            <span className="max-w-full truncate">{t.label}</span>
+            {t.count !== undefined && t.count > 0 && <span className="hidden text-ink-muted sm:inline">({t.count})</span>}
           </button>
         ))}
       </nav>
