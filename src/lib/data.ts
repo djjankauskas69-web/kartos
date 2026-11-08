@@ -99,6 +99,20 @@ export const can = {
 const personFields =
   "id, given_names, surname, birth_surname, sex, is_living, birth_year, birth_month, birth_day, birth_place, death_year, death_month, death_day, death_place, biography, profile_photo_id, status, created_by";
 
+/**
+ * A living person's full birth date (day and month) is seen only by the family's owner and editors,
+ * and by the person themself. Everyone else gets the year (and so the age), which the tree needs.
+ */
+async function hideBirthdays<T extends Pick<Person, "id" | "is_living" | "birth_month" | "birth_day">>(locale: Locale, workspaceId: string | null, rows: T[]): Promise<T[]> {
+  if (!rows.some((p) => p.is_living && (p.birth_month || p.birth_day))) return rows;
+  const { memberships } = await getContext(locale);
+  const role = memberships.find((m) => m.id === workspaceId)?.role;
+  if (role && can.edit(role)) return rows;
+  const { links } = await myPersonLinks(locale);
+  const mine = new Set(links.values());
+  return rows.map((p) => (p.is_living && !mine.has(p.id) ? { ...p, birth_month: null, birth_day: null } : p));
+}
+
 export const listPeople = cache(async (locale: Locale, workspaceId: string): Promise<Person[]> => {
   const { supabase } = await requireUser(locale);
   const { data } = await supabase
@@ -109,19 +123,21 @@ export const listPeople = cache(async (locale: Locale, workspaceId: string): Pro
     .neq("status", "rejected")
     .order("surname", { ascending: true, nullsFirst: false })
     .order("given_names", { ascending: true });
-  return (data ?? []) as Person[];
+  return hideBirthdays(locale, workspaceId, (data ?? []) as Person[]);
 });
 
 export async function getPerson(locale: Locale, id: string): Promise<Person | null> {
   const { supabase } = await requireUser(locale);
   const { data } = await supabase
     .from("persons")
-    .select(personFields)
+    .select(`${personFields}, workspace_id`)
     .eq("id", id)
     .is("deleted_at", null)
     .neq("status", "rejected")
     .maybeSingle();
-  return (data as Person | null) ?? null;
+  if (!data) return null;
+  const { workspace_id, ...person } = data as Person & { workspace_id: string };
+  return (await hideBirthdays(locale, workspace_id, [person as Person]))[0];
 }
 
 export async function listRelationships(locale: Locale, workspaceId: string): Promise<Relationship[]> {
