@@ -572,7 +572,14 @@
       "hint": "They leave the tree with all their links.",
       "confirm": "Delete"
     },
-    "looseButton": "Connect"
+    "looseButton": "Connect",
+    "foldMore": {
+      "one": "{n} more children",
+      "few": "{n} more children",
+      "many": "{n} more children",
+      "other": "{n} more children"
+    },
+    "foldClose": "Fold up"
   },
   "family": {
     "title": "Family",

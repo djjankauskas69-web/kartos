@@ -214,6 +214,39 @@ export function layoutTree(
   const focusPartnerX = new Map([...focus.keyOf.keys()].map((p) => [p, placed.find((n) => n.key === focus.keyOf.get(p))!.cx]));
   placeChildren(focusId, focusKey, focus.keyOf, focusPartnerX, focus.cx, 0, blockLeft + block / 2, new Set());
 
+  /* ---- Pull brothers and sisters without a family of their own in beside the rest ---- */
+  // A wide family under one child pushes its brothers and sisters to the far edges of that block;
+  // those with nothing below them can stand right next to the others, as long as the spot is free.
+  {
+    const byKey = new Map(placed.map((n) => [n.key, n]));
+    const hasBelow = new Set<string>();
+    const coupled = new Set<string>();
+    for (const e of edges) {
+      if (e.kind === "parents") e.parents.forEach((k) => hasBelow.add(k));
+      else coupled.add(e.a).add(e.b);
+    }
+    const isLeaf = (k: string) => !hasBelow.has(k) && !coupled.has(k);
+    const taken = (row: number, cx: number, self: string) => placed.some((n) => n.row === row && n.key !== self && Math.abs(n.cx - cx) < 0.999);
+    for (const e of edges) {
+      if (e.kind !== "parents" || e.children.length < 2) continue;
+      const kids = e.children.map((k) => byKey.get(k)).filter((n): n is Placed => !!n).sort((a, b) => a.cx - b.cx);
+      const big = kids.filter((n) => !isLeaf(n.key));
+      if (!big.length || big.length === kids.length) continue;
+      const lo = Math.min(...big.map((n) => n.cx));
+      const hi = Math.max(...big.map((n) => n.cx));
+      const row = kids[0].row;
+      // Left of the family: nearest first, each one step left of whatever stands to its right.
+      for (const n of kids.filter((n) => isLeaf(n.key) && n.cx < lo).reverse()) {
+        const right = Math.min(...placed.filter((m) => m.row === row && m.key !== n.key && m.cx > n.cx).map((m) => m.cx));
+        if (Number.isFinite(right) && right - 1 > n.cx && !taken(row, right - 1, n.key)) n.cx = right - 1;
+      }
+      for (const n of kids.filter((n) => isLeaf(n.key) && n.cx > hi)) {
+        const left = Math.max(...placed.filter((m) => m.row === row && m.key !== n.key && m.cx < n.cx).map((m) => m.cx));
+        if (Number.isFinite(left) && left + 1 < n.cx && !taken(row, left + 1, n.key)) n.cx = left + 1;
+      }
+    }
+  }
+
   /* ---- To pixels ---- */
   const minX = Math.min(...placed.map((p) => p.cx - 0.5));
   const minRow = Math.min(...placed.map((p) => p.row));

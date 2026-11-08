@@ -53,6 +53,8 @@ export function buildTree({
   profileHrefFor,
   foreign,
   sides,
+  open,
+  toggleHref,
 }: {
   t: Dictionary;
   people: BuildPerson[];
@@ -84,6 +86,10 @@ export function buildTree({
   foreign?: Map<string, { family: string; href: string; profileHref?: string }>;
   /** Other families drawn as their own tree beside this one, joined where people are the same. */
   sides?: BuildRel[][];
+  /** Folded groups of brothers and sisters the viewer opened (by group key). */
+  open?: Set<string>;
+  /** Link that opens or folds a group of brothers and sisters. */
+  toggleHref?: (key: string) => string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
   const gens = generations(people, sides?.length ? [...rels, ...sides.flat()] : rels);
@@ -95,11 +101,61 @@ export function buildTree({
   if (!start) return null;
 
   const span = depth ? depth - 1 : 99;
+
+  // Your own line: you and everyone you come from. It is drawn stronger than the side branches.
+  const line = new Set<string>();
+  if (meId && byId.has(meId)) {
+    for (const stack = [meId]; stack.length; ) {
+      const id = stack.pop()!;
+      if (line.has(id)) continue;
+      line.add(id);
+      for (const r of rels) if (r.type === "parent_child" && r.person_b === id && byId.has(r.person_a)) stack.push(r.person_a);
+    }
+  }
+
+  // In the whole family, many brothers and sisters with no family of their own fold into one card
+  // ("12 more children"), so the tree stays readable; a tap opens them in place.
+  const FOLD_MIN = 4;
+  const groups: Array<{ key: string; parents: string[]; ids: string[]; open: boolean }> = [];
+  let people2 = people;
+  let rels2 = rels;
+  if (whole && !sides?.length) {
+    const hasKids = new Set(rels.filter((r) => r.type === "parent_child").map((r) => r.person_a));
+    const hasPartner = new Set(rels.filter((r) => r.type === "partner").flatMap((r) => [r.person_a, r.person_b]));
+    const parentsOf = new Map<string, string[]>();
+    for (const r of rels) if (r.type === "parent_child" && byId.has(r.person_a)) parentsOf.set(r.person_b, [...(parentsOf.get(r.person_b) ?? []), r.person_a]);
+    const byParents = new Map<string, string[]>();
+    for (const [child, ps] of parentsOf) {
+      if (hasKids.has(child) || hasPartner.has(child) || line.has(child) || foreign?.has(child)) continue;
+      const k = [...ps].sort().join("+");
+      byParents.set(k, [...(byParents.get(k) ?? []), child]);
+    }
+    for (const [k, ids] of byParents) {
+      if (ids.length < FOLD_MIN) continue;
+      const key = k.split("+")[0];
+      groups.push({ key, parents: k.split("+"), ids, open: !!open?.has(key) });
+    }
+    const hidden = new Set(groups.filter((g) => !g.open).flatMap((g) => g.ids));
+    if (groups.length) {
+      const extra: BuildPerson[] = [];
+      const extraRels: BuildRel[] = [];
+      for (const g of groups) {
+        const ys = g.ids.map((id) => byId.get(id)!.birth_year).filter((y): y is number => !!y);
+        const gid = `grp:${g.key}`;
+        // Open: a small "fold" card after the last of them. Folded: the card stands for them all.
+        extra.push({ id: gid, given_names: "", surname: null, sex: null, birth_year: g.open ? 9998 : ys.length ? Math.min(...ys) : null, is_living: false } as unknown as BuildPerson);
+        for (const p of g.parents) extraRels.push({ person_a: p, person_b: gid, type: "parent_child" });
+        gens.set(gid, gens.get(g.ids[0]) ?? 1);
+      }
+      people2 = [...people.filter((p) => !hidden.has(p.id)), ...extra];
+      rels2 = [...rels.filter((r) => !hidden.has(r.person_a) && !hidden.has(r.person_b)), ...extraRels];
+    }
+  }
   // People here whose own parents come from another family drawn beside (a wife from another tree).
   const hasParentHere = new Set(rels.filter((r) => r.type === "parent_child").map((r) => r.person_b));
   const outward = new Set((sides ?? []).flat().filter((r) => r.type === "parent_child" && !hasParentHere.has(r.person_b) && inRels.has(r.person_b)).map((r) => r.person_b));
   for (const id of people.map((p) => p.id)) if (foreign?.has(id) && rels.some((r) => r.type === "partner" && (r.person_a === id || r.person_b === id))) outward.add(id);
-  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people, rels, 0, span, SIZE, left, outward) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward));
+  const lay = (left?: Set<string>) => (whole ? layoutTree(start, people2, rels2, 0, span, SIZE, left, outward) : layoutTree(start, people, rels, Math.min(span, 4), span, SIZE, left, outward));
   // With another family beside this one, try their people standing on the left of their partner
   // here as well, and keep whichever drawing has the shorter lines between the two families.
   const layout = (() => {
@@ -159,6 +215,32 @@ export function buildTree({
     return { kind, options: mates.map((m) => ({ id: m, name: [byId.get(m)!.given_names, byId.get(m)!.surname].filter(Boolean).join(" ") })) };
   };
   const cards: TreeCard[] = layout.nodes.map((n) => {
+    if (n.id.startsWith("grp:")) {
+      const g = groups.find((x) => `grp:${x.key}` === n.id)!;
+      const ys = g.ids.map((id) => byId.get(id)!.birth_year).filter((y): y is number => !!y);
+      const span = ys.length ? (Math.min(...ys) === Math.max(...ys) ? String(ys[0]) : `${Math.min(...ys)} – ${Math.max(...ys)}`) : "";
+      return {
+        key: n.key,
+        id: n.id,
+        x: n.x,
+        y: n.y,
+        name: g.open ? t.tree.foldClose : t.tree.foldMore[new Intl.PluralRules("lt").select(g.ids.length) as "one" | "few" | "many" | "other"].replace("{n}", String(g.ids.length)),
+        years: g.open ? "" : span,
+        initials: g.open ? "−" : `+${g.ids.length}`,
+        living: false,
+        pending: false,
+        gen: gens.get(n.id) ?? 1,
+        start: false,
+        highlight: false,
+        profileHref: toggleHref ? toggleHref(g.key) : "#",
+        showFromHref: "#",
+        addOptions: [],
+        families: [],
+        fold: { open: g.open, count: g.ids.length },
+        moreAbove: false,
+        moreBelow: false,
+      } as TreeCard;
+    }
     const p = byId.get(n.id)!;
     const far = foreign?.get(n.id);
     if (far) {
@@ -208,6 +290,7 @@ export function buildTree({
       start: n.role === "focus",
       highlight: highlightId ? n.id === highlightId : !whole && n.role === "focus",
       me: n.id === meId,
+      line: line.size > 1 && line.has(n.id),
       elsewhere: elsewhere?.get(n.id),
       missingParent: missingParent(n.id),
       relation: relations?.get(n.id),
@@ -311,6 +394,17 @@ export function buildTree({
     // A second (later) marriage is drawn lighter and dashed.
     laterPartnerPaths: lines(layout.edges.filter((e) => e.kind === "partner" && e.later)),
     paths: lines(layout.edges.filter((e) => e.kind !== "partner")),
+    // Your own line, drawn over the others: each parent couple to the one child you come from.
+    linePaths: line.size > 1
+      ? lines(
+          layout.edges.flatMap((e): (typeof layout.edges)[number][] => {
+            if (e.kind === "partner") return line.has(idOfKey.get(e.a) ?? "") && line.has(idOfKey.get(e.b) ?? "") ? [e] : [];
+            const ps = e.parents.filter((k) => line.has(idOfKey.get(k) ?? ""));
+            const cs = e.children.filter((k) => line.has(idOfKey.get(k) ?? ""));
+            return ps.length && cs.length ? [{ ...e, parents: ps, children: cs }] : [];
+          }),
+        )
+      : [],
     width: layout.width,
     height: layout.height + 16,
     cardW,

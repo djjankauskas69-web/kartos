@@ -572,7 +572,14 @@
       "hint": "Jis dings iš medžio kartu su visais savo ryšiais.",
       "confirm": "Ištrinti"
     },
-    "looseButton": "Prijungti"
+    "looseButton": "Prijungti",
+    "foldMore": {
+      "one": "Dar {n} vaikas",
+      "few": "Dar {n} vaikai",
+      "many": "Dar {n} vaiko",
+      "other": "Dar {n} vaikų"
+    },
+    "foldClose": "Suskleisti"
   },
   "family": {
     "title": "Šeima",

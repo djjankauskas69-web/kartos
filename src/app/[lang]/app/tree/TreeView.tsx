@@ -110,6 +110,10 @@ export type TreeCard = {
   me?: boolean;
   /** A placeholder parent ("Parents unknown"), drawn faintly. */
   unknown?: boolean;
+  /** You or one of the people you come from: drawn a little stronger. */
+  line?: boolean;
+  /** Not a person: brothers and sisters folded into one card (or the card that folds them again). */
+  fold?: { open: boolean; count: number };
   /** Only one parent known, who has several partners: which one is the other parent? */
   missingParent?: { kind: "mother" | "father"; options: Array<{ id: string; name: string }>; openHref?: string; family?: string };
   /** Has their own family tree in an archive you are not in. */
@@ -199,6 +203,7 @@ export function TreeView({
   paths,
   partnerPaths = [],
   laterPartnerPaths = [],
+  linePaths = [],
   width,
   height,
   cardW,
@@ -218,6 +223,8 @@ export function TreeView({
   paths: TreeLine[];
   partnerPaths?: TreeLine[];
   laterPartnerPaths?: TreeLine[];
+  /** Your own line (you and those you come from), drawn over the rest. */
+  linePaths?: TreeLine[];
   width: number;
   height: number;
   cardW: number;
@@ -531,7 +538,10 @@ export function TreeView({
     setPicked(next);
   };
 
+  const hasLine = cards.some((c) => c.line);
   const dim = (gen: number) => (activeGen !== null && gen !== activeGen ? "opacity-25" : "");
+  // With your own line drawn, the side branches step back a little (not when something is chosen).
+  const side = (c: TreeCard) => (hasLine && !c.line && !c.me ? "opacity-[.82] hover:opacity-100" : "");
   const lit = hover ?? menu?.key ?? opening ?? null;
   // Pointing at someone lights up their whole direct line: parents, grandparents and on up,
   // children, grandchildren and on down, and their partner.
@@ -869,6 +879,14 @@ export function TreeView({
                 return <path key={i} d={l.d} stroke={on ? "#6f6b60" : "#9d998d"} strokeWidth={on ? 3.2 : 2.6} opacity={lit ? (on ? 1 : hover ? 0.22 : 0.5) : focus ? (focus.onLine(l.keys) ? 1 : 0.15) : 1} className="transition-opacity duration-200" />;
               })}
             </g>
+            {/* your own line: stronger, so "where I come from" reads at a glance */}
+            {!lit && !focus && (
+              <g fill="none" strokeLinejoin="round" strokeLinecap="round">
+                {linePaths.map((l, i) => (
+                  <path key={i} d={l.d} stroke="#9a7b3f" strokeWidth={4.2} />
+                ))}
+              </g>
+            )}
           </svg>
 
           {/* ∞ between partners */}
@@ -892,15 +910,15 @@ export function TreeView({
                 style={{ left: c.x, top: c.y, width: cardW, height: cardH, ...(intro ? { animationDelay: `${Math.max(0, rows.findIndex((r) => r.y === c.y)) * 140}ms` } : {}) }}
                 onMouseEnter={() => setHover(c.key)}
                 onMouseLeave={() => setHover((h) => (h === c.key ? null : h))}
-                className={`group absolute transition-opacity duration-200 ${intro ? "tree-intro-card" : ""} ${c.unknown ? "[&>span:first-child]:border-dashed [&>span:first-child]:bg-transparent opacity-70" : ""} ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : dim(c.gen)}`}
+                className={`group absolute transition-opacity duration-200 ${intro ? "tree-intro-card" : ""} ${c.unknown ? "[&>span:first-child]:border-dashed [&>span:first-child]:bg-transparent opacity-70" : ""} ${lit && lit !== c.key && !near.has(c.key) ? (hover ? "opacity-30" : "opacity-60") : focus && !lit ? (focus.hit.has(c.id) ? "" : focus.via.has(c.id) ? "opacity-60" : "opacity-[.18] hover:opacity-60") : `${dim(c.gen)} ${lit ? "" : side(c)}`}`}
               >
                 {/* The card under the portrait: the medallion sits on its top edge. */}
                 <span
                   aria-hidden="true"
                   style={{ top: PHOTO / 2 }}
-                  className={`pointer-events-none absolute inset-x-1.5 bottom-1 rounded-[18px] border shadow-[0_10px_24px_-18px_rgb(60_45_30/0.55)] transition-shadow group-hover:shadow-[0_14px_30px_-16px_rgb(60_45_30/0.6)] ${c.living ? "border-[#e6e1d6] bg-white/95" : "border-[#e3d8c4] bg-[#f8f2e7]/95"}`}
+                  className={`pointer-events-none absolute inset-x-1.5 bottom-1 rounded-[18px] border shadow-[0_10px_24px_-18px_rgb(60_45_30/0.55)] transition-shadow group-hover:shadow-[0_14px_30px_-16px_rgb(60_45_30/0.6)] ${c.fold ? "border-dashed border-[#c9bfa8] bg-transparent" : c.line && !c.me ? `border-2 border-[#c4a46a] ${c.living ? "bg-white/95" : "bg-[#f8f2e7]/95"}` : c.living ? "border-[#e6e1d6] bg-white/95" : "border-[#e3d8c4] bg-[#f8f2e7]/95"}`}
                 />
-                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} draggable={false} onClick={(e) => { if (!c.profileHref.includes("/open?") && !c.profileHref.includes("fill=") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-3.5 text-center focus-visible:outline-offset-2">
+                <CardLink foreign={c.profileHref.includes("/open?")} href={c.profileHref} scroll={c.fold ? false : undefined} draggable={false} onClick={(e) => { if (!c.fold && !c.profileHref.includes("/open?") && !c.profileHref.includes("fill=") && !e.metaKey && !e.ctrlKey && !e.shiftKey) drawerState.start(c.key); }} className="flex h-full w-full flex-col items-center rounded-2xl px-3.5 text-center focus-visible:outline-offset-2">
                   <span className="relative block transition-transform duration-200 group-hover:scale-[1.04]">
                     {opening === c.key && (
                       <span aria-hidden="true" className="pointer-events-none absolute -inset-[7px] rounded-full border-[2.5px] border-[#6f8a4f]/20 border-t-[#6f8a4f] animate-[ring-spin_0.8s_linear_infinite]" />
@@ -954,7 +972,7 @@ export function TreeView({
                     return rel ? <span className={`relative mt-1 ${c.nee ? "line-clamp-1" : "line-clamp-2"} break-words text-[0.92rem] font-semibold leading-snug text-olive-deep first-letter:uppercase`}>{rel}</span> : null;
                   })()}
                 </CardLink>
-                {(
+                {!c.fold && (
                   <button
                     type="button"
                     data-card

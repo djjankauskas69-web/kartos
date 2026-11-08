@@ -23,7 +23,7 @@ import { treeLabels } from "./labels";
 import { PageSkeleton } from "@/components/Skeletons";
 import { PageHeader } from "@/components/PageHeader";
 
-type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string };
+type Search = { p: string; d: string; view: string; hl: string; person: string; w: string; h: string; o: string };
 
 export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/tree">) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -39,7 +39,7 @@ export default async function TreePage({ searchParams }: PageProps<"/[lang]/app/
       <Tree
         t={t}
         locale={locale}
-        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? ""), h: String(s.h ?? "") }))}
+        searchPromise={searchParams.then((s) => ({ p: String(s.p ?? ""), d: String(s.d ?? ""), view: String(s.view ?? ""), hl: String(s.hl ?? ""), person: String(s.person ?? ""), w: String(s.w ?? ""), h: String(s.h ?? ""), o: String(s.o ?? "") }))}
       />
     </Suspense>
   );
@@ -151,6 +151,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     if (search.p) q.set("p", search.p);
     if (search.d) q.set("d", search.d);
     if (search.view === "list") q.set("view", "list");
+    if (search.o) q.set("o", search.o);
     for (const [k, v] of Object.entries(extra)) q.set(k, v);
     return `${base}/tree?${q.toString()}`;
   };
@@ -248,6 +249,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
 
   /* ---- Tree ---- */
   const focusId = byId.has(search.p) ? search.p : null;
+  const openGroups = new Set(search.o.split(",").filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
   const depthValue = /^[2-6]$/.test(search.d) ? search.d : focusId ? "4" : "all";
   const depth = depthValue === "all" ? null : Number(depthValue);
   const hl = me && search.hl === me ? me : undefined;
@@ -359,7 +361,18 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     const mates = rels.filter((r) => r.type === "partner" && (r.person_a === me || r.person_b === me)).map((r) => (r.person_a === me ? r.person_b : r.person_a));
     return mates.some((m) => upFrom(m).has(joinId)) ? "partner" : "other";
   };
-  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }) });
+  const tree = buildTree({ t, people: treePeople, rels: mainRels, sides, portraits, foreign, focusId, depth, canAdd, base, graves, families, relations: treeRelations, highlightId: hl, meId: me ?? undefined, elsewhere, linkHref: can.admin(current.role) ? (id) => `${base}/people/${id}/link` : undefined, addHref: (kind, to) => addHref({ add: kind, to }), open: openGroups, toggleHref: (key) => {
+    // Opening or folding a group of brothers and sisters keeps everything else as it is.
+    const next = new Set(openGroups);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    const q = new URLSearchParams();
+    if (search.p) q.set("p", search.p);
+    if (search.d) q.set("d", search.d);
+    if (next.size) q.set("o", [...next].join(","));
+    const qs = q.toString();
+    return `${base}/tree${qs ? `?${qs}` : ""}`;
+  } });
   if (!tree) return null;
   // Editors take a link apart here, on the tree, where they see what it changes.
   if (can.edit(current.role)) {
@@ -374,7 +387,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
     };
     for (const c of tree.cards) if (c.unknown && fillInfo[c.id]) c.profileHref = addHref({ fill: c.id });
     for (const c of tree.cards) {
-      if (c.foreign || c.unknown) continue;
+      if (c.foreign || c.unknown || c.fold) continue;
       if (can.admin(current.role) && c.id !== me) c.deletable = true;
       c.links = rels.flatMap((r) => {
         const mine = r.person_a === c.id || r.person_b === c.id;
@@ -410,6 +423,7 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
         pluses={tree.pluses}
         paths={tree.paths}
         partnerPaths={tree.partnerPaths}
+        linePaths={tree.linePaths}
         laterPartnerPaths={tree.laterPartnerPaths}
         width={tree.width}
         height={tree.height}
