@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
@@ -112,9 +111,6 @@ async function Invite({ t, locale, tokenPromise }: { t: Dictionary; locale: Loca
             <Suspense fallback={null}>
               <PasswordForm t={t.login} locale={locale} token={token} submit={t.invite.joinNow} />
             </Suspense>
-            <Link href={`/${locale}/login?next=${encodeURIComponent(next)}`} className="mt-5 inline-block text-[0.98rem] font-semibold text-ink-muted hover:text-ink hover:underline">
-              {t.invite.otherWays}
-            </Link>
           </>
         )}
       </div>
