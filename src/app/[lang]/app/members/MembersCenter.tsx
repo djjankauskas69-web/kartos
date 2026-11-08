@@ -297,10 +297,12 @@ export function MembersCenter({
   );
 }
 
-/** "Invite": a link made for this person, copied right away. */
+/** "Invite": first the rights they get (member by default), then the link is made and copied. */
 function InviteButton({ locale, personId, t }: { locale: Locale; personId: string; t: Labels }) {
   const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
+  const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
+    setOpen(false);
     const result = await createInvite(prev, form);
     if (result.link) {
       try {
@@ -313,15 +315,40 @@ function InviteButton({ locale, personId, t }: { locale: Locale; personId: strin
     return result;
   }, {});
   return (
-    <form action={action} className="flex items-center gap-2">
-      <Hidden values={{ locale, personId, role: "contributor" }} />
+    <form action={action} className="relative flex items-center gap-2">
+      <Hidden values={{ locale, personId }} />
       {done === "manual" && state.link ? (
         <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()} aria-label={t.copyFallback} className="w-44 rounded-lg border border-line px-2 py-1.5 text-[0.85rem]" />
       ) : (
-        <button type="submit" disabled={pending} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-line hover:border-ink/40"}`}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          disabled={pending}
+          className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-line hover:border-ink/40"}`}
+        >
           {done === "copied" ? <IconCheck size={16} /> : <IconLink size={16} />}
           {pending ? "…" : done === "copied" ? t.inviteCopied : t.invite}
         </button>
+      )}
+      {open && (
+        <>
+          <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} className="fixed inset-0 z-30 cursor-default" />
+          <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-float)]">
+            <p className="px-3 pb-1 pt-2 text-[0.85rem] font-semibold text-ink-muted">{t.inviteAs}</p>
+            {(["contributor", "viewer", "editor"] as const).map((r) => (
+              <button key={r} type="submit" name="role" value={r} role="menuitem" className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-linen">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted">
+                  <RoleIcon role={r} size={15} />
+                </span>
+                <span>
+                  <span className="block font-semibold">{t.role[r]}</span>
+                  <span className="block text-[0.88rem] leading-snug text-ink-muted">{t.role[`${r}Help`]}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </form>
   );
