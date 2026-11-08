@@ -791,7 +791,8 @@ export function TreeView({
       </div>
 
       {/* Bottom centre: zoom, fit the whole tree, background — one floating bar */}
-      <div className={`absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 p-1 ${pill}`}>
+      {/* Hidden while the "show" panel is open: on a phone that panel is a sheet over the bottom. */}
+      <div className={`absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 p-1 transition-opacity duration-150 ${pill} ${showOpen ? "pointer-events-none opacity-0" : ""}`}>
         <button type="button" onClick={() => (() => { const { w, h } = size(); zoomAt(w / 2, h / 2, k / 1.2, true); })()} disabled={k <= MIN} className={tool} aria-label={labels.zoomOut} title={labels.zoomOut}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
