@@ -388,7 +388,26 @@ function AddPersonPanel({
     return null;
   };
   const effectiveKind = kind && !kindNote(kind) ? kind : null;
-  const shownSurname = surnameTouched ? surname : effectiveKind && anchorP ? surnameFor(anchorP.surname, effectiveKind) : surname;
+  // Children carry the father's surname: "Rupšienė" alone can't tell Rupšys from Rupšas, her husband can.
+  const [otherPick, setOtherPick] = useState<string | null>(null);
+  const otherParentId = anchorP ? (anchorP.partners.some((x) => x.id === otherPick) ? otherPick : anchorP.partners.length === 1 ? anchorP.partners[0].id : null) : null;
+  const isMan = (p: AddOption | undefined | null) => !!p?.surname && (p.sex === "male" || (p.sex == null && /(as|is|ys|us)$/i.test(p.surname)));
+  const surnameBase = (() => {
+    if (!anchorP || !effectiveKind || isMan(anchorP)) return anchorP?.surname ?? null;
+    const byId = (x: string | null) => (x ? people.find((p) => p.id === x) : undefined);
+    if (effectiveKind === "son" || effectiveKind === "daughter") {
+      const dad = byId(otherParentId);
+      if (isMan(dad)) return dad!.surname;
+    }
+    if (effectiveKind === "brother" || effectiveKind === "sister" || effectiveKind === "father") {
+      const dad = anchorP.parentIds.map(byId).find(isMan);
+      if (dad) return dad.surname;
+      // Her own family's name is her maiden name (Jankauskaitė), not her husband's.
+      if (anchorP.maiden) return anchorP.maiden;
+    }
+    return anchorP.surname;
+  })();
+  const shownSurname = surnameTouched ? surname : effectiveKind && anchorP ? surnameFor(surnameBase, effectiveKind) : surname;
   // Only people who could really be this relative (no father as his own son's husband…).
   const fits = (p: AddOption) => p.id !== anchor && (!anchorP || !effectiveKind || canBe(p, anchorP, effectiveKind, people));
   const suggestions = existing ? [] : lookAlikes(people, given, shownSurname).filter((p) => !dismissed.includes(p.id) && fits(p));
@@ -482,7 +501,7 @@ function AddPersonPanel({
                   <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
                     {t.otherParent}
                   </label>
-                  <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} className={cls.input}>
+                  <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} onChange={(e) => setOtherPick(e.target.value)} className={cls.input}>
                     {anchorP.partners.length > 1 && (
                       <option value="" disabled>
                         {t.pickOtherParent}
@@ -521,7 +540,7 @@ function AddPersonPanel({
                     <label htmlFor="add-other-parent" className="mb-1.5 block text-[0.98rem]">
                       {t.otherParent}
                     </label>
-                    <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} className={cls.input}>
+                    <select id="add-other-parent" name="otherParent" required defaultValue={anchorP.partners.length === 1 ? anchorP.partners[0].id : ""} onChange={(e) => setOtherPick(e.target.value)} className={cls.input}>
                     {anchorP.partners.length > 1 && (
                       <option value="" disabled>
                         {t.pickOtherParent}
