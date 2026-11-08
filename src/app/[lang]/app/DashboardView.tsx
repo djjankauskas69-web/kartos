@@ -46,6 +46,8 @@ export type DashboardData = {
   welcomeHref?: string;
   welcomeJoin?: string;
   accessRequests?: { n: number; href: string };
+  /** People not joined to the tree yet. */
+  loose?: { text: string; href: string };
   portraits: Record<string, string>;
   moments: Array<{ id: string; url: string; album?: string }>;
   recent: Activity[];
@@ -63,14 +65,14 @@ const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
 export function DashboardView(props: DashboardData) {
-  const { part = "all", t, locale, workspaceId, name, role, since, cover, counts, welcomeHref, welcomeJoin, accessRequests, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
+  const { part = "all", t, locale, workspaceId, name, role, since, cover, counts, welcomeHref, welcomeJoin, accessRequests, loose, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
   // What a condition above already asks for is not repeated below it.
   const openReq = new Set(tree.reqs.filter((r) => !r.done).map((r) => (r.key === "years" ? "year" : r.key === "places" ? "place" : r.key)));
   const more = fill.filter((f) => !openReq.has(f.key));
   const base = `/${locale}/app`;
   const d = t.dash;
   const stats = [
-    { n: counts.people, label: d.statPeople, href: `${base}/members` },
+    { n: counts.people, label: d.statPeople, href: `${base}/tree?view=list` },
     { n: counts.generations, label: d.statGenerations, href: `${base}/tree` },
     { n: counts.memories, label: d.statMemories, href: `${base}/archive?tab=stories` },
     { n: counts.photos, label: d.statPhotos, href: `${base}/archive?tab=photos` },
@@ -128,6 +130,13 @@ export function DashboardView(props: DashboardData) {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-white"><IconPeople size={22} /></span>
           <span className="min-w-0 flex-1 text-[1.05rem]">{welcomeJoin ? t.welcome.bannerJoin.replace("{family}", welcomeJoin) : t.welcome.banner}</span>
           <span className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-white group-hover:bg-olive-deep">{t.welcome.bannerButton}</span>
+        </Link>
+      )}
+      {loose && (
+        <Link href={loose.href} className={`group flex flex-wrap items-center gap-4 p-5 sm:p-6 ${card}`}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fbf0d9] text-[#8a6413]"><IconTree size={22} /></span>
+          <span className="min-w-0 flex-1 text-[1.05rem]">{loose.text}</span>
+          <span className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-white group-hover:bg-olive-deep">{t.tree.looseButton}</span>
         </Link>
       )}
       {accessRequests && accessRequests.n > 0 && (

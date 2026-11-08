@@ -331,7 +331,8 @@
       "many": "members",
       "other": "members"
     },
-    "linkToTree": "Link to the tree"
+    "linkToTree": "Link to the tree",
+    "allPeopleLink": "Everyone, including those who have passed – in the tree list"
   },
   "review": {
     "title": "Approvals",
@@ -570,7 +571,8 @@
       "question": "Delete this person?",
       "hint": "They leave the tree with all their links.",
       "confirm": "Delete"
-    }
+    },
+    "looseButton": "Connect"
   },
   "family": {
     "title": "Family",

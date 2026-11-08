@@ -363,6 +363,12 @@ async function Dashboard({ t, locale, part }: { t: Dictionary; locale: Locale; p
       welcomeHref={mine.ready && !mine.links.get(ws) && people.length > 0 ? `${base}/welcome` : undefined}
       welcomeJoin={meElsewhere?.name}
       accessRequests={pendingAccess ? { n: pendingAccess, href: `${base}/members#other-families` } : undefined}
+      loose={(() => {
+        // People not joined to anyone: they don't show in the tree.
+        const linked = new Set(graph.rels.flatMap((r) => [r.person_a, r.person_b]));
+        const n = people.length > 1 && can.admin(current.role) ? people.filter((p) => !linked.has(p.id)).length : 0;
+        return n ? { text: t.add.looseChip.replace("{n}", String(n)), href: `${base}/members?f=loose` } : undefined;
+      })()}
       portraits={Object.fromEntries(portraits)}
       moments={moments.flatMap((m) => {
         const u = urls.get(m.storage_path as string);

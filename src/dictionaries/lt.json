@@ -331,7 +331,8 @@
       "many": "nario",
       "other": "narių"
     },
-    "linkToTree": "Susieti su medžiu"
+    "linkToTree": "Susieti su medžiu",
+    "allPeopleLink": "Visi žmonės, ir mirę, – medžio sąraše"
   },
   "review": {
     "title": "Tvirtinimas",
@@ -570,7 +571,8 @@
       "question": "Ištrinti šį žmogų?",
       "hint": "Jis dings iš medžio kartu su visais savo ryšiais.",
       "confirm": "Ištrinti"
-    }
+    },
+    "looseButton": "Prijungti"
   },
   "family": {
     "title": "Šeima",

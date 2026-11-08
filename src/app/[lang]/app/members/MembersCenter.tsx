@@ -147,7 +147,10 @@ export function MembersCenter({
   const [q, setQ] = useState("");
   const [linkFor, setLinkFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const inFilter = (e: Entry, f: F) => f === "all" || (f === "members" ? e.status === "member" || e.status === "account" : e.status === f);
+  // Members are the living: those with an account and those who could get one. People not yet joined
+  // to the tree are a tree matter, reached from the tree's notice (?f=loose), not listed here otherwise.
+  const inFilter = (e: Entry, f: F) =>
+    f === "all" ? e.status === "member" || e.status === "account" || e.status === "invite" : f === "members" ? e.status === "member" || e.status === "account" : e.status === f;
   const terms = fold(q).split(/\s+/).filter(Boolean);
   const shown = entries.filter((e) => inFilter(e, filter) && terms.every((term) => fold(e.name).includes(term)));
   const filterLabel: Record<F, string> = { all: t.filterAll, members: t.filterMembers, invite: t.filterInvite, loose: t.filterLoose };
@@ -161,6 +164,7 @@ export function MembersCenter({
           {FILTERS.map((f) => {
             const count = entries.filter((e) => inFilter(e, f)).length;
             if (f !== "all" && count === 0) return null;
+            if (f === "loose" && filter !== "loose") return null;
             const active = filter === f;
             return (
               <button
@@ -264,6 +268,9 @@ export function MembersCenter({
             </ul>
           )}
         </div>
+        <Link href={`${base}/tree?view=list`} className="mt-4 inline-block text-[1rem] font-semibold text-sage-deep hover:underline">
+          {t.allPeopleLink} →
+        </Link>
       </section>
 
       <aside className="space-y-6">
