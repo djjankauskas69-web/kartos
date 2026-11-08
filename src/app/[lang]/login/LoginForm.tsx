@@ -18,7 +18,9 @@ function nextFrom(params: URLSearchParams) {
 }
 
 /** Google's client id for the in-page button. Without it, the button goes through Google's own page. */
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+// Switched off for now: the in-page window was blocked in some phone browsers (Brave on iPhone),
+// so everyone goes through Google's own page, which works everywhere.
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_INPAGE === "1" ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "" : "";
 
 type Gsi = {
   accounts: {
