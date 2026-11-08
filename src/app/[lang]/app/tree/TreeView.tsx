@@ -1012,7 +1012,7 @@ export function TreeView({
                     href={c.foldBack}
                     scroll={false}
                     draggable={false}
-                    className="absolute -bottom-[18px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-3 text-[0.85rem] font-semibold leading-7 text-ink-muted shadow-[0_2px_6px_-3px_rgb(28_29_26/0.4)] hover:text-ink"
+                    className="absolute -bottom-[24px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-[#d9d3c6] bg-surface px-5 text-[1.3rem] font-semibold leading-[2.6rem] text-ink/80 shadow-[0_3px_10px_-4px_rgb(28_29_26/0.45)] hover:border-ink/40 hover:text-ink"
                   >
                     ▴ {labels.foldClose}
                   </Link>
@@ -1023,7 +1023,7 @@ export function TreeView({
                     scroll={false}
                     title={c.inlaw.open ? labels.inlawClose : labels.inlawOpen}
                     draggable={false}
-                    className={`absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border px-2.5 text-[0.8rem] font-semibold leading-6 shadow-[0_2px_6px_-3px_rgb(28_29_26/0.4)] ${c.inlaw.open ? "-top-[30px] border-line bg-surface text-ink-muted hover:text-ink" : "-top-[30px] border-[#c4a46a] bg-[#fbf3e3] text-[#7a5a1d] hover:bg-[#f5e6c6]"}`}
+                    className={`absolute -top-[50px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap rounded-full border-2 px-5 text-[1.3rem] font-semibold leading-[2.6rem] shadow-[0_3px_10px_-4px_rgb(28_29_26/0.45)] ${c.inlaw.open ? "border-[#d9d3c6] bg-surface text-ink/80 hover:border-ink/40 hover:text-ink" : "border-[#c4a46a] bg-[#fbf3e3] text-[#7a5a1d] hover:bg-[#f5e6c6]"}`}
                   >
                     {c.inlaw.open ? `▾ ${labels.inlawClose}` : `▴ ${labels.inlawOpen}`}
                   </Link>
