@@ -697,7 +697,7 @@ async function Profile({ t, locale, idPromise, compact = false, closeHref, wsId:
           eventsReady={eventsReady}
           nodes={{ photos: photosNode, docs: docsNode, family: familyNode, grave: graveNode, memories: memoriesNode, composer: can.add(role) && !isMe ? composerNode : null,
             portrait:
-              can.edit(role) && !other && !isMe ? (
+              can.edit(role) && !other ? (
                 <PortraitPicker
                   locale={locale}
                   workspaceId={current.id}
