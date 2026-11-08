@@ -125,11 +125,11 @@ export function PeriodFields({
         <legend className={labelCls}>{labels.year}</legend>
         <input type="hidden" name="yearQualifier" value={qualifier} />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <input id={`${idPrefix}-year`} name="year" inputMode="numeric" maxLength={4} defaultValue={initial?.year ?? ""} placeholder={labels.placeholder} aria-label={qualifier === "between" ? labels.from : labels.year} className={`${input} w-36`} />
+          <input id={`${idPrefix}-year`} name="year" inputMode="numeric" maxLength={4} defaultValue={initial?.year ?? ""} placeholder={labels.placeholder} aria-label={qualifier === "between" ? labels.from : labels.year} className={`${input} !w-36`} />
           {qualifier === "between" ? (
             <>
               <span aria-hidden="true">–</span>
-              <input name="yearTo" inputMode="numeric" maxLength={4} defaultValue={initial?.yearTo ?? ""} aria-label={labels.to} placeholder={labels.to} className={`${input} w-36`} />
+              <input name="yearTo" inputMode="numeric" maxLength={4} defaultValue={initial?.yearTo ?? ""} aria-label={labels.to} placeholder={labels.to} className={`${input} !w-36`} />
               <button type="button" onClick={() => setQualifier("exact")} className="text-[0.95rem] font-semibold text-ink-muted underline-offset-2 hover:underline">
                 ×
               </button>
