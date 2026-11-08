@@ -33,7 +33,64 @@ export async function createWorkspace(_: FormState, form: FormData): Promise<For
     return { error: "save" };
   }
   (await cookies()).set(WS_COOKIE, id, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-  redirect(`/${locale}/app`);
+  // You started it, so you are in it: copied from yourself in your other family, and the two trees linked.
+  await addMeTo(supabase, user.id, id, user.user_metadata as Record<string, unknown> | undefined);
+  redirect(`/${locale}/app/tree`);
+}
+
+/**
+ * Puts the signed-in person into a family's tree: their details are taken from themself in another
+ * family they belong to (and the two people are linked, so the trees open into each other);
+ * without one, from the name on their account.
+ */
+async function addMeTo(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, userId: string, ws: string, meta?: Record<string, unknown>) {
+  const { data: rows } = await supabase.from("workspace_members").select("workspace_id, person_id, role").eq("user_id", userId);
+  const already = (rows ?? []).find((r) => r.workspace_id === ws)?.person_id;
+  if (already) return already as string;
+  const source = (rows ?? []).find((r) => r.workspace_id !== ws && r.person_id);
+  type Src = { id: string; given_names: string; surname: string | null; birth_surname: string | null; sex: string | null; birth_year: number | null; birth_month: number | null; birth_day: number | null; birth_place: string | null };
+  let src: Src | null = null;
+  if (source) {
+    const { data } = await supabase.from("persons").select("id, given_names, surname, birth_surname, sex, birth_year, birth_month, birth_day, birth_place").eq("id", source.person_id as string).maybeSingle();
+    src = (data as Src | null) ?? null;
+  }
+  let given = src?.given_names ?? "";
+  let surname = src?.surname ?? "";
+  if (!given) {
+    const full = String(meta?.full_name ?? meta?.name ?? "").trim();
+    const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+    const name = full || String(prof?.display_name ?? "").trim();
+    if (!name || name.includes("@")) return null;
+    const parts = name.split(/\s+/);
+    given = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    surname = parts.length > 1 ? parts[parts.length - 1] : "";
+  }
+  const { data: personId, error } = await supabase.rpc("create_my_person", { ws, p_given: given, p_surname: surname || null, p_birth_year: src?.birth_year ?? null });
+  if (error || !personId) {
+    console.error("addMeTo", error);
+    return null;
+  }
+  if (src) {
+    await supabase
+      .from("persons")
+      .update({ sex: src.sex, birth_month: src.birth_month, birth_day: src.birth_day, birth_place: src.birth_place, birth_surname: src.birth_surname })
+      .eq("id", personId as string)
+      .eq("workspace_id", ws);
+    // Admin of both: the same person in both trees, so each tree opens into the other.
+    if (source?.role === "owner") {
+      const { error: linkError } = await supabase.rpc("link_families_direct", { p_person: personId, p_other: src.id });
+      if (linkError) console.error("addMeTo link", linkError);
+    }
+  }
+  return personId as string;
+}
+
+/** From an empty tree: "Put me in it". */
+export async function addMeToTree(form: FormData) {
+  const locale = formLocale(form);
+  const { supabase, workspace, user } = await actionContext(locale, can.add);
+  await addMeTo(supabase, user.id, workspace.id, user.meta);
+  refresh();
 }
 
 /** "Jankauskas" / "Jankauskienė" / "Jankauskaitė" → "Jankauskų šeima"; English "The Jankauskas family". */

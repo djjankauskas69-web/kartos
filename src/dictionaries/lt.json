@@ -582,7 +582,11 @@
     "foldClose": "Suskleisti",
     "inlawOpen": "Tėvai",
     "inlawClose": "Slėpti tėvus",
-    "bornAge": "g. {y} · {a} m."
+    "bornAge": "g. {y} · {a} m.",
+    "emptyTitle": "Medis dar tuščias",
+    "emptyLead": "Pradėkite nuo savęs – jūsų duomenys bus paimti iš kitos jūsų šeimos, o medžiai susies. Tada pridėkite tėvus ir kitus artimuosius.",
+    "emptyMe": "Įtraukti mane į medį",
+    "emptyOther": "Pridėti kitą žmogų"
   },
   "family": {
     "title": "Šeima",
@@ -1990,5 +1994,19 @@
     "surnameLead": "{maiden} liks kaip mergautinė pavardė.",
     "surnameYes": "Pakeisti",
     "surnameLeadPrev": "{maiden} liks kaip ankstesnė pavardė."
+  },
+  "importFamily": {
+    "title": "Perkelti iš kitos šeimos",
+    "lead": "Pasirinkite žmogų iš kitos savo šeimos – jis bus nukopijuotas į „{family}“ medį, o abu medžiai susies per jį.",
+    "search": "Ieškoti pagal vardą ar pavardę",
+    "none": "Nieko nerasta.",
+    "withFamily": "Kartu su sutuoktiniu ir vaikais",
+    "withFamilyHint": "Pvz. pasirinkus tėtį, kartu persikels mama ir vaikai su visais ryšiais. Jūs patys dar kartą nekopijuojami.",
+    "error": "Nepavyko perkelti. Bandykite dar kartą.",
+    "importing": "Perkeliama…",
+    "submit": "Perkelti į medį",
+    "noOther": "Kitų šeimų neturite.",
+    "onlyEditors": "Perkelti gali tik administratorius ar redaktorius.",
+    "button": "Perkelti iš kitos šeimos"
   }
 }

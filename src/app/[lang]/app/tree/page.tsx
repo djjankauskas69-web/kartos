@@ -17,6 +17,7 @@ import { Profile } from "../people/[id]/Profile";
 import { KartosPulse, ProfileDrawer } from "./ProfileDrawer";
 import { WideMain } from "./WideMain";
 import { buildTree, plural, roman } from "./build";
+import { addMeToTree } from "../actions";
 import { ListView } from "./ListView";
 import { TreeView } from "./TreeView";
 import { treeLabels } from "./labels";
@@ -199,8 +200,29 @@ async function Tree({ t, locale, searchPromise }: { t: Dictionary; locale: Local
       <div>
         {header(null)}
         {host}
-        <div className={`px-6 py-10 text-center ${cls.card}`}>
-          <p className="text-ink-muted">{t.tree.empty}</p>
+        <div className={`px-6 py-12 text-center ${cls.card}`}>
+          <p className="text-[1.15rem] font-semibold">{t.tree.emptyTitle}</p>
+          <p className="mx-auto mt-1.5 max-w-md text-ink-muted">{t.tree.emptyLead}</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {can.add(current.role) && (
+              <form action={addMeToTree}>
+                <input type="hidden" name="locale" value={locale} />
+                <button type="submit" className={cls.primary}>
+                  {t.tree.emptyMe}
+                </button>
+              </form>
+            )}
+            {can.add(current.role) && (
+              <Link href={addHref({ add: "person" })} scroll={false} className={cls.secondary}>
+                {t.tree.emptyOther}
+              </Link>
+            )}
+            {can.edit(current.role) && (
+              <Link href={`${base}/import`} className={cls.secondary}>
+                {t.importFamily.button}
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     );

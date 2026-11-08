@@ -582,7 +582,11 @@
     "foldClose": "Fold up",
     "inlawOpen": "Parents",
     "inlawClose": "Hide parents",
-    "bornAge": "b. {y} · age {a}"
+    "bornAge": "b. {y} · age {a}",
+    "emptyTitle": "The tree is still empty",
+    "emptyLead": "Start with yourself – your details come from your other family and the trees get linked. Then add your parents and others.",
+    "emptyMe": "Put me in the tree",
+    "emptyOther": "Add someone else"
   },
   "family": {
     "title": "Family",
@@ -1990,5 +1994,19 @@
     "surnameLead": "{maiden} stays as the maiden name.",
     "surnameYes": "Change",
     "surnameLeadPrev": "{maiden} stays as an earlier surname."
+  },
+  "importFamily": {
+    "title": "Bring in from another family",
+    "lead": "Pick someone from another of your families – they are copied into the “{family}” tree and the two trees get linked through them.",
+    "search": "Search by name",
+    "none": "Nothing found.",
+    "withFamily": "With their partner and children",
+    "withFamilyHint": "E.g. pick your father and your mother and the children come too, with all their links. You are not copied twice.",
+    "error": "Couldn't bring them in. Please try again.",
+    "importing": "Bringing in…",
+    "submit": "Bring into the tree",
+    "noOther": "You have no other families.",
+    "onlyEditors": "Only an administrator or editor can do this.",
+    "button": "Bring in from another family"
   }
 }
