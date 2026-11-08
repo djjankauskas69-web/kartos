@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import { can } from "@/lib/data";
 import { actionContext, formLocale, uuid } from "@/lib/action-context";
 import type { FormState } from "../actions";
@@ -98,5 +99,7 @@ export async function importFromFamily(_: FormState, form: FormData): Promise<Fo
     const { error } = await supabase.rpc("link_families_direct", { p_person: map.get(sourceId), p_other: sourceId });
     if (error) console.error("importFromFamily family link", error);
   }
+  // The tree page may still be kept from before: draw it again with the new people.
+  refresh();
   redirect(`/${locale}/app/tree`);
 }
