@@ -94,10 +94,17 @@ export async function importFromFamily(_: FormState, form: FormData): Promise<Fo
     const { error } = await supabase.from("relationships").insert(fresh);
     if (error) console.error("importFromFamily links", error);
   }
-  // The two trees open into each other through this person (when you look after both families).
+  // Each person brought in is linked to themself in the other tree (when you look after both
+  // families): their card shows they are in that family too, and the trees open into each other.
+  // Bringing the same people in again only adds links that are missing.
   if (memberships.find((m) => m.id === srcWs)?.role === "owner" && can.admin(workspace.role)) {
-    const { error } = await supabase.rpc("link_families_direct", { p_person: map.get(sourceId), p_other: sourceId });
-    if (error) console.error("importFromFamily family link", error);
+    const { data: done } = await supabase.from("family_links").select("a_person, b_person").or(`a_person.in.(${[...map.values()].join(",")}),b_person.in.(${[...map.values()].join(",")})`);
+    const linked = new Set((done ?? []).flatMap((r) => [`${r.a_person}|${r.b_person}`, `${r.b_person}|${r.a_person}`]));
+    for (const [from, to] of map) {
+      if (linked.has(`${to}|${from}`)) continue;
+      const { error } = await supabase.rpc("link_families_direct", { p_person: to, p_other: from });
+      if (error) console.error("importFromFamily family link", error);
+    }
   }
   // The tree page may still be kept from before: draw it again with the new people.
   refresh();
