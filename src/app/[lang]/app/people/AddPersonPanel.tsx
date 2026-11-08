@@ -154,6 +154,13 @@ export function AddPersonHost({
   const pathname = usePathname();
   const router = useRouter();
   const [toast, setToast] = useState<{ id: string; name: string; linked: boolean; grave?: boolean } | null>(null);
+  // The "Added" note goes away by itself after a few seconds (not while the pointer rests on it).
+  const [toastHold, setToastHold] = useState(false);
+  useEffect(() => {
+    if (!toast || toastHold) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast, toastHold]);
   const kind = params.get("add");
   const to = params.get("to");
   // "Join to tree" from the people list: someone already in the archive, to connect.
@@ -202,7 +209,13 @@ export function AddPersonHost({
         />
       )}
       {toast && (
-        <div role="status" className="fixed bottom-5 left-1/2 z-40 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink px-5 py-3.5 text-surface shadow-[var(--shadow-float)]">
+        <div
+          role="status"
+          onMouseEnter={() => setToastHold(true)}
+          onMouseLeave={() => setToastHold(false)}
+          onFocus={() => setToastHold(true)}
+          onBlur={() => setToastHold(false)}
+          className="fixed bottom-5 left-1/2 z-40 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink px-5 py-3.5 text-surface shadow-[var(--shadow-float)]">
           <IconCheck size={20} />
           <span className="min-w-0 flex-1">{(toast.linked ? t.linked : t.added).replace("{name}", toast.name)}</span>
           {toast.grave ? (
