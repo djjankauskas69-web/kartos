@@ -32,7 +32,6 @@ import {
   type FormState,
 } from "../actions";
 import { adminLinkPerson } from "../me/actions";
-import { Modal } from "../people/[id]/Modal";
 
 export type MemberRow = {
   id: string;
@@ -381,7 +380,7 @@ export function MembersCenter({
                         </div>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2 max-sm:has-[input]:w-full">
                       {m && <RoleBadge role={m.role} label={t.role[m.role]} />}
                       {e.status === "invite" && canInvite && p && (
                         <InviteButton
@@ -395,7 +394,6 @@ export function MembersCenter({
                           }
                           locale={locale}
                           personId={p.id}
-                          name={p.name}
                           t={t}
                           roles={
                             isAdmin
@@ -502,28 +500,11 @@ export function MembersCenter({
   );
 }
 
-/** The invitation link, large and plain: copy it (again and again) or send it straight from the phone. */
-function InviteDialog({
-  open,
-  onClose,
-  link,
-  name,
-  role,
-  t,
-  copiedAtStart = false,
-}: {
-  open: boolean;
-  onClose: () => void;
-  link: string;
-  name: string;
-  role: string;
-  t: Labels;
-  copiedAtStart?: boolean;
-}) {
+/** An invitation already made: its link right in the row, copied again with every tap, or sent from the phone. */
+function SentLink({ link, role, t, copiedAtStart = false }: { link: string; role: string; t: Labels; copiedAtStart?: boolean }) {
   const [copied, setCopied] = useState(copiedAtStart);
-  // Only ever rendered after a tap, so the browser is there.
-  const canShare = typeof navigator !== "undefined" && "share" in navigator;
-  const box = useRef<HTMLDivElement>(null);
+  const [manual, setManual] = useState(false);
+  const canShare = typeof window !== "undefined" && "share" in navigator;
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 2500);
@@ -534,84 +515,39 @@ function InviteDialog({
       await navigator.clipboard.writeText(link);
       setCopied(true);
     } catch {
-      // No clipboard: select the link so the phone offers "Copy".
-      const range = document.createRange();
-      if (box.current) {
-        range.selectNodeContents(box.current);
-        window.getSelection()?.removeAllRanges();
-        window.getSelection()?.addRange(range);
-      }
+      setManual(true);
     }
   };
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      label={t.inviteDialogTitle}
-      closeLabel={t.cancel}
-    >
-      <h2 className="pr-10 font-serif text-[1.6rem] leading-tight">
-        {t.inviteDialogTitle}
-      </h2>
-      <p className="mt-1 text-[1.05rem] font-semibold">
-        {name} <span className="font-normal text-ink-muted">· {role}</span>
-      </p>
-      <ol className="mt-5 space-y-2 text-[1.05rem] leading-snug">
-        <li className="flex gap-3">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
-            1
-          </span>
-          {t.inviteStep1}
-        </li>
-        <li className="flex gap-3">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
-            2
-          </span>
-          {t.inviteStep2}
-        </li>
-        <li className="flex gap-3">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linen font-semibold">
-            3
-          </span>
-          {t.inviteStep3}
-        </li>
-      </ol>
-      <div
-        ref={box}
-        onClick={copy}
-        className="mt-5 cursor-pointer select-all break-all rounded-xl border-2 border-dashed border-sage-deep/40 bg-sage-wash/40 px-4 py-3 font-mono text-[0.95rem] leading-relaxed text-ink"
-      >
-        {link}
-      </div>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+    <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:items-end">
+      <span className="text-[0.85rem] font-semibold text-sage-deep">✓ {t.invitedAs.replace("{role}", role.toLowerCase())}</span>
+      <div className="flex flex-wrap gap-2 sm:justify-end">
         <button
           type="button"
           onClick={copy}
-          className={`inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full px-6 text-[1.1rem] font-semibold transition-colors ${copied ? "bg-sage-deep text-surface" : "bg-ink text-surface hover:bg-olive-deep"}`}
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-[0.98rem] font-semibold transition-colors ${copied ? "bg-sage-deep text-surface" : "bg-ink text-surface hover:bg-olive-deep"}`}
         >
-          {copied ? <IconCheck size={20} /> : <IconLink size={20} />}
-          {copied ? t.inviteCopied : t.copyLink}
+          {copied ? <IconCheck size={17} /> : <IconLink size={17} />}
+          {copied ? t.inviteCopied : t.copyInvite}
         </button>
         {canShare && (
           <button
             type="button"
-            onClick={() =>
-              navigator
-                .share({
-                  title: t.inviteDialogTitle,
-                  text: t.inviteShareText,
-                  url: link,
-                })
-                .catch(() => {})
-            }
-            className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 text-[1.1rem] font-semibold hover:border-ink/40"
+            onClick={() => navigator.share({ text: t.inviteShareText, url: link }).catch(() => {})}
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-4 text-[0.98rem] font-semibold hover:border-ink/40"
           >
             {t.inviteSend}
           </button>
         )}
       </div>
-      <p className="mt-4 text-[0.92rem] text-ink-muted">{t.inviteDialogNote}</p>
-    </Modal>
+      <input
+        readOnly
+        value={link}
+        onFocus={(e) => e.currentTarget.select()}
+        aria-label={t.copyFallback}
+        className={`w-full rounded-lg border bg-paper px-2.5 py-1.5 font-mono text-[0.8rem] text-ink-muted sm:w-64 ${manual ? "border-ink" : "border-line"}`}
+      />
+    </div>
   );
 }
 
@@ -620,22 +556,18 @@ function InviteButton({
   sent,
   locale,
   personId,
-  name,
   t,
   roles,
 }: {
   sent?: { link: string; role: string };
   locale: Locale;
   personId: string;
-  name: string;
   t: Labels;
   roles: readonly ("contributor" | "viewer" | "editor")[];
 }) {
-  const [done, setDone] = useState<"idle" | "copied" | "manual">("idle");
   const [open, setOpen] = useState(false);
-  const [shown, setShown] = useState<{ link: string; role: string } | null>(
-    null,
-  );
+  // Made just now: shown at once, before the page catches up.
+  const [made, setMade] = useState<{ link: string; role: string; copied: boolean } | null>(null);
   const [, action, pending] = useActionState(
     async (prev: FormState, form: FormData) => {
       setOpen(false);
@@ -646,55 +578,28 @@ function InviteButton({
           await navigator.clipboard.writeText(result.link);
           copied = true;
         } catch {}
-        setDone(copied ? "copied" : "manual");
-        setShown({
-          link: result.link,
-          role: t.role[String(form.get("role"))] ?? "",
-        });
+        setMade({ link: result.link, role: t.role[String(form.get("role"))] ?? "", copied });
       }
       return result;
     },
     {},
   );
+  const shown = made ?? (sent ? { ...sent, copied: false } : null);
   return (
-    <form action={action} className="relative flex items-center gap-2">
+    <form action={action} className="relative flex w-full items-center gap-2 sm:w-auto">
       <Hidden values={{ locale, personId }} />
-      {shown && (
-        <InviteDialog
-          open
-          onClose={() => setShown(null)}
-          link={shown.link}
-          name={name}
-          role={shown.role}
-          t={t}
-          copiedAtStart={done === "copied"}
-        />
-      )}
-      {sent ? (
-        // Already invited: no new invitation, the same link shown again.
-        <>
-          <span className="hidden text-[0.85rem] text-ink-muted sm:inline">
-            {t.invitedAs.replace("{role}", sent.role.toLowerCase())}
-          </span>
-          <button
-            type="button"
-            onClick={() => setShown(sent)}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-sage-deep/40 bg-sage-wash/50 px-4 text-[0.95rem] font-semibold text-sage-deep hover:border-sage-deep"
-          >
-            <IconLink size={16} />
-            {t.showInvite}
-          </button>
-        </>
+      {shown ? (
+        <SentLink link={shown.link} role={shown.role} t={t} copiedAtStart={shown.copied} />
       ) : (
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           disabled={pending}
-          className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-[0.95rem] font-semibold ${done === "copied" ? "border-sage-deep bg-sage-wash text-sage-deep" : "border-line hover:border-ink/40"}`}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40"
         >
-          {done === "copied" ? <IconCheck size={16} /> : <IconLink size={16} />}
-          {pending ? "…" : done === "copied" ? t.inviteCopied : t.invite}
+          <IconLink size={16} />
+          {pending ? "…" : t.invite}
         </button>
       )}
       {open && (
