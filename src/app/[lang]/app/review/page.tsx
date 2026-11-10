@@ -25,12 +25,17 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
   if (!can.admin(current.role)) redirect(`/${locale}/app`);
   const ws = current.id;
 
-  const [persons, rels, memories, media, burials] = await Promise.all([
+  const [persons, rels, memories, media, burials, recentPeople, recentMemories, recentPhotos, recentGraves] = await Promise.all([
     supabase.from("persons").select("id, given_names, surname, birth_year, death_year, is_living, created_by, created_at").eq("workspace_id", ws).eq("status", "pending").is("deleted_at", null),
     supabase.from("relationships").select("id, person_a, person_b, type, created_by, created_at").eq("workspace_id", ws).eq("status", "pending"),
     supabase.from("memories").select("id, person_id, body, author_id, created_at").eq("workspace_id", ws).eq("status", "pending"),
     supabase.from("media").select("id, kind, title, description, file_name, mime_type, storage_path, uploader_id, created_at, media_persons(person_id)").eq("workspace_id", ws).eq("status", "pending"),
     supabase.from("burials").select("id, person_id, cemetery_name, section, row_label, plot, lat, lng, photo_id, created_by, created_at").eq("workspace_id", ws).eq("status", "pending"),
+    // What the family has done lately: for the administrator only, not on everyone's overview.
+    supabase.from("persons").select("id, given_names, surname, created_by, created_at").eq("workspace_id", ws).is("deleted_at", null).neq("status", "rejected").order("created_at", { ascending: false }).limit(15),
+    supabase.from("memories").select("id, person_id, author_id, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(15),
+    supabase.from("media").select("id, uploader_id, created_at").eq("workspace_id", ws).eq("kind", "photo").neq("status", "rejected").not("storage_path", "like", "%/portraits/%").order("created_at", { ascending: false }).limit(60),
+    supabase.from("burials").select("id, person_id, created_by, created_at").eq("workspace_id", ws).neq("status", "rejected").order("created_at", { ascending: false }).limit(10),
   ]);
 
   // Photos attached to a pending grave are reviewed with the grave.
@@ -41,6 +46,8 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
   (rels.data ?? []).forEach((r) => personIds.add(r.person_a).add(r.person_b));
   (memories.data ?? []).forEach((m) => personIds.add(m.person_id));
   (burials.data ?? []).forEach((b) => personIds.add(b.person_id));
+  (recentMemories.data ?? []).forEach((m) => personIds.add(m.person_id));
+  (recentGraves.data ?? []).forEach((b) => personIds.add(b.person_id));
   photos.forEach((m) => (m.media_persons as { person_id: string }[] | null)?.forEach((mp) => personIds.add(mp.person_id)));
   const { data: names } = personIds.size
     ? await supabase.from("persons").select("id, given_names, surname").in("id", [...personIds])
@@ -53,7 +60,29 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
     ...(memories.data ?? []).map((m) => m.author_id),
     ...photos.map((m) => m.uploader_id),
     ...(burials.data ?? []).map((b) => b.created_by),
+    ...(recentPeople.data ?? []).map((p) => p.created_by),
+    ...(recentMemories.data ?? []).map((m) => m.author_id),
+    ...(recentPhotos.data ?? []).map((m) => m.uploader_id),
+    ...(recentGraves.data ?? []).map((b) => b.created_by),
   ]);
+
+  // The history: newest first, photos taken together as one line per person and day.
+  const d = t.dash;
+  type Act = { at: string; who: string | null; text: React.ReactNode; href: string };
+  const acts: Act[] = [];
+  for (const p of recentPeople.data ?? []) acts.push({ at: p.created_at, who: p.created_by, text: <><strong>{fullName(p)}</strong> · {d.actPerson}</>, href: `/${locale}/app/people/${p.id}` });
+  for (const m of recentMemories.data ?? []) acts.push({ at: m.created_at, who: m.author_id, text: <><strong>{nameOf.get(m.person_id) ?? "—"}</strong> · {d.actMemory}</>, href: `/${locale}/app/people/${m.person_id}` });
+  for (const b of recentGraves.data ?? []) acts.push({ at: b.created_at, who: b.created_by, text: <><strong>{nameOf.get(b.person_id) ?? "—"}</strong> · {d.actGrave}</>, href: `/${locale}/app/map?person=${b.person_id}` });
+  const shots = new Map<string, { at: string; who: string | null; n: number }>();
+  for (const m of recentPhotos.data ?? []) {
+    const k = `${(m.created_at as string).slice(0, 10)}:${m.uploader_id ?? ""}`;
+    const g = shots.get(k);
+    if (g) g.n += 1;
+    else shots.set(k, { at: m.created_at, who: m.uploader_id, n: 1 });
+  }
+  for (const g of shots.values()) acts.push({ at: g.at, who: g.who, text: d.actPhotos.replace("{n}", String(g.n)), href: `/${locale}/app/archive?tab=photos` });
+  acts.sort((a, b) => b.at.localeCompare(a.at));
+  const history = acts.slice(0, 15);
   const urls = await signedUrls(locale, photos.map((m) => m.storage_path).filter((p): p is string => !!p));
 
   const total = (persons.data?.length ?? 0) + (rels.data?.length ?? 0) + (memories.data?.length ?? 0) + photos.length + (burials.data?.length ?? 0);
@@ -237,6 +266,22 @@ async function Review({ t, locale }: { t: Dictionary; locale: Locale }) {
           </li>
         ))}
       </>)}
+      {history.length > 0 && (
+        <section className="mt-12">
+          <h2 className={cls.h2}>{t.review.historyTitle}</h2>
+          <p className="mt-1 text-ink-muted">{t.review.historyLead}</p>
+          <ul className={`mt-4 divide-y divide-line ${cls.card}`}>
+            {history.map((a, i) => (
+              <li key={i}>
+                <Link href={a.href} className="flex flex-col gap-0.5 px-5 py-3.5 hover:bg-paper/70 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <span className="min-w-0 [&_strong]:font-semibold">{a.text}</span>
+                  <span className="shrink-0 text-[0.92rem] text-ink-muted">{[a.who ? authors.get(a.who) : null, when.format(new Date(a.at))].filter(Boolean).join(" · ")}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

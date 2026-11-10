@@ -5,7 +5,7 @@ import { can, type Person, type Role } from "@/lib/data";
 import { cls } from "@/components/ui";
 import type { MapMarker } from "@/components/map/Map";
 import { Scribble } from "@/components/Scribble";
-import { IconArrow, IconCalendar, IconClock, IconImage, IconPeople, IconPin, IconPlus, IconQuote, IconTree } from "@/components/icons";
+import { IconArrow, IconCalendar, IconImage, IconPeople, IconPlus, IconQuote, IconTree } from "@/components/icons";
 import { CoverButton } from "./CoverButton";
 import { ResearchCard } from "./ResearchCard";
 
@@ -65,7 +65,7 @@ const pill = "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[1.
 
 /** The overview: the family's cover, its numbers, tree, graves, moments, what's new and the dates to remember. */
 export function DashboardView(props: DashboardData) {
-  const { part = "all", t, locale, workspaceId, name, role, since, cover, counts, welcomeHref, welcomeJoin, accessRequests, loose, moments, recent, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
+  const { part = "all", t, locale, workspaceId, name, role, since, cover, counts, welcomeHref, welcomeJoin, accessRequests, loose, moments, jubilees, dates, notJoined, upcoming, latestMemory, fill, tree } = props;
   // What a condition above already asks for is not repeated below it.
   const openReq = new Set(tree.reqs.filter((r) => !r.done).map((r) => (r.key === "years" ? "year" : r.key === "places" ? "place" : r.key)));
   const more = fill.filter((f) => !openReq.has(f.key));
@@ -77,7 +77,6 @@ export function DashboardView(props: DashboardData) {
     { n: counts.memories, label: d.statMemories, href: `${base}/archive?tab=stories` },
     { n: counts.photos, label: d.statPhotos, href: `${base}/archive?tab=photos` },
   ];
-  const recentShown = recent.slice(0, 4);
   const hasDates = upcoming.length > 0 || jubilees.length > 0;
   const history = dates.length > 0 && (
     <details className="group mt-4 border-t border-line pt-3">
@@ -247,57 +246,13 @@ export function DashboardView(props: DashboardData) {
         labels={{ leftWord: d.leftWord, researchTitle: d.researchTitle, readyTitle: d.readyTitle, researchReady: d.researchReady, nextWhy: d.nextWhy, startResearch: d.startResearch, researchSoon: d.researchSoon, reqAction: d.showMissing, hideList: d.hideMissing, missingTitle: d.missingTitle, extrasTitle: d.extrasTitle, extrasButton: d.extrasButton }}
       />
 
-      {/* And what is happening: the latest additions, and dates coming up (only when there are some) */}
-      <section className={`grid items-start gap-5 [&>*]:min-w-0 ${hasDates ? "lg:grid-cols-[1.35fr_1fr]" : ""}`}>
+      {/* Dates coming up and the family's story in dates (who did what is for the administrator, on Review) */}
+      {(hasDates || history) && (
+      <section className="[&>*]:min-w-0">
         <div className={`p-6 sm:p-7 ${card}`}>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className={`flex items-center gap-3 ${cls.h3}`}>
-              <span className="text-sage-deep"><IconClock size={22} /></span>
-              {d.recentTitle}
-            </h2>
-          </div>
-          {recentShown.length === 0 ? (
-            <p className="mt-4 text-ink-muted">{d.recentEmpty}</p>
-          ) : (
-            <ul className={`mt-3 divide-y divide-line ${hasDates ? "" : "md:grid md:grid-cols-2 md:gap-x-8 md:divide-y-0"}`}>
-              {recentShown.map((r, i) => (
-                <li key={i}>
-                  <Link href={r.href} className="-mx-2 flex items-center gap-4 rounded-xl px-2 py-3 hover:bg-paper/70">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linen text-ink-muted">
-                      {r.thumb ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- signed private URL
-                        <img src={r.thumb} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        kindIcon(r.kind)
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="line-clamp-1 text-[1.02rem] leading-snug">
-                        {r.name ? (
-                          <>
-                            <span className="font-semibold">{r.name}</span>
-                            <span className="text-ink-muted"> · </span>
-                            {r.text}
-                          </>
-                        ) : (
-                          r.text.charAt(0).toUpperCase() + r.text.slice(1)
-                        )}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[0.9rem] text-ink-muted">{[r.who, r.sub, timeAgo(r.at, locale)].filter(Boolean).join(" · ")}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {!hasDates && history}
-        </div>
-
-        {hasDates && (
-          <div className={`p-6 sm:p-7 ${card}`}>
             <h2 className={`flex items-center gap-3 ${cls.h3}`}>
               <span className="text-sage-deep"><IconCalendar size={22} /></span>
-              {d.upcomingTitle}
+              {hasDates ? d.upcomingTitle : d.datesTitle}
             </h2>
             {upcoming.length > 0 && (
               <ul className="mt-3 space-y-1">
@@ -338,8 +293,8 @@ export function DashboardView(props: DashboardData) {
             )}
             {history}
           </div>
-        )}
       </section>
+      )}
       </>
       )}
     </div>
@@ -373,12 +328,6 @@ function DateList({ items }: { items: FamilyDate[] }) {
   );
 }
 
-function kindIcon(kind: Activity["kind"]) {
-  if (kind === "photos" || kind === "album") return <IconImage size={20} />;
-  if (kind === "grave") return <IconPin size={20} />;
-  if (kind === "memory") return <IconQuote size={20} />;
-  return <IconPeople size={20} />;
-}
 
 /** "Prieš 2 val.", "Vakar", "Prieš 3 d." — short and capitalised, in the reader's language. */
 function timeAgo(iso: string, locale: Locale) {

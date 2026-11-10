@@ -346,6 +346,8 @@
     "allPeopleLink": "Everyone, including those who have passed – in the tree list"
   },
   "review": {
+    "historyTitle": "Recent changes",
+    "historyLead": "Who added what in the family. Only you see this.",
     "title": "Approvals",
     "lead": "What members have added. Until you approve it, only you and the author can see it.",
     "empty": "All caught up. Nothing new from members.",

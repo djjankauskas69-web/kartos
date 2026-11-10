@@ -346,6 +346,8 @@
     "allPeopleLink": "Visi žmonės, ir mirę, – medžio sąraše"
   },
   "review": {
+    "historyTitle": "Naujausi pakeitimai",
+    "historyLead": "Kas ką pridėjo šeimoje. Matote tik jūs.",
     "title": "Tvirtinimas",
     "lead": "Narių įkelta informacija. Kol nepatvirtinsite, ją matote tik jūs ir autorius.",
     "empty": "Viskas patvirtinta. Naujos narių informacijos nėra.",
