@@ -147,7 +147,15 @@ export function ArchiveHome({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sortPhotos depends only on sort
   }, [photos, filter, sort]);
 
-  const slidesOf = (list: ArchiveItem[]): Slide[] => list.filter((i) => i.kind === "photo" && i.url).map((i) => ({ id: i.id, url: i.url!, title: i.title, date: i.dateLabel, description: i.description }));
+  const albumYear = new Map(albums.map((a) => [a.id, a.year]));
+  const slidesOf = (list: ArchiveItem[]): Slide[] =>
+    list
+      .filter((i) => i.kind === "photo" && i.url)
+      .map((i) => {
+        const y = (i.folderId && albumYear.get(i.folderId)) || null;
+        const album = i.folderId ? folderName.get(i.folderId) : undefined;
+        return { id: i.id, url: i.url!, title: i.title, date: i.dateLabel, description: i.description, album: album ? [album, y ? (locale === "lt" ? `${y} m.` : String(y)) : i.dateLabel].filter(Boolean).join(" · ") : undefined };
+      });
   const play = (list: ArchiveItem[], start = 0) => {
     const slides = slidesOf(list);
     if (slides.length) setShow({ slides, start });

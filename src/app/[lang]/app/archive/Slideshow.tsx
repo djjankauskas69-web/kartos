@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-export type Slide = { id: string; url: string; title?: string; date?: string; description?: string | null };
+export type Slide = { id: string; url: string; title?: string; date?: string; description?: string | null; album?: string };
 
 type L = { close: string; prev: string; next: string; play: string; pause: string; shuffle: string; fullscreen: string; all: string };
 
@@ -154,6 +154,16 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
       <div className="relative min-h-0 flex-1">
         {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
         <img key={slide.id} src={slide.url} alt={slide.title ?? ""} draggable={false} className="absolute inset-0 h-full w-full animate-[fade-in_600ms_ease-out_both] object-contain" />
+
+        {/* Quietly, while the photos play: which album and year this is. */}
+        {slide.album && (
+          <p
+            key={`a-${slide.album}`}
+            className={`pointer-events-none absolute bottom-4 left-5 max-w-[70vw] truncate text-[0.95rem] font-medium tracking-wide text-white/60 transition-opacity duration-700 [text-shadow:0_1px_6px_rgb(0_0_0/0.8)] sm:bottom-6 sm:left-8 sm:text-[1.05rem] ${chrome ? "opacity-0" : "animate-[fade-in_900ms_ease-out_both] opacity-100"}`}
+          >
+            {slide.album}
+          </p>
+        )}
 
         {/* Top: counter and close */}
         <div className={`absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity sm:p-6 ${chrome ? "opacity-100" : "pointer-events-none opacity-0"}`}>
