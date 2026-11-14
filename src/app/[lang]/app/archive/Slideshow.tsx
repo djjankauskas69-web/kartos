@@ -224,9 +224,10 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
                         role="menuitemradio"
                         aria-checked={v === seconds}
                         onClick={() => pickSpeed(v)}
+                        aria-label={`${v} s`}
                         className={`min-h-11 min-w-12 whitespace-nowrap rounded-full px-3 text-[1rem] font-semibold tabular-nums ${v === seconds ? "bg-white text-black" : "text-white hover:bg-white/20"}`}
                       >
-                        {v} s
+                        {v}
                       </button>
                     ))}
                   </div>
