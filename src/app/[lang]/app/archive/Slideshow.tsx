@@ -194,7 +194,7 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
         </div>
 
         {/* Bottom: what it is, and the controls */}
-        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-5 pt-16 transition-opacity sm:px-8 sm:pb-8 ${chrome ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-5 pt-16 transition-opacity sm:px-8 sm:pb-8 ${chrome || speedOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}>
           {(caption || slide.description) && (
             <div className="mx-auto mb-5 max-w-3xl text-center">
               {caption && <p className="text-[1.25rem] font-semibold sm:text-[1.5rem]">{caption}</p>}
