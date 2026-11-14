@@ -5,12 +5,13 @@ import { createPortal } from "react-dom";
 
 export type Slide = { id: string; url: string; title?: string; date?: string; description?: string | null; album?: string };
 
-type L = { close: string; prev: string; next: string; play: string; pause: string; shuffle: string; fullscreen: string; all: string };
+type L = { close: string; prev: string; next: string; play: string; pause: string; shuffle: string; fullscreen: string; all: string; speed: string };
 
-const DELAY = 5000;
+const SPEEDS = [3, 5, 8, 15, 30];
+const SPEED_KEY = "mykartos-slide-seconds";
 
 /**
- * The photos full screen, one after another (every 5 s). Pause, back, forward, shuffle,
+ * The photos full screen, one after another (every few seconds, as picked). Pause, back, forward, shuffle,
  * pick from the strip below; works with keys, swipes and on a big TV (full screen).
  */
 /** With `manual`, the same big view but nothing moves on by itself (opened from a photo). */
@@ -21,6 +22,23 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
   const [shuffled, setShuffled] = useState(false);
   const [chrome, setChrome] = useState(true);
   const [strip, setStrip] = useState(false);
+  // How long each photo stays: picked once, remembered in this browser.
+  const [seconds, setSeconds] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem(SPEED_KEY));
+      return SPEEDS.includes(v) ? v : 5;
+    } catch {
+      return 5;
+    }
+  });
+  const [speedOpen, setSpeedOpen] = useState(false);
+  const pickSpeed = (v: number) => {
+    setSeconds(v);
+    setSpeedOpen(false);
+    try {
+      localStorage.setItem(SPEED_KEY, String(v));
+    } catch {}
+  };
   const root = useRef<HTMLDivElement>(null);
   const touch = useRef<number | null>(null);
   const hideTimer = useRef<number | null>(null);
@@ -39,9 +57,9 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
   // Next photo after a pause; the timer starts again whenever the photo changes.
   useEffect(() => {
     if (!playing || n < 2) return;
-    const id = window.setTimeout(() => go(1), DELAY);
+    const id = window.setTimeout(() => go(1), seconds * 1000);
     return () => window.clearTimeout(id);
-  }, [playing, pos, n, go]);
+  }, [playing, pos, n, go, seconds]);
 
   // The next photo loads before it is needed.
   useEffect(() => {
@@ -184,6 +202,37 @@ export function Slideshow({ slides, start = 0, onClose: close, labels, manual = 
             </div>
           )}
           <div className="flex items-center justify-center gap-3 sm:gap-4">
+            {!manual && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSpeedOpen((o) => !o)}
+                  aria-expanded={speedOpen}
+                  aria-label={`${labels.speed}: ${seconds} s`}
+                  title={labels.speed}
+                  className={`${btn} flex-col gap-0 ${speedOpen ? "bg-white/35" : ""}`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M9.5 2.5h5" /></svg>
+                  <span className="text-[0.72rem] font-semibold leading-none tabular-nums">{seconds} s</span>
+                </button>
+                {speedOpen && (
+                  <div role="menu" className="absolute bottom-[calc(100%+0.6rem)] left-1/2 flex -translate-x-1/2 gap-1 rounded-full bg-black/75 p-1.5 backdrop-blur">
+                    {SPEEDS.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={v === seconds}
+                        onClick={() => pickSpeed(v)}
+                        className={`min-h-11 min-w-12 rounded-full px-3 text-[1rem] font-semibold tabular-nums ${v === seconds ? "bg-white text-black" : "text-white hover:bg-white/20"}`}
+                      >
+                        {v} s
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {!manual && (
             <button type="button" onClick={toggleShuffle} aria-pressed={shuffled} aria-label={labels.shuffle} title={labels.shuffle} className={`${btn} ${shuffled ? "bg-white/35" : ""}`}>
               <svg {...I} width={22} height={22}><path d="M16 4h4v4M4 20 20 4M20 16v4h-4M15 15l5 5M4 4l5 5" /></svg>

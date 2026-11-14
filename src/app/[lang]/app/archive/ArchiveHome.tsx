@@ -842,7 +842,7 @@ export function ArchiveHome({
             setShow(null);
             if (back) setOpenId(back);
           }}
-          labels={{ close: t.close, prev: t.slidePrev, next: t.slideNext, play: t.slidePlay, pause: t.slidePause, shuffle: t.slideShuffle, fullscreen: t.slideFull, all: t.slideAll }}
+          labels={{ close: t.close, prev: t.slidePrev, next: t.slideNext, play: t.slidePlay, pause: t.slidePause, shuffle: t.slideShuffle, fullscreen: t.slideFull, all: t.slideAll, speed: t.slideSpeed }}
         />
       )}
     </div>
