@@ -63,6 +63,23 @@ export function ArchiveHome({
   const [dialog, setDialog] = useState<null | "upload" | "uploadDoc" | "story" | "album" | "editAlbum" | "slides">(initialUpload ? "upload" : null);
   const [dropped, setDropped] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+  // The "drop here" veil must always lift: a drop inside the upload window never reaches the page,
+  // and a drag that leaves the browser sends no leave of its own.
+  useEffect(() => {
+    if (!dragging) return;
+    const off = () => setDragging(false);
+    const leave = (e: DragEvent) => {
+      if (!e.relatedTarget) setDragging(false);
+    };
+    window.addEventListener("drop", off, true);
+    window.addEventListener("dragend", off, true);
+    document.addEventListener("dragleave", leave, true);
+    return () => {
+      window.removeEventListener("drop", off, true);
+      window.removeEventListener("dragend", off, true);
+      document.removeEventListener("dragleave", leave, true);
+    };
+  }, [dragging]);
   const [show, setShow] = useState<{ slides: Slide[]; start: number; manual?: boolean } | null>(null);
   const [sort, setSort] = useState("newest");
   const [filter, setFilter] = useState("");
@@ -570,7 +587,7 @@ export function ArchiveHome({
         }
       }}
     >
-      {dragging && (
+      {dragging && !dialog && (
         <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-ink/10 p-6 backdrop-blur-[1px]">
           <div className="rounded-[22px] border-2 border-dashed border-olive bg-surface px-10 py-8 text-center shadow-[var(--shadow-float)]">
             <p className="text-[1.4rem] font-semibold">{t.dropHere}</p>
