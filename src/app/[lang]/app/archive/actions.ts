@@ -61,7 +61,7 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
   const period = readPeriod(form);
   if (period === "bad") return { error: "year" };
 
-  type Item = { path: string; kind: "photo" | "document"; title: string; width: number | null; height: number | null; mime: string; size: number; fileName: string };
+  type Item = { path: string; kind: "photo" | "document" | "video"; title: string; width: number | null; height: number | null; mime: string; size: number; fileName: string };
   let items: Item[] = [];
   try {
     items = JSON.parse(String(form.get("items") ?? "[]"));
@@ -81,7 +81,7 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
     id: crypto.randomUUID(),
     workspace_id: workspace.id,
     storage_path: i.path,
-    kind: i.kind === "document" ? "document" : "photo",
+    kind: i.kind === "document" ? "document" : i.kind === "video" ? "video" : "photo",
     title: (i.title ?? "").trim().slice(0, 200) || null,
     width: i.width,
     height: i.height,
@@ -95,6 +95,8 @@ export async function recordFiles(form: FormData): Promise<ArchiveResult> {
   if (error && /shared/.test(error.message)) ({ error } = await supabase.from("media").insert(rows.map((r) => ({ ...r, shared: undefined }))));
   if (error) {
     console.error("recordFiles", error);
+    // Videos need database update 0024 (the "video" kind).
+    if (/media_kind_check/.test(error.message)) return { error: "setup" };
     return { error: "save" };
   }
   await tag(supabase, workspace.id, rows.map((r) => r.id), readPeople(form));

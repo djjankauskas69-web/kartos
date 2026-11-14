@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getDictionary, getLocale, type Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 import { can, fullName, getFamilyGraph, isUnknownParent, profileNames, requireWorkspace, signedUrls } from "@/lib/data";
-import { folderLabel, looksLikeFileName, periodLabel, type FolderRow } from "@/lib/archive";
+import { folderLabel, looksLikeFileName, periodLabel, videoInfo, type FolderRow } from "@/lib/archive";
 import { PageHeader } from "@/components/PageHeader";
 import { ArchiveHome, type Album, type MemoryStory } from "./ArchiveHome";
 import type { ArchiveItem, Kind, L } from "./parts";
@@ -68,7 +68,12 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   const { data: memMedia } = memMediaIds.length ? await supabase.from("media").select("id, storage_path").in("id", memMediaIds) : { data: [] };
   const memPath = new Map((memMedia ?? []).map((m) => [m.id as string, m.storage_path as string]));
   const [urls, names, faces] = await Promise.all([
-    signedUrls(locale, [...rows.map((m) => m.storage_path).filter((p): p is string => !!p), ...memPath.values()]),
+    signedUrls(locale, [
+      ...rows.map((m) => m.storage_path).filter((p): p is string => !!p),
+      // A video shows as its still frame until it's played.
+      ...rows.flatMap((m) => (m.kind === "video" && m.storage_path ? [videoInfo(m.storage_path).poster ?? ""] : [])).filter(Boolean),
+      ...memPath.values(),
+    ]),
     profileNames(locale, [...rows.map((m) => m.uploader_id as string), ...mems.map((m) => m.author_id as string), ...comments.map((c) => c.author_id as string)]),
     facePeople.length ? portraitUrls(locale, facePeople) : Promise.resolve(new Map<string, string>()),
   ]);
@@ -78,7 +83,8 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
   for (const c of comments) commentsBy.set(c.media_id, [...(commentsBy.get(c.media_id) ?? []), c]);
 
   const items: ArchiveItem[] = rows.map((m) => {
-    const kind = (["photo", "document", "story"].includes(m.kind) ? m.kind : "photo") as Kind;
+    const kind = (["photo", "document", "story", "video"].includes(m.kind) ? m.kind : "photo") as Kind;
+    const vid = kind === "video" && m.storage_path ? videoInfo(m.storage_path) : null;
     const pending = m.status === "pending";
     return {
       id: m.id,
@@ -97,7 +103,8 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
       uploader: names.get(m.uploader_id as string) ?? "",
       uploaderId: m.uploader_id,
       createdAt: m.created_at,
-      url: m.storage_path ? urls.get(m.storage_path) : undefined,
+      url: vid ? (vid.poster ? urls.get(vid.poster) : undefined) : m.storage_path ? urls.get(m.storage_path) : undefined,
+      video: vid && m.storage_path ? { src: urls.get(m.storage_path) ?? "", seconds: vid.seconds } : undefined,
       pdf: m.mime_type === "application/pdf" || /\.pdf$/i.test(m.storage_path ?? ""),
       pending,
       shared: !!m.shared,
@@ -179,7 +186,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
     approvalNote: t.app.approvalNote,
     yearError: t.app.errorYear,
   } as unknown as L;
-  const tab = (["albums", "photos", "stories", "documents"] as const).find((x) => x === params.tab) ?? "albums";
+  const tab = (["albums", "photos", "videos", "stories", "documents"] as const).find((x) => x === params.tab) ?? "albums";
   const item = items.find((i) => i.id === params.item);
 
   return (
@@ -201,7 +208,7 @@ async function Archive({ t, locale, paramsPromise }: { t: Dictionary; locale: Lo
         isEditor={isEditor}
         needsApproval={can.needsApproval(current.role)}
         initialItem={item ? item.id : null}
-        initialTab={item ? (item.kind === "document" ? "documents" : item.kind === "story" ? "stories" : "photos") : tab}
+        initialTab={item ? (item.kind === "document" ? "documents" : item.kind === "story" ? "stories" : item.kind === "video" ? "videos" : "photos") : tab}
         initialAlbum={albums.some((x) => x.id === params.album) ? params.album : null}
         initialUpload={params.upload && can.add(current.role)}
         autoplay={params.play}

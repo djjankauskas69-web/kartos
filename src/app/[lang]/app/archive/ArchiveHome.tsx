@@ -14,7 +14,7 @@ import { isImage, uploadPhoto } from "@/lib/upload";
 export type Album = { id: string; preset: string | null; name: string; description: string | null; year: number | null; coverId: string | null; people: string[]; shared: boolean; createdBy: string | null };
 export type MemoryStory = { id: string; body: string; author: string; authorPhoto?: string; date: string; createdAt: string; personId: string; personName: string; photos: string[]; shared: boolean; live?: MemoryLive };
 
-type Tab = "albums" | "photos" | "stories" | "documents";
+type Tab = "albums" | "photos" | "videos" | "stories" | "documents";
 
 
 // Folders that hold papers are not albums; they show under Documents.
@@ -103,6 +103,7 @@ export function ArchiveHome({
   const folderName = useMemo(() => new Map(albums.map((a) => [a.id, a.name])), [albums]);
   const photos = useMemo(() => items.filter((i) => i.kind === "photo" && i.url), [items]);
   const documents = useMemo(() => items.filter((i) => i.kind === "document"), [items]);
+  const videos = useMemo(() => items.filter((i) => i.kind === "video" && i.video?.src), [items]);
   const stories = useMemo(() => items.filter((i) => i.kind === "story"), [items]);
 
   const albumList = useMemo(() => {
@@ -110,14 +111,15 @@ export function ArchiveHome({
       .filter((a) => !DOC_PRESETS.has(a.preset ?? ""))
       .map((a) => {
         const inIt = photos.filter((p) => p.folderId === a.id);
-        const cover = (a.coverId && photos.find((p) => p.id === a.coverId)) || inIt[0] || null;
-        const contributors = new Set(inIt.map((p) => p.uploaderId).filter(Boolean)).size;
-        return { ...a, count: inIt.length, cover, contributors, latest: inIt[0]?.createdAt ?? "" };
+        const clips = videos.filter((v) => v.folderId === a.id);
+        const cover = (a.coverId && photos.find((p) => p.id === a.coverId)) || inIt[0] || clips.find((c) => c.url) || null;
+        const contributors = new Set([...inIt, ...clips].map((p) => p.uploaderId).filter(Boolean)).size;
+        return { ...a, count: inIt.length, videoCount: clips.length, cover, contributors, latest: [inIt[0]?.createdAt ?? "", clips[0]?.createdAt ?? ""].sort().pop() ?? "" };
       })
       // Built-in folders show only once something is in them; the family's own albums always.
-      .filter((a) => a.count > 0 || !a.preset)
+      .filter((a) => a.count > 0 || a.videoCount > 0 || !a.preset)
       .sort((x, y) => (y.latest || "").localeCompare(x.latest || ""));
-  }, [albums, photos]);
+  }, [albums, photos, videos]);
   const album = albumList.find((a) => a.id === albumId) ?? null;
   // Pickers offer the albums one can see in the Albums tab (empty built-in ones stay out).
   const albumOptions = albumList.map((a) => ({ id: a.id, name: a.name }));
@@ -196,12 +198,16 @@ export function ArchiveHome({
   const open = items.find((i) => i.id === openId) ?? null;
   // The order the photos are seen in right now, so ← and → in the opened photo follow it.
   const navList =
-    tab === "documents"
+    open?.kind === "video"
+      ? album
+        ? sortPhotos(videos.filter((i) => i.folderId === album.id))
+        : videos
+      : tab === "documents"
       ? documents
       : tab === "stories"
         ? []
         : album
-          ? sortPhotos(items.filter((i) => i.folderId === album.id && i.kind !== "document"))
+          ? sortPhotos(items.filter((i) => i.folderId === album.id && i.kind !== "document" && i.kind !== "video"))
           : tab === "photos"
             ? shownPhotos
             : photos;
@@ -215,6 +221,7 @@ export function ArchiveHome({
   const tabs: Array<[Tab, string, number]> = [
     ["albums", t.tabAlbums, albumList.length],
     ["photos", t.tabPhotos, photos.length],
+    ...(videos.length ? [["videos", t.tabVideos, videos.length] as [Tab, string, number]] : []),
     ["stories", t.tabStories, stories.length + memories.length],
     ["documents", t.tabDocuments, documents.length],
   ];
@@ -238,13 +245,29 @@ export function ArchiveHome({
               aria-pressed={selecting ? on : undefined}
               className={`group relative block w-full overflow-hidden rounded-2xl bg-linen shadow-[0_10px_24px_-18px_rgb(60_45_30/0.6)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-20px_rgb(60_45_30/0.55)] ${on ? "ring-4 ring-olive" : ""}`}
             >
-              {p.kind === "photo" && p.url ? (
+              {(p.kind === "photo" || p.kind === "video") && p.url ? (
                 // eslint-disable-next-line @next/next/no-img-element -- signed private URL
                 <img src={p.url} alt={p.title} loading="lazy" className="block aspect-square w-full object-cover" />
+              ) : p.kind === "video" ? (
+                <span className="block aspect-square bg-[#2a2a26]" />
               ) : (
                 <span className="block aspect-square">
                   <Preview item={p} />
                 </span>
+              )}
+              {p.kind === "video" && (
+                <>
+                  <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 pl-1 text-white backdrop-blur-sm transition group-hover:scale-110">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
+                    </span>
+                  </span>
+                  {!!p.video?.seconds && (
+                    <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[0.82rem] font-semibold tabular-nums text-white">
+                      {Math.floor(p.video.seconds / 60)}:{String(p.video.seconds % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                </>
               )}
               {(p.dateLabel || p.pending) && (
                 <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[0.85rem] font-semibold text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
@@ -296,7 +319,7 @@ export function ArchiveHome({
         <div className="relative bg-gradient-to-t from-black/75 via-black/30 to-transparent px-6 pb-7 pt-28 sm:px-9 sm:pt-40">
           <h2 className="text-[2.2rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2.8rem]">{album.name}</h2>
           <p className="mt-2 text-[1.08rem] text-white/85">
-            {[album.year ? `${album.year} m.` : "", n(t.photosN, album.count), album.contributors ? n(t.contributorsN, album.contributors) : "", album.shared ? t.everyone : t.onlyFamily].filter(Boolean).join(" · ")}
+            {[album.year ? `${album.year} m.` : "", n(t.photosN, album.count), album.videoCount ? n(t.videosN, album.videoCount) : "", album.contributors ? n(t.contributorsN, album.contributors) : "", album.shared ? t.everyone : t.onlyFamily].filter(Boolean).join(" · ")}
           </p>
           {album.description && <p className="mt-3 max-w-[60ch] text-[1.08rem] leading-relaxed text-white/90">{album.description}</p>}
           {album.people.length > 0 && (
@@ -330,11 +353,28 @@ export function ArchiveHome({
         </div>
       </header>
       {(() => {
-        const list = sortPhotos(items.filter((i) => i.folderId === album.id && i.kind !== "document"));
-        return list.length ? (
+        const list = sortPhotos(items.filter((i) => i.folderId === album.id && i.kind !== "document" && i.kind !== "video"));
+        const clips = sortPhotos(videos.filter((i) => i.folderId === album.id));
+        return list.length || clips.length ? (
           <>
-            <div className="mb-4 flex justify-end">{selectToggle(list)}</div>
-            {wall(list)}
+            {list.length > 0 && (
+              <>
+                <div className="mb-4 flex justify-end">{selectToggle([...list, ...clips])}</div>
+                {wall(list)}
+              </>
+            )}
+            {/* Videos apart, under the photos: they are watched, not leafed through. */}
+            {clips.length > 0 && (
+              <div className={list.length ? "mt-12" : ""}>
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <h3 className="text-[1.5rem] font-semibold">
+                    {t.videosTitle} <span className="text-ink-muted">({clips.length})</span>
+                  </h3>
+                  {!list.length && selectToggle(clips)}
+                </div>
+                {wall(clips)}
+              </div>
+            )}
           </>
         ) : (
           empty(t.albumEmpty, t.albumEmptyLead, canAdd ? <button type="button" onClick={() => setDialog("upload")} className={primary}>+ {t.uploadPhotos}</button> : undefined)
@@ -370,7 +410,7 @@ export function ArchiveHome({
                 <span className="mt-3 block px-1">
                   <span className="block text-[1.3rem] font-semibold leading-snug">{a.name}</span>
                   <span className="mt-0.5 block text-[0.98rem] text-ink-muted">
-                    {[a.year ? `${a.year} m.` : "", n(t.photosN, a.count), a.contributors ? n(t.contributorsN, a.contributors) : ""].filter(Boolean).join(" · ")}
+                    {[a.year ? `${a.year} m.` : "", n(t.photosN, a.count), a.videoCount ? n(t.videosN, a.videoCount) : "", a.contributors ? n(t.contributorsN, a.contributors) : ""].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </button>
@@ -607,7 +647,7 @@ export function ArchiveHome({
         <div className="flex flex-wrap gap-2">{actions}</div>
       </div>
 
-      {tab === "albums" ? albumsView : tab === "photos" ? photosView : tab === "stories" ? storiesView : documentsView}
+      {tab === "albums" ? albumsView : tab === "photos" ? photosView : tab === "videos" ? <section>{wall(sortPhotos(videos))}</section> : tab === "stories" ? storiesView : documentsView}
 
       {/* Chosen photos: one light floating bar, like the tree's controls */}
       {selecting && selected.length > 0 && (

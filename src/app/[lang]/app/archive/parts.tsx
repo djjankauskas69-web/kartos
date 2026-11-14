@@ -6,12 +6,12 @@ import { LogoLoader } from "@/components/LogoLoader";
 import { CommentDrift } from "@/components/CommentDrift";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
-import { isImage, isPdf, MAX_FILE_BYTES, uploadArchiveFile, uploadPhoto } from "@/lib/upload";
+import { isImage, isPdf, isVideo, MAX_FILE_BYTES, MAX_VIDEO_BYTES, uploadArchiveFile, uploadPhoto, uploadVideo } from "@/lib/upload";
 import { ShareChoice } from "@/components/ShareChoice";
 import { addComment, clearTag, createStory, deleteComment, deleteItem, placeTag, recordFiles, setAlbumCover, updateItem } from "./actions";
 import { fieldCls, FolderSelect, labelCls, PeoplePicker, PeriodFields, type FolderOption, type PersonOption } from "./fields";
 
-export type Kind = "photo" | "document" | "story";
+export type Kind = "photo" | "document" | "story" | "video";
 export type ArchiveItem = {
   id: string;
   kind: Kind;
@@ -26,6 +26,8 @@ export type ArchiveItem = {
   people: string[];
   /** Where people are marked on the photo (0–1 across and down). */
   tags?: Array<{ id: string; x: number; y: number }>;
+  /** A video: where it plays from and how long it runs; `url` is then its still frame. */
+  video?: { src: string; seconds: number };
   uploader: string;
   createdAt: string;
   url?: string;
@@ -481,7 +483,21 @@ export function Detail({
             </button>
           </div>
 
-          {isPicture ? (
+          {item.video?.src ? (
+            // A video plays right here, its still frame showing until it starts.
+            <div data-keep className="mx-auto w-fit max-w-full overflow-hidden rounded-[10px] bg-black shadow-[0_24px_60px_-24px_rgb(0_0_0/0.7)]">
+              <video
+                key={item.id}
+                src={item.video.src}
+                poster={item.url}
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                className="block max-h-[70dvh] max-w-full md:max-h-[calc(min(94dvh,64rem)-5.5rem)]"
+              />
+            </div>
+          ) : isPicture ? (
             <div className="relative">
               {!loaded && (
                 <div className="absolute inset-0 flex min-h-40 items-center justify-center">
@@ -796,7 +812,7 @@ function CommentInput({ item, t, locale }: { item: ArchiveItem; t: L; locale: Lo
   );
 }
 
-type Pending = { key: string; file: File; title: string; asDocument: boolean; thumb?: string; state: "waiting" | "uploading" | "done" | "error" };
+type Pending = { key: string; file: File; title: string; asDocument: boolean; video?: boolean; thumb?: string; state: "waiting" | "uploading" | "done" | "error" };
 
 export function UploadForm({
   t,
@@ -827,7 +843,10 @@ export function UploadForm({
     const next: Pending[] = [];
     const bad: string[] = [];
     for (const file of list) {
-      if (!isImage(file) && !isPdf(file)) bad.push(`${t.badType} ${file.name}`);
+      if (isVideo(file) && !initialAsDocument) {
+        if (file.size > MAX_VIDEO_BYTES) bad.push(`${t.videoTooBig} ${file.name}`);
+        else next.push({ key: crypto.randomUUID(), file, title: "", asDocument: false, video: true, state: "waiting" });
+      } else if (!isImage(file) && !isPdf(file)) bad.push(`${t.badType} ${file.name}`);
       else if (file.size > MAX_FILE_BYTES) bad.push(`${t.tooBig} ${file.name}`);
       else
         next.push({
@@ -879,8 +898,8 @@ export function UploadForm({
         const { f, i } = job;
         setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "uploading" } : x)));
         try {
-          const up = await uploadArchiveFile(workspaceId, f.file, f.asDocument ? "document" : "photo");
-          slots[i] = { ...up, kind: f.asDocument ? "document" : "photo", title: f.title, fileName: f.file.name };
+          const up = f.video ? await uploadVideo(workspaceId, f.file) : await uploadArchiveFile(workspaceId, f.file, f.asDocument ? "document" : "photo");
+          slots[i] = { ...up, kind: f.video ? "video" : f.asDocument ? "document" : "photo", title: f.title, fileName: f.file.name };
           setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "done" } : x)));
         } catch (e) {
           console.error("upload", e);
@@ -899,7 +918,7 @@ export function UploadForm({
       setSaving(true);
       const r = await recordFiles(form);
       setSaving(false);
-      if (r.error) setError(r.error === "year" ? t.yearError : t.saveError);
+      if (r.error) setError(r.error === "year" ? t.yearError : r.error === "setup" ? t.videoSetup : t.saveError);
       else if (!failed) onDone();
     }
     if (failed) {
@@ -936,7 +955,7 @@ export function UploadForm({
             }}
             className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center hover:border-olive has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-sage-deep ${over ? "border-olive bg-[#eef1e4]" : "border-line bg-paper/60"}`}
           >
-            <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} disabled={busy} />
+            <input type="file" multiple accept={initialAsDocument ? "image/*,application/pdf" : "image/*,video/*,application/pdf"} className="sr-only" onChange={(e) => add(e.target.files)} disabled={busy} />
             <span className="inline-flex min-h-12 items-center rounded-full bg-ink px-6 font-semibold text-surface">+ {t.chooseFiles}</span>
             <span className="text-[0.95rem] text-ink-muted">{t.dropHint}</span>
           </label>
@@ -959,7 +978,7 @@ export function UploadForm({
               </p>
               {!busy && (
                 <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-line px-4 text-[0.95rem] font-semibold hover:border-ink/40">
-                  <input type="file" multiple accept="image/*,application/pdf" className="sr-only" onChange={(e) => add(e.target.files)} />+ {t.more}
+                  <input type="file" multiple accept={initialAsDocument ? "image/*,application/pdf" : "image/*,video/*,application/pdf"} className="sr-only" onChange={(e) => add(e.target.files)} />+ {t.more}
                 </label>
               )}
             </div>
@@ -969,6 +988,11 @@ export function UploadForm({
                   {f.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element -- local preview
                     <img src={f.thumb} alt="" loading="lazy" decoding="async" className={`h-full w-full object-cover ${f.state === "uploading" ? "opacity-60" : ""}`} />
+                  ) : f.video ? (
+                    <span className="flex h-full flex-col items-center justify-center gap-1 bg-[#2a2a26] px-1 text-center text-white">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z" /></svg>
+                      <span className="w-full truncate text-[0.72rem] text-white/75">{f.file.name}</span>
+                    </span>
                   ) : (
                     <span className="flex h-full items-center justify-center text-[0.85rem] font-semibold text-[#8a4b3c]">PDF</span>
                   )}

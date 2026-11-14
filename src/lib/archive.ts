@@ -22,3 +22,9 @@ export function looksLikeFileName(title: string) {
   if (/^(img|dsc|dscn|pxl|photo|image|screenshot)\b/i.test(title) && /\d{3,}/.test(title)) return true;
   return words.some((w) => w.length >= 8 && /\d/.test(w) && /[a-z]/.test(w) && /[A-Z]/.test(w));
 }
+
+/** For a stored video path: where its still frame is, and how long it runs. */
+export function videoInfo(path: string) {
+  const m = /^(.*-(\d+)s)\.[a-z0-9]+$/i.exec(path);
+  return m ? { poster: `${m[1]}.jpg`, seconds: Number(m[2]) } : { poster: null, seconds: 0 };
+}
