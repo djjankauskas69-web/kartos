@@ -1149,6 +1149,8 @@
     "decades": "Dešimtmečiai",
     "allYears": "Visi metai",
     "decade": "{d}-ieji",
+    "uploadingOf": "Įkeliama… {done} iš {n}",
+    "savingFiles": "Išsaugoma…",
     "uploadedOf": "Įkelta {done} iš {n}…",
     "tabAlbums": "Albumai",
     "tabPhotos": "Visos nuotraukos",

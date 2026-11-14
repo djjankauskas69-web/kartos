@@ -851,7 +851,13 @@ export function UploadForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => () => files.forEach((f) => f.thumb && URL.revokeObjectURL(f.thumb)), [files]);
+  // Previews are freed only when the window closes: freeing them on every change broke them mid-upload.
+  const thumbs = useRef<Pending[]>([]);
+  useEffect(() => {
+    thumbs.current = files;
+  }, [files]);
+  useEffect(() => () => thumbs.current.forEach((f) => f.thumb && URL.revokeObjectURL(f.thumb)), []);
+  const [saving, setSaving] = useState(false);
 
   function add(list: FileList | File[] | null) {
     const { next, bad } = check([...(list ?? [])]);
@@ -865,20 +871,30 @@ export function UploadForm({
     setBusy(true);
     setError(null);
     const uploaded: Array<Record<string, unknown>> = [];
-    for (const f of files) {
-      setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "uploading" } : x)));
-      try {
-        const up = await uploadArchiveFile(workspaceId, f.file, f.asDocument ? "document" : "photo");
-        uploaded.push({ ...up, kind: f.asDocument ? "document" : "photo", title: f.title, fileName: f.file.name });
-        setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "done" } : x)));
-      } catch (e) {
-        console.error("upload", e);
-        setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "error" } : x)));
+    // Three at a time: much faster than one by one, gentle on a phone connection. Order kept.
+    const queue = files.filter((f) => f.state !== "done").map((f, i) => ({ f, i }));
+    const slots: Array<Record<string, unknown> | undefined> = [];
+    const worker = async () => {
+      for (let job = queue.shift(); job; job = queue.shift()) {
+        const { f, i } = job;
+        setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "uploading" } : x)));
+        try {
+          const up = await uploadArchiveFile(workspaceId, f.file, f.asDocument ? "document" : "photo");
+          slots[i] = { ...up, kind: f.asDocument ? "document" : "photo", title: f.title, fileName: f.file.name };
+          setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "done" } : x)));
+        } catch (e) {
+          console.error("upload", e);
+          setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "error" } : x)));
+        }
       }
-    }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    for (const s of slots) if (s) uploaded.push(s);
     if (uploaded.length) {
       form.set("items", JSON.stringify(uploaded));
+      setSaving(true);
       const r = await recordFiles(form);
+      setSaving(false);
       if (r.error) setError(r.error === "year" ? t.yearError : t.saveError);
       else if (uploaded.length === files.length) onDone();
     }
@@ -939,11 +955,16 @@ export function UploadForm({
                 <li key={f.key} className="relative aspect-square overflow-hidden rounded-xl bg-[#efe8d8]">
                   {f.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element -- local preview
-                    <img src={f.thumb} alt="" className={`h-full w-full object-cover ${f.state === "uploading" ? "opacity-60" : ""}`} />
+                    <img src={f.thumb} alt="" loading="lazy" decoding="async" className={`h-full w-full object-cover ${f.state === "uploading" ? "opacity-60" : ""}`} />
                   ) : (
                     <span className="flex h-full items-center justify-center text-[0.85rem] font-semibold text-[#8a4b3c]">PDF</span>
                   )}
                   {f.state === "done" && <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-black/25 text-[1.6rem] font-bold text-white">✓</span>}
+                  {f.state === "uploading" && (
+                    <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+                      <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-white/40 border-t-white" />
+                    </span>
+                  )}
                   {f.state === "error" && <span title={t.uploadError} className="absolute inset-0 flex items-center justify-center bg-danger/40 text-[1.6rem] font-bold text-white">!</span>}
                   {!busy && f.state === "waiting" && (
                     <button type="button" onClick={() => setFiles((all) => all.filter((x) => x.key !== f.key))} aria-label={`${t.remove}: ${f.title}`} className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[1.1rem] leading-none text-ink shadow">
@@ -1006,9 +1027,15 @@ export function UploadForm({
           </p>
         )}
         <div className="flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={busy || !files.length} className="min-h-12 rounded-full bg-sage-deep px-7 text-[1.05rem] font-semibold text-surface hover:bg-ink disabled:opacity-50">
-            {busy ? t.uploadedOf.replace("{done}", String(doneCount)).replace("{n}", String(files.length)) : `${t.startUpload}${files.length ? ` (${files.length})` : ""}`}
+          <button type="submit" disabled={busy || !files.length} aria-busy={busy} className={`inline-flex min-h-12 items-center gap-2.5 rounded-full bg-sage-deep px-7 text-[1.05rem] font-semibold text-surface hover:bg-ink ${busy ? "cursor-wait" : "disabled:opacity-50"}`}>
+            {busy && <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-surface/35 border-t-surface" />}
+            {busy ? (saving ? t.savingFiles : t.uploadingOf.replace("{done}", String(doneCount)).replace("{n}", String(files.length))) : `${t.startUpload}${files.length ? ` (${files.length})` : ""}`}
           </button>
+          {busy && (
+            <span className="h-2 w-full max-w-56 overflow-hidden rounded-full bg-linen" role="progressbar" aria-valuemin={0} aria-valuemax={files.length} aria-valuenow={doneCount}>
+              <span className="block h-full rounded-full bg-sage-deep transition-[width] duration-300" style={{ width: `${saving ? 100 : Math.round((doneCount / Math.max(1, files.length)) * 100)}%` }} />
+            </span>
+          )}
           {needsApproval && <p className="text-[0.95rem] text-ink-muted">{t.approvalNote}</p>}
         </div>
       </div>

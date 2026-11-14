@@ -1149,6 +1149,8 @@
     "decades": "Decades",
     "allYears": "All years",
     "decade": "{d}s",
+    "uploadingOf": "Uploading… {done} of {n}",
+    "savingFiles": "Saving…",
     "uploadedOf": "Uploaded {done} of {n}…",
     "tabAlbums": "Albums",
     "tabPhotos": "All photos",
