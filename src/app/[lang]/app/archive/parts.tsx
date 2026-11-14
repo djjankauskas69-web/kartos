@@ -884,11 +884,15 @@ export function UploadForm({
           setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "done" } : x)));
         } catch (e) {
           console.error("upload", e);
+          failed += 1;
           setFiles((all) => all.map((x) => (x.key === f.key ? { ...x, state: "error" } : x)));
         }
       }
     };
+    let failed = 0;
     await Promise.all([worker(), worker(), worker()]);
+    // The ones that didn't make it come first, where they can be seen, and "Upload" tries just them again.
+    if (failed) setFiles((all) => [...all.filter((x) => x.state === "error"), ...all.filter((x) => x.state !== "error")]);
     for (const s of slots) if (s) uploaded.push(s);
     if (uploaded.length) {
       form.set("items", JSON.stringify(uploaded));
@@ -896,13 +900,22 @@ export function UploadForm({
       const r = await recordFiles(form);
       setSaving(false);
       if (r.error) setError(r.error === "year" ? t.yearError : t.saveError);
-      else if (uploaded.length === files.length) onDone();
+      else if (!failed) onDone();
+    }
+    if (failed) {
+      setError(t.someFailed.replace("{n}", String(failed)));
     }
     setBusy(false);
   }
 
   return (
-    <form action={submit}>
+    // Not a form "action": React holds back state set inside one until it ends, so the spinner never showed.
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busy) submit(new FormData(e.currentTarget));
+      }}
+    >
       <DialogHead title={t.uploadTitle} onClose={onDone} closeLabel={t.close} />
       <div className="space-y-5 px-6 py-5">
         <input type="hidden" name="locale" value={locale} />

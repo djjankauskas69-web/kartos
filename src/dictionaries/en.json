@@ -1151,6 +1151,7 @@
     "decade": "{d}s",
     "uploadingOf": "Uploading… {done} of {n}",
     "savingFiles": "Saving…",
+    "someFailed": "{n} could not be uploaded. They're shown first with “!” – press “Upload” again.",
     "uploadedOf": "Uploaded {done} of {n}…",
     "tabAlbums": "Albums",
     "tabPhotos": "All photos",

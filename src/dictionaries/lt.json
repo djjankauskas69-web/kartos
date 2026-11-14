@@ -1151,6 +1151,7 @@
     "decade": "{d}-ieji",
     "uploadingOf": "Įkeliama… {done} iš {n}",
     "savingFiles": "Išsaugoma…",
+    "someFailed": "Nepavyko įkelti: {n}. Jos parodytos pirmos su „!“ – paspauskite „Įkelti“ dar kartą.",
     "uploadedOf": "Įkelta {done} iš {n}…",
     "tabAlbums": "Albumai",
     "tabPhotos": "Visos nuotraukos",
